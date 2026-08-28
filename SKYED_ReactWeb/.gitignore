@@ -1,0 +1,18 @@
+# Dependencias de Node y caché de Vite
+node_modules/
+SKYED_ReactWeb/node_modules/
+.vite/
+
+# Archivos de logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Archivos de compilación (producción)
+dist/
+build/
+
+# Variables de entorno locales
+.env
+.env.local
+.env.*.local
