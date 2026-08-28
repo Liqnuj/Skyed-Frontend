@@ -37,7 +37,7 @@ html {
   -webkit-backdrop-filter: blur(12px);
 }
 
-.mod-principal .dark-mode .nav {
+.mod-principal.dark-mode .nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -60,7 +60,7 @@ html {
 
 .mod-principal .nav-brand span {
   font-family: Playfair Display, serif;
-  font-size: 1.25rem;
+  font-size: calc(1.25rem * var(--fs-scale, 1));
   font-weight: 700;
   color: #2c9caf;
   letter-spacing: -.02em;
@@ -88,25 +88,30 @@ html {
   justify-content: center;
   color: #fff;
   font-weight: 800;
-  font-size: 14px;
+  font-size: calc(14px * var(--fs-scale, 1));
   flex-shrink: 0;
 }
 
 .mod-principal .nav-title {
   font-weight: 800;
-  font-size: 17px;
+  font-size: calc(17px * var(--fs-scale, 1));
   letter-spacing: -0.5px;
   color: #ffffff;
 }
 
 .mod-principal .nav-links {
-  display: flex;
-  gap: 2rem;
-  margin-left: 40px;
+    color: #000000;
+    text-decoration: none;
+    padding: .5rem .9rem;
+    border-radius: 8px;
+    font-size: calc(.875rem * var(--fs-scale, 1));
+    font-weight: 500;
+    transition: all .2s;
+    white-space: nowrap;
 }
 
 .mod-principal .nav-links a {
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-scale, 1));
   color: rgba(255, 255, 255, 0.5);
   text-decoration: none;
   font-weight: 500;
@@ -123,7 +128,7 @@ html {
   border: 1px solid #0c0b14;
   border-radius: 999px;
   padding: 9px 22px;
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-scale, 1));
   font-weight: 700;
   cursor: pointer;
   font-family: inherit;
@@ -134,8 +139,8 @@ html {
   transition: opacity 0.2s, transform 0.15s;
 }
 
-.mod-principal .dark-mode .nav-login {
-  border: 1px solid #ffffff;
+.dark-mode .nav-login {
+  border: 1px solid #fffefe;
   background: none;
   color: #ffffff;
 }
@@ -154,14 +159,14 @@ html {
   border-radius: 999px;
   background: none;
   color: #000000;
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-scale, 1));
   font-weight: 700;
   cursor: pointer;
   font-family: inherit;
   transition: background 0.2s ease, transform 0.15s ease;
 }
 
-.mod-principal .dark-mode .nav-user {
+.mod-principal.dark-mode .nav-user {
   background: none;
   color:#ffffffe5;
   border: 1px solid #ffffffe5;
@@ -199,7 +204,7 @@ html {
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 8px;
   color: #fff;
-  font-size: 20px;
+  font-size: calc(20px * var(--fs-scale, 1));
   cursor: pointer;
   padding: 6px 9px;
   line-height: 1;
@@ -222,7 +227,7 @@ html {
   padding: 1rem 2rem;
   color: rgba(255, 255, 255, 0.6);
   text-decoration: none;
-  font-size: 14px;
+  font-size: calc(14px * var(--fs-scale, 1));
   font-weight: 500;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   transition: color 0.2s;
@@ -248,10 +253,16 @@ html {
 
 .mod-principal .hero {
   text-align: center;
-  padding: 6rem 2rem 3.5rem;
+  /* padding: 6rem 2rem 3.5rem; */
   position: relative;
   overflow: hidden;
   isolation: isolate;
+  align-items: center;
+  justify-items: center;
+}
+
+.dark-mode .hero {
+  background-color: #1e1e1e;
 }
 
 .mod-principal .hero-bg {
@@ -263,7 +274,7 @@ html {
   z-index: -2;
 }
 
-.mod-principal .dark-mode .hero-bg {
+.mod-principal.dark-mode .hero-bg {
   mix-blend-mode: screen;
   opacity: 1;
 }
@@ -282,7 +293,7 @@ html {
   z-index: -1;
 }
 
-.mod-principal .dark-mode .hero::before {
+.mod-principal.dark-mode .hero::before {
   background: linear-gradient(
     180deg,
     rgba(13, 10, 26, 0.15) 0%,
@@ -303,7 +314,7 @@ html {
   pointer-events: none;
 }
 
-.mod-principal .dark-mode .hero::after {
+.mod-principal.dark-mode .hero::after {
   background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
@@ -319,26 +330,64 @@ html {
   z-index: -1;
 }
 
-.mod-principal .dark-mode .hero-grid {
+.mod-principal.dark-mode .hero-grid {
   background-image: radial-gradient(circle, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+}
+
+.mod-principal .hero-bg {
+  position: absolute;
+  inset: 0;
+
+  background-image: url('/assets/principal/hero.png');
+  background-size: center;
+  background-position: cover;
+  background-repeat: no-repeat;
+  background-color: var(--bg);
+  z-index: -02;
+  mix-blend-mode: screen;
+  opacity: 1;
+
+}
+
+.mod-principal .hero{
+  padding-bottom: 30px;
+  position: relative;
+  align-items : center;
+  justify-items: center;
+  font-size: calc(16px * var(--fs-scale, 1));
+  font-family: 'Playfair Display', serif;
+}
+
+
+
+.mod-principal .hero-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100%;
 }
 
 .mod-principal .hero-badge {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   border: 2px solid var(--accent);
   border-radius: 999px;
   padding: 6px 18px;
-  font-size: 11px;
+  font-size: calc(11px * var(--fs-scale, 1));
   font-weight: 700;
   color: rgba(3, 3, 3, 0.708);
   letter-spacing: 2px;
   text-transform: uppercase;
-  margin-bottom: 2rem;
+  background: none;
+  margin: 0 auto 2rem;
+  grid-column: 1 / -1;
+  justify-self: center;
 }
 
-.mod-principal .dark-mode .hero-badge {
+.mod-principal.dark-mode .hero-badge {
   color: rgba(255, 255, 255, 0.829);
 } 
 
@@ -358,13 +407,15 @@ html {
 
 .mod-principal .hero h1 {
   font-family: "Playfair Display", serif;
-  font-size: clamp(2.4rem, 6vw, 4.2rem);
+  font-size: calc(clamp(2.4rem, 6vw, 4.2rem) * var(--fs-scale, 1));
   line-height: 1.08;
   margin-bottom: 1.2rem;
   color: #0e0d0d;
+  width: 100%;
+  max-width: 100%;
 }
 
-.mod-principal .dark-mode .hero h1 {
+.mod-principal.dark-mode .hero h1 {
   color: #ffffff;
 }
 
@@ -380,16 +431,37 @@ html {
   color:#2c9caf;
 }
 
-.mod-principal .hero-sub {
-  font-size: 16px;
-  color: rgba(0, 0, 0, 0.516);
+.mod-principal .purple-text{
+  color: #680991;
+}
+
+.mod-principal .cyan-text{
+  color: #2c9caf;
+}
+
+/* .mod-principal .hero-sub {
+  font-size: calc(16px * var(--fs-scale, 1));
+  color: rgb(43, 0, 255);
   max-width: 500px;
   margin: 0 auto 2rem;
   line-height: 1.75;
+  margin-left: 250px;
+} */
+
+.mod-principal .hero-descripcion {
+  font-family: Arial, sans-serif;
+  font-size: calc(16px * var(--fs-scale, 1));
+  font-weight: 400;
+  color: #333333;
+  text-align: center;
+  line-height: 1.5;
+  margin: 0 auto;
+  max-width: 600px;
 }
 
-.mod-principal .dark-mode .hero-sub {
-  color: rgba(255, 255, 255, 0.42);
+
+.mod-principal.dark-mode .hero-descripcion {
+  color: rgba(255, 255, 255, 0.667);
 }
 /* ================================================
    CHOOSE SECTION
@@ -400,7 +472,7 @@ html {
 
 .mod-principal .choose-label {
   text-align: center;
-  font-size: 11px;
+  font-size: calc(11px * var(--fs-scale, 1));
   font-weight: 700;
   letter-spacing: 3px;
   text-transform: uppercase;
@@ -408,7 +480,7 @@ html {
   margin-bottom: 2rem;
 }
 
-.mod-principal .dark-mode .choose-label {
+.mod-principal.dark-mode .choose-label {
   color: rgba(255, 255, 255, 0.648);
 }
 
@@ -469,7 +541,7 @@ html {
   align-items: center;
   justify-content: center;
   margin-bottom: 1.5rem;
-  font-size: 30px;
+  font-size: calc(30px * var(--fs-scale, 1));
   position: relative;
 }
 
@@ -487,7 +559,7 @@ html {
 
 /* Tag / nombre / desc */
 .mod-principal .choose-tag {
-  font-size: 10px;
+  font-size: calc(10px * var(--fs-scale, 1));
   font-weight: 800;
   letter-spacing: 2.5px;
   text-transform: uppercase;
@@ -499,14 +571,14 @@ html {
 
 .mod-principal .choose-name {
   font-family: "Playfair Display", serif;
-  font-size: 2.3rem;
+  font-size: calc(2.3rem * var(--fs-scale, 1));
   color: #ffffff;
   line-height: 1;
   margin-bottom: 0.9rem;
 }
 
 .mod-principal .choose-desc {
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-scale, 1));
   color: rgba(255, 255, 255, 0.42);
   line-height: 1.7;
   margin-bottom: 1.8rem;
@@ -525,7 +597,7 @@ html {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-scale, 1));
   color: rgba(255, 255, 255, 0.62);
 }
 
@@ -550,7 +622,7 @@ html {
   border: none;
   cursor: pointer;
   font-family: inherit;
-  font-size: 15px;
+  font-size: calc(15px * var(--fs-scale, 1));
   font-weight: 700;
   text-decoration: none;
   transition: transform 0.2s ease, opacity 0.2s ease;
@@ -580,7 +652,7 @@ html {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: calc(16px * var(--fs-scale, 1));
   flex-shrink: 0;
 }
 
@@ -605,14 +677,14 @@ html {
 }
 
 .mod-principal .cs-num {
-  font-size: 1.2rem;
+  font-size: calc(1.2rem * var(--fs-scale, 1));
   font-weight: 800;
   line-height: 1;
   margin-bottom: 3px;
 }
 
 .mod-principal .cs-lbl {
-  font-size: 9px;
+  font-size: calc(9px * var(--fs-scale, 1));
   font-weight: 600;
   letter-spacing: 1.2px;
   text-transform: uppercase;
@@ -633,7 +705,7 @@ html {
   background: #ffffff;
 }
 
-.mod-principal .dark-mode .ticker-wrap {
+ .dark-mode .ticker-wrap {
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   background: rgb(0 0 0 / 96%);
@@ -657,12 +729,12 @@ html {
   align-items: center;
   gap: 8px;
   white-space: nowrap;
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-scale, 1));
   font-weight: 600;
   color: rgba(255, 255, 255, 0.28);
 }
 
-.mod-principal .ticker-item i { font-size: 14px; }
+.mod-principal .ticker-item i { font-size: calc(14px * var(--fs-scale, 1)); }
 
 .mod-principal .ticker-item.g i, .mod-principal .ticker-item.g span { color: #680991; }
 
@@ -677,7 +749,7 @@ html {
 
 .mod-principal .section-eyebrow {
   text-align: center;
-  font-size: 11px;
+  font-size: calc(11px * var(--fs-scale, 1));
   font-weight: 700;
   letter-spacing: 3px;
   text-transform: uppercase;
@@ -685,30 +757,30 @@ html {
 }
 
 .mod-principal .section-eyebrow.muted { color: rgba(1, 1, 1, 0.471); }
-.mod-principal .dark-mode .section-eyebrow.muted { color: rgba(255, 255, 255, 0.471); }
+.mod-principal.dark-mode .section-eyebrow.muted { color: rgba(255, 255, 255, 0.471); }
 
 .mod-principal .section h2 {
   font-family: 'Playfair Display', serif;
-  font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+  font-size: calc(clamp(1.8rem, 3.5vw, 2.6rem) * var(--fs-scale, 1));
   text-align: center;
   color: #080808;
   margin-bottom: 0.8rem;
 }
 
-.mod-principal .dark-mode .section h2 {
+ .dark-mode .section h2 {
   color: #ffffff;
 }
 
 .mod-principal .section-sub {
   text-align: center;
-  font-size: 14px;
+  font-size: calc(14px * var(--fs-scale, 1));
   color: rgba(1, 1, 1, 0.471);
   max-width: 480px;
   margin: 0 auto 3rem;
   line-height: 1.75;
 }
 
-.mod-principal .dark-mode .section-sub {
+.dark-mode .section-sub {
   color: rgba(255, 255, 255, 0.471);
 }
 
@@ -736,7 +808,7 @@ html {
   gap: 10px;
   padding: 0.75rem 1rem;
   border-radius: 12px;
-  font-size: 12px;
+  font-size: calc(12px * var(--fs-scale, 1));
   font-weight: 700;
   letter-spacing: 1px;
   text-transform: uppercase;
@@ -745,7 +817,7 @@ html {
 
 .mod-principal .fch-social {
   background: #68099129;
-  color: #4a0c64;
+  color: rgb(178, 0, 255);;
   border: 1px solid #680991;
 }
 
@@ -755,13 +827,13 @@ html {
   border: 1px solid #1d7a9e;
 }
 
-.mod-principal .dark-mode .fch-social {
+ .dark-mode .fch-social {
   background: #68099129;
   color: #c53dff;
   border: 1px solid #680991;
 }
 
-.mod-principal .dark-mode .fch-sport {
+ .dark-mode .fch-sport {
   background: #1d7a9e5e;
   color: #4fc0eb;
   border: 1px solid #1d7a9e;
@@ -796,45 +868,45 @@ html {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: calc(18px * var(--fs-scale, 1));
   flex-shrink: 0;
 }
 
 .mod-principal .find-ic.gold-ic {
   background: #68099129;
-  color: #4a0c64;
+  color: rgb(178, 0, 255);
 }
 
-.mod-principal .dark-mode .find-ic.gold-ic {
+.mod-principal.dark-mode .find-ic.gold-ic {
   background: #68099129;
   color: #c53dff;
 }
 .mod-principal .find-ic.teal-ic {
   background: #1d809e5a;
-  color: #0c5572;
+  color: #1d7a9e;
 }
-.mod-principal .dark-mode .find-ic.teal-ic {
+.mod-principal.dark-mode .find-ic.teal-ic {
   background: #1d809e5a;
   color: #4fc0eb;
 }
 .mod-principal .find-info h4 {
-  font-size: 14px;
+  font-size: calc(14px * var(--fs-scale, 1));
   font-weight: 700;
   color: #000000;
   margin-bottom: 4px;
 }
 
-.mod-principal .dark-mode .find-info h4 {
+ .dark-mode .find-info h4 {
   color: #ffffff;
 }
 
 .mod-principal .find-info p {
-  font-size: 12px;
+  font-size: calc(12px * var(--fs-scale, 1));
   color: rgba(0, 0, 0, 0.662);
   line-height: 1.6;
 }
 
-.mod-principal .dark-mode .find-info p {
+ .dark-mode .find-info p {
   color: rgba(255, 255, 255, 0.584);
 }
 /* ================================================
@@ -875,7 +947,7 @@ html {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
+  font-size: calc(22px * var(--fs-scale, 1));
   margin: 0 auto 1.2rem;
 }
 
@@ -885,22 +957,22 @@ html {
 
 .mod-principal .mv-card h3 {
   font-family: 'arial', arial;
-  font-size: 1.2rem;
+  font-size: calc(1.2rem * var(--fs-scale, 1));
   color: #0b0a0a;
   margin-bottom: 0.7rem;
 }
 
-.mod-principal .dark-mode .mv-card h3 {
+.mod-principal.dark-mode .mv-card h3 {
   color: #ffffff;
 }
 
 .mod-principal .mv-card p {
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-scale, 1));
   color: rgba(0, 0, 0, 0.671);
   line-height: 1.7;
 }
 
-.mod-principal .dark-mode .mv-card p {
+.mod-principal.dark-mode .mv-card p {
   color: rgba(207, 207, 207, 0.686);
 }
 /* ================================================
@@ -913,7 +985,7 @@ html {
 
 .mod-principal .quote-mark {
   font-family: 'Playfair Display', serif;
-  font-size: 7rem;
+  font-size: calc(7rem * var(--fs-scale, 1));
   color: var(--accent);
   line-height: 0.4;
   display: block;
@@ -922,7 +994,7 @@ html {
 
 .mod-principal .quote-text {
   font-family: 'Playfair Display', serif;
-  font-size: clamp(1.2rem, 2.5vw, 1.75rem);
+  font-size: calc(clamp(1.2rem, 2.5vw, 1.75rem) * var(--fs-scale, 1));
   color: rgba(0, 0, 0, 0.72);
   max-width: 600px;
   margin: 0 auto 1.5rem;
@@ -930,19 +1002,19 @@ html {
   font-style: 'Playfair Display', serif;
 }
 
-.mod-principal .dark-mode .quote-text {
+ .dark-mode .quote-text {
   color: rgba(255, 255, 255, 0.72);
 }
 
 .mod-principal .quote-author {
-  font-size: 11px;
+  font-size: calc(11px * var(--fs-scale, 1));
   font-weight: 700;
   letter-spacing: 2.5px;
   text-transform: uppercase;
   color: rgba(0, 0, 0, 0.808);
 }
 
-.mod-principal .dark-mode .quote-author {
+.mod-principal.dark-mode .quote-author {
   color: rgba(255, 255, 255, 0.397);
 }
 /* ================================================
@@ -954,13 +1026,13 @@ html {
   justify-content: space-between;
   padding: 1.5rem 2.5rem;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
-  font-size: 12px;
+  font-size: calc(12px * var(--fs-scale, 1));
   color: rgba(0, 0, 0, 0.63);
   flex-wrap: wrap;
   gap: 1rem;
 }
 
-.mod-principal .dark-mode .footer {
+.mod-principal.dark-mode .footer {
   color:rgba(255, 255, 255, 0.425);
 }
 .mod-principal .footer-links {
@@ -974,14 +1046,14 @@ html {
   transition: color 0.2s;
 }
 
-.mod-principal .dark-mode .footer-links a {
+.mod-principal.dark-mode .footer-links a {
   color: rgba(255, 255, 255, 0.425);
 }
 .mod-principal .footer-links a:hover {
   color: rgb(0, 0, 0);
 }
 
-.mod-principal .dark-mode .footer-links a:hover {
+.mod-principal.dark-mode .footer-links a:hover {
   color: rgb(241, 236, 236);
 }
 
@@ -1006,7 +1078,7 @@ html {
   background: linear-gradient(358deg, color-mix(in srgb, var(--accent) 12%, transparent) 0%, color-mix(in srgb, var(--accent) 8%, transparent) 50%, color-mix(in srgb, var(--accent) 12%, transparent) 100%);
 }
 
-.mod-principal .dark-mode .cta-section {
+.mod-principal.dark-mode .cta-section {
   background: linear-gradient(
     358deg,
     color-mix(in srgb, var(--accent) 10%, #000000) 0%,
@@ -1054,14 +1126,14 @@ html {
   background: color-mix(in srgb, var(--accent) 10%, transparent);
   border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
   color: var(--accent);
-  font-size: 14px;
+  font-size: calc(14px * var(--fs-scale, 1));
   font-weight: 400;
   margin-bottom: 24px;
 }
 
 /* Título */
 .mod-principal .cta-title {
-  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-size: calc(clamp(2rem, 5vw, 3.2rem) * var(--fs-scale, 1));
   font-weight: 800;
   color: #0f172a;
   line-height: 1.2;
@@ -1069,7 +1141,7 @@ html {
   letter-spacing: -0.02em;
 }
 
-.mod-principal .dark-mode .cta-title {
+.dark-mode .cta-title {
   color: #ffffff;
 }
 
@@ -1099,14 +1171,14 @@ html {
 
 /* Subtítulo */
 .mod-principal .cta-subtitle {
-  font-size: 1.125rem;
+  font-size: calc(1.125rem * var(--fs-scale, 1));
   color: #64748b;
   margin: 0 auto 40px;
   max-width: 500px;
   line-height: 1.7;
 }
 
-.mod-principal .dark-mode .cta-subtitle {
+.mod-principal.dark-mode .cta-subtitle {
   color: #c6b4b4;
 }
 
@@ -1119,7 +1191,7 @@ html {
   border-radius: 999px;
   background: var(--accent);
   color: #ffffff;
-  font-size: 1rem;
+  font-size: calc(1rem * var(--fs-scale, 1));
   font-weight: 600;
   text-decoration: none;
   box-shadow: 0 8px 30px color-mix(in srgb, var(--accent) 35%, transparent);
@@ -1158,7 +1230,7 @@ html {
   border: 2px solid #3f3f3f;
   background: color-mix(in srgb, var(--accent) 15%, transparent);
   color: var(--accent);
-  font-size: 12px;
+  font-size: calc(12px * var(--fs-scale, 1));
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -1171,12 +1243,12 @@ html {
 }
 
 .mod-principal .cta-count {
-  font-size: 14px;
+  font-size: calc(14px * var(--fs-scale, 1));
   color: #64748b;
   margin: 0;
 }
 
-.mod-principal .dark-mode .cta-count {
+.mod-principal.dark-mode .cta-count {
   color: #d0d0d0;
 }
 
@@ -1185,13 +1257,13 @@ html {
   font-weight: 700;
 }
 
-.mod-principal .dark-mode .cta-count strong {
+.mod-principal.dark-mode .cta-count strong {
   color: #c6b4b4;
 }
 
 .mod-principal .cta-stars {
   color: #f59e0b;
-  font-size: 14px;
+  font-size: calc(14px * var(--fs-scale, 1));
   display: flex;
   align-items: center;
   gap: 4px;
@@ -1199,11 +1271,11 @@ html {
 
 .mod-principal .cta-stars span {
   color: #0f172a;
-  font-size: 14px;
+  font-size: calc(14px * var(--fs-scale, 1));
   font-weight: 600;
 }
 
-.mod-principal .dark-mode .cta-stars span {
+.mod-principal.dark-mode .cta-stars span {
   color: #c6b4b4;
 }
  
@@ -1232,7 +1304,7 @@ html {
     border-bottom: 1px solid rgba(255, 255, 255, 0.07);
   }
   .mod-principal .choose-half { padding: 2rem 1.5rem; }
-  .mod-principal .choose-name { font-size: 1.8rem; }
+  .mod-principal .choose-name { font-size: calc(1.8rem * var(--fs-scale, 1)); }
 
   /* Find */
   .mod-principal .section { padding: 3.5rem 1.2rem; }
@@ -1246,9 +1318,9 @@ html {
 }
 
 @media (max-width: 480px) {
-  .mod-principal .hero h1 { font-size: 2rem; }
-  .mod-principal .choose-name { font-size: 1.6rem; }
-  .mod-principal .big-btn { font-size: 14px; padding: 14px 16px; }
+  .mod-principal .hero h1 { font-size: calc(2rem * var(--fs-scale, 1)); }
+  .mod-principal .choose-name { font-size: calc(1.6rem * var(--fs-scale, 1)); }
+  .mod-principal .big-btn { font-size: calc(14px * var(--fs-scale, 1)); padding: 14px 16px; }
 }
 .mod-principal {
     --accent: #8827f0;
@@ -1307,7 +1379,7 @@ html {
   background: #e5e5e5;
 }
 
-.mod-principal .dark-mode .acc-panel {
+.mod-principal.dark-mode .acc-panel {
   background: #1f1c19;
 }
 .mod-principal .acc-panel.open {
@@ -1441,24 +1513,30 @@ html {
   color: var(--accent);
 }
 /* ── MODO OSCURO - FOOTER ── */
-.mod-principal.dark-mode footer {
+.dark-mode footer {
   background: #0f0d0b;
 }
-.mod-principal.dark-mode .footer-col ul li a {
+.dark-mode .footer span {
+  color: rgba(232, 228, 222, 0.35);
+}
+.dark-mode .footer-links a {
   color: rgba(232, 228, 222, 0.6);
 }
-.mod-principal.dark-mode .footer-col ul li a:hover {
+.dark-mode .footer-col ul li a {
+  color: rgba(232, 228, 222, 0.6);
+}
+.dark-mode .footer-col ul li a:hover {
   color: #fff;
 }
-.mod-principal.dark-mode .footer-bottom {
+.dark-mode .footer-bottom {
   color: rgba(232, 228, 222, 0.35);
   border-top-color: rgba(255, 255, 255, 0.06);
 }
-.mod-principal.dark-mode .pay-icon {
+.dark-mode .pay-icon {
   background: rgba(255, 255, 255, 0.08);
   color: rgba(232, 228, 222, 0.6);
 }
-
+  
 .mod-principal nav {
   background:rgba(255, 255, 255, 0.96);
 }
@@ -1501,9 +1579,9 @@ html {
 }
 
 /* ── MODO OSCURO - HERO ── */
-.mod-principal.dark-mode .hero-text {
+/* .mod-principal.dark-mode .hero-text {
   background: #2a2420;
-}
+} */
 .mod-principal.dark-mode .hero-title {
   color: #f0ebe5;
 }
@@ -2023,7 +2101,7 @@ html {
 }
 
 .mod-principal.dyslexia p, .mod-principal.dyslexia li, .mod-principal.dyslexia label, .mod-principal.dyslexia input, .mod-principal.dyslexia textarea {
-  font-size: 1.05em !important;
+  font-size: calc(1.05em * var(--fs-scale, 1)) !important;
   max-width: 70ch !important;
 }
 
@@ -2206,7 +2284,7 @@ html, .mod-principal {
 
 .mod-principal .sky-logo-text {
   font-family: 'Playfair Display', serif;
-  font-size: 1.15rem;
+  font-size: calc(1.15rem * var(--fs-scale, 1));
   font-weight: 700;
   letter-spacing: 0.04em;
   color: #0f172a;
@@ -2221,7 +2299,7 @@ html, .mod-principal {
 }
 
 .mod-principal .sky-tagline {
-  font-size: 0.95rem;
+  font-size: calc(0.95rem * var(--fs-scale, 1));
   line-height: 1.7;
   color: #64748b;
   margin: 0 0 1rem;
@@ -2248,7 +2326,7 @@ html, .mod-principal {
   border-radius: 999px;
   color: var(--blue);
   text-decoration: none;
-  font-size: 0.8rem;
+  font-size: calc(0.8rem * var(--fs-scale, 1));
   font-weight: 700;
   transition: 0.2s ease;
 }
@@ -2260,7 +2338,7 @@ html, .mod-principal {
 }
 
 .mod-principal .sky-col-title {
-  font-size: 0.8rem;
+  font-size: calc(0.8rem * var(--fs-scale, 1));
   font-weight: 700;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -2297,7 +2375,7 @@ html, .mod-principal {
 }
 
 .mod-principal .sky-contact-text {
-  font-size: 0.95rem;
+  font-size: calc(0.95rem * var(--fs-scale, 1));
   line-height: 1.5;
   color: #475569;
 }
@@ -2308,7 +2386,7 @@ html, .mod-principal {
 
 .mod-principal .sky-contact-text strong {
   display: block;
-  font-size: 0.72rem;
+  font-size: calc(0.72rem * var(--fs-scale, 1));
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -2330,7 +2408,7 @@ html, .mod-principal {
 }
 
 .mod-principal .sky-copy {
-  font-size: 0.82rem;
+  font-size: calc(0.82rem * var(--fs-scale, 1));
   color: #64748b;
   margin: 0;
 }
@@ -2353,7 +2431,7 @@ html, .mod-principal {
 .mod-principal .sky-bottom-links a {
   color: #64748b;
   text-decoration: none;
-  font-size: 0.82rem;
+  font-size: calc(0.82rem * var(--fs-scale, 1));
   transition: color 0.2s ease;
 }
 
@@ -2401,7 +2479,7 @@ html, .mod-principal {
   text-decoration: none;
   font-family: 'Playfair Display', serif;
   font-weight: 700;
-  font-size: 1.15rem;
+  font-size: calc(1.15rem * var(--fs-scale, 1));
   letter-spacing: 0.04em;
   color: var(--text);
 }
@@ -2488,28 +2566,28 @@ html, .mod-principal {
   background: var(--blue-soft);
   border: 1px solid rgb(56, 191, 248);
   color: #1b86b0;
-  font-size: 12px;
+  font-size: calc(12px * var(--fs-scale, 1));
   font-weight: 700;
   letter-spacing: 1.5px;
   text-transform: uppercase;
   margin-bottom: 1.75rem;
 }
 
-.mod-principal .dark-mode .aside-eyebrow {
+.mod-principal.dark-mode .aside-eyebrow {
   border: 1px solid rgb(87, 149, 176);
   color: #8ec5db;
 }
 
 .mod-principal .aside-title {
   font-family: 'Playfair Display', serif;
-  font-size: 2.5rem;
+  font-size: calc(2.5rem * var(--fs-scale, 1));
   font-weight: 700;
   line-height: 1.15;
   margin: 0 0 1rem;
   color: #000000;
 }
 
-.mod-principal .dark-mode .aside-title {
+.mod-principal.dark-mode .aside-title {
   color: #ffffff;
 }
 .mod-principal .aside-title .hl {
@@ -2520,7 +2598,7 @@ html, .mod-principal {
 }
 
 .mod-principal .aside-subtitle {
-  font-size: 15px;
+  font-size: calc(15px * var(--fs-scale, 1));
   color: var(--text-dim);
   line-height: 1.7;
   margin: 0 0 2.25rem;
@@ -2539,7 +2617,7 @@ html, .mod-principal {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  font-size: 14px;
+  font-size: calc(14px * var(--fs-scale, 1));
   color: var(--text-dim);
 }
 
@@ -2553,7 +2631,7 @@ html, .mod-principal {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-size: calc(14px * var(--fs-scale, 1));
   flex-shrink: 0;
   margin-top: 1px;
 }
@@ -2593,7 +2671,7 @@ html, .mod-principal {
 }
 
 .mod-principal .ticket-kicker {
-  font-size: 10px;
+  font-size: calc(10px * var(--fs-scale, 1));
   font-weight: 800;
   letter-spacing: 2px;
   text-transform: uppercase;
@@ -2603,14 +2681,14 @@ html, .mod-principal {
 
 .mod-principal .ticket-title {
   font-family: 'Playfair Display', serif;
-  font-size: 17px;
+  font-size: calc(17px * var(--fs-scale, 1));
   font-weight: 700;
   color: var(--text);
   margin-bottom: 4px;
 }
 
 .mod-principal .ticket-meta {
-  font-size: 12px;
+  font-size: calc(12px * var(--fs-scale, 1));
   color: var(--text-dimmer);
 }
 
@@ -2640,13 +2718,13 @@ html, .mod-principal {
 .mod-principal .ticket-stub::after { bottom: -8px; }
 
 .mod-principal .ticket-stub span {
-  font-size: 10px;
+  font-size: calc(10px * var(--fs-scale, 1));
   color: var(--text-dimmer);
   letter-spacing: 1px;
 }
 
 .mod-principal .ticket-stub strong {
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-scale, 1));
   color: var(--blue);
   transform: rotate(90deg);
   white-space: nowrap;
@@ -2673,30 +2751,30 @@ html, .mod-principal {
   gap: 6px;
   color: var(--text-dim);
   text-decoration: none;
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-scale, 1));
   font-weight: 600;
   margin-bottom: 1.5rem;
   transition: color 0.2s;
 }
 
-.mod-principal .dark-mode .auth-back {
+.mod-principal.dark-mode .auth-back {
   color: rgba(255, 255, 255, 0.871);
 }
 .mod-principal .auth-back:hover { color: var(--accent); }
 
 .mod-principal .auth-heading {
   font-family: 'Playfair Display', serif;
-  font-size: 2rem;
+  font-size: calc(2rem * var(--fs-scale, 1));
   font-weight: 700;
   margin: 0 0 0.5rem;
   color: #000000;
 }
-.mod-principal .dark-mode .auth-heading {
+.mod-principal.dark-mode .auth-heading {
   color: #ffffff;
 }
 
 .mod-principal .auth-subheading {
-  font-size: 14px;
+  font-size: calc(14px * var(--fs-scale, 1));
   color: var(--text-dim);
   margin: 0 0 2rem;
   line-height: 1.6;
@@ -2715,7 +2793,7 @@ html, .mod-principal {
 
 .mod-principal .form-label {
   display: block;
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-scale, 1));
   font-weight: 700;
   color: var(--text-dim);
   margin-bottom: 7px;
@@ -2733,7 +2811,7 @@ html, .mod-principal {
   border-radius: var(--radius-sm);
   color: var(--text);
   font-family: 'Manrope', sans-serif;
-  font-size: 14px;
+  font-size: calc(14px * var(--fs-scale, 1));
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
 }
@@ -2776,7 +2854,7 @@ html, .mod-principal {
   border: none;
   color: var(--text-dimmer);
   cursor: pointer;
-  font-size: 16px;
+  font-size: calc(16px * var(--fs-scale, 1));
   padding: 4px;
   display: flex;
   align-items: center;
@@ -2786,14 +2864,14 @@ html, .mod-principal {
 .mod-principal .input-toggle:hover { color: var(--text-dim); }
 
 .mod-principal .form-hint {
-  font-size: 12px;
+  font-size: calc(12px * var(--fs-scale, 1));
   color: var(--text-dimmer);
   margin-top: 6px;
   line-height: 1.5;
 }
 
 .mod-principal .form-error {
-  font-size: 12px;
+  font-size: calc(12px * var(--fs-scale, 1));
   color: var(--danger);
   margin-top: 6px;
   display: none;
@@ -2805,7 +2883,7 @@ html, .mod-principal {
 .mod-principal .form-error.show { display: flex; }
 
 .mod-principal .form-success-hint {
-  font-size: 12px;
+  font-size: calc(12px * var(--fs-scale, 1));
   color: var(--success);
   margin-top: 6px;
   display: none;
@@ -2838,7 +2916,7 @@ html, .mod-principal {
 }
 
 .mod-principal .strength-label {
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--fs-scale, 1));
   color: var(--text-dimmer);
   font-weight: 600;
 }
@@ -2866,7 +2944,7 @@ html, .mod-principal {
   transition: border-color 0.2s, background 0.2s;
 }
 
-.mod-principal .dark-mode .checkbox-row input[type="checkbox"] {
+.mod-principal.dark-mode .checkbox-row input[type="checkbox"] {
   border-color: rgba(255, 255, 255, 0.705);
 }
 
@@ -2890,7 +2968,7 @@ html, .mod-principal {
 }
 
 .mod-principal .checkbox-row label {
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-scale, 1));
   color: var(--text-dim);
   line-height: 1.6;
   cursor: pointer;
@@ -2909,7 +2987,7 @@ html, .mod-principal {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 1.5rem;
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-scale, 1));
 }
 
 .mod-principal .remember-row {
@@ -2931,7 +3009,7 @@ html, .mod-principal {
   position: relative;
 }
 
-.mod-principal .dark-mode .remember-row input[type="checkbox"] {
+.mod-principal.dark-mode .remember-row input[type="checkbox"] {
   border-color: rgba(255, 255, 255, 0.705);
 }
 .mod-principal .remember-row input[type="checkbox"]:checked {
@@ -2968,7 +3046,7 @@ html, .mod-principal {
   background: linear-gradient(135deg, var(--blue), #9d02aeb7 80%);
   color: #0d0a1a;
   font-family: 'Manrope', sans-serif;
-  font-size: 15px;
+  font-size: calc(15px * var(--fs-scale, 1));
   font-weight: 800;
   cursor: pointer;
   display: flex;
@@ -3000,7 +3078,7 @@ html, .mod-principal {
   gap: 14px;
   margin: 1.75rem 0;
   color: var(--text-dimmer);
-  font-size: 12px;
+  font-size: calc(12px * var(--fs-scale, 1));
 }
 
 .mod-principal .form-divider::before, .mod-principal .form-divider::after {
@@ -3012,7 +3090,7 @@ html, .mod-principal {
 
 .mod-principal .form-footer {
   text-align: center;
-  font-size: 13.5px;
+  font-size: calc(13.5px * var(--fs-scale, 1));
   color: var(--text-dim);
 }
 
@@ -3034,7 +3112,7 @@ html, .mod-principal {
   background: rgba(74, 222, 128, 0.12);
   border: 1px solid rgba(74, 222, 128, 0.35);
   color: var(--success);
-  font-size: 26px;
+  font-size: calc(26px * var(--fs-scale, 1));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3042,7 +3120,7 @@ html, .mod-principal {
 }
 
 .mod-principal .success-panel p {
-  font-size: 14px;
+  font-size: calc(14px * var(--fs-scale, 1));
   color: var(--text-dim);
   line-height: 1.7;
   margin: 0 0 1.75rem;
@@ -3060,7 +3138,7 @@ html, .mod-principal {
 @media (max-width: 480px) {
   .mod-principal .form-row { grid-template-columns: 1fr; }
   .mod-principal .auth-topbar { padding: 16px 20px; }
-  .mod-principal .auth-heading { font-size: 1.7rem; }
+  .mod-principal .auth-heading { font-size: calc(1.7rem * var(--fs-scale, 1)); }
 }
 
 /* ============================================================
@@ -3199,7 +3277,7 @@ html, .mod-principal {
 .mod-principal .skyed-modal__brand {
   font-family: 'Barlow Condensed', sans-serif;
 
-  font-size: 0.7rem;
+  font-size: calc(0.7rem * var(--fs-scale, 1));
   font-weight: 600;
 
   letter-spacing: 0.18em;
@@ -3213,7 +3291,7 @@ html, .mod-principal {
 .mod-principal .skyed-modal__title {
   font-family: 'Barlow Condensed', sans-serif;
 
-  font-size: clamp(1.5rem, 4vw, 2rem);
+  font-size: calc(clamp(1.5rem, 4vw, 2rem) * var(--fs-scale, 1));
   font-weight: 800;
 
   color: #ffffff;
@@ -3226,7 +3304,7 @@ html, .mod-principal {
 }
 
 .mod-principal .skyed-modal__subtitle {
-  font-size: 0.78rem;
+  font-size: calc(0.78rem * var(--fs-scale, 1));
 
   color: var(--modal-text-dim);
 
@@ -3299,7 +3377,7 @@ html, .mod-principal {
 
   font-family: 'Barlow', sans-serif;
 
-  font-size: 0.82rem;
+  font-size: calc(0.82rem * var(--fs-scale, 1));
   font-weight: 600;
 
   color: var(--modal-text-dim);
@@ -3384,7 +3462,7 @@ html, .mod-principal {
 
   color: var(--modal-text);
 
-  font-size: 0.9rem;
+  font-size: calc(0.9rem * var(--fs-scale, 1));
 
   line-height: 1.65;
 }
@@ -3416,7 +3494,7 @@ html, .mod-principal {
 .mod-principal .modal-section__num {
   font-family: 'Barlow Condensed', sans-serif;
 
-  font-size: 2rem;
+  font-size: calc(2rem * var(--fs-scale, 1));
   font-weight: 800;
 
   color: var(--modal-accent);
@@ -3440,7 +3518,7 @@ html, .mod-principal {
 .mod-principal .modal-section__content h3 {
   font-family: 'Barlow Condensed', sans-serif;
 
-  font-size: 1.05rem;
+  font-size: calc(1.05rem * var(--fs-scale, 1));
   font-weight: 700;
 
   letter-spacing: 0.04em;
@@ -3454,7 +3532,7 @@ html, .mod-principal {
 .mod-principal .modal-section__content p {
   color: var(--modal-text);
 
-  font-size: 0.875rem;
+  font-size: calc(0.875rem * var(--fs-scale, 1));
 
   line-height: 1.7;
 
@@ -3486,7 +3564,7 @@ html, .mod-principal {
 
   color: var(--modal-text);
 
-  font-size: 0.875rem;
+  font-size: calc(0.875rem * var(--fs-scale, 1));
 
   line-height: 1.65;
 
@@ -3557,7 +3635,7 @@ html, .mod-principal {
 }
 
 .mod-principal .modal-alert p {
-  font-size: 0.82rem !important;
+  font-size: calc(0.82rem * var(--fs-scale, 1)) !important;
 
   color: var(--modal-text) !important;
 
@@ -3622,7 +3700,7 @@ html, .mod-principal {
 }
 
 .mod-principal .progress-label {
-  font-size: 0.72rem;
+  font-size: calc(0.72rem * var(--fs-scale, 1));
 
   color: var(--modal-text-dim);
 }
@@ -3644,7 +3722,7 @@ html, .mod-principal {
 
   font-family: 'Barlow Condensed', sans-serif;
 
-  font-size: 0.95rem;
+  font-size: calc(0.95rem * var(--fs-scale, 1));
   font-weight: 700;
 
   letter-spacing: 0.06em;
@@ -3708,7 +3786,7 @@ html, .mod-principal {
   .mod-principal .skyed-tab {
     padding: 10px 10px;
 
-    font-size: 0.76rem;
+    font-size: calc(0.76rem * var(--fs-scale, 1));
   }
 
   .mod-principal .modal-section {
@@ -3716,7 +3794,7 @@ html, .mod-principal {
   }
 
   .mod-principal .modal-section__num {
-    font-size: 1.5rem;
+    font-size: calc(1.5rem * var(--fs-scale, 1));
 
     min-width: 30px;
   }
@@ -3739,7 +3817,7 @@ html, .mod-principal {
   z-index: 9999;
   border-left: 4px solid var(--blue);
   max-width: 340px;
-  font-size: 14px;
+  font-size: calc(14px * var(--fs-scale, 1));
   font-family: 'Manrope', sans-serif;
 }
 .mod-principal .toast.show { opacity: 1; transform: translateY(0); }
@@ -3756,7 +3834,7 @@ html, .mod-principal {
   border: none;
   color: var(--text-dimmer);
   cursor: pointer;
-  font-size: 18px;
+  font-size: calc(18px * var(--fs-scale, 1));
   line-height: 1;
   padding: 4px;
   display: flex;
@@ -3794,7 +3872,7 @@ html, .mod-principal {
 .mod-principal .password-strength .label {
   display: inline-block;
   margin-top: 6px;
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--fs-scale, 1));
   font-weight: 600;
   color: var(--text-dimmer);
 }
@@ -3817,7 +3895,7 @@ html, .mod-principal {
 /* ---------- Texto de ayuda dinámico (ej. hint del campo documento) ---------- */
 .mod-principal .help, .mod-principal .help-doc {
   display: block;
-  font-size: 12px;
+  font-size: calc(12px * var(--fs-scale, 1));
   color: var(--text-dimmer);
   margin-top: 6px;
   line-height: 1.5;
@@ -3875,7 +3953,7 @@ html, .mod-principal {
   border-radius: var(--radius-sm);
   color: var(--text);
   font-family: 'Manrope', sans-serif;
-  font-size: 14px;
+  font-size: calc(14px * var(--fs-scale, 1));
   cursor: pointer;
   text-align: left;
   transition: border-color 0.2s, box-shadow 0.2s;
@@ -3931,7 +4009,7 @@ html, .mod-principal {
 .mod-principal .custom-select-option {
   padding: 10px 12px;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: calc(14px * var(--fs-scale, 1));
   color: var(--text);
   cursor: pointer;
   transition: background 0.15s;
@@ -3955,9 +4033,9 @@ html, .mod-principal {
   color:#fff;padding:3rem;display:flex;flex-direction:column;justify-content:center;
   position:relative;
 }
-.mod-principal .auth-side h2 {font-size:2.2rem;margin-bottom:1rem;font-weight:900}
+.mod-principal .auth-side h2 {font-size: calc(2.2rem * var(--fs-scale, 1));margin-bottom:1rem;font-weight:900}
 .mod-principal .auth-side h2 em {color:var(--accent-2);font-style:normal}
-.mod-principal .auth-side p {color:#cdd7e4;font-size:1.05rem;margin-bottom:2rem;max-width:420px}
+.mod-principal .auth-side p {color:#cdd7e4;font-size: calc(1.05rem * var(--fs-scale, 1));margin-bottom:2rem;max-width:420px}
 .mod-principal .auth-side ul {list-style:none;display:flex;flex-direction:column;gap:.75rem;max-width:420px}
 .mod-principal .auth-side ul li {display:flex;gap:.6rem;align-items:flex-start;color:#e6edf6}
 .mod-principal .auth-side ul li::before {
@@ -3970,7 +4048,7 @@ html, .mod-principal {
   display:flex;align-items:center;justify-content:center;padding:3rem 2rem;background:var(--bg);
 }
 .mod-principal .auth-form {width:100%;max-width:440px}
-.mod-principal .auth-form h1 {color:var(--primary);font-size:2rem;margin-bottom:.4rem;font-weight:900}
+.mod-principal .auth-form h1 {color:var(--primary);font-size: calc(2rem * var(--fs-scale, 1));margin-bottom:.4rem;font-weight:900}
 .mod-principal .auth-form .lead {color:var(--muted);margin-bottom:2rem}
 
 .mod-principal .form-group {
@@ -3983,7 +4061,7 @@ html, .mod-principal {
     font-weight: 600;
     color: var(--primary);
     margin-bottom: .4rem;
-    font-size: .95rem;
+    font-size: calc(.95rem * var(--fs-scale, 1));
 }
 .mod-principal .form-group label .req { color: var(--danger); }
 .mod-principal .form-group .input-wrap { position: relative; }
@@ -3992,7 +4070,7 @@ html, .mod-principal {
     padding: .85rem 1rem;
     border: 2px solid var(--accent);
     border-radius: 10px;
-    font-size: 1rem;
+    font-size: calc(1rem * var(--fs-scale, 1));
     transition: var(--transition);
     background: #fff;
     color: var(--text);
@@ -4006,7 +4084,7 @@ html, .mod-principal {
     box-shadow: 0 0 0 3px var(--blue-soft);
 }
 
-.mod-principal .dark-mode .form-group input:focus, .mod-principal .dark-mode .form-group select:focus, .mod-principal .dark-mode .form-group textarea:focus {
+.mod-principal.dark-mode .form-group input:focus, .mod-principal.dark-mode .form-group select:focus, .mod-principal.dark-mode .form-group textarea:focus {
     outline: none;
     border-color: var(--blue);
   /* background: var(--panel-alt); */
@@ -4016,9 +4094,9 @@ html, .mod-principal {
 
 .mod-principal .form-group input.invalid { border-color: var(--danger); }
 .mod-principal .form-group input.valid { border-color: var(--success); }
-.mod-principal .form-group .help { font-size: .82rem; color: var(--muted); margin-top: .3rem; display: block; }
+.mod-principal .form-group .help { font-size: calc(.82rem * var(--fs-scale, 1)); color: var(--muted); margin-top: .3rem; display: block; }
 .mod-principal .form-group .error {
-    font-size: .85rem; color: var(--danger); margin-top: .35rem;
+    font-size: calc(.85rem * var(--fs-scale, 1)); color: var(--danger); margin-top: .35rem;
     display: none; font-weight: 600;
 }
 .mod-principal .form-group .error.show { display: block; }
@@ -4030,7 +4108,7 @@ html, .mod-principal {
     transform: translateY(-50%);
     background: none;
     color: var(--muted);
-    font-size: 1.1rem;
+    font-size: calc(1.1rem * var(--fs-scale, 1));
     padding: .25rem;
     z-index: 10; 
     pointer-events: auto;
@@ -4077,26 +4155,23 @@ html, .mod-principal {
 
 .mod-principal .checkbox-row {display:flex;align-items:flex-start;gap:.5rem;margin:1rem 0}
 .mod-principal .checkbox-row input {margin-top:.25rem;accent-color:var(--accent);width:18px;height:18px}
-.mod-principal .checkbox-row label {font-size:.9rem;color:var(--muted);cursor:pointer}
+.mod-principal .checkbox-row label {font-size: calc(.9rem * var(--fs-scale, 1));color:var(--muted);cursor:pointer}
 .mod-principal .checkbox-row label a {color:var(--accent);font-weight:600}
 
-.mod-principal .auth-form .btn {padding:.95rem 1.5rem;font-size:1rem}
+.mod-principal .auth-form .btn {padding:.95rem 1.5rem;font-size: calc(1rem * var(--fs-scale, 1))}
 
-.mod-principal .divider {
-  display:flex;align-items:center;gap:1rem;color:var(--muted);
-  margin:1.5rem 0;font-size:.85rem;
-}
-.mod-principal .divider::before, .mod-principal .divider::after {content:"";flex:1;height:1px;background:var(--border)}
+
+
 
 .mod-principal .auth-footer {text-align:center;margin-top:1.5rem;color:var(--muted)}
 .mod-principal .auth-footer a {color:var(--blue);font-weight:700; text-decoration: none;}
 .mod-principal .auth-footer a:hover {text-decoration: underline;}
 
-.mod-principal .dark-mode .auth-footer a {color:var(--accent)}
+ .dark-mode .auth-footer a {color:var(--accent)}
 /* OTP */
 .mod-principal .otp-inputs {display:flex;gap:.5rem;justify-content:center;margin:1rem 0}
 .mod-principal .otp-inputs input {
-  width:54px;height:60px;text-align:center;font-size:1.5rem;font-weight:700;
+  width:54px;height:60px;text-align:center;font-size: calc(1.5rem * var(--fs-scale, 1));font-weight:700;
   border:2px solid var(--blue);border-radius:10px;
 }
 .mod-principal .otp-inputs input:focus {outline:none;border-color:var(--accent)}
@@ -4107,7 +4182,7 @@ html, .mod-principal {
   border-radius:10px;margin:1rem 0;
 }
 .mod-principal .code-display strong {
-  display:block;font-size:1.6rem;color:var(--accent);
+  display:block;font-size: calc(1.6rem * var(--fs-scale, 1));color:var(--accent);
   letter-spacing:.5rem;font-family:'Courier New',monospace;font-weight:900;
 }
 .mod-principal .code-display small {color:var(--muted)}
@@ -4123,7 +4198,7 @@ html, .mod-principal {
   align-items: center;
   gap: 6px;
   color: var(--ink-soft, #888);
-  font-size: 0.875rem;
+  font-size: calc(0.875rem * var(--fs-scale, 1));
   font-weight: 500;
   text-decoration: none;
   transition: color 0.2s, gap 0.2s;
@@ -4288,7 +4363,7 @@ html, .mod-principal {
 .mod-principal .skyed-modal__brand {
   font-family: 'Barlow Condensed', sans-serif;
 
-  font-size: 0.7rem;
+  font-size: calc(0.7rem * var(--fs-scale, 1));
   font-weight: 600;
 
   letter-spacing: 0.18em;
@@ -4302,7 +4377,7 @@ html, .mod-principal {
 .mod-principal .skyed-modal__title {
   font-family: 'Barlow Condensed', sans-serif;
 
-  font-size: clamp(1.5rem, 4vw, 2rem);
+  font-size: calc(clamp(1.5rem, 4vw, 2rem) * var(--fs-scale, 1));
   font-weight: 800;
 
   color: #ffffff;
@@ -4315,7 +4390,7 @@ html, .mod-principal {
 }
 
 .mod-principal .skyed-modal__subtitle {
-  font-size: 0.78rem;
+  font-size: calc(0.78rem * var(--fs-scale, 1));
 
   color: var(--modal-text-dim);
 
@@ -4388,7 +4463,7 @@ html, .mod-principal {
 
   font-family: 'Barlow', sans-serif;
 
-  font-size: 0.82rem;
+  font-size: calc(0.82rem * var(--fs-scale, 1));
   font-weight: 600;
 
   color: var(--modal-text-dim);
@@ -4473,7 +4548,7 @@ html, .mod-principal {
 
   color: var(--modal-text);
 
-  font-size: 0.9rem;
+  font-size: calc(0.9rem * var(--fs-scale, 1));
 
   line-height: 1.65;
 }
@@ -4505,7 +4580,7 @@ html, .mod-principal {
 .mod-principal .modal-section__num {
   font-family: 'Barlow Condensed', sans-serif;
 
-  font-size: 2rem;
+  font-size: calc(2rem * var(--fs-scale, 1));
   font-weight: 800;
 
   color: var(--modal-accent);
@@ -4529,7 +4604,7 @@ html, .mod-principal {
 .mod-principal .modal-section__content h3 {
   font-family: 'Barlow Condensed', sans-serif;
 
-  font-size: 1.05rem;
+  font-size: calc(1.05rem * var(--fs-scale, 1));
   font-weight: 700;
 
   letter-spacing: 0.04em;
@@ -4543,7 +4618,7 @@ html, .mod-principal {
 .mod-principal .modal-section__content p {
   color: var(--modal-text);
 
-  font-size: 0.875rem;
+  font-size: calc(0.875rem * var(--fs-scale, 1));
 
   line-height: 1.7;
 
@@ -4575,7 +4650,7 @@ html, .mod-principal {
 
   color: var(--modal-text);
 
-  font-size: 0.875rem;
+  font-size: calc(0.875rem * var(--fs-scale, 1));
 
   line-height: 1.65;
 
@@ -4646,7 +4721,7 @@ html, .mod-principal {
 }
 
 .mod-principal .modal-alert p {
-  font-size: 0.82rem !important;
+  font-size: calc(0.82rem * var(--fs-scale, 1)) !important;
 
   color: var(--modal-text) !important;
 
@@ -4711,7 +4786,7 @@ html, .mod-principal {
 }
 
 .mod-principal .progress-label {
-  font-size: 0.72rem;
+  font-size: calc(0.72rem * var(--fs-scale, 1));
 
   color: var(--modal-text-dim);
 }
@@ -4733,7 +4808,7 @@ html, .mod-principal {
 
   font-family: 'Barlow Condensed', sans-serif;
 
-  font-size: 0.95rem;
+  font-size: calc(0.95rem * var(--fs-scale, 1));
   font-weight: 700;
 
   letter-spacing: 0.06em;
@@ -4797,7 +4872,7 @@ html, .mod-principal {
   .mod-principal .skyed-tab {
     padding: 10px 10px;
 
-    font-size: 0.76rem;
+    font-size: calc(0.76rem * var(--fs-scale, 1));
   }
 
   .mod-principal .modal-section {
@@ -4805,7 +4880,7 @@ html, .mod-principal {
   }
 
   .mod-principal .modal-section__num {
-    font-size: 1.5rem;
+    font-size: calc(1.5rem * var(--fs-scale, 1));
 
     min-width: 30px;
   }

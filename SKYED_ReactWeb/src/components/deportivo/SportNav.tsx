@@ -25,7 +25,6 @@ export default function SportNav() {
           <li><NavLink to="/deportivo" end onClick={close}>Inicio</NavLink></li>
           <li><NavLink to="/deportivo/eventos" onClick={close}>Eventos</NavLink></li>
           <li><NavLink to="/deportivo/nosotros" onClick={close}>Nosotros</NavLink></li>
-          <li><NavLink to="/deportivo/mi-entrada" onClick={close}>Mi entrada</NavLink></li>
           <li><a href="#contacto" onClick={close}>Contacto</a></li>
         </ul>
         <div className="nav-cta">

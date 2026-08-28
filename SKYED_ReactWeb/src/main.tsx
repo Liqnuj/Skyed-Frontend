@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { AccessibilityProvider } from './context/AccessibilityContext';
 import ScrollToTop from './components/ScrollToTop';
 import HomePage from './pages/principal/HomePage';
 import LoginPage from './pages/principal/LoginPage';
@@ -21,7 +22,7 @@ import Checkout from './pages/deportivo/Checkout';
 import SocialHome from './pages/social/SocialHome';
 import SocialEvents from './pages/social/SocialEvents';
 import Venues from './pages/social/Venues';
-import AboutSocial from './pages/social/About';
+import AboutSocial from './pages/social/nosotros';
 import Reserve from './pages/social/Reserve';
 import PQR from './pages/social/PQR';
 import Admin from './pages/social/Admin';
@@ -31,7 +32,7 @@ import './styles/social/social.css';
 import './styles/deportivo/deportivo.css';
 
 function App(){
-  return <AuthProvider><BrowserRouter><ScrollToTop/><Routes>
+  return <AccessibilityProvider><AuthProvider><BrowserRouter><ScrollToTop/><Routes>
     <Route path="/" element={<HomePage/>}/>
     <Route path="/login" element={<LoginPage/>}/>
     <Route path="/registro" element={<RegisterPage/>}/>
@@ -55,6 +56,6 @@ function App(){
     <Route path="/social/pqr" element={<PQR/>}/>
     <Route path="/social/admin" element={<Admin/>}/>
     <Route path="*" element={<HomePage/>}/>
-  </Routes></BrowserRouter></AuthProvider>
+  </Routes></BrowserRouter></AuthProvider></AccessibilityProvider>
 }
 ReactDOM.createRoot(document.getElementById('root')!).render(<React.StrictMode><App/></React.StrictMode>);
