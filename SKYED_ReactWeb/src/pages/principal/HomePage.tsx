@@ -22,21 +22,38 @@ export default function HomePage() {
 
       {/* ===== HERO ===== */}
       <section className="hero">
-        <div className="hero-bg" />
-        <div className="hero-badge">
-          <div className="badge-pulse" />
-          Colombia · Plataforma de eventos
-        </div>
-        <h1>
-          Celebra la vida.<br />
-          <em className="gold">Eventos sociales</em> &amp;<br />
-          <span className="teal">deportivos</span> en un solo lugar.
-        </h1>
-        <p className="hero-sub">
-          Un universo donde los sueños se convierten en momentos reales.
-          Escoge tu mundo y empieza a vivir la experiencia.
-        </p>
-      </section>
+        <div className="hero-bg"></div>
+          <div className="hero-text">
+
+            <div className="hero-badge">
+              <span></span>
+              COLOMBIA · PLATAFORMA DE EVENTOS
+            </div>
+
+            <h1>
+              Celebra la vida.
+              <br />
+
+              <span className="purple-text">
+                Eventos sociales
+              </span>{" "}
+              &amp;
+              <br />
+
+              <span className="cyan-text">
+                deportivos
+              </span>{" "}
+              en un solo lugar.
+            </h1>
+
+            <p className="hero-descripcion">
+              Un universo donde los sueños se convierten en momentos reales.
+              <br />
+              Escoge tu mundo y empieza a vivir la experiencia.
+            </p>
+
+          </div>
+        </section>
 
       {/* ===== CHOOSE ===== */}
       <section className="choose-section" id="mundos">

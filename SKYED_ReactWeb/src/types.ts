@@ -20,6 +20,10 @@ export interface SocialEvent {
   location: string;
   description: string;
   price: string;
+  guests: number;
+  hours: number;
+  tag: string;
+  includes: string[];
 }
 
 export interface Venue {

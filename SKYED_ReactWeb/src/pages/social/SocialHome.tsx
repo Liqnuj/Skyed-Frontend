@@ -2,6 +2,7 @@ import { useEffect, useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import SocialWrapper from '../../components/social/SocialWrapper';
 import { heroSlides, socialEvents, socialGallery, socialTestimonials } from '../../data/socialData';
+import HeroParticles from '../../components/social/HeroParticles';
 
 const SERVICES = [
   { icon: '🌸', title: 'Decoración & Florería', desc: 'Transformamos cada espacio en una obra de arte con arreglos florales, centros de mesa y ambientaciones únicas.', features: ['Arcos florales naturales y artificiales', 'Centros de mesa personalizados', 'Decoración temática a medida', 'Iluminación de atmósfera'] },
@@ -19,42 +20,23 @@ const STEPS = [
   { num: 4, title: '¡El día perfecto!', desc: 'Nuestro equipo está presente de principio a fin para que tú solo te preocupes por vivir el momento.' },
 ];
 
+const PARTICLES = Array.from({ length: 30 }, (_, i) => ({
+  id: i,
+  left: Math.random() * 100,
+  size: 2 + Math.random() * 6,
+  duration: 10 + Math.random() * 15,
+  delay: Math.random() * 10,
+  color: Math.random() > 0.5 ? 'rgba(201,168,76,0.6)' : 'rgba(245,230,239,0.4)',
+}));
+
 export default function SocialHome() {
   const [slide, setSlide] = useState(0);
   const [modalEvent, setModalEvent] = useState<number | null>(null);
-  const [galleryStep, setGalleryStep] = useState(0);
-  const [galleryTransition, setGalleryTransition] = useState(true);
 
   useEffect(() => {
     const t = setInterval(() => setSlide((s) => (s + 1) % heroSlides.length), 6000);
     return () => clearInterval(t);
   }, []);
-
-  // Carrusel de galería: avanza un elemento a la vez de derecha a izquierda,
-  // con transición de 0.3s (igual que en el sitio original).
-  useEffect(() => {
-    const t = setInterval(() => {
-      setGalleryStep((s) => s + 1);
-    }, 2500);
-    return () => clearInterval(t);
-  }, []);
-
-  useEffect(() => {
-    if (galleryStep === socialGallery.length) {
-      const reset = setTimeout(() => {
-        setGalleryTransition(false);
-        setGalleryStep(0);
-      }, 300); // espera a que termine la transición de 0.3s antes de reiniciar
-      return () => clearTimeout(reset);
-    }
-    if (!galleryTransition) {
-      const enable = requestAnimationFrame(() => setGalleryTransition(true));
-      return () => cancelAnimationFrame(enable);
-    }
-  }, [galleryStep, galleryTransition]);
-
-  const GALLERY_ITEM_WIDTH = 320; // px, igual que .gallery-item { width: 320px }
-  const GALLERY_GAP = 24; // px, igual que .gallery-track { gap: 1.5rem }
 
   const ev = socialEvents.find((e) => e.id === modalEvent);
 
@@ -62,6 +44,22 @@ export default function SocialHome() {
     <SocialWrapper>
       {/* HERO */}
       <section className="hero" id="inicio">
+        <div className="hero-particles">
+          {PARTICLES.map((p) => (
+            <span
+              key={p.id}
+              className="particle"
+              style={{
+                left: `${p.left}%`,
+                width: `${p.size}px`,
+                height: `${p.size}px`,
+                background: p.color,
+                animationDuration: `${p.duration}s`,
+                animationDelay: `${p.delay}s`,
+              }}
+            />
+          ))}
+        </div>
         <div className="hero-slides">
           {heroSlides.map((s, i) => (
             <div
@@ -112,7 +110,12 @@ export default function SocialHome() {
           <div className="about-grid">
             <div className="about-visual">
               <div className="about-img-wrap">
-                <img src="/assets/social/img_boda.png" alt="SkyedSocial" />
+                <video autoPlay muted loop playsInline>
+                  <source
+                    src="/assets/social/video_general.mp4"
+                    type="video/mp4"
+                  />
+                </video>
               </div>
             </div>
             <div className="about-content reveal">
@@ -183,13 +186,7 @@ export default function SocialHome() {
           </div>
         </div>
         <div style={{ overflow: 'hidden', marginTop: '3.5rem' }}>
-          <div
-            className="gallery-track"
-            style={{
-              transform: `translateX(-${galleryStep * (GALLERY_ITEM_WIDTH + GALLERY_GAP)}px)`,
-              transition: galleryTransition ? 'transform 0.3s ease' : 'none',
-            }}
-          >
+          <div className="gallery-track">
             {[...socialGallery, ...socialGallery].map((g, i) => (
               <div key={`${g.image}-${i}`} className="gallery-item">
                 <div className="img-placeholder media-fill">
