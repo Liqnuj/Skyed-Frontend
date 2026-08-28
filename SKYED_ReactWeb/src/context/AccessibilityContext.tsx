@@ -50,7 +50,7 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
     setFontSize: (fontSize) => setState((s) => ({ ...s, fontSize })),
     setDyslexia: (dyslexia) => setState((s) => ({ ...s, dyslexia })),
     setAccent: (hex) => setState((s) => ({ ...s, accentOverride: hex })),
-    reset: () => setState(DEFAULT_STATE),
+    reset: () => setState((s) => ({ ...DEFAULT_STATE, darkMode: true })),
   }), [state]);
 
   return <AccessibilityContext.Provider value={value}>{children}</AccessibilityContext.Provider>;
