@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { User } from '../types';
+import { apiFetch, setToken } from '../services/api';
 
 interface AuthContextValue {
   user: User | null;
@@ -26,12 +27,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AuthContextValue>(() => ({
     user,
     async login(email, password) {
-      await new Promise((resolve) => setTimeout(resolve, 350));
-      if (!email || !password) return false;
+      const data = await apiFetch('/login', {
+        method: 'POST',
+        body: JSON.stringify({ correo_u: email, contrasena_u: password }),
+      });
+      setToken(data.token);
       setUser({
-        name: email.split('@')[0],
-        email,
-        role: email.toLowerCase().includes('admin') ? 'admin' : 'participante',
+        name: `${data.user.nombre_u} ${data.user.apellido_u}`,
+        email: data.user.correo_u,
+        role: data.user.roles[0]?.nombre_rol?.toLowerCase().includes('admin') ? 'admin' : 'participante',
       });
       return true;
     },
