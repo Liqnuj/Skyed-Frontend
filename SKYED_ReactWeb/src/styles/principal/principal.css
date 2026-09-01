@@ -99,6 +99,29 @@ html {
   color: #ffffff;
 }
 
+
+.mod-principal .nav-user.nav-user--logout {
+  background: #fde3e8;
+  border: 1px solid #f3a8bb;
+  color: #d6336c;
+}
+
+.mod-principal .nav-user.nav-user--logout:hover {
+  background: #d30e39b4;
+  color:#ffffff;
+}
+
+.mod-principal.dark-mode .nav-user.nav-user--logout {
+  background: #6b0418;
+  border: 1px solid #7c0825;
+  color: #eee7ea;
+}
+
+.mod-principal.dark-mode .nav-user.nav-user--logout:hover {
+  background: #d30e39b4;
+  color:#ffffff;
+}
+
 .mod-principal .nav-links {
     color: #000000;
     text-decoration: none;
@@ -1044,6 +1067,57 @@ html {
   color: rgba(0, 0, 0, 0.63);
   text-decoration: none;
   transition: color 0.2s;
+}
+
+/* =========================================
+   BOTONES TÉRMINOS Y PRIVACIDAD - FOOTER
+   ========================================= */
+
+.mod-principal .footer-links button {
+  border: none;
+  outline: none;
+  background: transparent;
+
+  padding: 0;
+  margin: 0;
+
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 400;
+
+  color: rgba(0, 0, 0, 0.63);
+
+  cursor: pointer;
+  text-decoration: none;
+
+  transition:
+    color 0.2s ease,
+    text-decoration 0.2s ease;
+}
+
+/* Al pasar el mouse */
+.mod-principal .footer-links button:hover {
+  color: #000000;
+  text-decoration: none;
+}
+
+/* Cuando se selecciona con teclado */
+.mod-principal .footer-links button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+/* =========================================
+   MODO OSCURO
+   ========================================= */
+
+.mod-principal.dark-mode .footer-links button {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.mod-principal.dark-mode .footer-links button:hover {
+  color: #ffffff;
 }
 
 .mod-principal.dark-mode .footer-links a {
@@ -3036,6 +3110,57 @@ html, .mod-principal {
 }
 
 .mod-principal .link-accent:hover { text-decoration: underline; }
+
+/* ================================================
+   ENLACES DE TÉRMINOS Y PRIVACIDAD
+   ================================================ */
+
+.mod-principal .link-terminos {
+  appearance: none;
+  -webkit-appearance: none;
+
+  border: none;
+  outline: none;
+  background: transparent;
+
+  padding: 0;
+  margin: 0;
+
+  color: var(--blue);
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 700;
+
+  cursor: pointer;
+  text-decoration: none;
+
+  display: inline;
+  vertical-align: baseline;
+
+  transition: color 0.2s ease,
+              text-decoration 0.2s ease;
+}
+
+.mod-principal .link-terminos:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.mod-principal .link-terminos:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+/* Modo oscuro */
+.mod-principal.dark-mode .link-terminos {
+  color: #5dbcf0;
+}
+
+.mod-principal.dark-mode .link-terminos:hover {
+  color: #ffffff;
+}
+
 
 /* ---------- Botón submit ---------- */
 .mod-principal .form-submit {
