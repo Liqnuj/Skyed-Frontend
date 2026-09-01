@@ -695,7 +695,10 @@
   backdrop-filter:blur(10px);
   border-bottom:1px solid var(--border);
 }
+
+
 .mod-deportivo .nav {
+  position: relative;
   width: 100%;
   max-width: none;
   margin: 0;
@@ -706,6 +709,7 @@
   gap: 1rem;
   background: #ffffff;
 }
+
 .mod-deportivo .brand{display:flex;align-items:center;gap:.6rem;font-weight:800;color:var(--primary);font-size:1.25rem}
 .mod-deportivo .brand img{width:48px; margin-left: 100px;}
 .mod-deportivo .brand span{display:flex;align-items:center;gap:.25rem}
@@ -719,10 +723,10 @@
 .mod-deportivo .nav-links a:hover,
 .mod-deportivo .nav-links a.active{background:var(--bg);color:var(--accent)}
 
-.mod-deportivo .nav-cta{display:flex;gap:.5rem;align-items:center}
+.mod-deportivo .nav-cta{display:flex;gap: 0.5emrem;align-items:center; margin-right: 12vw;}
 .mod-deportivo .btn{
   display:inline-flex;align-items:center;justify-content:center;gap:.4rem;
-  padding:.60rem 1.1rem;border-radius:10px;font-weight:700; margin-left: auto; margin-right: auto;
+  padding:.50rem 1.1rem;border-radius:10px;font-weight:700; margin-left: auto; margin-right: auto;
   transition:transform var(--transition),box-shadow var(--transition),background var(--transition);
   border:2px solid var(--accent);
 }
@@ -2410,3 +2414,46 @@
 .mod-deportivo.dark-mode .sky-social-btn {
   text-decoration: none;
 }
+
+.mod-deportivo .user-menu-wrap { position: relative; }
+
+.mod-deportivo .user-dropdown {
+  position: absolute;
+  top: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface, #fff);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 18px;
+  box-shadow: 0 12px 32px rgba(0,0,0,.16);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 190px;
+  padding: 6px;
+  z-index: 50;
+}
+
+.mod-deportivo .user-dropdown button {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: 10px 14px;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 12px;
+  font-size: .88rem;
+  cursor: pointer;
+  color: var(--text, #1f2937);
+  transition: background .15s ease;
+}
+
+.mod-deportivo .user-dropdown button:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+
+.mod-deportivo.dark-mode .user-dropdown {
+  background: #1c2230;
+  border-color: #333c4d;
+}
+
+.mod-deportivo.dark-mode .user-dropdown button:hover { background: rgba(255,255,255,.08); }

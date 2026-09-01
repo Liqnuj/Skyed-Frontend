@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
@@ -7,6 +7,25 @@ export default function SportNav() {
   const close = () => setOpen(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    const onClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, [userMenuOpen]);
+
+  const irAMiPanel = () => {
+    setUserMenuOpen(false);
+    const ruta = user?.role === 'admin' ? '/deportivo/perfil' : '/deportivo/perfil';
+    navigate(ruta);
+  };
 
   return (
     <header className="site-header" role="banner">
@@ -29,10 +48,17 @@ export default function SportNav() {
         </ul>
         <div className="nav-cta">
           {user ? (
-            <>
-              <span style={{ fontWeight: 600 }}>{user.name}</span>
-              <button className="btn btn-primary" onClick={() => { logout(); navigate('/'); }}>Salir</button>
-            </>
+            <div className="user-menu-wrap" ref={menuRef}>
+              <button className="btn btn-primary" onClick={() => setUserMenuOpen((o) => !o)}>
+                {user.name}
+              </button>
+              {userMenuOpen && (
+                <div className="user-dropdown">
+                  <button onClick={irAMiPanel}><i className="ti ti-layout-dashboard" aria-hidden="true" /> Ir a mi panel</button>
+                  <button onClick={() => { setUserMenuOpen(false); logout(); navigate('/'); }}><i className="ti ti-logout" aria-hidden="true" /> Cerrar sesión</button>
+                </div>
+              )}
+            </div>
           ) : (
             <Link to="/login" className="btn btn-primary">Iniciar sesión</Link>
           )}
