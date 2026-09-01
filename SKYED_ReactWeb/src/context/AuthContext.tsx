@@ -2,25 +2,11 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import type { User } from '../types';
 import { apiFetch, setToken } from '../services/api';
 
-// 1. Añadimos la interfaz estricta para sincronizar con Laravel
-export interface RegisterData {
-  tipo_documento_u: string;
-  documento_u: number;
-  nombre_u: string;
-  apellido_u: string;
-  telefono_u: string;
-  correo_u: string;
-  fecha_nacimiento_u: string;
-  contrasena_u: string;
-  contrasena_u_confirmation: string;
-}
-
 interface AuthContextValue {
   user: User | null;
   login: (email: string, password: string) => Promise<boolean>;
-  // 2. Actualizamos la firma de register
-  register: (userData: RegisterData) => Promise<void>;
-  logout: () => void;
+  register: (name: string, email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -47,6 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       setToken(data.token);
       setUser({
+        id: data.user.id_u,
         name: `${data.user.nombre_u} ${data.user.apellido_u}`,
         email: data.user.correo_u,
         role: data.user.roles[0]?.nombre_rol?.toLowerCase().includes('admin') ? 'admin' : 'participante',
@@ -71,11 +58,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
       }
     },
-    
-    logout() {
-      setUser(null);
-      // Tip: Aquí también deberías limpiar el token, ej: setToken('');
-    },
+    async logout() {
+  try {
+    await apiFetch('/logout', { method: 'POST' });
+  } catch {
+    // si el token ya venció o falla la petición, igual limpiamos la sesión local
+  }
+  setToken(null);
+  setUser(null);
+},
   }), [user]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

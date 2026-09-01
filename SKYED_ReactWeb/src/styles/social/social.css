@@ -80,7 +80,7 @@
   background: linear-gradient(135deg, var(--gold), var(--gold-light)) !important;
   color: #ffffff!important;
   padding: .55rem 1.25rem !important;
-  border-radius: 50px !important;
+  border:none !important;
   font-weight: 600 !important;
   font-size: calc(.85rem * var(--fs-scale, 1)) !important;
   background: var(--accent) !important;
