@@ -22,12 +22,8 @@ export default function RegisterPage() {
   const [showPass, setShowPass] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  // Indica si el usuario aceptó los términos
   const [terms, setTerms] = useState(false);
-
-  // Indica si la ventana de términos está abierta
   const [termsOpen, setTermsOpen] = useState(false);
-
   const [error, setError] = useState('');
 
   async function submit(e: FormEvent) {
@@ -45,11 +41,17 @@ export default function RegisterPage() {
     }
 
     try {
-      await register(
-        `${nombre} ${apellido}`.trim(),
-        email,
-        password
-      );
+      await register({
+        tipo_documento_u: tipoDocumento,
+        documento_u: parseInt(documento, 10),
+        nombre_u: nombre,
+        apellido_u: apellido,
+        telefono_u: telefono,
+        correo_u: email,
+        fecha_nacimiento_u: fechaNac,
+        contrasena_u: password,
+        contrasena_u_confirmation: confirm
+      });
 
       navigate('/');
     } catch (err) {
@@ -97,14 +99,12 @@ export default function RegisterPage() {
                 </span>
                 Inscripción rápida en eventos
               </li>
-
               <li>
                 <span className="feat-ico">
                   <i className="ti ti-discount-2" />
                 </span>
                 Descuentos exclusivos para miembros
               </li>
-
               <li>
                 <span className="feat-ico">
                   <i className="ti ti-bell" />
@@ -139,98 +139,52 @@ export default function RegisterPage() {
               </div>
             )}
 
-            <form
-              onSubmit={submit}
-              noValidate
-            >
-              {/* =========================
-                  DOCUMENTO
-              ========================== */}
-
+            <form onSubmit={submit} noValidate>
+              {/* DOCUMENTO */}
               <div className="form-row">
                 <div className="form-group">
-                  <label
-                    className="form-label"
-                    htmlFor="tipoDocumento"
-                  >
-                    Tipo de documento
-                    <span className="req">*</span>
+                  <label className="form-label" htmlFor="tipoDocumento">
+                    Tipo de documento <span className="req">*</span>
                   </label>
-
                   <select
                     id="tipoDocumento"
                     className="form-select"
                     required
                     value={tipoDocumento}
-                    onChange={(e) =>
-                      setTipoDocumento(e.target.value)
-                    }
+                    onChange={(e) => setTipoDocumento(e.target.value)}
                   >
-                    <option value="">
-                      Selecciona
-                    </option>
-
-                    <option value="cedula_ciudadania">
-                      Cédula de ciudadanía
-                    </option>
-
-                    <option value="tarjeta_identidad">
-                      Tarjeta de identidad
-                    </option>
-
-                    <option value="cedula_extranjeria">
-                      Cédula de extranjería
-                    </option>
-
-                    <option value="pasaporte">
-                      Pasaporte
-                    </option>
+                    <option value="">Selecciona</option>
+                    <option value="cedula_ciudadania">Cédula de ciudadanía</option>
+                    <option value="tarjeta_identidad">Tarjeta de identidad</option>
+                    <option value="cedula_extranjeria">Cédula de extranjería</option>
+                    <option value="pasaporte">Pasaporte</option>
                   </select>
                 </div>
 
                 <div className="form-group">
-                  <label
-                    className="form-label"
-                    htmlFor="documento"
-                  >
-                    Número de documento
-                    <span className="req">*</span>
+                  <label className="form-label" htmlFor="documento">
+                    Número de documento <span className="req">*</span>
                   </label>
-
                   <input
                     type="text"
                     id="documento"
                     className="form-input"
-                    placeholder={
-                      tipoDocumento
-                        ? 'Escribe tu número'
-                        : 'Selecciona primero el tipo'
-                    }
+                    placeholder={tipoDocumento ? 'Escribe tu número' : 'Selecciona primero el tipo'}
                     maxLength={20}
                     disabled={!tipoDocumento}
                     required
                     value={documento}
-                    onChange={(e) =>
-                      setDocumento(e.target.value)
-                    }
+                    onChange={(e) => setDocumento(e.target.value)}
                   />
                 </div>
               </div>
 
-              {/* =========================
-                  NOMBRE
-              ========================== */}
-
+              {/* NOMBRE */}
               <div className="form-row">
                 <div className="form-group">
-                  <label
-                    className="form-label"
-                    htmlFor="nombre"
-                  >
-                    Nombre
-                    <span className="req">*</span>
+                  <label className="form-label" htmlFor="nombre">
+                    Nombre <span className="req">*</span>
                   </label>
-
                   <input
                     type="text"
                     id="nombre"
@@ -239,21 +193,14 @@ export default function RegisterPage() {
                     autoComplete="given-name"
                     required
                     value={nombre}
-                    onChange={(e) =>
-                      setNombre(e.target.value)
-                    }
+                    onChange={(e) => setNombre(e.target.value)}
                   />
                 </div>
 
                 <div className="form-group">
-                  <label
-                    className="form-label"
-                    htmlFor="apellido"
-                  >
-                    Apellido
-                    <span className="req">*</span>
+                  <label className="form-label" htmlFor="apellido">
+                    Apellido <span className="req">*</span>
                   </label>
-
                   <input
                     type="text"
                     id="apellido"
@@ -262,35 +209,20 @@ export default function RegisterPage() {
                     autoComplete="family-name"
                     required
                     value={apellido}
-                    onChange={(e) =>
-                      setApellido(e.target.value)
-                    }
+                    onChange={(e) => setApellido(e.target.value)}
                   />
                 </div>
               </div>
 
-              <p
-                className="form-hint"
-                style={{
-                  margin: '-0.75rem 0 1.25rem',
-                }}
-              >
+              <p className="form-hint" style={{ margin: '-0.75rem 0 1.25rem' }}>
                 Solo letras y espacios.
               </p>
 
-              {/* =========================
-                  EMAIL
-              ========================== */}
-
+              {/* EMAIL */}
               <div className="form-group">
-                <label
-                  className="form-label"
-                  htmlFor="email"
-                >
-                  Correo electrónico
-                  <span className="req">*</span>
+                <label className="form-label" htmlFor="email">
+                  Correo electrónico <span className="req">*</span>
                 </label>
-
                 <input
                   type="email"
                   id="email"
@@ -300,26 +232,16 @@ export default function RegisterPage() {
                   maxLength={80}
                   required
                   value={email}
-                  onChange={(e) =>
-                    setEmail(e.target.value)
-                  }
+                  onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
 
-              {/* =========================
-                  TELÉFONO Y FECHA
-              ========================== */}
-
+              {/* TELÉFONO Y FECHA */}
               <div className="form-row">
                 <div className="form-group">
-                  <label
-                    className="form-label"
-                    htmlFor="telefono"
-                  >
-                    Teléfono
-                    <span className="req">*</span>
+                  <label className="form-label" htmlFor="telefono">
+                    Teléfono <span className="req">*</span>
                   </label>
-
                   <input
                     type="text"
                     id="telefono"
@@ -329,63 +251,35 @@ export default function RegisterPage() {
                     maxLength={15}
                     required
                     value={telefono}
-                    onChange={(e) =>
-                      setTelefono(e.target.value)
-                    }
+                    onChange={(e) => setTelefono(e.target.value)}
                   />
-
-                  <div className="form-hint">
-                    Solo números (7-15)
-                  </div>
+                  <div className="form-hint">Solo números (7-15)</div>
                 </div>
 
                 <div className="form-group">
-                  <label
-                    className="form-label"
-                    htmlFor="fechaNac"
-                  >
-                    Fecha de nacimiento
-                    <span className="req">*</span>
+                  <label className="form-label" htmlFor="fechaNac">
+                    Fecha de nacimiento <span className="req">*</span>
                   </label>
-
                   <input
                     type="date"
                     id="fechaNac"
                     className="form-input"
                     required
                     value={fechaNac}
-                    onChange={(e) =>
-                      setFechaNac(e.target.value)
-                    }
+                    onChange={(e) => setFechaNac(e.target.value)}
                   />
-
-                  <div className="form-hint">
-                    Debes tener al menos 10 años
-                    para registrarte.
-                  </div>
+                  <div className="form-hint">Debes tener al menos 10 años para registrarte.</div>
                 </div>
               </div>
 
-              {/* =========================
-                  CONTRASEÑA
-              ========================== */}
-
+              {/* CONTRASEÑA */}
               <div className="form-group">
-                <label
-                  className="form-label"
-                  htmlFor="password"
-                >
-                  Contraseña
-                  <span className="req">*</span>
+                <label className="form-label" htmlFor="password">
+                  Contraseña <span className="req">*</span>
                 </label>
-
                 <div className="input-wrap">
                   <input
-                    type={
-                      showPass
-                        ? 'text'
-                        : 'password'
-                    }
+                    type={showPass ? 'text' : 'password'}
                     id="password"
                     className="form-input"
                     placeholder="••••••••"
@@ -394,61 +288,36 @@ export default function RegisterPage() {
                     required
                     minLength={8}
                     value={password}
-                    onChange={(e) =>
-                      setPassword(e.target.value)
-                    }
+                    onChange={(e) => setPassword(e.target.value)}
                   />
-
                   <button
                     type="button"
                     className="toggle-pass"
                     aria-label="Mostrar contraseña"
-                    onClick={() =>
-                      setShowPass((s) => !s)
-                    }
+                    onClick={() => setShowPass((s) => !s)}
                   >
                     👁
                   </button>
                 </div>
-
                 <div className="password-strength">
                   <div
                     className="bar"
-                    style={{
-                      width: `${Math.min(
-                        100,
-                        password.length * 12
-                      )}%`,
-                    }}
+                    style={{ width: `${Math.min(100, password.length * 12)}%` }}
                   />
                 </div>
-
                 <div className="form-hint">
-                  Mínimo 8 caracteres, una mayúscula,
-                  una minúscula y un número.
+                  Mínimo 8 caracteres, una mayúscula, una minúscula y un número.
                 </div>
               </div>
 
-              {/* =========================
-                  CONFIRMAR CONTRASEÑA
-              ========================== */}
-
+              {/* CONFIRMAR CONTRASEÑA */}
               <div className="form-group">
-                <label
-                  className="form-label"
-                  htmlFor="password-confirm"
-                >
-                  Confirmar contraseña
-                  <span className="req">*</span>
+                <label className="form-label" htmlFor="password-confirm">
+                  Confirmar contraseña <span className="req">*</span>
                 </label>
-
                 <div className="input-wrap">
                   <input
-                    type={
-                      showConfirm
-                        ? 'text'
-                        : 'password'
-                    }
+                    type={showConfirm ? 'text' : 'password'}
                     id="password-confirm"
                     className="form-input"
                     placeholder="••••••••"
@@ -456,95 +325,57 @@ export default function RegisterPage() {
                     maxLength={50}
                     required
                     value={confirm}
-                    onChange={(e) =>
-                      setConfirm(e.target.value)
-                    }
+                    onChange={(e) => setConfirm(e.target.value)}
                   />
-
                   <button
                     type="button"
                     className="toggle-pass"
                     aria-label="Mostrar contraseña"
-                    onClick={() =>
-                      setShowConfirm(
-                        (s) => !s
-                      )
-                    }
+                    onClick={() => setShowConfirm((s) => !s)}
                   >
                     👁
                   </button>
                 </div>
               </div>
 
-              {/* =========================
-                  TÉRMINOS
-              ========================== */}
-
+              {/* TÉRMINOS */}
               <div className="checkbox-row">
                 <input
                   type="checkbox"
                   id="terms"
                   checked={terms}
-                  onChange={(e) =>
-                    setTerms(e.target.checked)
-                  }
+                  onChange={(e) => setTerms(e.target.checked)}
                 />
-
                 <label htmlFor="terms">
                   Acepto los{' '}
-
                   <button
                     type="button"
                     className="link-terminos"
-                    onClick={() =>
-                      setTermsOpen(true)
-                    }
+                    onClick={() => setTermsOpen(true)}
                   >
                     términos y condiciones
                   </button>
-
                   {' '}y la{' '}
-
                   <button
                     type="button"
                     className="link-terminos"
-                    onClick={() =>
-                      setTermsOpen(true)
-                    }
+                    onClick={() => setTermsOpen(true)}
                   >
                     política de privacidad
                   </button>
-
-                  <span className="req">
-                    *
-                  </span>
+                  <span className="req">*</span>
                 </label>
               </div>
 
-              {/* =========================
-                  BOTÓN REGISTRO
-              ========================== */}
-
-              <button
-                type="submit"
-                className="form-submit"
-              >
+              {/* BOTÓN REGISTRO */}
+              <button type="submit" className="form-submit">
                 Crear cuenta
                 <i className="ti ti-arrow-right" />
               </button>
 
-              <p
-                className="form-footer"
-                style={{
-                  marginTop: '1.5rem',
-                }}
-              >
+              <p className="form-footer" style={{ marginTop: '1.5rem' }}>
                 ¿Ya tienes cuenta?{' '}
-
-                <Link
-                  to="/login"
-                  className="link-accent"
-                >
+                <Link to="/login" className="link-accent">
                   Inicia sesión
                 </Link>
               </p>
@@ -553,53 +384,21 @@ export default function RegisterPage() {
         </main>
       </div>
 
-      {/* =========================
-          MODAL DE TÉRMINOS
-      ========================== */}
-
       <TermsModal
         isOpen={termsOpen}
-        onClose={() =>
-          setTermsOpen(false)
-        }
+        onClose={() => setTermsOpen(false)}
         onAccept={() => {
           setTerms(true);
           setTermsOpen(false);
         }}
       />
 
-      {/* =========================
-          FOOTER
-      ========================== */}
-
       <footer className="footer">
-        <span>
-          © 2026 SKYED · Sogamoso, Boyacá,
-          Colombia
-        </span>
-
+        <span>© 2026 SKYED · Sogamoso, Boyacá, Colombia</span>
         <div className="footer-links">
-          <button
-            type="button"
-            onClick={() =>
-              setTermsOpen(true)
-            }
-          >
-            Términos
-          </button>
-
-          <button
-            type="button"
-            onClick={() =>
-              setTermsOpen(true)
-            }
-          >
-            Privacidad
-          </button>
-
-          <a href="#">
-            Soporte
-          </a>
+          <button type="button" onClick={() => setTermsOpen(true)}>Términos</button>
+          <button type="button" onClick={() => setTermsOpen(true)}>Privacidad</button>
+          <a href="#">Soporte</a>
         </div>
       </footer>
     </PrincipalWrapper>
