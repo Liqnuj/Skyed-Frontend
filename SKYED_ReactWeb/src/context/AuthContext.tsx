@@ -40,12 +40,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       return true;
     },
-    async register(name, email, password) {
-      await new Promise((resolve) => setTimeout(resolve, 350));
-      if (!name || !email || password.length < 6) {
-        throw new Error('Completa todos los campos. La contraseña debe tener al menos 6 caracteres.');
+    
+    // 3. Implementación real del registro usando tu utilidad apiFetch
+    async register(userData) {
+      const data = await apiFetch('/register', {
+        method: 'POST',
+        body: JSON.stringify(userData),
+      });
+
+      // Si el backend hace auto-login y devuelve el token, iniciamos la sesión de una vez
+      if (data.token && data.user) {
+        setToken(data.token);
+        setUser({
+          name: `${data.user.nombre_u} ${data.user.apellido_u}`,
+          email: data.user.correo_u,
+          role: 'participante', // Asignación por defecto para nuevos registros
+        });
       }
-      setUser({ name, email, role: 'participante' });
     },
     async logout() {
   try {
