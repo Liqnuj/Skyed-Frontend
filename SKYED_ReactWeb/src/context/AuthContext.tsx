@@ -60,16 +60,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         method: 'POST',
         body: JSON.stringify(userData),
       });
-
-      // Si el backend hace auto-login y devuelve el token, iniciamos la sesión de una vez
-      if (data.token && data.user) {
-        setToken(data.token);
-        setUser({
-          name: `${data.user.nombre_u} ${data.user.apellido_u}`,
-          email: data.user.correo_u,
-          role: 'participante', // Asignación por defecto para nuevos registros
-        });
-      }
     },
     
     logout() {

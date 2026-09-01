@@ -25,6 +25,29 @@ export default function RegisterPage() {
   const [terms, setTerms] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
   const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  // Cálculo de seguridad de la contraseña
+  let pwdStrength = 0;
+  if (password.length > 0) {
+    if (password.length >= 8) pwdStrength += 25;
+    if (/[A-Z]/.test(password)) pwdStrength += 25;
+    if (/[a-z]/.test(password)) pwdStrength += 25;
+    if (/[0-9]/.test(password)) pwdStrength += 25;
+  }
+
+  // Determinación de colores para que coincida con tus imágenes
+  const getBarColor = (score: number) => {
+    if (score === 0) return 'transparent';
+    if (score <= 25) return '#ef4444'; // Rojo (Débil)
+    if (score <= 50) return '#f97316'; // Naranja
+    if (score <= 75) return '#eab308'; // Amarillo oscuro / Naranja claro
+    return '#22c55e'; // Verde (Fuerte)
+  };
+
+  const hasPasswordError = password.length > 0 && pwdStrength < 100;
+  const isMismatch = confirm.length > 0 && password !== confirm;
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -40,6 +63,8 @@ export default function RegisterPage() {
       return;
     }
 
+    setLoading(true);
+
     try {
       await register({
         tipo_documento_u: tipoDocumento,
@@ -53,13 +78,15 @@ export default function RegisterPage() {
         contrasena_u_confirmation: confirm
       });
 
-      navigate('/');
+      setSuccessMsg('¡Registro exitoso! Bienvenido a SKYED.');
+
+      setTimeout(() => {
+        navigate('/login');
+      }, 2500);
+
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'No se pudo crear la cuenta.'
-      );
+      setError(err instanceof Error ? err.message : 'No se pudo crear la cuenta.');
+      setLoading(false);
     }
   }
 
@@ -286,9 +313,12 @@ export default function RegisterPage() {
                     autoComplete="new-password"
                     maxLength={50}
                     required
-                    minLength={8}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    style={{
+                      borderColor: hasPasswordError ? '#fca5a5' : undefined,
+                      outline: 'none'
+                    }}
                   />
                   <button
                     type="button"
@@ -299,13 +329,30 @@ export default function RegisterPage() {
                     👁
                   </button>
                 </div>
-                <div className="password-strength">
+
+                {/* Barra de seguridad */}
+                <div 
+                  className="password-strength" 
+                  style={{ 
+                    height: '4px', 
+                    backgroundColor: '#e2e8f0', 
+                    marginTop: '8px', 
+                    borderRadius: '2px', 
+                    overflow: 'hidden' 
+                  }}
+                >
                   <div
                     className="bar"
-                    style={{ width: `${Math.min(100, password.length * 12)}%` }}
+                    style={{
+                      width: `${pwdStrength}%`,
+                      backgroundColor: getBarColor(pwdStrength),
+                      height: '100%',
+                      transition: 'width 0.3s ease, background-color 0.3s ease'
+                    }}
                   />
                 </div>
-                <div className="form-hint">
+
+                <div className="form-hint" style={{ marginTop: '8px', color: '#64748b' }}>
                   Mínimo 8 caracteres, una mayúscula, una minúscula y un número.
                 </div>
               </div>
@@ -326,6 +373,10 @@ export default function RegisterPage() {
                     required
                     value={confirm}
                     onChange={(e) => setConfirm(e.target.value)}
+                    style={{
+                      borderColor: isMismatch ? '#fca5a5' : undefined,
+                      outline: 'none'
+                    }}
                   />
                   <button
                     type="button"
@@ -336,6 +387,24 @@ export default function RegisterPage() {
                     👁
                   </button>
                 </div>
+
+                {/* Alerta de no coincidencia estructurada en dos columnas */}
+                {isMismatch && (
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    gap: '1rem',
+                    marginTop: '8px', 
+                    fontSize: '0.85rem' 
+                  }}>
+                    <span style={{ color: '#ef4444', fontWeight: '500', flex: 1 }}>
+                      ⚠ Las contraseñas no coinciden.
+                    </span>
+                    <span style={{ color: '#ef4444', opacity: 0.8, flex: 1, textAlign: 'left' }}>
+                      Debe coincidir exactamente con la contraseña anterior.
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* TÉRMINOS */}
@@ -368,10 +437,10 @@ export default function RegisterPage() {
               </div>
 
               {/* BOTÓN REGISTRO */}
-              <button type="submit" className="form-submit">
-                Crear cuenta
-                <i className="ti ti-arrow-right" />
-              </button>
+            <button type="submit" className="form-submit" disabled={loading}>
+                {loading ? 'Creando cuenta...' : 'Crear cuenta'}
+                {!loading && <i className="ti ti-arrow-right" />}
+            </button>
 
               <p className="form-footer" style={{ marginTop: '1.5rem' }}>
                 ¿Ya tienes cuenta?{' '}
@@ -401,6 +470,25 @@ export default function RegisterPage() {
           <a href="#">Soporte</a>
         </div>
       </footer>
+
+      {/* TOAST DE ÉXITO */}
+      {successMsg && (
+        <div style={{
+          position: 'fixed',
+          bottom: '24px',
+          right: '24px',
+          backgroundColor: '#ffffff',
+          borderLeft: '4px solid #22c55e',
+          padding: '16px 24px',
+          borderRadius: '8px',
+          boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+          zIndex: 9999,
+          color: '#1e293b',
+          fontSize: '0.95rem'
+        }}>
+          {successMsg}
+        </div>
+      )}
     </PrincipalWrapper>
   );
 }
