@@ -20,6 +20,10 @@ export interface SocialEvent {
   location: string;
   description: string;
   price: string;
+  guests: number;
+  hours: number;
+  tag: string;
+  includes: string[];
 }
 
 export interface Venue {
@@ -32,7 +36,11 @@ export interface Venue {
 }
 
 export interface User {
+  id: number;
   name: string;
   email: string;
   role: 'participante' | 'admin';
+  roles: ('adminSocial' | 'adminDeportivo'| 'participante'| 'cliente')[]; 
+  telefono?: string;
+  ciudad?: string;
 }

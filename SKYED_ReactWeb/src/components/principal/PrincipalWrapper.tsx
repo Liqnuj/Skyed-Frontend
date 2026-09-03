@@ -1,32 +1,33 @@
 import { useState } from 'react';
 import type { ReactNode, CSSProperties } from 'react';
-import AccessibilityWidget, { FONT_SIZES } from '../shared/AccessibilityWidget';
+import AccessibilityWidget from '../shared/AccessibilityWidget';
+import { useAccessibility } from '../../context/AccessibilityContext';
 
 const DEFAULT_ACCENT = '#8827f0'; // color de marca SKYED Principal
-const DEFAULT_SIZE = FONT_SIZES[1];
 
 export default function PrincipalWrapper({ children }: { children: ReactNode }) {
-  const [darkMode, setDarkMode] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
-  const [fontSize, setFontSize] = useState(DEFAULT_SIZE);
-  const [dyslexia, setDyslexia] = useState(false);
-  const [accent, setAccent] = useState(DEFAULT_ACCENT);
+  const {
+    darkMode, toggleDark,
+    fontSize, setFontSize,
+    dyslexia, setDyslexia,
+    accentOverride, setAccent,
+    reset,
+  } = useAccessibility();
 
-  function reset() {
-    setFontSize(DEFAULT_SIZE);
-    setDyslexia(false);
-    setAccent(DEFAULT_ACCENT);
-    setDarkMode(false);
-  }
+  const accent = accentOverride ?? DEFAULT_ACCENT;
+
+  // fontSize sigue siendo '14px' | '16px' | '19px' | '22px' — lo convertimos
+  // a un factor de escala relativo a 16px base
+  const fsScale = parseInt(fontSize, 10) / 16;
 
   return (
     <div
-      className={`mod-principal${darkMode ? ' dark-mode' : ''}`}
+      className={`mod-principal${darkMode ? ' dark-mode' : ''}${dyslexia ? ' dyslexia' : ''}`}
       style={{
         '--accent': accent,
         '--accent-2': accent,
-        fontSize,
-        fontFamily: dyslexia ? "'Comic Sans MS', 'Comic Sans', cursive" : undefined,
+        '--fs-scale': fsScale,
       } as CSSProperties}
     >
       {children}
@@ -40,7 +41,7 @@ export default function PrincipalWrapper({ children }: { children: ReactNode }) 
         accent={accent}
         onAccent={setAccent}
         darkMode={darkMode}
-        onToggleDark={() => setDarkMode((d) => !d)}
+        onToggleDark={toggleDark}
         onReset={reset}
       />
     </div>
