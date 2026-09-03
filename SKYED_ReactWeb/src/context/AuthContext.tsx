@@ -38,33 +38,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<AuthContextValue>(() => ({
     user,
+
     async login(email, password) {
       const data = await apiFetch('/login', {
         method: 'POST',
         body: JSON.stringify({ correo_u: email, contrasena_u: password }),
       });
+
       setToken(data.token);
-      const nombresRoles = data.user.roles.map((r: { nombre_rol: string }) => r.nombre_rol);
-      const roles = nombresRoles.map((role: string) => role.toLowerCase()) as User['roles'];
+
+      const nombresRoles: string[] = data.user.roles.map(
+        (r: { nombre_rol: string }) => r.nombre_rol
+      );
 
       setUser({
-        id: data.user.id_u,
         name: `${data.user.nombre_u} ${data.user.apellido_u}`,
         email: data.user.correo_u,
-        role: roles.some((r) => r.startsWith('admin')) ? 'admin' : 'participante',
-        roles,
+        role: nombresRoles.some((r) => r.toLowerCase().startsWith('admin')) ? 'admin' : 'participante',
+        roles: nombresRoles,
       });
+
       return true;
     },
-    
-    // Implementación real del registro usando tu utilidad apiFetch
-    async register(userData) {
-      await apiFetch('/register', {
-        method: 'POST',
-        body: JSON.stringify(userData),
+
+    async register(name, email, password) {
+      await new Promise((resolve) => setTimeout(resolve, 350));
+      if (!name || !email || password.length < 6) {
+        throw new Error('Completa todos los campos. La contraseña debe tener al menos 6 caracteres.');
+      }
+      setUser({
+        name,
+        email,
+        role: 'participante',
+        roles: ['participante'],
       });
     },
-    
+
     async logout() {
       try {
         await apiFetch('/logout', { method: 'POST' });
