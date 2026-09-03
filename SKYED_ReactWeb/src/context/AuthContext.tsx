@@ -2,10 +2,22 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import type { User } from '../types';
 import { apiFetch, setToken } from '../services/api';
 
+export interface RegisterData {
+  tipo_documento_u: string;
+  documento_u: number;
+  nombre_u: string;
+  apellido_u: string;
+  telefono_u: string;
+  correo_u: string;
+  fecha_nacimiento_u: string;
+  contrasena_u: string;
+  contrasena_u_confirmation: string;
+}
+
 interface AuthContextValue {
   user: User | null;
   login: (email: string, password: string) => Promise<boolean>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  register: (userData: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
 }
 
