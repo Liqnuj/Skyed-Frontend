@@ -5,6 +5,7 @@ import SportWrapper from '../../components/deportivo/SportWrapper';
 import { useAuth } from '../../context/AuthContext';
 import { apiFetch } from '../../services/api';
 import '../../styles/deportivo/participante.css';
+import { createPortal } from 'react-dom';
 
 type TabId = 'resumen' | 'historial' | 'inscripciones' | 'ajustes';
 
@@ -307,47 +308,82 @@ function DetalleInscripcion({
     .replace('nequi', 'Nequi / Daviplata')
     .replace('efectivo', 'Efectivo en punto autorizado');
 
+  const pill = estadoPill(insc.estado);
+  const isPending = insc.estado === 'pendiente';
+
   return (
-    <div className="part-card">
-      <div className="part-card-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h3>Detalles de la inscripción</h3>
-        <button className="part-btn-link-detail" onClick={onVolver}>← Volver a inscripciones</button>
-      </div>
-      <div className="part-card-body">
-        <h2 style={{ marginTop: 0 }}>{insc.evento?.nombre || 'Inscripción'}</h2>
-        <p style={{ color: 'var(--muted)', marginTop: -8 }}>
-          {fmtFechaLarga(insc.evento?.fecha)}{insc.evento?.ubicacion ? ` · ${insc.evento.ubicacion}` : ''}
+    <div className="part-card part-detail-card part-detail-anim">
+      <div className="part-detail-hero">
+        <div className="part-detail-hero-blob a" aria-hidden="true" />
+        <div className="part-detail-hero-blob b" aria-hidden="true" />
+
+        <button className="part-btn-link-detail part-detail-back" onClick={onVolver}>← Volver a inscripciones</button>
+        <span className={`part-status-pill ${pill.cls} part-detail-pill ${isPending ? 'part-pulse' : ''}`}>{pill.txt}</span>
+        <h2>{insc.evento?.nombre || 'Inscripción'}</h2>
+        <p className="part-detail-meta">
+          <i className="ti ti-calendar" aria-hidden="true" /> {fmtFechaLarga(insc.evento?.fecha)}
+          {insc.evento?.ubicacion && <> · <i className="ti ti-map-pin" aria-hidden="true" /> {insc.evento.ubicacion}</>}
         </p>
+      </div>
 
-        <div className="part-stat-row"><span className="part-label">Estado</span><span>{estadoPill(insc.estado).txt}</span></div>
-        <div className="part-stat-row"><span className="part-label">Método de pago</span><span>{metodo || '—'}</span></div>
-        <div className="part-stat-row"><span className="part-label">Total</span><span>{fmtMoney(insc.precio_pagado)}</span></div>
-        <div className="part-stat-row"><span className="part-label">Referencia de pago</span><span>{insc.pago?.referencia || '—'}</span></div>
-        <div className="part-stat-row"><span className="part-label">Fecha de pago</span><span>{insc.pago?.fecha ? fmtFechaLarga(insc.pago.fecha) : '—'}</span></div>
-
+      <div className="part-card-body">
+        <div className="part-detail-info-grid">
+          <div className="part-detail-info-item">
+            <span className="part-detail-icon"><i className="ti ti-credit-card" aria-hidden="true" /></span>
+            <div>
+              <span className="part-label">Método de pago</span>
+              <strong>{metodo || '—'}</strong>
+            </div>
+          </div>
+          <div className="part-detail-info-item">
+            <span className="part-detail-icon"><i className="ti ti-cash" aria-hidden="true" /></span>
+            <div>
+              <span className="part-label">Total</span>
+              <strong>{fmtMoney(insc.precio_pagado)}</strong>
+            </div>
+          </div>
+          <div className="part-detail-info-item">
+            <span className="part-detail-icon"><i className="ti ti-receipt-2" aria-hidden="true" /></span>
+            <div>
+              <span className="part-label">Referencia de pago</span>
+              <strong>{insc.pago?.referencia || '—'}</strong>
+            </div>
+          </div>
+          <div className="part-detail-info-item">
+            <span className="part-detail-icon"><i className="ti ti-calendar-event" aria-hidden="true" /></span>
+            <div>
+              <span className="part-label">Fecha de pago</span>
+              <strong>{insc.pago?.fecha ? fmtFechaLarga(insc.pago.fecha) : '—'}</strong>
+            </div>
+          </div>
+        </div>
         {insc.qr?.codigo && !verQr && (
-          <div style={{ marginTop: '1rem' }}>
-            <button className="btn btn-primary" onClick={onVerQr}>
+          <div style={{ marginTop: '1.5rem' }}>
+            <button className="btn btn-primary part-detail-qr-btn" onClick={onVerQr}>
               <i className="ti ti-qrcode" aria-hidden="true" /> Ver mi QR
             </button>
           </div>
         )}
 
-        {insc.qr?.codigo && verQr && (
-          <div className="part-qr-block">
-            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-              <strong>Tu entrada QR</strong>
-              <button className="part-btn-link-detail" onClick={onCerrarQr}>Volver</button>
+        {insc.qr?.codigo && verQr && createPortal(
+                    <div className="mod-deportivo part-qr-overlay" onClick={onCerrarQr}>
+            <div className="part-qr-modal" onClick={(e) => e.stopPropagation()}>
+              <button className="part-qr-close" onClick={onCerrarQr} aria-label="Cerrar">
+                <i className="ti ti-x" aria-hidden="true" />
+              </button>
+              <div className="part-qr-glow">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(insc.qr.codigo)}`}
+                  alt="Código QR de la inscripción"
+                  width={230}
+                  height={240}
+                />
+              </div>
+              <div className="part-qr-code-text">{insc.qr.codigo}</div>
+              <p className="part-qr-hint">Muestra este código en el punto de control el día del evento.</p>
             </div>
-            <img
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(insc.qr.codigo)}`}
-              alt="Código QR de la inscripción"
-              width={240}
-              height={240}
-            />
-            <div style={{ fontWeight: 700, wordBreak: 'break-all', textAlign: 'center' }}>{insc.qr.codigo}</div>
-            <p style={{ color: 'var(--muted)', textAlign: 'center', margin: 0 }}>Muestra este código en el punto de control el día del evento.</p>
-          </div>
+          </div>,
+          document.body,
         )}
       </div>
     </div>
