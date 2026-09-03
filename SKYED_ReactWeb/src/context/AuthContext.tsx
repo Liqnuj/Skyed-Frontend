@@ -44,11 +44,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ correo_u: email, contrasena_u: password }),
       });
       setToken(data.token);
+      const nombresRoles = data.user.roles.map((r: { nombre_rol: string }) => r.nombre_rol);
+      const roles = nombresRoles.map((role: string) => role.toLowerCase()) as User['roles'];
+
       setUser({
         id: data.user.id_u,
         name: `${data.user.nombre_u} ${data.user.apellido_u}`,
         email: data.user.correo_u,
-        role: data.user.roles[0]?.nombre_rol?.toLowerCase().includes('admin') ? 'admin' : 'participante',
+        role: roles.some((r) => r.startsWith('admin')) ? 'admin' : 'participante',
+        roles,
       });
       return true;
     },
