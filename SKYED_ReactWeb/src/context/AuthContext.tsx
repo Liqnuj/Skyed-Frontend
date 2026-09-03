@@ -2,10 +2,22 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import type { User } from '../types';
 import { apiFetch, setToken } from '../services/api';
 
+export interface RegisterData {
+  tipo_documento_u: string;
+  documento_u: number;
+  nombre_u: string;
+  apellido_u: string;
+  telefono_u: string;
+  correo_u: string;
+  fecha_nacimiento_u: string;
+  contrasena_u: string;
+  contrasena_u_confirmation: string;
+}
+
 interface AuthContextValue {
   user: User | null;
   login: (email: string, password: string) => Promise<boolean>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  register: (userData: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -44,30 +56,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       return true;
     },
-    async register(name, email, password) {
-      await new Promise((resolve) => setTimeout(resolve, 350));
-      if (!name || !email || password.length < 6) {
-        throw new Error('Completa todos los campos. La contraseña debe tener al menos 6 caracteres.');
-      }
-      setUser({
-        name,
-        email,
-        role: 'participante',
-        roles: ['participante', 'cliente', 'adminSocial', 'adminDeportivo'],
+    
+    // Implementación real del registro usando tu utilidad apiFetch
+    async register(userData) {
+      await apiFetch('/register', {
+        method: 'POST',
+        body: JSON.stringify(userData),
       });
     },
-    logout() {
+    
+    async logout() {
+      try {
+        await apiFetch('/logout', { method: 'POST' });
+      } catch {
+        // si el token ya venció o falla la petición, igual limpiamos la sesión local
+      }
+      setToken(null);
       setUser(null);
     },
-    async logout() {
-  try {
-    await apiFetch('/logout', { method: 'POST' });
-  } catch {
-    // si el token ya venció o falla la petición, igual limpiamos la sesión local
-  }
-  setToken(null);
-  setUser(null);
-},
   }), [user]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
