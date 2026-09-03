@@ -30,17 +30,7 @@ function AdminSocialContent() {
 
   const esAdminSocial = user?.roles?.includes('adminSocial');
 
-  if (!esAdminSocial) {
-    return (
-      <main className="dashboard section">
-        <div className="container">
-          <p className="form-error error">
-            No tienes permisos de administrador social para ver esta página.
-          </p>
-        </div>
-      </main>
-    );
-  }
+
 
   return (
     <main className="dashboard section">
@@ -81,7 +71,7 @@ function AdminSocialContent() {
 
 export default function Admin() {
   return (
-    <Protected>
+    <Protected requireRole="adminSocial">
       <SocialWrapper>
         <AdminSocialContent />
       </SocialWrapper>
