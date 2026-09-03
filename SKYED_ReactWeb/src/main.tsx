@@ -31,6 +31,7 @@ import './styles/principal/principal.css';
 import './styles/social/social.css';
 import './styles/deportivo/deportivo.css';
 import Participant from './pages/deportivo/Participant';
+import UsersRoles from './pages/admin/UsersRoles';
 
 function App(){
   return <AccessibilityProvider><AuthProvider><BrowserRouter><ScrollToTop/><Routes>
@@ -58,6 +59,7 @@ function App(){
     <Route path="/social/pqr" element={<PQR/>}/>
     <Route path="/social/admin" element={<Admin/>}/>
     <Route path="*" element={<HomePage/>}/>
+    <Route path="/admin/usuarios" element={<UsersRoles/>}/>
   </Routes></BrowserRouter></AuthProvider></AccessibilityProvider>
   
 }
