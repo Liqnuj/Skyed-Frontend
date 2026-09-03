@@ -1,15 +1,24 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 export default function SocialNav() {
+  const { user, logout } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);
     window.addEventListener('scroll', onScroll);
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    const timer = setTimeout(() => setUserMenuOpen(false), 5000);
+    return () => clearTimeout(timer);
+  }, [userMenuOpen]);
 
   const close = () => setOpen(false);
 
@@ -33,7 +42,17 @@ export default function SocialNav() {
           <NavLink to="/social/pqr" onClick={close}>PQRS</NavLink>
           <a href="#contacto" onClick={close}>Contacto</a>
         </div>
-        <Link to="/social/reservar" className="nav-cta" onClick={close}>Reservar ahora</Link>
+
+        {user ? (
+          <button
+            className={`nav-cta${userMenuOpen ? ' nav-cta--logout' : ''}`}
+            onClick={() => (userMenuOpen ? logout() : setUserMenuOpen(true))}
+          >
+            {userMenuOpen ? 'Cerrar sesión?' : user.name}
+          </button>
+        ) : (
+          <Link to="/social/reservar" className="nav-cta" onClick={close}>Reservar ahora</Link>
+        )}
 
         <button className={`hamburger ${open ? 'active' : ''}`} id="hamburger" onClick={() => setOpen((o) => !o)} aria-label="Menú">
           <span></span><span></span><span></span>

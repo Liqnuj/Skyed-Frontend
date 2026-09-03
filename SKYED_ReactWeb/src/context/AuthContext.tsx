@@ -6,7 +6,7 @@ interface AuthContextValue {
   user: User | null;
   login: (email: string, password: string) => Promise<boolean>;
   register: (name: string, email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -36,6 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const roles = nombresRoles.map((role: string) => role.toLowerCase()) as User['roles'];
 
       setUser({
+        id: data.user.id_u,
         name: `${data.user.nombre_u} ${data.user.apellido_u}`,
         email: data.user.correo_u,
         role: roles.some((r) => r.startsWith('admin')) ? 'admin' : 'participante',
@@ -58,6 +59,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     logout() {
       setUser(null);
     },
+    async logout() {
+  try {
+    await apiFetch('/logout', { method: 'POST' });
+  } catch {
+    // si el token ya venció o falla la petición, igual limpiamos la sesión local
+  }
+  setToken(null);
+  setUser(null);
+},
   }), [user]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

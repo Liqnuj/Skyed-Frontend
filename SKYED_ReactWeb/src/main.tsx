@@ -30,6 +30,7 @@ import './styles/global.css';
 import './styles/principal/principal.css';
 import './styles/social/social.css';
 import './styles/deportivo/deportivo.css';
+import Participant from './pages/deportivo/Participant';
 
 function App(){
   return <AccessibilityProvider><AuthProvider><BrowserRouter><ScrollToTop/><Routes>
@@ -48,6 +49,7 @@ function App(){
     <Route path="/deportivo/notificaciones" element={<Notifications/>}/>
     <Route path="/deportivo/nosotros" element={<AboutSport/>}/>
     <Route path="/deportivo/entrega-kit" element={<Kit/>}/>
+    <Route path="/deportivo/perfil" element={<Participant/>}/>
     <Route path="/social" element={<SocialHome/>}/>
     <Route path="/social/eventos" element={<SocialEvents/>}/>
     <Route path="/social/lugares" element={<Venues/>}/>
@@ -57,5 +59,6 @@ function App(){
     <Route path="/social/admin" element={<Admin/>}/>
     <Route path="*" element={<HomePage/>}/>
   </Routes></BrowserRouter></AuthProvider></AccessibilityProvider>
+  
 }
 ReactDOM.createRoot(document.getElementById('root')!).render(<React.StrictMode><App/></React.StrictMode>);
