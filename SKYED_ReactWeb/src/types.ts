@@ -40,10 +40,7 @@ export interface User {
   name: string;
   email: string;
   role: 'participante' | 'admin';
-<<<<<<< Updated upstream
   roles: ('adminSocial' | 'adminDeportivo'| 'participante'| 'cliente')[]; 
-=======
   telefono?: string;
   ciudad?: string;
->>>>>>> Stashed changes
 }
