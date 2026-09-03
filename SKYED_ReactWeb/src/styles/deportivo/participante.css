@@ -380,3 +380,218 @@
 .mod-deportivo.dark-mode .part-tab-btn { color: #9aa5b8; }
 .mod-deportivo.dark-mode .part-card-head,
 .mod-deportivo.dark-mode .part-toggle-row { border-color: #333c4d; }
+
+/* ---- Detalle de inscripción (rediseño llamativo) ---- */
+.mod-deportivo .part-detail-card { overflow: visible; box-shadow: 0 10px 40px rgba(0,0,0,.08); border: none; }
+
+.mod-deportivo .part-detail-anim { animation: partDetailIn .35s ease both; }
+@keyframes partDetailIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.mod-deportivo .part-detail-hero {
+  position: relative;
+  overflow: hidden;
+  padding: 2rem 1.75rem 2.25rem;
+  background: linear-gradient(135deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 60%, #1a1a2e 40%) 100%);
+  color: #fff;
+}
+
+.mod-deportivo .part-detail-hero-blob {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255,255,255,.14);
+  pointer-events: none;
+}
+.mod-deportivo .part-detail-hero-blob.a { width: 220px; height: 220px; top: -110px; right: -60px; }
+.mod-deportivo .part-detail-hero-blob.b { width: 140px; height: 140px; bottom: -80px; right: 90px; background: rgba(255,255,255,.08); }
+
+.mod-deportivo .part-detail-back {
+  position: relative;
+  z-index: 1;
+  color: rgba(255,255,255,.85);
+  font-size: .8rem;
+  margin-bottom: 1rem;
+  display: inline-block;
+  transition: color .15s ease;
+}
+.mod-deportivo .part-detail-back:hover { color: #fff; }
+
+.mod-deportivo .part-detail-pill {
+  position: absolute;
+  z-index: 1;
+  top: 2rem;
+  right: 1.75rem;
+  background: rgba(255,255,255,.22);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(0,0,0,.15);
+}
+
+.mod-deportivo .part-pulse { animation: partPillPulse 1.8s ease-in-out infinite; }
+@keyframes partPillPulse {
+  0%, 100% { box-shadow: 0 4px 14px rgba(0,0,0,.15), 0 0 0 0 rgba(255,255,255,.35); }
+  50% { box-shadow: 0 4px 14px rgba(0,0,0,.15), 0 0 0 6px rgba(255,255,255,0); }
+}
+
+.mod-deportivo .part-detail-hero h2 { position: relative; z-index: 1; margin: 0 0 .4rem; font-size: 1.7rem; color: #fff; }
+
+.mod-deportivo .part-detail-meta {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  font-size: .88rem;
+  color: rgba(255,255,255,.85);
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  flex-wrap: wrap;
+}
+
+.mod-deportivo .part-detail-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem 1.25rem;
+}
+
+@media (max-width: 560px) {
+  .mod-deportivo .part-detail-info-grid { grid-template-columns: 1fr; }
+}
+
+.mod-deportivo .part-detail-info-item {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  padding: 1rem;
+  background: var(--bg, #f8fafc);
+  border-radius: 12px;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.mod-deportivo .part-detail-info-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0,0,0,.08);
+}
+
+.mod-deportivo .part-detail-icon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+}
+
+.mod-deportivo .part-detail-info-item .part-label { font-size: .74rem; text-transform: uppercase; letter-spacing: .03em; display: block; }
+.mod-deportivo .part-detail-info-item strong { font-size: .95rem; }
+
+.mod-deportivo.dark-mode .part-detail-info-item { background: #232a3a; }
+
+.mod-deportivo .part-detail-qr-btn {
+  transition: box-shadow .2s ease, transform .15s ease;
+}
+.mod-deportivo .part-detail-qr-btn:hover {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent);
+  transform: translateY(-1px);
+}
+
+/* ---- QR como modal con glow ---- */
+.part-qr-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 14, 20, .55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  animation: partQrFadeIn .25s ease both;
+  padding: 3rem;
+}
+@keyframes partQrFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.part-qr-modal {
+  position: relative;
+  background: var(--surface, #fff);
+  border-radius: 20px;
+  padding: 2rem 1.75rem 1.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .9rem;
+  max-width: 320px;
+  width: 100%;
+  box-shadow: 0 25px 60px rgba(0,0,0,.35);
+  animation: partQrPop .35s cubic-bezier(.34,1.56,.64,1) both;
+}
+@keyframes partQrPop {
+  from { opacity: 0; transform: scale(.75); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+body.dark-mode .part-qr-modal { background: #1c2230; }
+
+.part-qr-close {
+  position: absolute;
+  top: .85rem;
+  right: .85rem;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: 1.15rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(0,0,0,.25);
+  transition: transform .15s ease, box-shadow .15s ease;
+  z-index: 2;
+}
+.part-qr-close:hover {
+  transform: scale(1.08);
+  box-shadow: 0 4px 14px rgba(0,0,0,.3);
+}
+
+.part-qr-glow {
+  position: relative;
+  padding: 14px;
+  border-radius: 16px;
+  background: #fff;
+}
+.part-qr-glow::before {
+  content: '';
+  position: absolute;
+  inset: -16px;
+  border-radius: 24px;
+  background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+  opacity: .5;
+  filter: blur(18px);
+  z-index: -1;
+  animation: partQrGlowPulse 2.2s ease-in-out infinite;
+}
+@keyframes partQrGlowPulse {
+  0%, 100% { opacity: .35; transform: scale(1); }
+  50% { opacity: .6; transform: scale(1.08); }
+}
+.part-qr-glow img { display: block; border-radius: 8px; }
+
+.part-qr-code-text {
+  font-weight: 700;
+  font-size: .82rem;
+  word-break: break-all;
+  text-align: center;
+  color: var(--muted, #6b7280);
+}
+.part-qr-hint {
+  color: var(--muted, #6b7280);
+  text-align: center;
+  margin: 0;
+  font-size: .85rem;
+}
