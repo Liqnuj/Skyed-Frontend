@@ -40,4 +40,5 @@ export interface User {
   name: string;
   email: string;
   role: 'participante' | 'admin';
+  roles: ('adminSocial' | 'adminDeportivo'| 'participante'| 'cliente')[]; 
 }
