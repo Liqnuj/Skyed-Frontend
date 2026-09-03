@@ -2,10 +2,22 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import type { User } from '../types';
 import { apiFetch, setToken } from '../services/api';
 
+export interface RegisterData {
+  tipo_documento_u: string;
+  documento_u: number;
+  nombre_u: string;
+  apellido_u: string;
+  telefono_u: string;
+  correo_u: string;
+  fecha_nacimiento_u: string;
+  contrasena_u: string;
+  contrasena_u_confirmation: string;
+}
+
 interface AuthContextValue {
   user: User | null;
   login: (email: string, password: string) => Promise<boolean>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  register: (userData: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -41,22 +53,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return true;
     },
     
-    // 3. Implementación real del registro usando tu utilidad apiFetch
+    // Implementación real del registro usando tu utilidad apiFetch
     async register(userData) {
-      const data = await apiFetch('/register', {
+      await apiFetch('/register', {
         method: 'POST',
         body: JSON.stringify(userData),
       });
     },
+    
     async logout() {
-  try {
-    await apiFetch('/logout', { method: 'POST' });
-  } catch {
-    // si el token ya venció o falla la petición, igual limpiamos la sesión local
-  }
-  setToken(null);
-  setUser(null);
-},
+      try {
+        await apiFetch('/logout', { method: 'POST' });
+      } catch {
+        // si el token ya venció o falla la petición, igual limpiamos la sesión local
+      }
+      setToken(null);
+      setUser(null);
+    },
   }), [user]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -50,45 +50,57 @@ export default function RegisterPage() {
   const isMismatch = confirm.length > 0 && password !== confirm;
 
   async function submit(e: FormEvent) {
-    e.preventDefault();
-    setError('');
+      e.preventDefault();
+      setError('');
+      setSuccessMsg('');
 
-    if (password !== confirm) {
-      setError('Las contraseñas no coinciden.');
-      return;
-    }
+      // Validación manual de campos vacíos
+      if (!tipoDocumento || !documento || !nombre || !apellido || !email || !telefono || !fechaNac || !password || !confirm) {
+        setError('Por favor, completa todos los campos obligatorios para continuar.');
+        setTimeout(() => setError(''), 4000); // Ocultar la alerta después de 4 segundos
+        return;
+      }
 
-    if (!terms) {
-      setError('Debes aceptar los términos y condiciones.');
-      return;
-    }
+      if (password !== confirm) {
+        setError('Las contraseñas no coinciden.');
+        setTimeout(() => setError(''), 4000);
+        return;
+      }
 
-    setLoading(true);
+      if (!terms) {
+        setError('Debes aceptar los términos y condiciones.');
+        setTimeout(() => setError(''), 4000);
+        return;
+      }
 
-    try {
-      await register({
-        tipo_documento_u: tipoDocumento,
-        documento_u: parseInt(documento, 10),
-        nombre_u: nombre,
-        apellido_u: apellido,
-        telefono_u: telefono,
-        correo_u: email,
-        fecha_nacimiento_u: fechaNac,
-        contrasena_u: password,
-        contrasena_u_confirmation: confirm
-      });
+      setLoading(true);
 
-      setSuccessMsg('¡Registro exitoso! Bienvenido a SKYED.');
+      try {
+        await register({
+          tipo_documento_u: tipoDocumento,
+          documento_u: parseInt(documento, 10),
+          nombre_u: nombre,
+          apellido_u: apellido,
+          telefono_u: telefono,
+          correo_u: email,
+          fecha_nacimiento_u: fechaNac,
+          contrasena_u: password,
+          contrasena_u_confirmation: confirm
+        });
 
-      setTimeout(() => {
-        navigate('/login');
-      }, 2500);
+        setSuccessMsg('¡Registro exitoso! Bienvenido a SKYED.');
 
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo crear la cuenta.');
+        setTimeout(() => {
+          navigate('/login');
+        }, 2500);
+
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'No se pudo crear la cuenta.');
+        setTimeout(() => setError(''), 5000);
+      }
+
       setLoading(false);
     }
-  }
 
   return (
     <PrincipalWrapper>
@@ -159,12 +171,6 @@ export default function RegisterPage() {
             <p className="auth-subheading">
               Solo te tomará un minuto.
             </p>
-
-            {error && (
-              <div className="form-error error">
-                {error}
-              </div>
-            )}
 
             <form onSubmit={submit} noValidate>
               {/* DOCUMENTO */}
@@ -487,6 +493,29 @@ export default function RegisterPage() {
           fontSize: '0.95rem'
         }}>
           {successMsg}
+        </div>
+      )}
+
+      {/* TOAST DE ERROR */}
+      {error && (
+        <div style={{
+          position: 'fixed',
+          bottom: successMsg ? '90px' : '24px', 
+          right: '24px',
+          backgroundColor: '#ffffff',
+          borderLeft: '4px solid #ef4444',
+          padding: '16px 24px',
+          borderRadius: '8px',
+          boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+          zIndex: 9999,
+          color: '#1e293b',
+          fontSize: '0.95rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px'
+        }}>
+          <span style={{ fontSize: '1.2rem' }}>⚠️</span>
+          {error}
         </div>
       )}
     </PrincipalWrapper>
