@@ -19,11 +19,33 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<boolean>;
   register: (userData: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
+  updateProfile: (data: {
+    nombre_u?: string;
+    apellido_u?: string;
+    correo_u?: string;
+    telefono_u?: string;
+    ciudad_u?: string;
+  }) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 const STORAGE_KEY = 'skyed_user';
+
+function buildUser(apiUser: any): User {
+  const nombresRoles: User['roles'] = apiUser.roles.map(
+    (r: { nombre_rol: string }) => r.nombre_rol
+  );
+  return {
+    id: apiUser.id_u,
+    name: `${apiUser.nombre_u} ${apiUser.apellido_u}`,
+    email: apiUser.correo_u,
+    telefono: apiUser.telefono_u,
+    ciudad: apiUser.ciudad_u,
+    role: nombresRoles.some((r) => r.toLowerCase().startsWith('admin')) ? 'admin' : 'participante',
+    roles: nombresRoles,
+  };
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
@@ -46,42 +68,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       setToken(data.token);
-
-      const nombresRoles: string[] = data.user.roles.map(
-        (r: { nombre_rol: string }) => r.nombre_rol
-      );
-
-      setUser({
-        name: `${data.user.nombre_u} ${data.user.apellido_u}`,
-        email: data.user.correo_u,
-        role: nombresRoles.some((r) => r.toLowerCase().startsWith('admin')) ? 'admin' : 'participante',
-        roles: nombresRoles,
-      });
+      setUser(buildUser(data.user));
 
       return true;
     },
 
-    async register(name, email, password) {
-      await new Promise((resolve) => setTimeout(resolve, 350));
-      if (!name || !email || password.length < 6) {
-        throw new Error('Completa todos los campos. La contraseña debe tener al menos 6 caracteres.');
-      }
-      setUser({
-        name,
-        email,
-        role: 'participante',
-        roles: ['participante'],
+    async register(userData) {
+      const data = await apiFetch('/register', {
+        method: 'POST',
+        body: JSON.stringify(userData),
       });
 
-      // Si el backend hace auto-login y devuelve el token, iniciamos la sesión de una vez
       if (data.token && data.user) {
         setToken(data.token);
-        setUser({
-          id: data.user.id_u,
-          name: `${data.user.nombre_u} ${data.user.apellido_u}`,
-          email: data.user.correo_u,
-          role: 'participante', // Asignación por defecto para nuevos registros
-        });
+        setUser(buildUser(data.user));
       }
     },
 
@@ -93,6 +93,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       setToken(null);
       setUser(null);
+    },
+
+    async updateProfile(data) {
+      const res = await apiFetch('/perfil', {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+      setUser(buildUser(res.user));
     },
   }), [user]);
 
