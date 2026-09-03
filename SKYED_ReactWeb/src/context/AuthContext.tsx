@@ -72,6 +72,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role: 'participante',
         roles: ['participante'],
       });
+
+      // Si el backend hace auto-login y devuelve el token, iniciamos la sesión de una vez
+      if (data.token && data.user) {
+        setToken(data.token);
+        setUser({
+          id: data.user.id_u,
+          name: `${data.user.nombre_u} ${data.user.apellido_u}`,
+          email: data.user.correo_u,
+          role: 'participante', // Asignación por defecto para nuevos registros
+        });
+      }
     },
 
     async logout() {
