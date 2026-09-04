@@ -1,87 +1,140 @@
-import { useState } from 'react';
-import type { FormEvent } from 'react';
-import { Link } from 'react-router-dom';
-import PrincipalWrapper from '../../components/principal/PrincipalWrapper';
-import AuthTopbar from '../../components/principal/AuthTopbar';
+import { useState, useRef, type FormEvent, type ChangeEvent, type KeyboardEvent } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { apiFetch } from '../../services/api';
 
-export default function RecoverPage() {
+
+export default function RecuperarPage() {
+  const navigate = useNavigate();
+  
+  // Estados para manejar el flujo
+  const [step, setStep] = useState<1 | 2>(1);
   const [email, setEmail] = useState('');
-  const [sent, setSent] = useState(false);
+  const [code, setCode] = useState(['', '', '', '', '', '']);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  function submit(e: FormEvent) {
+  // Referencias para los 6 inputs del código
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // Función Paso 1: Enviar el correo
+  async function handleSendEmail(e: FormEvent) {
     e.preventDefault();
-    setSent(true);
+    setError('');
+    setLoading(true);
+
+    try {
+      // Asegúrate de apuntar a la ruta correcta de tu AuthController
+      await apiFetch('/enviar-codigo-recuperacion', {
+        method: 'POST',
+        body: JSON.stringify({ correo_u: email }),
+      });
+      setStep(2); // Cambia la pantalla al Paso 2 (Ingresar Código)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al enviar el correo');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Manejo de los 6 inputs para que salten automáticamente
+  const handleChangeCode = (index: number, value: string) => {
+    if (!/^[0-9]?$/.test(value)) return; // Solo permite números
+    const newCode = [...code];
+    newCode[index] = value;
+    setCode(newCode);
+
+    // Salto automático al siguiente input
+    if (value && index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Borrar y retroceder con Backspace
+    if (e.key === 'Backspace' && !code[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  // Función Paso 2: Verificar el código
+  async function handleVerifyCode(e: FormEvent) {
+    e.preventDefault();
+    const fullCode = code.join('');
+    if (fullCode.length < 6) {
+      setError('Debes ingresar los 6 dígitos');
+      return;
+    }
+    
+    // Aquí puedes redirigir a la página de "Nueva Contraseña"
+    // Pasando el token y el email por la URL o estado
+    navigate(`/reset-password?token=${fullCode}&email=${email}`);
   }
 
   return (
-    <PrincipalWrapper>
-      <AuthTopbar />
+    <div className="auth-grid">
+      {/* ... Tu aside (lado izquierdo) ... */}
 
-      <div className="auth-grid" id="main">
-        <aside className="auth-aside">
-          <div className="aside-blob aside-blob--blue" />
-          <div className="aside-blob aside-blob--purple" />
-          <div className="aside-blob aside-blob--gold" />
+      <main className="auth-main">
+        <div className="auth-card">
+          {step === 1 ? (
+            /* ================= PASO 1: PEDIR CORREO ================= */
+            <form onSubmit={handleSendEmail}>
+              <h2>Recupera tu ACCESO</h2>
+              <p>Te enviaremos un código de 6 dígitos a tu correo...</p>
+              
+              {error && <div className="error">{error}</div>}
 
-          <div className="aside-content">
-            <span className="aside-eyebrow"><i className="ti ti-calendar-event" />&nbsp; Eventos</span>
-            <h1 className="aside-title">Recupera tu <span className="hl">ACCESO</span></h1>
-            <p className="aside-subtitle">
-              Te enviaremos un código de 6 dígitos a tu correo para restablecer tu contraseña de forma segura.
-            </p>
-            <ul className="aside-features">
-              <li><span className="feat-ico"><i className="ti ti-calendar" /></span>Verificación por código.</li>
-              <li><span className="feat-ico"><i className="ti ti-ticket" /></span>Cambio de contraseña inmediato.</li>
-              <li><span className="feat-ico"><i className="ti ti-users" /></span> Tu cuenta siempre protegida.</li>
-            </ul>
-            <div className="ticket-card">
-              <div className="ticket-main">
-                <div className="ticket-kicker">Tu próximo evento</div>
-                <div className="ticket-title">Feria SKYED</div>
-                <div className="ticket-meta">Acceso general · Válido con tu cuenta</div>
+              <div className="form-group">
+                <label htmlFor="email">Correo electrónico</label>
+                <input
+                  type="email"
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
               </div>
-              <div className="ticket-stub">
-                <span>PASE</span>
-                <strong>#00 SKYED</strong>
+
+              <button type="submit" disabled={loading}>
+                {loading ? 'Enviando...' : 'Enviar código'}
+              </button>
+            </form>
+          ) : (
+            /* ================= PASO 2: INGRESAR CÓDIGO ================= */
+            <form onSubmit={handleVerifyCode}>
+              <h2>Verifica el código</h2>
+              <p>Enviamos un código a <strong>{email}</strong></p>
+
+              {error && <div className="error">{error}</div>}
+
+              <div style={{ display: 'flex', gap: '10px', margin: '20px 0' }}>
+                {code.map((digit, index) => (
+                <input
+                  key={index}
+                  ref={(el: HTMLInputElement | null) => { inputRefs.current[index] = el; }}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={digit}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => handleChangeCode(index, e.target.value)}
+                  onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => handleKeyDown(index, e)}
+                  style={{
+                    width: '40px', height: '50px', textAlign: 'center', 
+                    fontSize: '1.5rem', borderRadius: '8px', border: '1px solid #ccc'
+                  }}
+                />
+                ))}
               </div>
-            </div>
-          </div>
-        </aside>
 
-        <section className="auth-form-box">
-          <form className="auth-form" onSubmit={submit}>
-            {sent ? (
-              <div>
-                <h1>Revisa tu correo</h1>
-                <p className="lead">Si el correo existe en nuestro sistema, recibirás un código de 6 dígitos para restablecer tu contraseña.</p>
-                <div className="auth-footer">
-                  <Link to="/login">← Volver a iniciar sesión</Link>
-                </div>
-              </div>
-            ) : (
-              <div>
-                <h1>Olvidé mi contraseña</h1>
-                <p className="lead">Ingresa el correo asociado a tu cuenta y te enviaremos un código.</p>
-
-                <div className="form-group">
-                  <label htmlFor="email">Correo electrónico <span className="req">*</span></label>
-                  <input
-                    id="email" type="email" required maxLength={80}
-                    placeholder="tucorreo@ejemplo.com" autoComplete="email"
-                    value={email} onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
-
-                <button type="submit" className="form-submit">Enviar código</button>
-
-                <div className="auth-footer">
-                  <Link to="/login">← Volver a iniciar sesión</Link>
-                </div>
-              </div>
-            )}
-          </form>
-        </section>
-      </div>
-    </PrincipalWrapper>
+              <button type="submit">Verificar código</button>
+              
+              <button type="button" onClick={() => setStep(1)} style={{ marginTop: '15px' }}>
+                Volver
+              </button>
+            </form>
+          )}
+        </div>
+      </main>
+    </div>
   );
 }
