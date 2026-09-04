@@ -118,6 +118,25 @@ type Service = {
 /*  Ambientes                                                          */
 /* ------------------------------------------------------------------ */
 
+
+const sanitizeName = (value: string, maxLength = 50) =>
+  value
+    .replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñÜü\s'-]/g, "")
+    .replace(/\s{2,}/g, " ")
+    .slice(0, maxLength);
+
+const sanitizeDescription = (value: string, maxLength = 120) =>
+  value.slice(0, maxLength);
+
+const sanitizeInteger = (value: string, maxLength = 7) =>
+  value.replace(/\D/g, "").slice(0, maxLength);
+
+const sanitizeMoney = (value: string, maxLength = 12) =>
+  value.replace(/\D/g, "").slice(0, maxLength);
+
+function Badge({ value }: { value: string }) {
+  return <span className={`admin-badge ${value}`}>{human(value)}</span>;
+}
 function AmbientesTab() {
   const [ambientes, setAmbientes] = useState<Ambiente[]>([]);
   const [loading, setLoading] = useState(true);
