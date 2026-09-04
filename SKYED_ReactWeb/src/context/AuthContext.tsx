@@ -26,6 +26,7 @@ interface AuthContextValue {
     telefono_u?: string;
     ciudad_u?: string;
   }) => Promise<void>;
+  updateFotoUrl: (fotoUrl: string) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -42,6 +43,7 @@ function buildUser(apiUser: any): User {
     email: apiUser.correo_u,
     telefono: apiUser.telefono_u,
     ciudad: apiUser.ciudad_u,
+    foto_url: apiUser.foto_url ?? null,
     role: nombresRoles.some((r) => r.toLowerCase().startsWith('admin')) ? 'admin' : 'participante',
     roles: nombresRoles,
   };
@@ -95,12 +97,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
     },
 
-    async updateProfile(data) {
+        async updateProfile(data) {
       const res = await apiFetch('/perfil', {
         method: 'PUT',
         body: JSON.stringify(data),
       });
       setUser(buildUser(res.user));
+    },
+
+    updateFotoUrl(fotoUrl) {
+      setUser((prev) => (prev ? { ...prev, foto_url: fotoUrl } : prev));
     },
   }), [user]);
 

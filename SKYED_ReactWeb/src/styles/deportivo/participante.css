@@ -47,11 +47,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+}
+
+.mod-deportivo .part-avatar-edit:disabled {
   cursor: not-allowed;
   opacity: .55;
 }
-
-.mod-deportivo .part-meta { flex: 1; min-width: 200px; }
 
 .mod-deportivo .part-badge {
   font-size: .8rem;
@@ -68,10 +70,10 @@
 
 .mod-deportivo .part-actions { display: flex; gap: .6rem; flex-wrap: wrap; }
 
-.mod-deportivo .part-btn-disabled {
+/* .mod-deportivo .part-btn-disabled {
   cursor: not-allowed;
   opacity: .55;
-}
+} */
 
 .mod-deportivo .part-tabs {
   max-width: 1100px;
@@ -122,9 +124,31 @@
 .mod-deportivo .part-card-head {
   padding: .85rem 1.1rem;
   border-bottom: 1px solid var(--border, #e5e7eb);
+  display: flex;
+  align-items: center;
+  gap: .6rem;
 }
 
 .mod-deportivo .part-card-head h3 { margin: 0; font-size: .95rem; }
+
+.mod-deportivo .part-card-head-icon {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .95rem;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+}
+
+.mod-deportivo .part-card.part-card-danger .part-card-head-icon {
+  background: color-mix(in srgb, #ef4444 14%, transparent);
+  color: #ef4444;
+}
+
 .mod-deportivo .part-card-body { padding: .9rem 1.1rem; }
 
 .mod-deportivo .part-stat-row {
@@ -266,7 +290,145 @@
 
 .mod-deportivo .part-settings-grid {
   display: grid;
-  gap: 1rem;
+  gap: 1.25rem;
+}
+
+.mod-deportivo .part-settings-main {
+  display: grid;
+  gap: 1.25rem;
+}
+
+/* ---- Hero de perfil (ancho completo, dos filas) ---- */
+.mod-deportivo .part-profile-card {
+  padding: 1.75rem;
+  background: linear-gradient(120deg, var(--surface, #fff) 55%, color-mix(in srgb, var(--accent) 10%, var(--surface, #fff)) 100%);
+}
+
+.mod-deportivo .part-profile-main {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+@media (max-width: 560px) {
+  .mod-deportivo .part-profile-main {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+.mod-deportivo .part-profile-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+
+.mod-deportivo .part-profile-avatar-wrap {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  flex-shrink: 0;
+}
+
+.mod-deportivo .part-profile-avatar {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2, var(--accent)));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.mod-deportivo .part-profile-avatar-edit {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--surface, #fff);
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.mod-deportivo .part-profile-avatar-edit:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+.mod-deportivo .part-profile-name { font-size: 1.05rem; font-weight: 700; margin: 0; }
+
+.mod-deportivo .part-profile-role-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  font-size: .75rem;
+  font-weight: 600;
+  padding: .3rem .75rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+  width: fit-content;
+}
+
+@media (max-width: 560px) {
+  .mod-deportivo .part-profile-role-pill { margin: 0 auto; }
+}
+
+.mod-deportivo .part-profile-divider {
+  height: 1px;
+  background: var(--border, #e5e7eb);
+  margin: 1.5rem 0;
+}
+
+.mod-deportivo .part-profile-quickinfo {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+@media (max-width: 820px) {
+  .mod-deportivo .part-profile-quickinfo { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 480px) {
+  .mod-deportivo .part-profile-quickinfo { grid-template-columns: 1fr; }
+}
+
+.mod-deportivo .part-profile-quickinfo-item {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  min-width: 0;
+}
+
+.mod-deportivo .part-profile-quickinfo-item strong {
+  display: block;
+  font-size: .9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mod-deportivo .part-profile-quickinfo-icon {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
 }
 
 .mod-deportivo .part-form-group { margin-bottom: .9rem; }
@@ -594,4 +756,83 @@ body.dark-mode .part-qr-modal { background: #1c2230; }
   text-align: center;
   margin: 0;
   font-size: .85rem;
+}
+/* ---- Alerta de formulario (estilo tarjeta con borde de color) ---- */
+.part-form-alert {
+  position: fixed;
+  top: 110px;
+  right: 24px;
+  z-index: 500;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  background: #fff;
+  padding: .9rem 1.1rem 1.05rem;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.18);
+  font-size: .9rem;
+  color: #1e293b;
+  max-width: 340px;
+  animation: partAlertSlideIn .25s ease both;
+}
+
+@keyframes partAlertSlideIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.part-form-alert.ok { border-left: 4px solid #22c55e; }
+.part-form-alert.error { border-left: 4px solid #ef4444; }
+
+.part-form-alert .part-alert-icon { font-size: 1.1rem; flex-shrink: 0; }
+
+.mod-deportivo.dark-mode .part-form-alert { background: #232a3a; color: #e2e8f0; }
+
+.part-alert-timer {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  width: 100%;
+  transform-origin: left;
+  animation: partAlertTimer 4s linear forwards;
+}
+
+.part-form-alert.ok .part-alert-timer { background: #22c55e; }
+.part-form-alert.error .part-alert-timer { background: #ef4444; }
+
+@keyframes partAlertTimer {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+/* ---- Campo de contraseña con ojito ---- */
+.mod-deportivo .part-pass-field {
+  position: relative;
+}
+
+.mod-deportivo .part-pass-field input {
+  padding-right: 2.4rem;
+}
+
+.mod-deportivo .part-pass-toggle {
+  position: absolute;
+  top: 50%;
+  right: .5rem;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: .3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted, #6b7280);
+  cursor: pointer;
+  font-size: 1rem;
+  transition: color .15s ease;
+}
+
+.mod-deportivo .part-pass-toggle:hover {
+  color: var(--accent);
 }
