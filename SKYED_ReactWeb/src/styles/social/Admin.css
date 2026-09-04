@@ -1862,3 +1862,61 @@
     display: none !important;
   }
 }
+
+/* =========================================================
+   AJUSTES FINALES - SELECCIÓN Y VALIDACIÓN DE FORMULARIOS
+   ========================================================= */
+
+.social-admin ::selection {
+  background: color-mix(in srgb, var(--admin-accent) 28%, #ffffff);
+  color: var(--admin-text);
+}
+
+.social-admin .admin-sidebar ::selection {
+  background: rgba(156, 2, 174, .55);
+  color: #ffffff;
+}
+
+/* El encabezado del sidebar usa directamente <strong> y <span>. */
+.social-admin .sidebar-brand > strong {
+  display: block;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.social-admin .sidebar-brand > span {
+  display: block;
+  margin-top: 3px;
+  color: #8e7da5;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .12em;
+}
+
+.social-admin .field-hint {
+  display: block;
+  align-self: flex-end;
+  margin-top: -2px;
+  color: var(--admin-muted);
+  font-size: 9px;
+  line-height: 1.2;
+}
+
+.social-admin .admin-field input:invalid:not(:placeholder-shown),
+.social-admin .admin-field textarea:invalid:not(:placeholder-shown) {
+  border-color: #d97706 !important;
+}
+
+.social-admin .admin-field input:focus,
+.social-admin .admin-field textarea:focus,
+.social-admin .admin-field select:focus {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--admin-accent) 13%, transparent) !important;
+}
+
+.social-admin .primary-btn:disabled {
+  opacity: .65;
+  cursor: not-allowed;
+  transform: none !important;
+}
