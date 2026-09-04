@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Protected from '../../components/Protected';
 import SportWrapper from '../../components/deportivo/SportWrapper';
@@ -81,7 +81,7 @@ export default function Participant() {
 }
 
 function ParticipantPanel() {
-  const { user } = useAuth();
+  const { user, updateFotoUrl } = useAuth();
   const [tab, setTab] = useState<TabId>('resumen');
   const [inscripciones, setInscripciones] = useState<Inscripcion[] | null>(null);
   const [historial, setHistorial] = useState<HistorialItem[] | null>(null);
@@ -124,6 +124,32 @@ function ParticipantPanel() {
 
   const initials = (user?.name || 'SK').split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
 
+const fileInputRef = useRef<HTMLInputElement>(null);
+const [subiendoFoto, setSubiendoFoto] = useState(false);
+
+const handleFotoClick = () => fileInputRef.current?.click();
+
+const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  e.target.value = '';
+  if (!file) return;
+  if (!file.type.startsWith('image/')) return;
+  if (file.size > 3 * 1024 * 1024) return;
+
+  setSubiendoFoto(true);
+  const formData = new FormData();
+  formData.append('foto', file);
+
+  try {
+    const data = await apiFetch('/perfil/foto', { method: 'POST', body: formData });
+    if (data?.foto_url) updateFotoUrl(data.foto_url);
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setSubiendoFoto(false);
+  }
+};
+
   const abrirDetalle = (insc: Inscripcion) => {
     setDetalle(insc);
     setVerQr(false);
@@ -135,9 +161,26 @@ function ParticipantPanel() {
       <div className="part-header">
         <div className="part-header-inner">
           <div className="part-avatar-wrap">
-            <div className="part-avatar">{initials}</div>
-            <button className="part-avatar-edit" aria-label="Cambiar foto de perfil (próximamente)" title="Próximamente" disabled>
-              <i className="ti ti-camera" aria-hidden="true" />
+            {user?.foto_url ? (
+              <img src={user.foto_url} alt="Foto de perfil" className="part-avatar" style={{ objectFit: 'cover' }} />
+            ) : (
+              <div className="part-avatar">{initials}</div>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFotoChange}
+              style={{ display: 'none' }}
+            />
+            <button
+              className="part-avatar-edit"
+              aria-label="Cambiar foto de perfil"
+              title="Cambiar foto de perfil"
+              onClick={handleFotoClick}
+              disabled={subiendoFoto}
+            >
+              <i className={`ti ${subiendoFoto ? 'ti-loader-2' : 'ti-camera'}`} aria-hidden="true" />
             </button>
           </div>
           <div className="part-meta">
@@ -149,7 +192,7 @@ function ParticipantPanel() {
             <button
               type="button"
               className="part-btn-disabled"
-              title="Próximamente"
+              title="Editar perfil"
               disabled
               onClick={() => setTab('ajustes')}
             >
@@ -391,12 +434,97 @@ function DetalleInscripcion({
 }
 
 function AjustesTab() {
-  const { user } = useAuth();
+  const { user, updateProfile, updateFotoUrl } = useAuth();
+  const initials = (user?.name || 'SK').split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
   const [actual, setActual] = useState('');
   const [nueva, setNueva] = useState('');
   const [confirmar, setConfirmar] = useState('');
-  const [msg, setMsg] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null);
+  const [msg, setMsg] = useState<{ tipo: 'ok' | 'error'; texto: string; id: number } | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const [verActual, setVerActual] = useState(false);
+  const [verNueva, setVerNueva] = useState(false);
+  const [verConfirmar, setVerConfirmar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [fotoUrl, setFotoUrl] = useState<string | null>((user as any)?.foto_url ?? null);
+  const [subiendoFoto, setSubiendoFoto] = useState(false);
+
+  useEffect(() => {
+    if (!msg) return;
+    const t = setTimeout(() => setMsg(null), 4000);
+    return () => clearTimeout(t);
+  }, [msg]);
+
+  const handleFotoClick = () => fileInputRef.current?.click();
+
+  const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setDatosMsg({ tipo: 'error', texto: 'El archivo debe ser una imagen.', id: Date.now() });
+      return;
+    }
+    if (file.size > 3 * 1024 * 1024) {
+      setDatosMsg({ tipo: 'error', texto: 'La imagen no debe superar 3MB.', id: Date.now() });
+      return;
+    }
+
+    const preview = URL.createObjectURL(file);
+    setFotoUrl(preview);
+    setSubiendoFoto(true);
+
+    const formData = new FormData();
+    formData.append('foto', file);
+
+    try {
+      const data = await apiFetch('/perfil/foto', { method: 'POST', body: formData });
+      if (data?.foto_url) {
+        setFotoUrl(data.foto_url);
+        updateFotoUrl(data.foto_url);
+      }
+      setDatosMsg({ tipo: 'ok', texto: 'Foto de perfil actualizada.', id: Date.now() });
+    } catch (err: any) {
+      setDatosMsg({ tipo: 'error', texto: err.message || 'No se pudo subir la foto.', id: Date.now() });
+    } finally {
+      setSubiendoFoto(false);
+    }
+  };
+
+  const [nombreCompleto, setNombreCompleto] = useState(user?.name || '');
+  const [correo, setCorreo] = useState(user?.email || '');
+  const [telefono, setTelefono] = useState(user?.telefono || '');
+  const [ciudad, setCiudad] = useState(user?.ciudad || '');
+  const [datosMsg, setDatosMsg] = useState<{ tipo: 'ok' | 'error'; texto: string; id: number } | null>(null);
+  const [guardandoDatos, setGuardandoDatos] = useState(false);
+
+  useEffect(() => {
+    if (!datosMsg) return;
+    const t = setTimeout(() => setDatosMsg(null), 4000);
+    return () => clearTimeout(t);
+  }, [datosMsg]);
+
+  const submitDatosPersonales = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setDatosMsg(null);
+    setGuardandoDatos(true);
+    try {
+      const [nombre_u, ...resto] = nombreCompleto.trim().split(' ');
+      const apellido_u = resto.join(' ');
+      await updateProfile({
+        nombre_u: nombre_u || undefined,
+        apellido_u: apellido_u || undefined,
+        correo_u: correo || undefined,
+        telefono_u: telefono || undefined,
+        ciudad_u: ciudad || undefined,
+      });
+      setDatosMsg({ tipo: 'ok', texto: 'Datos actualizados correctamente.', id: Date.now() });
+    } catch (err: any) {
+      setDatosMsg({ tipo: 'error', texto: err.message || 'No se pudieron actualizar los datos.', id: Date.now() });
+    } finally {
+      setGuardandoDatos(false);
+    }
+  };
 
   const [notifPrefs, setNotifPrefs] = useState(() => {
     const raw = localStorage.getItem('skyed_notif_prefs');
@@ -416,15 +544,19 @@ function AjustesTab() {
     localStorage.setItem('skyed_notif_prefs', JSON.stringify(next));
   };
 
-  const submitPassword = async (e: React.FormEvent) => {
+   const submitPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setMsg(null);
     if (nueva.length < 8) {
-      setMsg({ tipo: 'error', texto: 'La nueva contraseña debe tener mínimo 8 caracteres.' });
+      setMsg({ tipo: 'error', texto: 'La nueva contraseña debe tener mínimo 8 caracteres.', id: Date.now() });
+      return;
+    }
+    if (nueva === actual) {
+      setMsg({ tipo: 'error', texto: 'La nueva contraseña no puede ser igual a la actual.', id: Date.now() });
       return;
     }
     if (nueva !== confirmar) {
-      setMsg({ tipo: 'error', texto: 'Las contraseñas no coinciden.' });
+      setMsg({ tipo: 'error', texto: 'Las contraseñas no coinciden.', id: Date.now() });
       return;
     }
     setEnviando(true);
@@ -437,93 +569,214 @@ function AjustesTab() {
           nueva_contrasena_confirmation: confirmar,
         }),
       });
-      setMsg({ tipo: 'ok', texto: 'Contraseña actualizada correctamente.' });
+      setMsg({ tipo: 'ok', texto: 'Contraseña actualizada correctamente.', id: Date.now() });
       setActual('');
       setNueva('');
       setConfirmar('');
     } catch (err: any) {
-      setMsg({ tipo: 'error', texto: err.message || 'No se pudo actualizar la contraseña.' });
+      setMsg({ tipo: 'error', texto: err.message || 'No se pudo actualizar la contraseña.', id: Date.now() });
     } finally {
       setEnviando(false);
     }
   };
 
-  return (
+    return (
     <div className="part-settings-grid">
-      <div className="part-card">
-        <div className="part-card-head"><h3>Datos personales</h3></div>
-        <div className="part-card-body">
-          <p className="part-form-hint">Próximamente podrás editar estos datos. Por ahora solo se muestran los que ya tenemos de tu cuenta.</p>
-          <div className="part-form-group">
-            <label>Nombre completo</label>
-            <input type="text" defaultValue={user?.name || ''} disabled />
-          </div>
-          <div className="part-form-group">
-            <label>Correo electrónico</label>
-            <input type="email" defaultValue={user?.email || ''} disabled />
-          </div>
-          <div className="part-form-group">
-            <label>Teléfono</label>
-            <input type="tel" placeholder="Aún no disponible" disabled />
-          </div>
-          <div className="part-form-group">
-            <label>Ciudad</label>
-            <input type="text" placeholder="Aún no disponible" disabled />
-          </div>
-          <button type="button" className="btn btn-primary part-btn-disabled" disabled>Guardar cambios</button>
-        </div>
-      </div>
-
-      <div className="part-card">
-        <div className="part-card-head"><h3>Notificaciones</h3></div>
-        <div className="part-card-body">
-          {notifDefs.map((n) => (
-            <div className="part-toggle-row" key={n.key}>
-              <div className="part-toggle-label">{n.title}<small>{n.desc}</small></div>
-              <div
-                className={`part-toggle${notifPrefs[n.key] ? ' on' : ''}`}
-                role="switch"
-                aria-checked={notifPrefs[n.key]}
-                tabIndex={0}
-                onClick={() => toggleNotif(n.key)}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleNotif(n.key); }}
-              />
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="part-card">
-        <div className="part-card-head"><h3>Seguridad</h3></div>
-        <div className="part-card-body">
-          <form onSubmit={submitPassword}>
-            <div className="part-form-group">
-              <label htmlFor="p-actual">Contraseña actual</label>
-              <input id="p-actual" type="password" value={actual} onChange={(e) => setActual(e.target.value)} required />
-            </div>
-            <div className="part-form-group">
-              <label htmlFor="p-nueva">Nueva contraseña</label>
-              <input id="p-nueva" type="password" value={nueva} onChange={(e) => setNueva(e.target.value)} required minLength={8} />
-            </div>
-            <div className="part-form-group">
-              <label htmlFor="p-confirm">Confirmar nueva contraseña</label>
-              <input id="p-confirm" type="password" value={confirmar} onChange={(e) => setConfirmar(e.target.value)} required />
-            </div>
-            {msg && <p className={`part-error show`} style={{ color: msg.tipo === 'ok' ? '#15803d' : '#dc2626' }}>{msg.texto}</p>}
-            <button type="submit" className="btn btn-outline" disabled={enviando}>
-              {enviando ? 'Actualizando…' : 'Actualizar contraseña'}
+      <div className="part-card part-profile-card">
+        <div className="part-profile-main">
+          <div className="part-profile-avatar-wrap">
+            {fotoUrl ? (
+              <img src={fotoUrl} alt="Foto de perfil" className="part-profile-avatar part-profile-avatar-img" />
+            ) : (
+              <div className="part-profile-avatar">{initials}</div>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFotoChange}
+              style={{ display: 'none' }}
+            />
+            <button
+              type="button"
+              className="part-profile-avatar-edit"
+              onClick={handleFotoClick}
+              disabled={subiendoFoto}
+              aria-label="Cambiar foto de perfil"
+              title="Cambiar foto de perfil"
+            >
+              <i className={`ti ${subiendoFoto ? 'ti-loader-2' : 'ti-camera'}`} aria-hidden="true" />
             </button>
-          </form>
+          </div>
+          <div className="part-profile-info">
+            <p className="part-profile-name">{user?.name || 'Ciclista'}</p>
+            <span className="part-profile-role-pill">
+              <i className="ti ti-medal" aria-hidden="true" />
+              {user?.role === 'admin' ? 'Administrador' : 'Participante'}
+            </span>
+          </div>
         </div>
+
+        
       </div>
 
-      <div className="part-card">
-        <div className="part-card-head"><h3>Cuenta</h3></div>
-        <div className="part-card-body">
-          <div className="part-stat-row"><span className="part-label">Rol</span><span>{user?.role === 'admin' ? 'Administrador' : 'Participante'}</span></div>
-          <button type="button" className="btn btn-outline part-btn-disabled" style={{ marginTop: '1rem', color: '#dc2626' }} disabled title="Próximamente">
-            Eliminar cuenta
-          </button>
+
+      <div className="part-settings-main">
+        <div className="part-card">
+          <div className="part-card-head">
+            <span className="part-card-head-icon"><i className="ti ti-id-badge-2" aria-hidden="true" /></span>
+            <h3>Datos personales</h3>
+          </div>
+          <div className="part-card-body">
+            <form onSubmit={submitDatosPersonales}>
+              <div className="part-form-group">
+                <label htmlFor="d-nombre">Nombre completo</label>
+                <input id="d-nombre" type="text" value={nombreCompleto} onChange={(e) => setNombreCompleto(e.target.value)} required />
+              </div>
+              <div className="part-form-group">
+                <label htmlFor="d-correo">Correo electrónico</label>
+                <input id="d-correo" type="email" value={correo} onChange={(e) => setCorreo(e.target.value)} required />
+              </div>
+              <div className="part-form-group">
+                <label htmlFor="d-telefono">Teléfono</label>
+                <input id="d-telefono" type="tel" value={telefono} onChange={(e) => setTelefono(e.target.value)} placeholder="Ej: 3001234567" />
+              </div>
+              <div className="part-form-group">
+                <label htmlFor="d-ciudad">Ciudad</label>
+                <input id="d-ciudad" type="text" value={ciudad} onChange={(e) => setCiudad(e.target.value)} placeholder="Ej: Sogamoso" />
+              </div>
+              {datosMsg && (
+                <div className={`part-form-alert ${datosMsg.tipo}`} key={datosMsg.id}>
+                  <span className="part-alert-icon">{datosMsg.tipo === 'ok' ? '✅' : '⚠️'}</span>
+                  {datosMsg.texto}
+                  <div className="part-alert-timer" />
+                </div>
+              )}
+              <button type="submit" className="btn btn-primary" disabled={guardandoDatos}>
+                {guardandoDatos ? 'Guardando…' : 'Guardar cambios'}
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <div className="part-card">
+          <div className="part-card-head">
+            <span className="part-card-head-icon"><i className="ti ti-bell" aria-hidden="true" /></span>
+            <h3>Notificaciones</h3>
+          </div>
+          <div className="part-card-body">
+            {notifDefs.map((n) => (
+              <div className="part-toggle-row" key={n.key}>
+                <div className="part-toggle-label">{n.title}<small>{n.desc}</small></div>
+                <div
+                  className={`part-toggle${notifPrefs[n.key] ? ' on' : ''}`}
+                  role="switch"
+                  aria-checked={notifPrefs[n.key]}
+                  tabIndex={0}
+                  onClick={() => toggleNotif(n.key)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleNotif(n.key); }}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="part-card">
+          <div className="part-card-head">
+            <span className="part-card-head-icon"><i className="ti ti-lock" aria-hidden="true" /></span>
+            <h3>Seguridad</h3>
+          </div>
+          <div className="part-card-body">
+            <form onSubmit={submitPassword}>
+              <div className="part-form-group">
+                <label htmlFor="p-actual">Contraseña actual</label>
+                <div className="part-pass-field">
+                  <input
+                    id="p-actual"
+                    type={verActual ? 'text' : 'password'}
+                    value={actual}
+                    onChange={(e) => setActual(e.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="part-pass-toggle"
+                    onClick={() => setVerActual((v) => !v)}
+                    aria-label={verActual ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    tabIndex={-1}
+                  >
+                    <i className={`ti ${verActual ? 'ti-eye-off' : 'ti-eye'}`} aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
+              <div className="part-form-group">
+                <label htmlFor="p-nueva">Nueva contraseña</label>
+                <div className="part-pass-field">
+                  <input
+                    id="p-nueva"
+                    type={verNueva ? 'text' : 'password'}
+                    value={nueva}
+                    onChange={(e) => setNueva(e.target.value)}
+                    required
+                    minLength={8}
+                  />
+                  <button
+                    type="button"
+                    className="part-pass-toggle"
+                    onClick={() => setVerNueva((v) => !v)}
+                    aria-label={verNueva ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    tabIndex={-1}
+                  >
+                    <i className={`ti ${verNueva ? 'ti-eye-off' : 'ti-eye'}`} aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
+              <div className="part-form-group">
+                <label htmlFor="p-confirm">Confirmar nueva contraseña</label>
+                <div className="part-pass-field">
+                  <input
+                    id="p-confirm"
+                    type={verConfirmar ? 'text' : 'password'}
+                    value={confirmar}
+                    onChange={(e) => setConfirmar(e.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="part-pass-toggle"
+                    onClick={() => setVerConfirmar((v) => !v)}
+                    aria-label={verConfirmar ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    tabIndex={-1}
+                  >
+                    <i className={`ti ${verConfirmar ? 'ti-eye-off' : 'ti-eye'}`} aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
+              {msg && (
+                <div className={`part-form-alert ${msg.tipo}`} key={msg.id}>
+                  <span className="part-alert-icon">{msg.tipo === 'ok' ? '✅' : '⚠️'}</span>
+                  {msg.texto}
+                  <div className="part-alert-timer" />
+                </div>
+              )}
+              <button type="submit" className="btn btn-outline" disabled={enviando}>
+                {enviando ? 'Actualizando…' : 'Actualizar contraseña'}
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <div className="part-card part-card-danger">
+          <div className="part-card-head">
+            <span className="part-card-head-icon"><i className="ti ti-alert-triangle" aria-hidden="true" /></span>
+            <h3>Cuenta</h3>
+          </div>
+          <div className="part-card-body">
+            <div className="part-stat-row"><span className="part-label">Rol</span><span>{user?.role === 'admin' ? 'Administrador' : 'Participante'}</span></div>
+            <button type="button" className="btn btn-outline part-btn-disabled" style={{ marginTop: '1rem', color: '#dc2626' }} disabled title="Próximamente">
+              Eliminar cuenta
+            </button>
+          </div>
         </div>
       </div>
     </div>

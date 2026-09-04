@@ -1,80 +1,115 @@
-import { useEffect, useState, type FormEvent } from 'react';
-import SocialWrapper from '../../components/social/SocialWrapper';
+import { useMemo, useState } from 'react';
+import { Navigate, Link } from 'react-router-dom';
+import {
+  Bell,
+  Building2,
+  CalendarCheck2,
+  CalendarDays,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  CircleDollarSign,
+  Clock3,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  MessageSquareText,
+  Pencil,
+  Plus,
+  Search,
+  ShieldCheck,
+  Trash2,
+  Users,
+  Wrench,
+  ArrowUpRight,
+  Eye,
+  X,
+} from 'lucide-react';
+
 import Protected from '../../components/Protected';
 import { useAuth } from '../../context/AuthContext';
-import {
-  ambienteService,
-  eventoSocialService,
-  reservaService,
-  pqrService,
-  tipoEventoService,
-  type Ambiente,
-  type EventoSocial,
-  type Reserva,
-  type Pqr,
-  type TipoEvento,
-} from '../../services/socialService';
+import { useAccessibility } from '../../context/AccessibilityContext';
+import AccessibilityWidget from '../../components/shared/AccessibilityWidget';
 
-type Tab = 'ambientes' | 'eventos' | 'reservas' | 'pqr';
+import "../../styles/social/Admin.css";
 
-const TABS: { key: Tab; label: string }[] = [
-  { key: 'ambientes', label: 'Ambientes' },
-  { key: 'eventos', label: 'Eventos sociales' },
-  { key: 'reservas', label: 'Reservas' },
-  { key: 'pqr', label: 'PQR' },
-];
+type Section =
+  | 'inicio'
+  | 'eventos'
+  | 'reservas'
+  | 'usuarios'
+  | 'pqr'
+  | 'lugares'
+  | 'servicios';
 
-function AdminSocialContent() {
-  const { user } = useAuth();
-  const [tab, setTab] = useState<Tab>('ambientes');
+type Status =
+  | 'pendiente'
+  | 'confirmada'
+  | 'cancelada'
+  | 'en_proceso'
+  | 'resuelto'
+  | 'activo'
+  | 'inactivo';
 
-  const esAdminSocial = user?.roles?.includes('adminSocial');
+type EventRow = {
+  id: number;
+  nombre: string;
+  categoria: string;
+  fecha: string;
+  lugar: string;
+  precio: number;
+  cupos: number;
+  estado: 'activo' | 'inactivo';
+};
 
+type Reservation = {
+  id: number;
+  cliente: string;
+  evento: string;
+  fecha: string;
+  invitados: number;
+  total: number;
+  estado: 'pendiente' | 'confirmada' | 'cancelada';
+};
 
+type UserRow = {
+  id: number;
+  nombre: string;
+  correo: string;
+  rol: 'admin' | 'usuario';
+  estado: 'activo' | 'inactivo';
+};
 
-  return (
-    <main className="dashboard section">
-      <div className="container dashboard-grid">
-        <aside className="sidebar">
-          <strong>Panel Admin Social</strong>
-          {TABS.map((t) => (
-            <a
-              href="#!"
-              className={tab === t.key ? 'active' : ''}
-              onClick={(e) => {
-                e.preventDefault();
-                setTab(t.key);
-              }}
-              key={t.key}
-            >
-              {t.label}
-            </a>
-          ))}
-        </aside>
-        <section>
-          <div className="section-head">
-            <div>
-              <span className="eyebrow social">ADMINISTRACIÓN</span>
-              <h1>Panel de control</h1>
-            </div>
-          </div>
+type PqrRow = {
+  id: number;
+  tipo: 'Petición' | 'Queja' | 'Reclamo';
+  asunto: string;
+  cliente: string;
+  fecha: string;
+  estado: 'pendiente' | 'en_proceso' | 'resuelto';
+  mensaje: string;
+  respuesta?: string;
+};
 
-          {tab === 'ambientes' && <AmbientesTab />}
-          {tab === 'eventos' && <EventosTab />}
-          {tab === 'reservas' && <ReservasTab />}
-          {tab === 'pqr' && <PqrTab />}
-        </section>
-      </div>
-    </main>
-  );
-}
+type Venue = {
+  id: number;
+  nombre: string;
+  ubicacion: string;
+  capacidad: number;
+  precio: number;
+  estado: 'disponible' | 'reservado' | 'revision';
+};
 
-export default function Admin() {
-  return (
-    <Protected requireRole="adminSocial">
-      <SocialWrapper>
-        <AdminSocialContent />
-      </SocialWrapper>
+type Service = {
+  id: number;
+  nombre: string;
+  categoria: string;
+  precio: number;
+  estado: 'disponible' | 'no_disponible';
+};
+
+/* =========================
+   DATOS DE DEMOSTRACIÓN
     </Protected>
   );
 }
