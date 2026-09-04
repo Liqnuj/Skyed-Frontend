@@ -128,6 +128,25 @@ const formatDate = (value?: string | null) => {
       }).format(d);
 };
 
+/* ================================================================
+   VALIDACIONES DEL PANEL ADMIN
+================================================================ */
+
+const sanitizeName = (value: string, maxLength = 50) =>
+  value
+    .replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñÜü\s'-]/g, "")
+    .replace(/\s{2,}/g, " ")
+    .slice(0, maxLength);
+
+const sanitizeDescription = (value: string, maxLength = 120) =>
+  value.slice(0, maxLength);
+
+const sanitizeInteger = (value: string, maxLength = 7) =>
+  value.replace(/\D/g, "").slice(0, maxLength);
+
+const sanitizeMoney = (value: string, maxLength = 12) =>
+  value.replace(/\D/g, "").slice(0, maxLength);
+
 function Badge({ value }: { value: string }) {
   return <span className={`admin-badge ${value}`}>{human(value)}</span>;
 }
@@ -755,42 +774,142 @@ function AmbienteModal({ item, onClose, onSave }: { item?: Ambiente; onClose: ()
   const [saving, setSaving] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
-    e.preventDefault(); setSaving(true);
+    e.preventDefault();
+
+    const nombre = sanitizeName(form.nombre_a).trim();
+    const descripcion = sanitizeDescription(form.descripcion_a).trim();
+    const capacidad = Number(form.capacidad_a);
+    const precio = form.precio_referencia_a === "" ? undefined : Number(form.precio_referencia_a);
+
+    if (!nombre || !Number.isInteger(capacidad) || capacidad < 1) return;
+    if (precio !== undefined && (!Number.isFinite(precio) || precio < 0)) return;
+
+    setSaving(true);
     try {
       await onSave({
-        nombre_a: form.nombre_a,
-        descripcion_a: form.descripcion_a || undefined,
-        capacidad_a: Number(form.capacidad_a),
-        precio_referencia_a: form.precio_referencia_a === "" ? undefined : Number(form.precio_referencia_a),
+        nombre_a: nombre,
+        descripcion_a: descripcion || undefined,
+        capacidad_a: capacidad,
+        precio_referencia_a: precio,
       });
-    } finally { setSaving(false); }
+    } finally {
+      setSaving(false);
+    }
   };
 
   return <Modal title={item ? "Editar ambiente" : "Nuevo ambiente"} subtitle="Los cambios se guardan directamente en PostgreSQL." onClose={onClose}>
     <form className="modal-form" onSubmit={submit}>
       <div className="form-grid">
-        <Field label="Nombre"><input required value={form.nombre_a} onChange={e => setForm({...form, nombre_a:e.target.value})} /></Field>
-        <Field label="Capacidad"><input required type="number" min="1" value={form.capacidad_a} onChange={e => setForm({...form, capacidad_a:e.target.value})} /></Field>
-        <Field label="Precio de referencia"><input type="number" min="0" value={form.precio_referencia_a} onChange={e => setForm({...form, precio_referencia_a:e.target.value})} /></Field>
-        <Field label="Descripción"><textarea rows={4} value={form.descripcion_a} onChange={e => setForm({...form, descripcion_a:e.target.value})} /></Field>
+        <Field label="Nombre">
+          <input
+            required
+            maxLength={50}
+            pattern="[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s'\-]+"
+            title="Usa solamente letras, espacios, guiones o apóstrofes."
+            value={form.nombre_a}
+            onChange={e => setForm({...form, nombre_a: sanitizeName(e.target.value)})}
+          />
+          <small className="field-hint">{form.nombre_a.length}/50 caracteres</small>
+        </Field>
+
+        <Field label="Capacidad">
+          <input
+            required
+            type="number"
+            min="1"
+            max="9999999"
+            step="1"
+            inputMode="numeric"
+            value={form.capacidad_a}
+            onChange={e => setForm({...form, capacidad_a: sanitizeInteger(e.target.value)})}
+          />
+        </Field>
+
+        <Field label="Precio de referencia">
+          <input
+            type="number"
+            min="0"
+            max="999999999999"
+            step="1"
+            inputMode="numeric"
+            value={form.precio_referencia_a}
+            onChange={e => setForm({...form, precio_referencia_a: sanitizeMoney(e.target.value)})}
+          />
+        </Field>
+
+        <Field label="Descripción">
+          <textarea
+            rows={4}
+            maxLength={120}
+            value={form.descripcion_a}
+            onChange={e => setForm({...form, descripcion_a: sanitizeDescription(e.target.value)})}
+          />
+          <small className="field-hint">{form.descripcion_a.length}/120 caracteres</small>
+        </Field>
       </div>
-      <div className="modal-actions"><button type="button" className="secondary-btn" onClick={onClose}>Cancelar</button><button className="primary-btn" disabled={saving}>{saving ? "Guardando…" : "Guardar"}</button></div>
+
+      <div className="modal-actions">
+        <button type="button" className="secondary-btn" onClick={onClose}>Cancelar</button>
+        <button className="primary-btn" disabled={saving}>{saving ? "Guardando…" : "Guardar"}</button>
+      </div>
     </form>
   </Modal>;
 }
 
 function ServicioModal({ item, onClose, onSave }: { item?: Servicio; onClose: () => void; onSave: (data: any) => Promise<void> }) {
-  const [form, setForm] = useState({ nombre_s: item?.nombre_s ?? item?.nombre ?? "", descripcion_s: item?.descripcion_s ?? item?.descripcion ?? "" });
+  const [form, setForm] = useState({
+    nombre_s: item?.nombre_s ?? item?.nombre ?? "",
+    descripcion_s: item?.descripcion_s ?? item?.descripcion ?? ""
+  });
   const [saving, setSaving] = useState(false);
+
   const submit = async (e: React.FormEvent) => {
-    e.preventDefault(); setSaving(true);
-    try { await onSave(form); } finally { setSaving(false); }
+    e.preventDefault();
+
+    const nombre = sanitizeName(form.nombre_s).trim();
+    const descripcion = sanitizeDescription(form.descripcion_s).trim();
+
+    if (!nombre) return;
+
+    setSaving(true);
+    try {
+      await onSave({
+        nombre_s: nombre,
+        descripcion_s: descripcion || undefined
+      });
+    } finally {
+      setSaving(false);
+    }
   };
+
   return <Modal title={item ? "Editar servicio" : "Nuevo servicio"} subtitle="Catálogo de servicios sociales." onClose={onClose}>
     <form className="modal-form" onSubmit={submit}>
-      <Field label="Nombre"><input required value={form.nombre_s} onChange={e => setForm({...form, nombre_s:e.target.value})} /></Field>
-      <Field label="Descripción"><textarea rows={5} value={form.descripcion_s} onChange={e => setForm({...form, descripcion_s:e.target.value})} /></Field>
-      <div className="modal-actions"><button type="button" className="secondary-btn" onClick={onClose}>Cancelar</button><button className="primary-btn" disabled={saving}>{saving ? "Guardando…" : "Guardar"}</button></div>
+      <Field label="Nombre">
+        <input
+          required
+          maxLength={50}
+          pattern="[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s'\-]+"
+          title="Usa solamente letras, espacios, guiones o apóstrofes."
+          value={form.nombre_s}
+          onChange={e => setForm({...form, nombre_s: sanitizeName(e.target.value)})}
+        />
+        <small className="field-hint">{form.nombre_s.length}/50 caracteres</small>
+      </Field>
+
+      <Field label="Descripción">
+        <textarea
+          rows={5}
+          maxLength={120}
+          value={form.descripcion_s}
+          onChange={e => setForm({...form, descripcion_s: sanitizeDescription(e.target.value)})}
+        />
+        <small className="field-hint">{form.descripcion_s.length}/120 caracteres</small>
+      </Field>
+
+      <div className="modal-actions">
+        <button type="button" className="secondary-btn" onClick={onClose}>Cancelar</button>
+        <button className="primary-btn" disabled={saving}>{saving ? "Guardando…" : "Guardar"}</button>
+      </div>
     </form>
   </Modal>;
 }
@@ -804,28 +923,81 @@ function EventoModal({ item, ambientes, tipos, onClose, onSave }: { item?: Event
     id_tipo_eves: item?.id_tipo_eves?.toString() ?? "",
   });
   const [saving, setSaving] = useState(false);
+
   const submit = async (e: React.FormEvent) => {
-    e.preventDefault(); setSaving(true);
+    e.preventDefault();
+
+    const nombre = sanitizeName(form.nombre_er).trim();
+    const descripcion = sanitizeDescription(form.descripcion_er).trim();
+
+    if (!nombre || !form.id_a || !form.id_tipo_eves) return;
+
+    setSaving(true);
     try {
       await onSave({
-        nombre_er: form.nombre_er,
-        descripcion_er: form.descripcion_er || undefined,
+        nombre_er: nombre,
+        descripcion_er: descripcion || undefined,
         fecha_er: form.fecha_er || undefined,
         id_a: Number(form.id_a),
         id_tipo_eves: Number(form.id_tipo_eves),
       });
-    } finally { setSaving(false); }
+    } finally {
+      setSaving(false);
+    }
   };
+
   return <Modal title={item ? "Editar evento social" : "Nuevo evento social"} subtitle="El evento se guarda en la base de datos." onClose={onClose}>
     <form className="modal-form" onSubmit={submit}>
       <div className="form-grid">
-        <Field label="Nombre"><input required value={form.nombre_er} onChange={e => setForm({...form,nombre_er:e.target.value})} /></Field>
-        <Field label="Fecha"><input type="date" value={form.fecha_er} onChange={e => setForm({...form,fecha_er:e.target.value})} /></Field>
-        <Field label="Ambiente"><select required value={form.id_a} onChange={e => setForm({...form,id_a:e.target.value})}><option value="">Seleccionar…</option>{ambientes.map(a => <option key={a.id_a} value={a.id_a}>{a.nombre_a}</option>)}</select></Field>
-        <Field label="Tipo de evento"><select required value={form.id_tipo_eves} onChange={e => setForm({...form,id_tipo_eves:e.target.value})}><option value="">Seleccionar…</option>{tipos.map(t => <option key={t.id_tipo_eves} value={t.id_tipo_eves}>{t.nombre_tipo_eves}</option>)}</select></Field>
+        <Field label="Nombre">
+          <input
+            required
+            maxLength={50}
+            pattern="[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s'\-]+"
+            title="Usa solamente letras, espacios, guiones o apóstrofes."
+            value={form.nombre_er}
+            onChange={e => setForm({...form, nombre_er: sanitizeName(e.target.value)})}
+          />
+          <small className="field-hint">{form.nombre_er.length}/50 caracteres</small>
+        </Field>
+
+        <Field label="Fecha">
+          <input
+            type="date"
+            value={form.fecha_er}
+            onChange={e => setForm({...form, fecha_er:e.target.value})}
+          />
+        </Field>
+
+        <Field label="Ambiente">
+          <select required value={form.id_a} onChange={e => setForm({...form,id_a:e.target.value})}>
+            <option value="">Seleccionar…</option>
+            {ambientes.map(a => <option key={a.id_a} value={a.id_a}>{a.nombre_a}</option>)}
+          </select>
+        </Field>
+
+        <Field label="Tipo de evento">
+          <select required value={form.id_tipo_eves} onChange={e => setForm({...form,id_tipo_eves:e.target.value})}>
+            <option value="">Seleccionar…</option>
+            {tipos.map(t => <option key={t.id_tipo_eves} value={t.id_tipo_eves}>{t.nombre_tipo_eves}</option>)}
+          </select>
+        </Field>
       </div>
-      <Field label="Descripción"><textarea rows={4} value={form.descripcion_er} onChange={e => setForm({...form,descripcion_er:e.target.value})} /></Field>
-      <div className="modal-actions"><button type="button" className="secondary-btn" onClick={onClose}>Cancelar</button><button className="primary-btn" disabled={saving}>{saving ? "Guardando…" : "Guardar"}</button></div>
+
+      <Field label="Descripción">
+        <textarea
+          rows={4}
+          maxLength={120}
+          value={form.descripcion_er}
+          onChange={e => setForm({...form,descripcion_er: sanitizeDescription(e.target.value)})}
+        />
+        <small className="field-hint">{form.descripcion_er.length}/120 caracteres</small>
+      </Field>
+
+      <div className="modal-actions">
+        <button type="button" className="secondary-btn" onClick={onClose}>Cancelar</button>
+        <button className="primary-btn" disabled={saving}>{saving ? "Guardando…" : "Guardar"}</button>
+      </div>
     </form>
   </Modal>;
 }
@@ -844,7 +1016,16 @@ function PqrModal({ item, onClose, onSave }: { item: Pqr; onClose: () => void; o
       <div className="message-box"><span>Mensaje recibido</span><p>{item.mensaje_pqr}</p></div>
       <form className="modal-form" onSubmit={submit}>
         <Field label="Estado"><select value={estado} onChange={e => setEstado(e.target.value as Pqr["estado_pqr"])}><option value="abierto">Abierto</option><option value="en_proceso">En proceso</option><option value="resuelto">Resuelto</option><option value="cerrado">Cerrado</option></select></Field>
-        <Field label="Respuesta"><textarea rows={5} value={respuesta} onChange={e => setRespuesta(e.target.value)} placeholder="Respuesta para el usuario…" /></Field>
+        <Field label="Respuesta">
+          <textarea
+            rows={5}
+            maxLength={1000}
+            value={respuesta}
+            onChange={e => setRespuesta(e.target.value.slice(0, 1000))}
+            placeholder="Respuesta para el usuario…"
+          />
+          <small className="field-hint">{respuesta.length}/1000 caracteres</small>
+        </Field>
         <div className="modal-actions"><button type="button" className="secondary-btn" onClick={onClose}>Cancelar</button><button className="primary-btn" disabled={saving}>{saving ? "Guardando…" : "Guardar respuesta"}</button></div>
       </form>
     </div>
