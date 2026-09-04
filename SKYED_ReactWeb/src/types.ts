@@ -39,8 +39,9 @@ export interface User {
   id: number;
   name: string;
   email: string;
-  role: 'participante' | 'admin';
-  roles: ('adminSocial' | 'adminDeportivo'| 'participante'| 'cliente')[]; 
-  telefono?: string;
-  ciudad?: string;
+  telefono: string;
+  ciudad: string;
+  foto_url: string | null;
+  role: 'admin' | 'participante';
+  roles: string[];
 }
