@@ -4263,7 +4263,7 @@ html, .mod-principal {
 /* ── Fix autofill navegador ── */
 .mod-principal .auth-form-box .form-group input:-webkit-autofill, .mod-principal .auth-form-box .form-group input:-webkit-autofill:hover, .mod-principal .auth-form-box .form-group input:-webkit-autofill:focus, .mod-principal .auth-form-box .form-group input:-webkit-autofill:active {
     /* -webkit-box-shadow: 0 0 0 1000px #1e2535 inset !important; */
-    -webkit-text-fill-color: #c8d4e4 !important;
+    -webkit-text-fill-color: #000000 !important;
     caret-color: #c8d4e4 !important;
     border: 2px solid var(--blue)!important;
     transition: background-color 9999s ease-in-out 0s;
