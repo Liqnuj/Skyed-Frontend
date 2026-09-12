@@ -5,10 +5,12 @@ import { useAuth } from '../../context/AuthContext';
 import PrincipalWrapper from '../../components/principal/PrincipalWrapper';
 import AuthTopbar from '../../components/principal/AuthTopbar';
 import TermsModal from '../../components/TermsModal';
+import { getSiteContext } from '../../utils/siteContext'; 
 
 export default function RegisterPage() {
   const { register } = useAuth();
   const navigate = useNavigate();
+  const siteContext = getSiteContext();
 
   const [tipoDocumento, setTipoDocumento] = useState('');
   const [documento, setDocumento] = useState('');
@@ -85,7 +87,8 @@ export default function RegisterPage() {
           correo_u: email,
           fecha_nacimiento_u: fechaNac,
           contrasena_u: password,
-          contrasena_u_confirmation: confirm
+          contrasena_u_confirmation: confirm,
+          contexto: getSiteContext(),
         });
 
         setSuccessMsg('¡Registro exitoso! Bienvenido a SKYED.');
