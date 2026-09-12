@@ -4,11 +4,16 @@ import AccessibilityWidget from '../shared/AccessibilityWidget';
 import { useAccessibility } from '../../context/AccessibilityContext';
 import SportNav from './SportNav';
 import SportFooter from './SportFooter';
+import { useEffect } from 'react'; // agrega useEffect al import existente
+import { setSiteContext } from '../../utils/siteContext';
 
 const DEFAULT_ACCENT = '#2c9caf'; // color de marca SkyedDeportivo
 
 export default function SportWrapper({ children }: { children: ReactNode }) {
   const [panelOpen, setPanelOpen] = useState(false);
+  useEffect(() => {
+    setSiteContext('deportivo');
+  }, []);
   const {
     darkMode, toggleDark,
     fontSize, setFontSize,
