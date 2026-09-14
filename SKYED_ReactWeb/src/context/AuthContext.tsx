@@ -20,12 +20,16 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<boolean>;
   register: (userData: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
-  updateProfile: (data: {
+  deleteAccount: () => Promise<void>;
+    updateProfile: (data: {
     nombre_u?: string;
     apellido_u?: string;
     correo_u?: string;
     telefono_u?: string;
     ciudad_u?: string;
+    tipo_documento_u?: string;
+    documento_u?: number;
+    fecha_nacimiento_u?: string;
   }) => Promise<void>;
   updateFotoUrl: (fotoUrl: string) => void;
 }
@@ -45,6 +49,9 @@ function buildUser(apiUser: any): User {
     telefono: apiUser.telefono_u,
     ciudad: apiUser.ciudad_u,
     foto_url: apiUser.foto_url ?? null,
+    tipo_documento: apiUser.tipo_documento_u ?? '',
+    documento: apiUser.documento_u != null ? String(apiUser.documento_u) : '',
+    fecha_nacimiento: apiUser.fecha_nacimiento_u ?? null,
     role: nombresRoles.some((r) => r.toLowerCase().startsWith('admin')) ? 'admin' : 'participante',
     roles: nombresRoles,
   };
@@ -94,6 +101,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch {
         // si el token ya venció o falla la petición, igual limpiamos la sesión local
       }
+      setToken(null);
+      setUser(null);
+    },
+
+      async deleteAccount() {
+      await apiFetch('/perfil', { method: 'DELETE' });
       setToken(null);
       setUser(null);
     },

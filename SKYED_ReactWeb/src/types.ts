@@ -42,6 +42,9 @@ export interface User {
   telefono: string;
   ciudad: string;
   foto_url: string | null;
+  tipo_documento: string;
+  documento: string;
+  fecha_nacimiento: string | null;
   role: 'admin' | 'participante';
   roles: string[];
 }
