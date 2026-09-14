@@ -237,10 +237,17 @@ function ImageUploadField({
     setUploading(true);
     try {
       const body = new FormData();
-      body.append("imagen", file);
-      body.append("carpeta", carpeta);
-      const res = await apiFetch("/social/imagenes", { method: "POST", body });
-      onChange(res.url);
+body.append("imagen", file);
+body.append("carpeta", carpeta);
+
+const res = await apiFetch("/social/imagenes", {
+  method: "POST",
+  body,
+});
+
+console.log("RESPUESTA SUBIDA:", res);
+
+onChange(res.url);
     } catch (err) {
       onError(err instanceof Error ? err.message : "No se pudo subir la imagen.");
     } finally {
