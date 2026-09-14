@@ -12,6 +12,7 @@ export interface RegisterData {
   fecha_nacimiento_u: string;
   contrasena_u: string;
   contrasena_u_confirmation: string;
+  contexto?: 'deportivo' | 'social';
 }
 
 interface AuthContextValue {
