@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import {
   Building2,
@@ -7,7 +7,6 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
-  ImagePlus,
   LayoutDashboard,
   Loader2,
   LogOut,
@@ -45,7 +44,6 @@ type Ambiente = {
   descripcion_a?: string | null;
   capacidad_a: number;
   precio_referencia_a?: number | string | null;
-  imagen_principal_a?: string | null;
   servicios?: Array<{ id_s: number; nombre_s: string }>;
 };
 
@@ -62,7 +60,6 @@ type Servicio = {
 type TipoEvento = {
   id_tipo_eves: number;
   nombre_tipo_eves: string;
-  modulo_tipo_eves?: "deportivo" | "social";
 };
 
 type EventoSocial = {
@@ -70,7 +67,6 @@ type EventoSocial = {
   nombre_er: string;
   descripcion_er?: string | null;
   fecha_er?: string | null;
-  imagen_er?: string | null;
   estado_er: "activo" | "inactivo";
   id_a?: number;
   id_tipo_eves?: number;
@@ -203,115 +199,6 @@ function Field({
   );
 }
 
-const MAX_IMAGEN_MB = 4;
-
-function ImageUploadField({
-  value,
-  onChange,
-  carpeta,
-  onError,
-}: {
-  value: string;
-  onChange: (url: string) => void;
-  carpeta: "ambientes" | "eventos";
-  onError: (message: string) => void;
-}) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
-  const [dragOver, setDragOver] = useState(false);
-  const [imgError, setImgError] = useState(false);
-
-  const handleFile = async (file?: File | null) => {
-    if (!file || uploading) return;
-
-    if (!file.type.startsWith("image/")) {
-      onError("Selecciona un archivo de imagen (JPG, PNG o WEBP).");
-      return;
-    }
-    if (file.size > MAX_IMAGEN_MB * 1024 * 1024) {
-      onError(`La imagen no debe superar ${MAX_IMAGEN_MB} MB.`);
-      return;
-    }
-
-    setImgError(false);
-    setUploading(true);
-    try {
-      const body = new FormData();
-      body.append("imagen", file);
-      body.append("carpeta", carpeta);
-      const res = await apiFetch("/social/imagenes", { method: "POST", body });
-      onChange(res.url);
-    } catch (err) {
-      onError(err instanceof Error ? err.message : "No se pudo subir la imagen.");
-    } finally {
-      setUploading(false);
-      if (inputRef.current) inputRef.current.value = "";
-    }
-  };
-
-  return (
-    <div
-      className={`admin-dropzone ${dragOver ? "is-dragover" : ""} ${uploading ? "is-uploading" : ""}`}
-      onClick={() => !uploading && inputRef.current?.click()}
-      onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); inputRef.current?.click(); } }}
-      role="button"
-      tabIndex={0}
-      onDragOver={e => { e.preventDefault(); setDragOver(true); }}
-      onDragLeave={() => setDragOver(false)}
-      onDrop={e => {
-        e.preventDefault();
-        setDragOver(false);
-        handleFile(e.dataTransfer.files?.[0]);
-      }}
-    >
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/jpeg,image/png,image/webp"
-        hidden
-        onChange={e => handleFile(e.target.files?.[0])}
-      />
-
-      {value && !imgError ? (
-        <div className="admin-dropzone-preview">
-          <img src={value} alt="Vista previa" onError={() => setImgError(true)} />
-          {uploading && (
-            <div className="admin-dropzone-overlay"><Loader2 size={20} className="admin-spin" /></div>
-          )}
-          <div className="admin-dropzone-preview-actions">
-            <button type="button" className="secondary-btn" disabled={uploading}
-              onClick={e => { e.stopPropagation(); inputRef.current?.click(); }}>
-              <Upload size={13} /> Cambiar
-            </button>
-            <button type="button" className="secondary-btn danger" disabled={uploading}
-              onClick={e => { e.stopPropagation(); onChange(""); }}>
-              <X size={13} /> Quitar
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="admin-dropzone-empty">
-          {uploading ? (
-            <>
-              <Loader2 size={22} className="admin-spin" />
-              <span>Subiendo…</span>
-            </>
-          ) : (
-            <>
-              <ImagePlus size={22} />
-              <span>Haz clic o arrastra una imagen aquí</span>
-              <small>JPG, PNG o WEBP · máx. {MAX_IMAGEN_MB} MB</small>
-            </>
-          )}
-        </div>
-      )}
-      {imgError && value && !uploading && (
-        <small className="field-hint field-hint-warn">No se pudo cargar esa imagen. Intenta subirla de nuevo.</small>
-      )}
-    </div>
-  );
-}
-
 function SectionTable({
   title,
   action,
@@ -393,18 +280,14 @@ function AdminPage() {
         apiFetch("/eventos-sociales"),
         apiFetch("/reservas"),
         apiFetch("/pqr"),
-        // Filtramos por módulo en el backend; igual filtramos otra vez abajo
-        // por si el backend todavía no tiene la migración de modulo_tipo_eves.
-        apiFetch("/tipos-evento?modulo=social"),
+        apiFetch("/tipos-evento"),
       ]);
       setAmbientes(a.data ?? []);
       setServicios(s.data ?? []);
       setEventos(e.data ?? []);
       setReservas(r.data ?? []);
       setPqrs(p.data ?? []);
-      // Nunca mostramos clasificaciones de Deportivo (ej. Ciclomontañismo)
-      // en el selector de "Tipo de evento" de un evento social.
-      setTipos((t.data ?? []).filter((tipo: TipoEvento) => tipo.modulo_tipo_eves !== "deportivo"));
+      setTipos(t.data ?? []);
       try {
         const u = await apiFetch("/users");
         setUsers(u.data ?? u.users ?? []);
@@ -458,7 +341,7 @@ function AdminPage() {
       .reduce((sum, r) => sum + Number(r.total_rese || 0), 0),
   }), [users, eventos, reservas, pqrs]);
 
-  if (!user || !user.roles.includes("adminSocial")) return <Navigate to="/social" replace />;
+  if (!user || user.role !== "admin") return <Navigate to="/social" replace />;
 
   const sectionMeta: Record<Section, { label: string; icon: any }> = {
     inicio: { label: "Inicio", icon: LayoutDashboard },
@@ -712,15 +595,10 @@ function AdminPage() {
 
         {section === "lugares" && (
           <SectionTable title="Gestión de ambientes" action="Nuevo ambiente" onAction={() => { setEditing(null); setModal("ambiente"); }}>
-            <thead><tr><th>Foto</th><th>ID</th><th>Nombre</th><th>Capacidad</th><th>Precio referencia</th><th>Acciones</th></tr></thead>
+            <thead><tr><th>ID</th><th>Nombre</th><th>Capacidad</th><th>Precio referencia</th><th>Acciones</th></tr></thead>
             <tbody>
               {visibleAmbientes.map(a => (
                 <tr key={a.id_a}>
-                  <td>
-                    {a.imagen_principal_a
-                      ? <img className="admin-thumb" src={a.imagen_principal_a} alt={a.nombre_a} onError={e => { (e.target as HTMLImageElement).style.visibility = "hidden"; }} />
-                      : <span className="admin-thumb admin-thumb-empty" title="Sin foto">—</span>}
-                  </td>
                   <td>#{a.id_a}</td><td><strong>{a.nombre_a}</strong></td><td>{a.capacidad_a}</td>
                   <td>{money(a.precio_referencia_a)}</td>
                   <td><div className="row-actions">
@@ -729,7 +607,7 @@ function AdminPage() {
                   </div></td>
                 </tr>
               ))}
-              {!visibleAmbientes.length && <tr><td colSpan={6}>No hay ambientes.</td></tr>}
+              {!visibleAmbientes.length && <tr><td colSpan={5}>No hay ambientes.</td></tr>}
             </tbody>
           </SectionTable>
         )}
@@ -758,15 +636,10 @@ function AdminPage() {
 
         {section === "eventos" && (
           <SectionTable title="Gestión de eventos sociales" action="Nuevo evento" onAction={() => { setEditing(null); setModal("evento"); }}>
-            <thead><tr><th>Foto</th><th>ID</th><th>Nombre</th><th>Fecha</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <thead><tr><th>ID</th><th>Nombre</th><th>Fecha</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody>
               {visibleEventos.map(e => (
                 <tr key={e.id_er}>
-                  <td>
-                    {(e.imagen_er || e.ambiente?.imagen_principal_a)
-                      ? <img className="admin-thumb" src={e.imagen_er || e.ambiente?.imagen_principal_a} alt={e.nombre_er} onError={ev => { (ev.target as HTMLImageElement).style.visibility = "hidden"; }} />
-                      : <span className="admin-thumb admin-thumb-empty" title="Sin foto">—</span>}
-                  </td>
                   <td>#{e.id_er}</td><td><strong>{e.nombre_er}</strong></td><td>{formatDate(e.fecha_er)}</td>
                   <td><Badge value={e.estado_er} /></td>
                   <td><div className="row-actions">
@@ -776,7 +649,7 @@ function AdminPage() {
                   </div></td>
                 </tr>
               ))}
-              {!visibleEventos.length && <tr><td colSpan={6}>No hay eventos sociales.</td></tr>}
+              {!visibleEventos.length && <tr><td colSpan={5}>No hay eventos sociales.</td></tr>}
             </tbody>
           </SectionTable>
         )}
@@ -857,7 +730,6 @@ function AdminPage() {
           item={editing}
           onClose={() => setModal(null)}
           onSave={editing ? data => updateAmbiente(editing.id_a, data) : createAmbiente}
-          notify={notify}
         />
       )}
 
@@ -878,7 +750,6 @@ function AdminPage() {
           tipos={tipos}
           onClose={() => setModal(null)}
           onSave={editing ? data => updateEvento(editing.id_er, data) : createEvento}
-          notify={notify}
         />
       )}
 
@@ -895,13 +766,12 @@ function Kpi({ icon, label, value, compact }: { icon: React.ReactNode; label: st
   return <div className="kpi-card"><div className="kpi-icon">{icon}</div><span>{label}</span><strong className={compact ? "compact" : ""}>{value}</strong></div>;
 }
 
-function AmbienteModal({ item, onClose, onSave, notify }: { item?: Ambiente; onClose: () => void; onSave: (data: any) => Promise<void>; notify: (message: string) => void }) {
+function AmbienteModal({ item, onClose, onSave }: { item?: Ambiente; onClose: () => void; onSave: (data: any) => Promise<void> }) {
   const [form, setForm] = useState({
     nombre_a: item?.nombre_a ?? "",
     descripcion_a: item?.descripcion_a ?? "",
     capacidad_a: item?.capacidad_a?.toString() ?? "",
     precio_referencia_a: item?.precio_referencia_a?.toString() ?? "",
-    imagen_principal_a: item?.imagen_principal_a ?? "",
   });
   const [saving, setSaving] = useState(false);
 
@@ -912,11 +782,9 @@ function AmbienteModal({ item, onClose, onSave, notify }: { item?: Ambiente; onC
     const descripcion = sanitizeDescription(form.descripcion_a).trim();
     const capacidad = Number(form.capacidad_a);
     const precio = form.precio_referencia_a === "" ? undefined : Number(form.precio_referencia_a);
-    const imagen = form.imagen_principal_a.trim();
 
     if (!nombre || !Number.isInteger(capacidad) || capacidad < 1) return;
     if (precio !== undefined && (!Number.isFinite(precio) || precio < 0)) return;
-    if (!imagen) return;
 
     setSaving(true);
     try {
@@ -925,10 +793,9 @@ function AmbienteModal({ item, onClose, onSave, notify }: { item?: Ambiente; onC
         descripcion_a: descripcion || undefined,
         capacidad_a: capacidad,
         precio_referencia_a: precio,
-        imagen_principal_a: imagen,
       });
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
   };
 
@@ -983,19 +850,9 @@ function AmbienteModal({ item, onClose, onSave, notify }: { item?: Ambiente; onC
         </Field>
       </div>
 
-      <Field label="Foto principal (obligatoria)">
-        <ImageUploadField
-          value={form.imagen_principal_a}
-          onChange={url => setForm({...form, imagen_principal_a: url})}
-          carpeta="ambientes"
-          onError={notify}
-        />
-        <small className="field-hint">Esta foto es la que verán los clientes al elegir el lugar.</small>
-      </Field>
-
       <div className="modal-actions">
         <button type="button" className="secondary-btn" onClick={onClose}>Cancelar</button>
-        <button className="primary-btn" disabled={saving || !form.imagen_principal_a.trim()}>{saving ? "Guardando…" : "Guardar"}</button>
+        <button className="primary-btn" disabled={saving}>{saving ? "Guardando…" : "Guardar"}</button>
       </div>
     </form>
   </Modal>;
@@ -1059,12 +916,11 @@ function ServicioModal({ item, onClose, onSave }: { item?: Servicio; onClose: ()
   </Modal>;
 }
 
-function EventoModal({ item, ambientes, tipos, onClose, onSave, notify }: { item?: EventoSocial; ambientes: Ambiente[]; tipos: TipoEvento[]; onClose: () => void; onSave: (data: any) => Promise<void>; notify: (message: string) => void }) {
+function EventoModal({ item, ambientes, tipos, onClose, onSave }: { item?: EventoSocial; ambientes: Ambiente[]; tipos: TipoEvento[]; onClose: () => void; onSave: (data: any) => Promise<void> }) {
   const [form, setForm] = useState({
     nombre_er: item?.nombre_er ?? "",
     descripcion_er: item?.descripcion_er ?? "",
     fecha_er: item?.fecha_er?.slice(0,10) ?? "",
-    imagen_er: item?.imagen_er ?? "",
     id_a: item?.id_a?.toString() ?? "",
     id_tipo_eves: item?.id_tipo_eves?.toString() ?? "",
   });
@@ -1084,7 +940,6 @@ function EventoModal({ item, ambientes, tipos, onClose, onSave, notify }: { item
         nombre_er: nombre,
         descripcion_er: descripcion || undefined,
         fecha_er: form.fecha_er || undefined,
-        imagen_er: form.imagen_er.trim() || null,
         id_a: Number(form.id_a),
         id_tipo_eves: Number(form.id_tipo_eves),
       });
@@ -1128,12 +983,6 @@ function EventoModal({ item, ambientes, tipos, onClose, onSave, notify }: { item
             <option value="">Seleccionar…</option>
             {tipos.map(t => <option key={t.id_tipo_eves} value={t.id_tipo_eves}>{t.nombre_tipo_eves}</option>)}
           </select>
-          <small className="field-hint">Solo se muestran clasificaciones de Social (las de Deportivo, como Ciclomontañismo, no aparecen aquí).</small>
-          {!tipos.length && (
-            <small className="field-hint field-hint-warn">
-              Aún no hay tipos de evento de Social en el catálogo. Pídele al admin de Deportivo que cree uno y lo marque como "social".
-            </small>
-          )}
         </Field>
       </div>
 
@@ -1145,16 +994,6 @@ function EventoModal({ item, ambientes, tipos, onClose, onSave, notify }: { item
           onChange={e => setForm({...form,descripcion_er: sanitizeDescription(e.target.value)})}
         />
         <small className="field-hint">{form.descripcion_er.length}/120 caracteres</small>
-      </Field>
-
-      <Field label="Imagen del evento (opcional)">
-        <ImageUploadField
-          value={form.imagen_er}
-          onChange={url => setForm({...form, imagen_er: url})}
-          carpeta="eventos"
-          onError={notify}
-        />
-        <small className="field-hint">Si no subes una foto, se usará la del ambiente asignado.</small>
       </Field>
 
       <div className="modal-actions">
