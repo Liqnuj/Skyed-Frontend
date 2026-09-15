@@ -1,19 +1,18 @@
-import { useState, useRef } from 'react';
-import type { FormEvent, ChangeEvent, KeyboardEvent } from 'react';
+import { useState, useRef, type FormEvent, type ChangeEvent, type KeyboardEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { apiFetch } from '../../services/api';
 import PrincipalWrapper from '../../components/principal/PrincipalWrapper';
 import AuthTopbar from '../../components/principal/AuthTopbar';
-import { apiFetch } from '../../services/api';
 
 export default function RecoverPage() {
   const navigate = useNavigate();
   
-  // Estados para manejar el flujo (Ahora son 3 pasos)
+  // Estados para manejar el flujo
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [email, setEmail] = useState('');
   const [code, setCode] = useState(['', '', '', '', '', '']);
   
-  // Estados para las contraseñas (Paso 3)
+  // Estados para las contraseñas
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -22,10 +21,35 @@ export default function RecoverPage() {
   // Estados de interfaz
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [successMsg, setSuccessMsg] = useState(''); // Para mostrar éxito al final
+  const [successMsg, setSuccessMsg] = useState('');
 
-  // Referencias para los 6 inputs del código
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // ==========================================
+  // LÓGICA DE FUERZA DE CONTRASEÑA
+  // ==========================================
+  const getPasswordStrength = (pass: string) => {
+    let score = 0;
+    if (!pass) return { score: 0, color: '#e2e8f0', width: '0%' }; // Gris por defecto
+    if (pass.length >= 8) score += 1;
+    if (/[A-Z]/.test(pass)) score += 1;
+    if (/[a-z]/.test(pass)) score += 1;
+    if (/[0-9]/.test(pass)) score += 1;
+
+    switch (score) {
+      case 1: return { score, color: '#ef4444', width: '25%' }; // Rojo
+      case 2: return { score, color: '#f97316', width: '50%' }; // Naranja
+      case 3: return { score, color: '#eab308', width: '75%' }; // Amarillo
+      case 4: return { score, color: '#0ea5e9', width: '100%' }; // Azul (como en la imagen)
+      default: return { score: 0, color: '#e2e8f0', width: '0%' };
+    }
+  };
+
+  const strengthInfo = getPasswordStrength(password);
+  const isPasswordValid = strengthInfo.score === 4;
+  const isConfirmDirty = confirmPassword.length > 0;
+  const passwordsMatch = password === confirmPassword;
+  const showMismatchError = isConfirmDirty && !passwordsMatch;
 
   // ==========================================
   // PASO 1: Enviar el correo
@@ -40,14 +64,25 @@ export default function RecoverPage() {
 
     setError('');
     setLoading(true);
+
     try {
       await apiFetch('/enviar-codigo-recuperacion', {
         method: 'POST',
         body: JSON.stringify({ correo_u: email }),
       });
-      setStep(2); // Avanza al Paso 2
+      setStep(2); 
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al enviar el correo');
+      let errorMessage = err instanceof Error ? err.message : 'Error al enviar el correo';
+      if (
+        errorMessage.includes('stream_socket_client') || 
+        errorMessage.includes('smtp.gmail.com') || 
+        errorMessage.includes('Connection could not be established') ||
+        errorMessage.includes('Failed to fetch')
+      ) {
+        errorMessage = 'No hay conexión a internet o el servidor de correos no responde. Por favor, intenta de nuevo.';
+      }
+
+      setError(errorMessage);
       setTimeout(() => setError(''), 4000);
     } finally {
       setLoading(false);
@@ -55,7 +90,7 @@ export default function RecoverPage() {
   }
 
   // ==========================================
-  // PASO 2: Manejo de los 6 inputs y Verificación
+  // PASO 2: Manejo de código y Verificación
   // ==========================================
   const handleChangeCode = (index: number, value: string) => {
     if (!/^[0-9]?$/.test(value)) return;
@@ -88,20 +123,12 @@ export default function RecoverPage() {
     setError('');
 
     try {
-      // Le preguntamos al backend si el código es real
       await apiFetch('/verificar-codigo', {
         method: 'POST',
-        body: JSON.stringify({ 
-          correo_u: email, 
-          token: fullCode 
-        }),
+        body: JSON.stringify({ correo_u: email, token: fullCode }),
       });
-      
-      // Si no hay error (código 200), avanzamos al Paso 3
       setStep(3);
-      
     } catch (err) {
-      // Si el backend dice que es incorrecto, mostramos el Toast rojo
       setError(err instanceof Error ? err.message : 'El código ingresado es incorrecto');
       setTimeout(() => setError(''), 4000);
     } finally {
@@ -110,18 +137,18 @@ export default function RecoverPage() {
   }
 
   // ==========================================
-  // PASO 3: Enviar la Nueva Contraseña
+  // PASO 3: Restablecer Contraseña
   // ==========================================
   async function handleResetPassword(e: FormEvent) {
     e.preventDefault();
     
-    if (password.length < 8) {
-      setError('La contraseña debe tener al menos 8 caracteres.');
+    if (!isPasswordValid) {
+      setError('La contraseña debe cumplir con todos los requisitos de seguridad.');
       setTimeout(() => setError(''), 4000);
       return;
     }
 
-    if (password !== confirmPassword) {
+    if (!passwordsMatch) {
       setError('Las contraseñas no coinciden.');
       setTimeout(() => setError(''), 4000);
       return;
@@ -139,15 +166,27 @@ export default function RecoverPage() {
         }),
       });
       
-      // Mostrar éxito y redirigir al login después de un momento
       setSuccessMsg('¡Contraseña actualizada con éxito! Redirigiendo...');
       setTimeout(() => {
+        setCode(['', '', '', '', '', '']);
+        setPassword('');
+        setConfirmPassword('');
         navigate('/login');
       }, 2500);
 
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al restablecer la contraseña');
-      setTimeout(() => setError(''), 4000);
+      const errMsg = err instanceof Error ? err.message : 'Error al restablecer la contraseña';
+      setError(errMsg);
+      if (errMsg.toLowerCase().includes('expir') || errMsg.toLowerCase().includes('incorrecto') || errMsg.toLowerCase().includes('inválido')) {
+        setTimeout(() => {
+          setCode(['', '', '', '', '', '']);
+          setPassword('');
+          setConfirmPassword('');
+          navigate('/login');
+        }, 3500); 
+      } else {
+        setTimeout(() => setError(''), 4000);
+      }
     } finally {
       setLoading(false);
     }
@@ -179,18 +218,9 @@ export default function RecoverPage() {
             </p>
 
             <ul className="aside-features">
-              <li>
-                <span className="feat-ico"><i className="ti ti-mail" /></span>
-                Verificación por código.
-              </li>
-              <li>
-                <span className="feat-ico"><i className="ti ti-refresh" /></span>
-                Cambio de contraseña inmediato.
-              </li>
-              <li>
-                <span className="feat-ico"><i className="ti ti-shield-check" /></span>
-                Tu cuenta siempre protegida.
-              </li>
+              <li><span className="feat-ico"><i className="ti ti-mail" /></span>Verificación por código.</li>
+              <li><span className="feat-ico"><i className="ti ti-refresh" /></span>Cambio de contraseña inmediato.</li>
+              <li><span className="feat-ico"><i className="ti ti-shield-check" /></span>Tu cuenta siempre protegida.</li>
             </ul>
 
             <div style={{ marginTop: 'auto', backgroundColor: '#fff', borderRadius: '12px', padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', position: 'relative', overflow: 'hidden' }}>
@@ -244,9 +274,7 @@ export default function RecoverPage() {
                 </button>
 
                 <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-                  <Link to="/login" className="link-accent">
-                    ← Volver a iniciar sesión
-                  </Link>
+                  <Link to="/login" className="link-accent">← Volver a iniciar sesión</Link>
                 </div>
               </form>
             )}
@@ -275,15 +303,11 @@ export default function RecoverPage() {
                         value={digit}
                         onChange={(e: ChangeEvent<HTMLInputElement>) => handleChangeCode(index, e.target.value)}
                         onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => handleKeyDown(index, e)}
+                        onFocus={(e) => e.target.select()}
                         className="form-input code-input"
                         style={{
-                          width: '50px',
-                          height: '60px',
-                          textAlign: 'center',
-                          fontSize: '1.5rem',
-                          padding: '0',
-                          borderRadius: '8px',
-                          backgroundColor: '#ffffff'
+                          width: '50px', height: '60px', textAlign: 'center', fontSize: '1.5rem',
+                          padding: '0', borderRadius: '8px', backgroundColor: '#ffffff'
                         }}
                       />
                     ))}
@@ -302,70 +326,148 @@ export default function RecoverPage() {
               </form>
             )}
 
-            {step === 3 && (
+{step === 3 && (
               <form onSubmit={handleResetPassword} noValidate>
                 <h2 className="auth-heading" style={{ textAlign: 'left', marginBottom: '8px' }}>
-                  Nueva contraseña
+                  Cambia tu contraseña
                 </h2>
                 <p className="auth-subheading" style={{ textAlign: 'left', marginBottom: '30px' }}>
-                  Crea una contraseña segura que no hayas usado antes.
+                  Ingresa una contraseña válida y segura para tu cuenta
                 </p>
 
-                <div className="form-group" style={{ position: 'relative' }}>
+                {/* NUEVA CONTRASEÑA */}
+                <div className="form-group" style={{ marginBottom: '1.5rem' }}>
                   <label className="form-label" htmlFor="password">
                     Nueva contraseña <span className="req">*</span>
                   </label>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    id="password"
-                    className="form-input"
-                    placeholder="••••••••••••"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    style={{ position: 'absolute', right: '12px', top: '38px', background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
-                  >
-                    <i className={showPassword ? 'ti ti-eye-off' : 'ti ti-eye'} />
-                  </button>
-                  <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '4px' }}>
-                    Mínimo 8 caracteres, una mayúscula, una minúscula y un número.
-                  </p>
+                  
+                  {/* Contenedor relativo solo para el input y el botón */}
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      id="password"
+                      className="form-input"
+                      placeholder="••••••••••••"
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      style={{
+                        borderColor: password.length > 0 ? (isPasswordValid ? '#22c55e' : strengthInfo.color) : '',
+                        borderWidth: password.length > 0 ? '2px' : '1px',
+                        width: '100%',
+                        paddingRight: '45px' // Espacio para que el texto no pise el ojito
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      style={{ 
+                        position: 'absolute', 
+                        right: '12px', 
+                        top: '50%', // Lo baja a la mitad exacta del input
+                        transform: 'translateY(-50%)', // Lo centra perfectamente
+                        background: 'none', 
+                        border: 'none', 
+                        cursor: 'pointer', 
+                        color: '#64748b', 
+                        fontSize: '1.4rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: 0
+                      }}
+                    >
+                      <i className={showPassword ? 'ti ti-eye-off' : 'ti ti-eye'} />
+                    </button>
+                  </div>
+                  
+                  {/* BARRA DE FUERZA DE CONTRASEÑA */}
+                  <div style={{ height: '4px', width: '100%', backgroundColor: '#e2e8f0', marginTop: '10px', borderRadius: '4px', overflow: 'hidden' }}>
+                    <div style={{ 
+                      height: '100%', 
+                      width: strengthInfo.width, 
+                      backgroundColor: strengthInfo.color, 
+                      transition: 'all 0.4s ease' 
+                    }} />
+                  </div>
+                  
+                  {!isPasswordValid && (
+                    <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '6px' }}>
+                      Mínimo 8 caracteres, una mayúscula, una minúscula y un número.
+                    </p>
+                  )}
                 </div>
 
-                <div className="form-group" style={{ position: 'relative' }}>
+                {/* CONFIRMAR CONTRASEÑA */}
+                <div className="form-group">
                   <label className="form-label" htmlFor="confirmPassword">
-                    Confirmar contraseña <span className="req">*</span>
+                    Confirmar Contraseña <span className="req">*</span>
                   </label>
-                  <input
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    id="confirmPassword"
-                    className="form-input"
-                    placeholder="••••••••••••"
-                    required
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    style={{ position: 'absolute', right: '12px', top: '38px', background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
-                  >
-                    <i className={showConfirmPassword ? 'ti ti-eye-off' : 'ti ti-eye'} />
-                  </button>
+                  
+                  {/* Contenedor relativo solo para el input y el botón */}
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      id="confirmPassword"
+                      className="form-input"
+                      placeholder="••••••••••••"
+                      required
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      style={{
+                        borderColor: showMismatchError ? '#ef4444' : (isConfirmDirty && passwordsMatch && isPasswordValid ? '#22c55e' : ''),
+                        borderWidth: isConfirmDirty ? '2px' : '1px',
+                        width: '100%',
+                        paddingRight: '45px' // Espacio para que el texto no pise el ojito
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      style={{ 
+                        position: 'absolute', 
+                        right: '12px', 
+                        top: '50%', // Lo baja a la mitad exacta del input
+                        transform: 'translateY(-50%)', // Lo centra perfectamente
+                        background: 'none', 
+                        border: 'none', 
+                        cursor: 'pointer', 
+                        color: '#64748b', 
+                        fontSize: '1.4rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: 0
+                      }}
+                    >
+                      <i className={showConfirmPassword ? 'ti ti-eye-off' : 'ti ti-eye'} />
+                    </button>
+                  </div>
+                  
+                  {/* MENSAJE DE ERROR SI NO COINCIDEN */}
+                  {showMismatchError && (
+                    <div style={{ color: '#ef4444', fontSize: '0.85rem', marginTop: '8px', lineHeight: '1.4' }}>
+                      <strong>⚠️ Las contraseñas no coinciden.</strong><br/>
+                      Debe coincidir exactamente con la nueva contraseña.
+                    </div>
+                  )}
                 </div>
 
-                <button type="submit" className="form-submit" disabled={loading} style={{ width: '100%', marginTop: '10px' }}>
-                  {loading ? 'Guardando...' : 'Guardar contraseña'}
+                <button type="submit" className="form-submit" disabled={loading} style={{ width: '100%', marginTop: '15px' }}>
+                  {loading ? 'Guardando...' : 'Guardar nueva contraseña'}
                 </button>
                 
                 <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-                  <button type="button" onClick={() => setStep(2)} className="link-accent" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.95rem' }}>
-                    ← Volver al código
-                  </button>
+                  <Link 
+                    to="/login" 
+                    className="link-accent" 
+                    onClick={() => {
+                      setCode(['', '', '', '', '', '']);
+                      setPassword('');
+                      setConfirmPassword('');
+                    }}
+                    style={{ textDecoration: 'none', fontSize: '0.95rem' }}
+                  >
+                    ← Volver a iniciar sesión
+                  </Link>
                 </div>
               </form>
             )}
@@ -374,9 +476,7 @@ export default function RecoverPage() {
         </main>
       </div>
 
-      {/* =========================================
-          TOAST DE ÉXITO Y ERROR ANIMADOS
-      ========================================== */}
+      {/* TOAST DE ÉXITO Y ERROR ANIMADOS */}
       {(error || successMsg) && (
         <>
           <style>
@@ -398,10 +498,7 @@ export default function RecoverPage() {
             animation: 'slideIn 0.3s ease-out forwards'
           }}>
             <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '12px', 
-              padding: '16px 24px', 
+              display: 'flex', alignItems: 'center', gap: '12px', padding: '16px 24px', 
               borderLeft: `4px solid ${error ? '#ef4444' : '#22c55e'}` 
             }}>
               <span style={{ fontSize: '1.2rem' }}>{error ? '⚠️' : '✅'}</span>
@@ -410,8 +507,7 @@ export default function RecoverPage() {
               </span>
             </div>
             <div style={{ 
-              height: '4px', 
-              backgroundColor: error ? '#ef4444' : '#22c55e', 
+              height: '4px', backgroundColor: error ? '#ef4444' : '#22c55e', 
               animation: `shrinkBar ${error ? '4s' : '2.5s'} linear forwards` 
             }} />
           </div>
