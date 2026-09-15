@@ -1,32 +1,34 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { apiFetch } from '../../services/api';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import PrincipalWrapper from '../../components/principal/PrincipalWrapper';
 import AuthTopbar from '../../components/principal/AuthTopbar';
 
 export default function LoginPage() {
+  const { login } = useAuth();
   const navigate = useNavigate();
-
-  // Estados del formulario
+  const location = useLocation();
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
-
+  const [showPass, setShowPass] = useState(false);
+  const [remember, setRemember] = useState(false);
+  
   // Estados para alertas y carga
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  
+  const from = (location.state as { from?: string } | null)?.from || '/';
 
   // ==========================================
   // FUNCIÓN DE LOGIN
   // ==========================================
-  async function handleLogin(e: FormEvent) {
+  async function submit(e: FormEvent) {
     e.preventDefault();
 
-    // Pequeña validación antes de enviar
     if (!email || !password) {
-      setError('Por favor, completa todos los campos.');
+      setError('Por favor, ingresa tu correo y contraseña.');
       setTimeout(() => setError(''), 4000);
       return;
     }
@@ -35,32 +37,30 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // Llamada a tu API de login (Asegúrate de que la ruta sea '/login' en tu backend)
-      const response = await apiFetch('/login', {
-        method: 'POST',
-        body: JSON.stringify({ 
-          correo_u: email, 
-          contrasena_u: password 
-        }),
-      });
-
-      // AQUÍ: Si tu backend devuelve un token, deberías guardarlo (ej. localStorage.setItem('token', response.token))
+      // Llamamos a tu función login del AuthContext
+      // (Asumimos que esta función internamente hace la petición y guarda el token en localStorage)
+      const success = await login(email, password);
+      
+      if (!success) {
+        // Si el login devuelve false, lanzamos el error
+        throw new Error('Correo o contraseña incorrectos. Verifica tus datos.');
+      }
 
       setSuccessMsg('¡Inicio de sesión exitoso! Redirigiendo...');
       
-      // Redirigimos después de 2 segundos para que el usuario alcance a ver la alerta verde
+      // Esperamos 2 segundos para que se vea la alerta verde y redirigimos
       setTimeout(() => {
-        navigate('/'); // Cambia '/' por la ruta a la que quieras enviarlo (ej. '/dashboard')
+        navigate(from, { replace: true });
       }, 2000);
 
     } catch (err) {
-      // Manejo de errores amigable
-      const errMsg = err instanceof Error ? err.message : 'Error desconocido';
+      const errMsg = err instanceof Error ? err.message : 'Error al iniciar sesión';
       
-      if (errMsg.includes('Failed to fetch') || errMsg.includes('NetworkError')) {
+      // Verificamos si es un error de internet o servidor
+      if (errMsg.includes('Failed to fetch') || errMsg.includes('NetworkError') || errMsg.includes('Failed to load')) {
         setError('No hay conexión a internet. Por favor, intenta de nuevo.');
       } else {
-        setError('Correo o contraseña incorrectos. Verifica tus datos.');
+        setError(errMsg);
       }
 
       setTimeout(() => setError(''), 4000);
@@ -74,95 +74,68 @@ export default function LoginPage() {
       <AuthTopbar />
 
       <div className="auth-grid" id="main">
-        {/* =========================================
-            LADO IZQUIERDO (ASIDE) CON TU DISEÑO
-        ========================================== */}
         <aside className="auth-aside">
-          <div className="aside-blob aside-blob--purple" />
           <div className="aside-blob aside-blob--blue" />
+          <div className="aside-blob aside-blob--purple" />
           <div className="aside-blob aside-blob--gold" />
 
           <div className="aside-content">
-            <span className="aside-eyebrow">
-              <i className="ti ti-calendar" />
-              &nbsp; EVENTOS
-            </span>
-
-            <h1 className="aside-title">
-              Bienvenido de vuelta a <br />
-              <span className="hl">SKYED</span>
-            </h1>
-
+            <span className="aside-eyebrow"><i className="ti ti-calendar-event" />&nbsp; Eventos</span>
+            <h1 className="aside-title">Bienvenido de vuelta a <span className="hl">SKYED</span></h1>
             <p className="aside-subtitle">
-              Accede a tu cuenta para inscribirte en eventos, gestionar tus
-              entradas y consultar el estado de tus resultados.
+              Accede a tu cuenta para inscribirte en eventos, gestionar tus entradas
+              y consultar el estado de tus resultados.
             </p>
-
             <ul className="aside-features">
-              <li>
-                <span className="feat-ico"><i className="ti ti-calendar-event" /></span>
-                Calendario completo de eventos en tiempo real
-              </li>
-              <li>
-                <span className="feat-ico"><i className="ti ti-ticket" /></span>
-                Historial de inscripciones y facturas
-              </li>
-              <li>
-                <span className="feat-ico"><i className="ti ti-users" /></span>
-                Comunidad de más de 25.000 ciclistas
-              </li>
+              <li><span className="feat-ico"><i className="ti ti-calendar" /></span> Calendario completo de eventos en tiempo real</li>
+              <li><span className="feat-ico"><i className="ti ti-ticket" /></span> Historial de inscripciones y facturas</li>
+              <li><span className="feat-ico"><i className="ti ti-users" /></span> Comunidad de más de 25.000 ciclistas</li>
             </ul>
+            <div className="ticket-card">
+              <div className="ticket-main">
+                <div className="ticket-kicker">Tu próximo evento</div>
+                <div className="ticket-title">Feria SKYED</div>
+                <div className="ticket-meta">Acceso general · Válido con tu cuenta</div>
+              </div>
+              <div className="ticket-stub">
+                <span>PASE</span>
+                <strong>#00 SKYED</strong>
+              </div>
+            </div>
           </div>
         </aside>
 
-        {/* =========================================
-            LADO DERECHO (MAIN) FORMULARIO DE LOGIN
-        ========================================== */}
         <main className="auth-main">
           <div className="auth-card">
-            <form onSubmit={handleLogin} noValidate>
-              <h2 className="auth-heading" style={{ textAlign: 'left', marginBottom: '8px' }}>
-                Iniciar sesión
-              </h2>
-              <p className="auth-subheading" style={{ textAlign: 'left', marginBottom: '30px' }}>
-                Ingresa tus credenciales para continuar.
-              </p>
+            <h2 className="auth-heading">Iniciar sesión</h2>
+            <p className="auth-subheading">Ingresa tus credenciales para continuar.</p>
 
-              {/* INPUT CORREO */}
+            <form onSubmit={submit} noValidate>
               <div className="form-group">
-                <label className="form-label" htmlFor="email">
-                  Correo electrónico <span className="req">*</span>
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  className="form-input"
-                  placeholder="tucorreo@ejemplo.com"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
+                <label className="form-label" htmlFor="email">Correo electrónico<span className="req">*</span></label>
+                <div className="input-wrap">
+                  <input
+                    type="email" id="email" className="form-input" placeholder="tucorreo@gmail.com"
+                    autoComplete="email" maxLength={80} required
+                    value={email} onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
               </div>
 
-              {/* INPUT CONTRASEÑA */}
-              <div className="form-group" style={{ position: 'relative' }}>
-                <label className="form-label" htmlFor="password">
-                  Contraseña <span className="req">*</span>
-                </label>
-                <div style={{ position: 'relative' }}>
+              <div className="form-group">
+                <label className="form-label" htmlFor="password">Contraseña<span className="req">*</span></label>
+                <div className="input-wrap" style={{ position: 'relative' }}>
                   <input
-                    type={showPassword ? 'text' : 'password'}
-                    id="password"
-                    className="form-input"
-                    placeholder="••••••••••••"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    style={{ width: '100%', paddingRight: '45px' }}
+                    type={showPass ? 'text' : 'password'} id="password" className="form-input" placeholder="••••••••"
+                    autoComplete="current-password" maxLength={50}
+                    value={password} onChange={(e) => setPassword(e.target.value)}
+                    style={{ paddingRight: '45px' }} // Espacio para el ojito
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
+                  <button 
+                    type="button" 
+                    className="toggle-pass" 
+                    aria-label="Mostrar contraseña" 
+                    onClick={() => setShowPass((s) => !s)}
                     style={{ 
                       position: 'absolute', 
                       right: '12px', 
@@ -178,35 +151,40 @@ export default function LoginPage() {
                       padding: 0
                     }}
                   >
-                    <i className={showPassword ? 'ti ti-eye-off' : 'ti ti-eye'} />
+                    <i className={showPass ? 'ti ti-eye-off' : 'ti ti-eye'} />
                   </button>
                 </div>
               </div>
 
-              {/* RECORDARME & OLVIDÉ CONTRASEÑA */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', fontSize: '0.9rem' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#475569' }}>
-                  <input 
-                    type="checkbox" 
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: '#a855f7' }}
-                  />
+              <div className="row-between">
+                <label className="remember-row">
+                  <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
                   Recordarme
                 </label>
-                <Link to="/recuperar" className="link-accent" style={{ textDecoration: 'none', fontWeight: '500' }}>
-                  ¿Olvidaste tu contraseña?
-                </Link>
+                <Link to="/recuperar" className="link-accent">¿Olvidaste tu contraseña?</Link>
               </div>
 
-              {/* BOTÓN SUBMIT */}
-              <button type="submit" className="form-submit" disabled={loading} style={{ width: '100%', marginTop: '10px' }}>
-                {loading ? 'Iniciando...' : 'Iniciar sesión →'}
+              <button type="submit" className="form-submit" disabled={loading}>
+                {loading ? 'Iniciando sesión...' : <>Iniciar sesión <i className="ti ti-arrow-right" /></>}
               </button>
+
+              <div className="form-divider">o</div>
+
+              <p className="form-footer">¿No tienes cuenta? <Link to="/registro" className="link-accent">Regístrate gratis</Link></p>
+              <p className="form-footer"><Link to="/" className="link-accent">Volver al inicio</Link></p>
             </form>
           </div>
         </main>
       </div>
+
+      <footer className="footer">
+        <span>© 2026 SKYED · Sogamoso, Boyacá, Colombia</span>
+        <div className="footer-links">
+          <a href="#">Términos</a>
+          <a href="#">Privacidad</a>
+          <a href="#">Soporte</a>
+        </div>
+      </footer>
 
       {/* =========================================
           TOAST DE ÉXITO Y ERROR ANIMADOS
