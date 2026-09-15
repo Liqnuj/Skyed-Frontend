@@ -860,15 +860,16 @@
 .social-admin .primary-btn {
   border: 0 !important;
 
-  background: var(--admin-accent) !important;
+  background: linear-gradient(135deg, var(--admin-accent), color-mix(in srgb, var(--admin-accent) 78%, #4b0e86)) !important;
   color: white !important;
 
-  border-radius: 9px !important;
+  border-radius: 10px !important;
 
-  padding: 9px 13px !important;
+  padding: 10px 16px !important;
 
   font-size: 12px !important;
   font-weight: 800 !important;
+  letter-spacing: .01em !important;
 
   display: inline-flex !important;
   align-items: center !important;
@@ -877,6 +878,20 @@
   gap: 6px !important;
 
   cursor: pointer !important;
+
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--admin-accent) 35%, transparent) !important;
+  transition: transform .15s ease, box-shadow .15s ease, filter .15s ease !important;
+}
+
+.social-admin .primary-btn:hover:not(:disabled) {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--admin-accent) 45%, transparent) !important;
+  filter: brightness(1.04) !important;
+}
+
+.social-admin .primary-btn:active:not(:disabled) {
+  transform: translateY(0) !important;
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--admin-accent) 35%, transparent) !important;
 }
 
 .social-admin .calendar-toolbar {
@@ -914,14 +929,22 @@
 
   color: var(--admin-text) !important;
 
-  border-radius: 9px !important;
+  border-radius: 10px !important;
 
-  padding: 7px 12px !important;
+  padding: 8px 13px !important;
 
   cursor: pointer !important;
 
   font-size: 12px !important;
   font-weight: 700 !important;
+
+  transition: border-color .15s ease, background .15s ease, transform .15s ease !important;
+}
+
+.social-admin .secondary-btn:hover {
+  border-color: color-mix(in srgb, var(--admin-accent) 45%, var(--admin-line)) !important;
+  background: var(--admin-surface-2) !important;
+  transform: translateY(-1px) !important;
 }
 
 .social-admin .calendar-grid {
@@ -1469,6 +1492,16 @@
    MODALES
    ========================================================= */
 
+@keyframes admin-modal-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes admin-modal-pop-in {
+  from { opacity: 0; transform: translateY(10px) scale(.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 .social-admin .admin-modal-backdrop {
   position: fixed !important;
   inset: 0 !important;
@@ -1480,9 +1513,11 @@
 
   background: rgba(8,12,20,.68) !important;
 
-  backdrop-filter: blur(4px) !important;
+  backdrop-filter: blur(5px) !important;
 
   z-index: 50000 !important;
+
+  animation: admin-modal-fade-in .18s ease !important;
 }
 
 .social-admin .admin-modal {
@@ -1495,9 +1530,11 @@
   background: var(--admin-surface) !important;
 
   border: 1px solid var(--admin-line) !important;
-  border-radius: 18px !important;
+  border-radius: 20px !important;
 
-  box-shadow: 0 25px 80px rgba(0,0,0,.3) !important;
+  box-shadow: 0 25px 80px rgba(0,0,0,.32), 0 2px 0 color-mix(in srgb, var(--admin-accent) 25%, transparent) !important;
+
+  animation: admin-modal-pop-in .2s cubic-bezier(.2,.8,.3,1.1) !important;
 }
 
 .social-admin .admin-modal-head {
@@ -1507,14 +1544,29 @@
 
   gap: 15px !important;
 
-  padding: 19px 20px !important;
+  padding: 20px 22px !important;
 
   border-bottom: 1px solid var(--admin-line) !important;
 
   background: linear-gradient(
     135deg,
-    color-mix(in srgb, var(--admin-accent) 10%, white),
-    var(--admin-surface)
+    color-mix(in srgb, var(--admin-accent) 14%, white),
+    var(--admin-surface) 65%
+  ) !important;
+
+  border-top-left-radius: 20px !important;
+  border-top-right-radius: 20px !important;
+
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 2 !important;
+}
+
+.social-admin.dark .admin-modal-head {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--admin-accent) 22%, var(--admin-surface)),
+    var(--admin-surface) 65%
   ) !important;
 }
 
@@ -1524,6 +1576,7 @@
   color: var(--admin-text) !important;
 
   font-size: 18px !important;
+  font-weight: 800 !important;
 }
 
 .social-admin .admin-modal-head p {
@@ -1536,7 +1589,7 @@
 
 .social-admin .modal-form,
 .social-admin .pqr-detail {
-  padding: 20px !important;
+  padding: 22px !important;
 }
 
 .social-admin .form-grid {
@@ -1544,14 +1597,24 @@
 
   grid-template-columns: 1fr 1fr !important;
 
-  gap: 14px !important;
+  gap: 16px 14px !important;
+
+  margin-bottom: 16px !important;
+}
+
+.social-admin .modal-form > .admin-field {
+  margin-bottom: 16px !important;
+}
+
+.social-admin .modal-form > .admin-field:last-of-type {
+  margin-bottom: 0 !important;
 }
 
 .social-admin .admin-field {
   display: flex !important;
   flex-direction: column !important;
 
-  gap: 6px !important;
+  gap: 7px !important;
 }
 
 .social-admin .admin-field > span {
@@ -1560,7 +1623,15 @@
   font-size: 10px !important;
   font-weight: 800 !important;
 
+  letter-spacing: .07em !important;
   text-transform: uppercase !important;
+}
+
+.social-admin .admin-field:has(input:required) > span::after,
+.social-admin .admin-field:has(select:required) > span::after,
+.social-admin .admin-field:has(textarea:required) > span::after {
+  content: " *" !important;
+  color: var(--admin-accent) !important;
 }
 
 .social-admin .admin-field input,
@@ -1568,26 +1639,58 @@
 .social-admin .admin-field textarea {
   width: 100% !important;
 
-  padding: 10px 11px !important;
+  padding: 11px 12px !important;
 
-  border: 1px solid var(--admin-line) !important;
-  border-radius: 10px !important;
+  border: 1.5px solid var(--admin-line) !important;
+  border-radius: 11px !important;
 
   outline: 0 !important;
 
   background: var(--admin-surface-2) !important;
 
   color: var(--admin-text) !important;
+
+  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease !important;
+}
+
+.social-admin .admin-field input::placeholder,
+.social-admin .admin-field textarea::placeholder {
+  color: var(--admin-muted) !important;
+  opacity: .75 !important;
+}
+
+.social-admin .admin-field select {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+
+  background-image: linear-gradient(45deg, transparent 50%, var(--admin-muted) 50%),
+    linear-gradient(135deg, var(--admin-muted) 50%, transparent 50%) !important;
+  background-position: calc(100% - 18px) center, calc(100% - 13px) center !important;
+  background-size: 5px 5px, 5px 5px !important;
+  background-repeat: no-repeat !important;
+
+  padding-right: 34px !important;
+
+  cursor: pointer !important;
+}
+
+.social-admin .admin-field input:hover:not(:focus),
+.social-admin .admin-field select:hover:not(:focus),
+.social-admin .admin-field textarea:hover:not(:focus) {
+  border-color: color-mix(in srgb, var(--admin-accent) 35%, var(--admin-line)) !important;
 }
 
 .social-admin .admin-field input:focus,
 .social-admin .admin-field select:focus,
 .social-admin .admin-field textarea:focus {
   border-color: var(--admin-accent) !important;
+  background: var(--admin-surface) !important;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--admin-accent) 14%, transparent) !important;
 }
 
 .social-admin .admin-field textarea {
   resize: vertical !important;
+  line-height: 1.5 !important;
 }
 
 .social-admin .modal-actions {
@@ -1596,7 +1699,10 @@
 
   gap: 8px !important;
 
-  margin-top: 19px !important;
+  margin-top: 20px !important;
+  padding-top: 16px !important;
+
+  border-top: 1px solid var(--admin-line) !important;
 }
 
 .social-admin .pqr-meta {
@@ -1861,4 +1967,233 @@
   .social-admin .admin-footer-note {
     display: none !important;
   }
+}
+
+/* =========================================================
+   AJUSTES FINALES - SELECCIÓN Y VALIDACIÓN DE FORMULARIOS
+   ========================================================= */
+
+.social-admin ::selection {
+  background: color-mix(in srgb, var(--admin-accent) 28%, #ffffff);
+  color: var(--admin-text);
+}
+
+.social-admin .admin-sidebar ::selection {
+  background: rgba(156, 2, 174, .55);
+  color: #ffffff;
+}
+
+/* El encabezado del sidebar usa directamente <strong> y <span>. */
+.social-admin .sidebar-brand > strong {
+  display: block;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.social-admin .sidebar-brand > span {
+  display: block;
+  margin-top: 3px;
+  color: #8e7da5;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .12em;
+}
+
+.social-admin .field-hint {
+  display: block;
+  align-self: flex-end;
+  margin-top: -1px;
+  color: var(--admin-muted);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.3;
+}
+
+.social-admin .field-hint-warn {
+  color: #d97706 !important;
+  font-weight: 700 !important;
+}
+
+.social-admin .admin-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 1px solid var(--admin-line);
+  display: block;
+  background: var(--admin-surface-2);
+}
+
+.social-admin .admin-thumb-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--admin-muted);
+  font-size: 11px;
+}
+
+.social-admin .admin-img-preview {
+  margin-top: 8px;
+  width: 100%;
+  max-width: 260px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--admin-line);
+  background: var(--admin-surface-2);
+  box-shadow: 0 8px 20px rgba(0,0,0,.12);
+}
+
+.social-admin .admin-img-preview img {
+  display: block;
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  transition: transform .25s ease;
+}
+
+.social-admin .admin-img-preview:hover img {
+  transform: scale(1.04);
+}
+
+.social-admin .admin-field input:invalid:not(:placeholder-shown),
+.social-admin .admin-field textarea:invalid:not(:placeholder-shown) {
+  border-color: #d97706 !important;
+}
+
+.social-admin .primary-btn:disabled {
+  opacity: .65;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* =========================================================
+   SUBIDA DE IMÁGENES (drag & drop)
+   ========================================================= */
+
+@keyframes admin-spin {
+  to { transform: rotate(360deg); }
+}
+
+.social-admin .admin-spin {
+  animation: admin-spin .8s linear infinite;
+}
+
+.social-admin .secondary-btn.danger {
+  color: #d64545 !important;
+  border-color: color-mix(in srgb, #d64545 35%, var(--admin-line)) !important;
+}
+
+.social-admin .secondary-btn.danger:hover {
+  background: color-mix(in srgb, #d64545 10%, var(--admin-surface)) !important;
+  border-color: #d64545 !important;
+}
+
+.social-admin .admin-dropzone {
+  position: relative;
+
+  width: 100%;
+  min-height: 96px;
+
+  border: 1.5px dashed var(--admin-line);
+  border-radius: 14px;
+
+  background: var(--admin-surface-2);
+
+  cursor: pointer;
+  outline: 0;
+
+  transition: border-color .15s ease, background .15s ease;
+
+  overflow: hidden;
+}
+
+.social-admin .admin-dropzone:hover,
+.social-admin .admin-dropzone:focus-visible {
+  border-color: color-mix(in srgb, var(--admin-accent) 45%, var(--admin-line));
+}
+
+.social-admin .admin-dropzone.is-dragover {
+  border-color: var(--admin-accent);
+  background: color-mix(in srgb, var(--admin-accent) 8%, var(--admin-surface-2));
+}
+
+.social-admin .admin-dropzone.is-uploading {
+  cursor: wait;
+}
+
+.social-admin .admin-dropzone-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+
+  padding: 20px 14px;
+
+  color: var(--admin-muted);
+  text-align: center;
+}
+
+.social-admin .admin-dropzone-empty svg {
+  color: var(--admin-accent);
+  opacity: .8;
+}
+
+.social-admin .admin-dropzone-empty span {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--admin-text);
+}
+
+.social-admin .admin-dropzone-empty small {
+  font-size: 10px;
+  color: var(--admin-muted);
+}
+
+.social-admin .admin-dropzone-preview {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  padding: 10px;
+}
+
+.social-admin .admin-dropzone-preview img {
+  width: 84px;
+  height: 84px;
+
+  border-radius: 10px;
+  object-fit: cover;
+
+  border: 1px solid var(--admin-line);
+
+  flex: 0 0 auto;
+}
+
+.social-admin .admin-dropzone-preview-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.social-admin .admin-dropzone-preview-actions .secondary-btn {
+  padding: 6px 10px !important;
+  font-size: 11px !important;
+}
+
+.social-admin .admin-dropzone-overlay {
+  position: absolute;
+  inset: 0;
+
+  display: grid;
+  place-items: center;
+
+  background: rgba(8,12,20,.45);
+  border-radius: 10px;
+
+  color: white;
 }

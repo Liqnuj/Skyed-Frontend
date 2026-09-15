@@ -3,12 +3,13 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 export default function SportNav() {
-  const [open, setOpen] = useState(false);
-  const close = () => setOpen(false);
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+const [open, setOpen] = useState(false);
+const close = () => setOpen(false);
+const { user, logout } = useAuth();
+const initials = (user?.name || 'SK').split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
+const navigate = useNavigate();
+const [userMenuOpen, setUserMenuOpen] = useState(false);
+const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!userMenuOpen) return;
@@ -49,7 +50,14 @@ export default function SportNav() {
         <div className="nav-cta">
           {user ? (
             <div className="user-menu-wrap" ref={menuRef}>
-              <button className="btn btn-primary" onClick={() => setUserMenuOpen((o) => !o)}>
+              <button className="btn btn-primary nav-user-btn" onClick={() => setUserMenuOpen((o) => !o)}>
+                <span className="nav-avatar">
+                  {user.foto_url ? (
+                    <img src={user.foto_url} alt="" className="nav-avatar-img" />
+                  ) : (
+                    <span className="nav-avatar-initials">{initials}</span>
+                  )}
+                </span>
                 {user.name}
               </button>
               {userMenuOpen && (
