@@ -199,6 +199,122 @@ function Field({
   );
 }
 
+const MAX_IMAGEN_MB = 4;
+
+function ImageUploadField({
+  value,
+  onChange,
+  carpeta,
+  onError,
+}: {
+  value: string;
+  onChange: (url: string) => void;
+  carpeta: "ambientes" | "eventos";
+  onError: (message: string) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const [imgError, setImgError] = useState(false);
+
+  const handleFile = async (file?: File | null) => {
+    if (!file || uploading) return;
+
+    if (!file.type.startsWith("image/")) {
+      onError("Selecciona un archivo de imagen (JPG, PNG o WEBP).");
+      return;
+    }
+    if (file.size > MAX_IMAGEN_MB * 1024 * 1024) {
+      onError(`La imagen no debe superar ${MAX_IMAGEN_MB} MB.`);
+      return;
+    }
+
+    setImgError(false);
+    setUploading(true);
+    try {
+      const body = new FormData();
+body.append("imagen", file);
+body.append("carpeta", carpeta);
+
+const res = await apiFetch("/social/imagenes", {
+  method: "POST",
+  body,
+});
+
+console.log("RESPUESTA SUBIDA:", res);
+
+onChange(res.url);
+    } catch (err) {
+      onError(err instanceof Error ? err.message : "No se pudo subir la imagen.");
+    } finally {
+      setUploading(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  };
+
+  return (
+    <div
+      className={`admin-dropzone ${dragOver ? "is-dragover" : ""} ${uploading ? "is-uploading" : ""}`}
+      onClick={() => !uploading && inputRef.current?.click()}
+      onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); inputRef.current?.click(); } }}
+      role="button"
+      tabIndex={0}
+      onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={e => {
+        e.preventDefault();
+        setDragOver(false);
+        handleFile(e.dataTransfer.files?.[0]);
+      }}
+    >
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        hidden
+        onChange={e => handleFile(e.target.files?.[0])}
+      />
+
+      {value && !imgError ? (
+        <div className="admin-dropzone-preview">
+          <img src={value} alt="Vista previa" onError={() => setImgError(true)} />
+          {uploading && (
+            <div className="admin-dropzone-overlay"><Loader2 size={20} className="admin-spin" /></div>
+          )}
+          <div className="admin-dropzone-preview-actions">
+            <button type="button" className="secondary-btn" disabled={uploading}
+              onClick={e => { e.stopPropagation(); inputRef.current?.click(); }}>
+              <Upload size={13} /> Cambiar
+            </button>
+            <button type="button" className="secondary-btn danger" disabled={uploading}
+              onClick={e => { e.stopPropagation(); onChange(""); }}>
+              <X size={13} /> Quitar
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="admin-dropzone-empty">
+          {uploading ? (
+            <>
+              <Loader2 size={22} className="admin-spin" />
+              <span>Subiendo…</span>
+            </>
+          ) : (
+            <>
+              <ImagePlus size={22} />
+              <span>Haz clic o arrastra una imagen aquí</span>
+              <small>JPG, PNG o WEBP · máx. {MAX_IMAGEN_MB} MB</small>
+            </>
+          )}
+        </div>
+      )}
+      {imgError && value && !uploading && (
+        <small className="field-hint field-hint-warn">No se pudo cargar esa imagen. Intenta subirla de nuevo.</small>
+      )}
+    </div>
+  );
+}
+
 function SectionTable({
   title,
   action,
