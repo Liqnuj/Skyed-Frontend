@@ -29,7 +29,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.6rem;
+  font-size: calc(1.6rem * var(--fs-scale, 1));
   font-weight: 700;
   color: #fff;
 }
@@ -56,7 +56,7 @@
 }
 
 .mod-deportivo .part-badge {
-  font-size: .8rem;
+  font-size: calc(.8rem * var(--fs-scale, 1));
   color: var(--accent);
   font-weight: 600;
   margin-bottom: .25rem;
@@ -65,10 +65,10 @@
   gap: .3rem;
 }
 
-.mod-deportivo .part-meta h1 { margin: 0 0 .2rem; font-size: 1.5rem; }
-.mod-deportivo .part-handle { color: var(--muted, #6b7280); font-size: .9rem; margin: 0; }
+.mod-deportivo .part-meta h1 { margin: 0 0 .2rem; font-size: calc(1.5rem * var(--fs-scale, 1)); }
+.mod-deportivo .part-handle { color: var(--muted, #6b7280); font-size: calc(.9rem * var(--fs-scale, 1)); margin: 0; }
 
-.mod-deportivo .part-actions { display: flex; gap: .6rem; flex-wrap: wrap; }
+.mod-deportivo .part-actions { display: flex; gap: .6rem; flex-wrap: wrap; margin-left: auto; }
 
 /* .mod-deportivo .part-btn-disabled {
   cursor: not-allowed;
@@ -88,7 +88,7 @@
   border: none;
   padding: .8rem 1rem;
   font-weight: 600;
-  font-size: .92rem;
+  font-size: calc(.92rem * var(--fs-scale, 1));
   color: var(--muted, #6b7280);
   border-bottom: 2px solid transparent;
   cursor: pointer;
@@ -115,21 +115,22 @@
 
 .mod-deportivo .part-card {
   background: var(--surface, #fff);
-  border: 1px solid var(--border, #e5e7eb);
+  border: 1px solid var(--accent);
   border-radius: 14px;
   overflow: hidden;
   margin-bottom: 1rem;
 }
+/* .dark-mode .part-card { border:1px solid var(--accent)}; */
 
 .mod-deportivo .part-card-head {
   padding: .85rem 1.1rem;
-  border-bottom: 1px solid var(--border, #e5e7eb);
+  border-bottom: 1px solid var(--accent);
   display: flex;
   align-items: center;
   gap: .6rem;
 }
 
-.mod-deportivo .part-card-head h3 { margin: 0; font-size: .95rem; }
+.mod-deportivo .part-card-head h3 { margin: 0; font-size: calc(.95rem * var(--fs-scale, 1)); }
 
 .mod-deportivo .part-card-head-icon {
   width: 30px;
@@ -139,7 +140,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: .95rem;
+  font-size: calc(.95rem * var(--fs-scale, 1));
   background: color-mix(in srgb, var(--accent) 14%, transparent);
   color: var(--accent);
 }
@@ -155,7 +156,7 @@
   display: flex;
   justify-content: space-between;
   padding: .35rem 0;
-  font-size: .87rem;
+  font-size: calc(.87rem * var(--fs-scale, 1));
 }
 
 .mod-deportivo .part-stat-row .part-label { color: var(--muted, #6b7280); }
@@ -163,7 +164,7 @@
 .mod-deportivo .part-tags { display: flex; gap: .4rem; flex-wrap: wrap; }
 
 .mod-deportivo .part-tag {
-  font-size: .78rem;
+  font-size: calc(.78rem * var(--fs-scale, 1));
   padding: .25rem .6rem;
   border-radius: 999px;
   background: color-mix(in srgb, var(--accent) 14%, transparent);
@@ -172,7 +173,7 @@
 }
 
 .mod-deportivo .part-empty-mini {
-  font-size: .82rem;
+  font-size: calc(.82rem * var(--fs-scale, 1));
   color: var(--muted, #6b7280);
 }
 
@@ -189,27 +190,27 @@
 
 .mod-deportivo .part-strip-stat {
   background: var(--surface, #fff);
-  border: 1px solid var(--border, #e5e7eb);
+  border: 1px solid var(--accent);
   border-radius: 12px;
   padding: 1rem;
   text-align: center;
 }
 
-.mod-deportivo .part-strip-stat .part-num { display: block; font-size: 1.4rem; font-weight: 700; }
+.mod-deportivo .part-strip-stat .part-num { display: block; font-size: calc(1.4rem * var(--fs-scale, 1)); font-weight: 700; }
 .mod-deportivo .part-strip-stat.accent .part-num { color: var(--accent); }
-.mod-deportivo .part-strip-stat .part-lbl { font-size: .78rem; color: var(--muted, #6b7280); }
+.mod-deportivo .part-strip-stat .part-lbl { font-size: calc(.78rem * var(--fs-scale, 1)); color: var(--muted, #6b7280); }
 
 .mod-deportivo .part-section-label {
   display: flex;
   justify-content: space-between;
   align-items: center;
   font-weight: 600;
-  font-size: .92rem;
+  font-size: calc(.92rem * var(--fs-scale, 1));
   margin: 1.5rem 0 .75rem;
 }
 
 .mod-deportivo .part-section-label a {
-  font-size: .82rem;
+  font-size: calc(.82rem * var(--fs-scale, 1));
   font-weight: 600;
   color: var(--accent);
   text-decoration: none;
@@ -224,7 +225,7 @@
   padding: 1.25rem;
   text-align: center;
   color: var(--muted, #6b7280);
-  font-size: .88rem;
+  font-size: calc(.88rem * var(--fs-scale, 1));
 }
 
 .mod-deportivo .part-empty-row a { color: var(--accent); font-weight: 600; }
@@ -233,7 +234,7 @@
   display: flex;
   align-items: center;
   gap: .9rem;
-  border: 1px solid var(--border, #e5e7eb);
+  border: 1px solid var(--accent);
   border-radius: 12px;
   padding: .8rem;
   margin-bottom: .6rem;
@@ -255,10 +256,10 @@
 }
 
 .mod-deportivo .part-event-row-info { flex: 1; min-width: 0; }
-.mod-deportivo .part-event-row-info h4 { margin: 0 0 .2rem; font-size: .95rem; }
+.mod-deportivo .part-event-row-info h4 { margin: 0 0 .2rem; font-size: calc(.95rem * var(--fs-scale, 1)); }
 
 .mod-deportivo .part-event-meta {
-  font-size: .8rem;
+  font-size: calc(.8rem * var(--fs-scale, 1));
   color: var(--muted, #6b7280);
   display: flex;
   gap: .6rem;
@@ -266,7 +267,7 @@
 }
 
 .mod-deportivo .part-status-pill {
-  font-size: .75rem;
+  font-size: calc(.75rem * var(--fs-scale, 1));
   font-weight: 600;
   padding: .25rem .6rem;
   border-radius: 999px;
@@ -278,7 +279,7 @@
 .mod-deportivo .part-status-pill.warn { background: #fee2e2; color: #b91c1c; }
 
 .mod-deportivo .part-btn-link-detail {
-  font-size: .78rem;
+  font-size: calc(.78rem * var(--fs-scale, 1));
   font-weight: 600;
   color: var(--accent);
   background: none;
@@ -340,7 +341,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.8rem;
+  font-size: calc(1.8rem * var(--fs-scale, 1));
   font-weight: 700;
 }
 
@@ -365,13 +366,13 @@
   opacity: .55;
 }
 
-.mod-deportivo .part-profile-name { font-size: 1.05rem; font-weight: 700; margin: 0; }
+.mod-deportivo .part-profile-name { font-size: calc(1.05rem * var(--fs-scale, 1)); font-weight: 700; margin: 0; }
 
 .mod-deportivo .part-profile-role-pill {
   display: inline-flex;
   align-items: center;
   gap: .35rem;
-  font-size: .75rem;
+  font-size: calc(.75rem * var(--fs-scale, 1));
   font-weight: 600;
   padding: .3rem .75rem;
   border-radius: 999px;
@@ -413,7 +414,7 @@
 
 .mod-deportivo .part-profile-quickinfo-item strong {
   display: block;
-  font-size: .9rem;
+  font-size: calc(.9rem * var(--fs-scale, 1));
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -432,15 +433,15 @@
 }
 
 .mod-deportivo .part-form-group { margin-bottom: .9rem; }
-.mod-deportivo .part-form-group label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: .3rem; }
+.mod-deportivo .part-form-group label { display: block; font-size: calc(.85rem * var(--fs-scale, 1)); font-weight: 600; margin-bottom: .3rem; }
 
 .mod-deportivo .part-form-group input,
 .mod-deportivo .part-form-group select {
   width: 100%;
   padding: .55rem .7rem;
   border-radius: 8px;
-  border: 1px solid var(--border, #e5e7eb);
-  font-size: .9rem;
+  border: 1px solid var(--accent);
+  font-size: calc(.9rem * var(--fs-scale, 1));
   background: var(--surface, #fff);
   color: inherit;
 }
@@ -452,14 +453,14 @@
 }
 
 .mod-deportivo .part-form-hint {
-  font-size: .78rem;
+  font-size: calc(.78rem * var(--fs-scale, 1));
   color: var(--muted, #6b7280);
   margin: -.4rem 0 .9rem;
 }
 
 .mod-deportivo .part-error {
   display: none;
-  font-size: .78rem;
+  font-size: calc(.78rem * var(--fs-scale, 1));
   color: #dc2626;
   margin-top: .25rem;
 }
@@ -486,8 +487,8 @@
 }
 
 .mod-deportivo .part-toggle-row:last-child { border-bottom: none; }
-.mod-deportivo .part-toggle-label { font-size: .88rem; font-weight: 600; }
-.mod-deportivo .part-toggle-label small { display: block; font-weight: 400; color: var(--muted, #6b7280); font-size: .76rem; }
+.mod-deportivo .part-toggle-label { font-size: calc(.88rem * var(--fs-scale, 1)); font-weight: 600; }
+.mod-deportivo .part-toggle-label small { display: block; font-weight: 400; color: var(--muted, #6b7280); font-size: calc(.76rem * var(--fs-scale, 1)); }
 
 .mod-deportivo .part-toggle {
   width: 40px;
@@ -523,7 +524,7 @@
 .mod-deportivo.dark-mode .part-form-group input,
 .mod-deportivo.dark-mode .part-form-group select {
   background: #1c2230;
-  border-color: #333c4d;
+  border-color: var(--accent);
 }
 
 .mod-deportivo.dark-mode .part-header { border-bottom-color: #333c4d; }
@@ -541,7 +542,7 @@
 
 .mod-deportivo.dark-mode .part-tab-btn { color: #9aa5b8; }
 .mod-deportivo.dark-mode .part-card-head,
-.mod-deportivo.dark-mode .part-toggle-row { border-color: #333c4d; }
+.mod-deportivo.dark-mode .part-toggle-row { border-color: var(--accent); }
 
 /* ---- Detalle de inscripción (rediseño llamativo) ---- */
 .mod-deportivo .part-detail-card { overflow: visible; box-shadow: 0 10px 40px rgba(0,0,0,.08); border: none; }
@@ -573,7 +574,7 @@
   position: relative;
   z-index: 1;
   color: rgba(255,255,255,.85);
-  font-size: .8rem;
+  font-size: calc(.8rem * var(--fs-scale, 1));
   margin-bottom: 1rem;
   display: inline-block;
   transition: color .15s ease;
@@ -596,13 +597,13 @@
   50% { box-shadow: 0 4px 14px rgba(0,0,0,.15), 0 0 0 6px rgba(255,255,255,0); }
 }
 
-.mod-deportivo .part-detail-hero h2 { position: relative; z-index: 1; margin: 0 0 .4rem; font-size: 1.7rem; color: #fff; }
+.mod-deportivo .part-detail-hero h2 { position: relative; z-index: 1; margin: 0 0 .4rem; font-size: calc(1.7rem * var(--fs-scale, 1)); color: #fff; }
 
 .mod-deportivo .part-detail-meta {
   position: relative;
   z-index: 1;
   margin: 0;
-  font-size: .88rem;
+  font-size: calc(.88rem * var(--fs-scale, 1));
   color: rgba(255,255,255,.85);
   display: flex;
   align-items: center;
@@ -642,13 +643,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.1rem;
+  font-size: calc(1.1rem * var(--fs-scale, 1));
   background: color-mix(in srgb, var(--accent) 16%, transparent);
   color: var(--accent);
 }
 
-.mod-deportivo .part-detail-info-item .part-label { font-size: .74rem; text-transform: uppercase; letter-spacing: .03em; display: block; }
-.mod-deportivo .part-detail-info-item strong { font-size: .95rem; }
+.mod-deportivo .part-detail-info-item .part-label { font-size: calc(.74rem * var(--fs-scale, 1)); text-transform: uppercase; letter-spacing: .03em; display: block; }
+.mod-deportivo .part-detail-info-item strong { font-size: calc(.95rem * var(--fs-scale, 1)); }
 
 .mod-deportivo.dark-mode .part-detail-info-item { background: #232a3a; }
 
@@ -707,7 +708,7 @@ body.dark-mode .part-qr-modal { background: #1c2230; }
   border: none;
   background: var(--accent);
   color: #fff;
-  font-size: 1.15rem;
+  font-size: calc(1.15rem * var(--fs-scale, 1));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -746,7 +747,7 @@ body.dark-mode .part-qr-modal { background: #1c2230; }
 
 .part-qr-code-text {
   font-weight: 700;
-  font-size: .82rem;
+  font-size: calc(.82rem * var(--fs-scale, 1));
   word-break: break-all;
   text-align: center;
   color: var(--muted, #6b7280);
@@ -755,7 +756,7 @@ body.dark-mode .part-qr-modal { background: #1c2230; }
   color: var(--muted, #6b7280);
   text-align: center;
   margin: 0;
-  font-size: .85rem;
+  font-size: calc(.85rem * var(--fs-scale, 1));
 }
 /* ---- Alerta de formulario (estilo tarjeta con borde de color) ---- */
 .part-form-alert {
@@ -771,7 +772,7 @@ body.dark-mode .part-qr-modal { background: #1c2230; }
   padding: .9rem 1.1rem 1.05rem;
   border-radius: 8px;
   box-shadow: 0 10px 30px rgba(0,0,0,.18);
-  font-size: .9rem;
+  font-size: calc(.9rem * var(--fs-scale, 1));
   color: #1e293b;
   max-width: 340px;
   animation: partAlertSlideIn .25s ease both;
@@ -785,7 +786,7 @@ body.dark-mode .part-qr-modal { background: #1c2230; }
 .part-form-alert.ok { border-left: 4px solid #22c55e; }
 .part-form-alert.error { border-left: 4px solid #ef4444; }
 
-.part-form-alert .part-alert-icon { font-size: 1.1rem; flex-shrink: 0; }
+.part-form-alert .part-alert-icon { font-size: calc(1.1rem * var(--fs-scale, 1)); flex-shrink: 0; }
 
 .mod-deportivo.dark-mode .part-form-alert { background: #232a3a; color: #e2e8f0; }
 
@@ -829,7 +830,7 @@ body.dark-mode .part-qr-modal { background: #1c2230; }
   justify-content: center;
   color: var(--muted, #6b7280);
   cursor: pointer;
-  font-size: 1rem;
+  font-size: calc(1rem * var(--fs-scale, 1));
   transition: color .15s ease;
 }
 

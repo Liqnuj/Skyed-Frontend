@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Protected from '../../components/Protected';
 import SportWrapper from '../../components/deportivo/SportWrapper';
 import { useAuth } from '../../context/AuthContext';
 import { apiFetch } from '../../services/api';
 import '../../styles/deportivo/participante.css';
 import { createPortal } from 'react-dom';
+
 
 type TabId = 'resumen' | 'historial' | 'inscripciones' | 'ajustes';
 
@@ -49,6 +50,16 @@ interface HistorialItem {
   estado_hp: 'inscrito' | 'finalizado' | 'asistio' | 'abandono';
   observaciones_hp: string | null;
   evento: EventoInscrito | null;
+}
+
+function tipoDocumentoLabel(tipo: string | null | undefined) {
+  const map: Record<string, string> = {
+    CC: 'C.C.', cedula_ciudadania: 'C.C.',
+    TI: 'T.I.', tarjeta_identidad: 'T.I.',
+    CE: 'C.E.', cedula_extranjeria: 'C.E.',
+    PA: 'Pasaporte', pasaporte: 'Pasaporte',
+  };
+  return tipo ? (map[tipo] || tipo) : '';
 }
 
 function fmtFechaLarga(iso: string | null | undefined) {
@@ -191,9 +202,8 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
           <div className="part-actions">
             <button
               type="button"
-              className="part-btn-disabled"
+              className="btn btn-outline"
               title="Editar perfil"
-              disabled
               onClick={() => setTab('ajustes')}
             >
               <i className="ti ti-edit" aria-hidden="true" /> Editar perfil
@@ -223,8 +233,10 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
             <div className="part-card-body">
               <div className="part-stat-row"><span className="part-label">Rol</span><span>{user?.role === 'admin' ? 'Administrador' : 'Participante'}</span></div>
               <div className="part-stat-row"><span className="part-label">Correo</span><span>{user?.email || '—'}</span></div>
-              <div className="part-stat-row"><span className="part-label">Categoría</span><span>—</span></div>
-              <div className="part-stat-row"><span className="part-label">Teléfono</span><span>—</span></div>
+              <div className="part-stat-row"><span className="part-label">Teléfono</span><span>{user?.telefono || '—'}</span></div>
+              <div className="part-stat-row"><span className="part-label">Ciudad</span><span>{user?.ciudad || '—'}</span></div>
+              <div className="part-stat-row"><span className="part-label">Documento</span><span>{user?.documento ? `${tipoDocumentoLabel(user.tipo_documento)} ${user.documento}` : '—'}</span></div>
+              <div className="part-stat-row"><span className="part-label">Fecha de nacimiento</span><span>{fmtFechaLarga(user?.fecha_nacimiento)}</span></div>
             </div>
           </div>
           <div className="part-card">
@@ -434,7 +446,10 @@ function DetalleInscripcion({
 }
 
 function AjustesTab() {
-  const { user, updateProfile, updateFotoUrl } = useAuth();
+  const { user, updateProfile, updateFotoUrl, deleteAccount } = useAuth();
+  const navigate = useNavigate();
+  const [eliminandoCuenta, setEliminandoCuenta] = useState(false);
+  const [confirmarEliminar, setConfirmarEliminar] = useState(false);
   const initials = (user?.name || 'SK').split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
   const [actual, setActual] = useState('');
   const [nueva, setNueva] = useState('');
@@ -447,12 +462,32 @@ function AjustesTab() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [fotoUrl, setFotoUrl] = useState<string | null>((user as any)?.foto_url ?? null);
   const [subiendoFoto, setSubiendoFoto] = useState(false);
-
+  const nombreApellido = (user?.name || '').split(' ');
+  const [nombre, setNombre] = useState(nombreApellido[0] || '');
+  const [apellido, setApellido] = useState(nombreApellido.slice(1).join(' ') || '');
+  const [correo, setCorreo] = useState(user?.email || '');
+  const [telefono, setTelefono] = useState(user?.telefono || '');
+  const [ciudad, setCiudad] = useState(user?.ciudad || '');
+  const [tipoDocumento, setTipoDocumento] = useState(user?.tipo_documento || '');
+  const [documento, setDocumento] = useState(user?.documento || '');
+  const [fechaNacimiento, setFechaNacimiento] = useState(user?.fecha_nacimiento || '');
   useEffect(() => {
     if (!msg) return;
     const t = setTimeout(() => setMsg(null), 4000);
     return () => clearTimeout(t);
   }, [msg]);
+
+  const confirmarEliminarCuenta = async () => {
+    setEliminandoCuenta(true);
+    try {
+      await deleteAccount();
+      navigate('/login');
+    } catch (err: any) {
+      alert(err.message || 'No se pudo eliminar la cuenta. Intenta de nuevo.');
+      setEliminandoCuenta(false);
+      setConfirmarEliminar(false);
+    }
+  };
 
   const handleFotoClick = () => fileInputRef.current?.click();
 
@@ -469,6 +504,8 @@ function AjustesTab() {
       setDatosMsg({ tipo: 'error', texto: 'La imagen no debe superar 3MB.', id: Date.now() });
       return;
     }
+
+
 
     const preview = URL.createObjectURL(file);
     setFotoUrl(preview);
@@ -491,10 +528,6 @@ function AjustesTab() {
     }
   };
 
-  const [nombreCompleto, setNombreCompleto] = useState(user?.name || '');
-  const [correo, setCorreo] = useState(user?.email || '');
-  const [telefono, setTelefono] = useState(user?.telefono || '');
-  const [ciudad, setCiudad] = useState(user?.ciudad || '');
   const [datosMsg, setDatosMsg] = useState<{ tipo: 'ok' | 'error'; texto: string; id: number } | null>(null);
   const [guardandoDatos, setGuardandoDatos] = useState(false);
 
@@ -504,19 +537,20 @@ function AjustesTab() {
     return () => clearTimeout(t);
   }, [datosMsg]);
 
-  const submitDatosPersonales = async (e: React.FormEvent) => {
+    const submitDatosPersonales = async (e: React.FormEvent) => {
     e.preventDefault();
     setDatosMsg(null);
     setGuardandoDatos(true);
     try {
-      const [nombre_u, ...resto] = nombreCompleto.trim().split(' ');
-      const apellido_u = resto.join(' ');
       await updateProfile({
-        nombre_u: nombre_u || undefined,
-        apellido_u: apellido_u || undefined,
+        nombre_u: nombre || undefined,
+        apellido_u: apellido || undefined,
         correo_u: correo || undefined,
         telefono_u: telefono || undefined,
         ciudad_u: ciudad || undefined,
+        tipo_documento_u: tipoDocumento || undefined,
+        documento_u: documento ? Number(documento) : undefined,
+        fecha_nacimiento_u: fechaNacimiento || undefined,
       });
       setDatosMsg({ tipo: 'ok', texto: 'Datos actualizados correctamente.', id: Date.now() });
     } catch (err: any) {
@@ -581,6 +615,7 @@ function AjustesTab() {
   };
 
     return (
+    <>
     <div className="part-settings-grid">
       <div className="part-card part-profile-card">
         <div className="part-profile-main">
@@ -630,8 +665,26 @@ function AjustesTab() {
           <div className="part-card-body">
             <form onSubmit={submitDatosPersonales}>
               <div className="part-form-group">
-                <label htmlFor="d-nombre">Nombre completo</label>
-                <input id="d-nombre" type="text" value={nombreCompleto} onChange={(e) => setNombreCompleto(e.target.value)} required />
+                <label htmlFor="d-nombre">Nombre</label>
+                <input id="d-nombre" type="text" value={nombre} onChange={(e) => setNombre(e.target.value)} required />
+              </div>
+              <div className="part-form-group">
+                <label htmlFor="d-apellido">Apellido</label>
+                <input id="d-apellido" type="text" value={apellido} onChange={(e) => setApellido(e.target.value)} required />
+              </div>
+              <div className="part-form-group">
+                <label htmlFor="d-tipo-doc">Tipo de documento</label>
+                <select id="d-tipo-doc" value={tipoDocumento} onChange={(e) => setTipoDocumento(e.target.value)}>
+                  <option value="">Seleccionar...</option>
+                  <option value="CC">Cédula de ciudadanía</option>
+                  <option value="TI">Tarjeta de identidad</option>
+                  <option value="CE">Cédula de extranjería</option>
+                  <option value="PA">Pasaporte</option>
+                </select>
+              </div>
+              <div className="part-form-group">
+                <label htmlFor="d-documento">Número de documento</label>
+                <input id="d-documento" type="text" inputMode="numeric" value={documento} onChange={(e) => setDocumento(e.target.value.replace(/\D/g, ''))} />
               </div>
               <div className="part-form-group">
                 <label htmlFor="d-correo">Correo electrónico</label>
@@ -640,6 +693,10 @@ function AjustesTab() {
               <div className="part-form-group">
                 <label htmlFor="d-telefono">Teléfono</label>
                 <input id="d-telefono" type="tel" value={telefono} onChange={(e) => setTelefono(e.target.value)} placeholder="Ej: 3001234567" />
+              </div>
+              <div className="part-form-group">
+                <label htmlFor="d-fecha-nac">Fecha de nacimiento</label>
+                <input id="d-fecha-nac" type="date" value={fechaNacimiento} onChange={(e) => setFechaNacimiento(e.target.value)} />
               </div>
               <div className="part-form-group">
                 <label htmlFor="d-ciudad">Ciudad</label>
@@ -773,12 +830,55 @@ function AjustesTab() {
           </div>
           <div className="part-card-body">
             <div className="part-stat-row"><span className="part-label">Rol</span><span>{user?.role === 'admin' ? 'Administrador' : 'Participante'}</span></div>
-            <button type="button" className="btn btn-outline part-btn-disabled" style={{ marginTop: '1rem', color: '#dc2626' }} disabled title="Próximamente">
-              Eliminar cuenta
+            <button
+              type="button"
+              className="btn btn-outline"
+              style={{ marginTop: '1rem', color: '#dc2626' }}
+              onClick={() => setConfirmarEliminar(true)}
+              disabled={eliminandoCuenta}
+            >
+              {eliminandoCuenta ? 'Eliminando…' : 'Eliminar cuenta'}
             </button>
           </div>
         </div>
       </div>
     </div>
+
+      {confirmarEliminar && createPortal(
+        <div className="mod-deportivo part-qr-overlay" onClick={() => !eliminandoCuenta && setConfirmarEliminar(false)}>
+          <div className="part-qr-modal" onClick={(e) => e.stopPropagation()}>
+            <button
+              className="part-qr-close"
+              onClick={() => setConfirmarEliminar(false)}
+              aria-label="Cerrar"
+              disabled={eliminandoCuenta}
+            >
+              <i className="ti ti-x" aria-hidden="true" />
+            </button>
+            <h3 style={{ color: '#dc2626', marginBottom: '.75rem' }}>
+              <i className="ti ti-alert-triangle" aria-hidden="true" /> Desactivar cuenta
+            </h3>
+            <p style={{ marginBottom: '1.5rem', lineHeight: 1.6 }}>
+              Vas a desactivar tu cuenta. Se cerrará tu sesión y no podrás iniciar sesión de nuevo hasta que un administrador la reactive.
+            </p>
+            <div style={{ display: 'flex', gap: '.75rem', justifyContent: 'flex-end' }}>
+              <button type="button" className="btn btn-outline" onClick={() => setConfirmarEliminar(false)} disabled={eliminandoCuenta}>
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                style={{ background: '#dc2626' }}
+                onClick={confirmarEliminarCuenta}
+                disabled={eliminandoCuenta}
+              >
+                {eliminandoCuenta ? 'Eliminando…' : 'Sí, eliminar cuenta'}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
+    </>
   );
 }
