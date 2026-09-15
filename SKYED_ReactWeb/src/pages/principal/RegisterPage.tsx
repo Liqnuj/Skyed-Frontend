@@ -10,6 +10,17 @@ export default function RegisterPage() {
   const { register } = useAuth();
   const navigate = useNavigate();
 
+  const maxDate = new Date();
+  maxDate.setFullYear(maxDate.getFullYear() - 10);
+  const maxDateString = maxDate.toISOString().split('T')[0];
+  const handleNameChange = (val: string, setter: React.Dispatch<React.SetStateAction<string>>) => {
+    let filtered = val.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
+    filtered = filtered.replace(/(?:^|\s)\S/g, char => char.toUpperCase());
+    setter(filtered);
+  };
+  const handleNumberChange = (val: string, setter: React.Dispatch<React.SetStateAction<string>>) => {
+    setter(val.replace(/[^0-9]/g, ''));
+  };
   const [tipoDocumento, setTipoDocumento] = useState('');
   const [documento, setDocumento] = useState('');
   const [nombre, setNombre] = useState('');
@@ -73,6 +84,21 @@ export default function RegisterPage() {
         return;
       }
 
+      const birthDateObj = new Date(fechaNac);
+      const today = new Date();
+      let age = today.getFullYear() - birthDateObj.getFullYear();
+      const monthDiff = today.getMonth() - birthDateObj.getMonth();
+      
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDateObj.getDate())) {
+        age--;
+      }
+
+      if (age < 10) {
+        setError('Debes tener al menos 10 años para registrarte en la plataforma.');
+        setTimeout(() => setError(''), 4000);
+        return;
+      }
+
       setLoading(true);
 
       try {
@@ -96,7 +122,7 @@ export default function RegisterPage() {
 
       } catch (err) {
         setError(err instanceof Error ? err.message : 'No se pudo crear la cuenta.');
-        setTimeout(() => setError(''), 5000);
+        setTimeout(() => setError(''), 4000);
       }
 
       setLoading(false);
@@ -207,7 +233,7 @@ export default function RegisterPage() {
                     disabled={!tipoDocumento}
                     required
                     value={documento}
-                    onChange={(e) => setDocumento(e.target.value)}
+                    onChange={(e) => handleNumberChange(e.target.value, setDocumento)}
                   />
                 </div>
               </div>
@@ -223,10 +249,11 @@ export default function RegisterPage() {
                     id="nombre"
                     className="form-input"
                     placeholder="Juan"
+                    maxLength={50}
                     autoComplete="given-name"
                     required
                     value={nombre}
-                    onChange={(e) => setNombre(e.target.value)}
+                    onChange={(e) => handleNameChange(e.target.value, setNombre)}
                   />
                 </div>
 
@@ -239,10 +266,11 @@ export default function RegisterPage() {
                     id="apellido"
                     className="form-input"
                     placeholder="Pérez"
+                    maxLength={50}
                     autoComplete="family-name"
                     required
                     value={apellido}
-                    onChange={(e) => setApellido(e.target.value)}
+                    onChange={(e) => handleNameChange(e.target.value, setApellido)}
                   />
                 </div>
               </div>
@@ -284,7 +312,7 @@ export default function RegisterPage() {
                     maxLength={15}
                     required
                     value={telefono}
-                    onChange={(e) => setTelefono(e.target.value)}
+                    onChange={(e) => handleNumberChange(e.target.value, setTelefono)}
                   />
                   <div className="form-hint">Solo números (7-15)</div>
                 </div>
@@ -298,6 +326,7 @@ export default function RegisterPage() {
                     id="fechaNac"
                     className="form-input"
                     required
+                    max={maxDateString} // Añade esta línea
                     value={fechaNac}
                     onChange={(e) => setFechaNac(e.target.value)}
                   />
@@ -479,44 +508,62 @@ export default function RegisterPage() {
 
       {/* TOAST DE ÉXITO */}
       {successMsg && (
-        <div style={{
-          position: 'fixed',
-          bottom: '24px',
-          right: '24px',
-          backgroundColor: '#ffffff',
-          borderLeft: '4px solid #22c55e',
-          padding: '16px 24px',
-          borderRadius: '8px',
-          boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
-          zIndex: 9999,
-          color: '#1e293b',
-          fontSize: '0.95rem'
-        }}>
-          {successMsg}
-        </div>
+        <>
+          <style>
+            {`
+              @keyframes shrinkBarSuccess { from { width: 100%; } to { width: 0%; } }
+              @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+            `}
+          </style>
+          <div style={{
+            position: 'fixed',
+            top: '24px',
+            right: '24px',
+            backgroundColor: '#ffffff',
+            borderRadius: '8px',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+            zIndex: 9999,
+            overflow: 'hidden',
+            minWidth: '300px',
+            animation: 'slideIn 0.3s ease-out forwards'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px 24px', borderLeft: '4px solid #22c55e' }}>
+              <span style={{ fontSize: '1.2rem' }}>✅</span>
+              <span style={{ color: '#1e293b', fontSize: '0.95rem', fontWeight: '500' }}>{successMsg}</span>
+            </div>
+            <div style={{ height: '4px', backgroundColor: '#22c55e', animation: 'shrinkBarSuccess 2.5s linear forwards' }} />
+          </div>
+        </>
       )}
 
       {/* TOAST DE ERROR */}
       {error && (
-        <div style={{
-          position: 'fixed',
-          bottom: successMsg ? '90px' : '24px', 
-          right: '24px',
-          backgroundColor: '#ffffff',
-          borderLeft: '4px solid #ef4444',
-          padding: '16px 24px',
-          borderRadius: '8px',
-          boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
-          zIndex: 9999,
-          color: '#1e293b',
-          fontSize: '0.95rem',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px'
-        }}>
-          <span style={{ fontSize: '1.2rem' }}>⚠️</span>
-          {error}
-        </div>
+        <>
+          <style>
+            {`
+              @keyframes shrinkBarError { from { width: 100%; } to { width: 0%; } }
+              @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+            `}
+          </style>
+          <div style={{
+            position: 'fixed',
+            top: successMsg ? '100px' : '24px', // Se desplaza hacia abajo si ambas alertas aparecen juntas
+            right: '24px',
+            backgroundColor: '#ffffff',
+            borderRadius: '8px',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+            zIndex: 9999,
+            overflow: 'hidden',
+            minWidth: '300px',
+            animation: 'slideIn 0.3s ease-out forwards'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px 24px', borderLeft: '4px solid #ef4444' }}>
+              <span style={{ fontSize: '1.2rem' }}>⚠️</span>
+              <span style={{ color: '#1e293b', fontSize: '0.95rem', fontWeight: '500' }}>{error}</span>
+            </div>
+            <div style={{ height: '4px', backgroundColor: '#ef4444', animation: 'shrinkBarError 4s linear forwards' }} />
+          </div>
+        </>
       )}
     </PrincipalWrapper>
   );
