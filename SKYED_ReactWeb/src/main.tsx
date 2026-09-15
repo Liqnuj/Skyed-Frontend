@@ -32,6 +32,7 @@ import './styles/social/social.css';
 import './styles/deportivo/deportivo.css';
 import Participant from './pages/deportivo/Participant';
 import UsersRoles from './pages/admin/UsersRoles';
+import SkaiWidget from './components/shared/SkaiWidget';
 
 function App(){
   return <AccessibilityProvider><AuthProvider><BrowserRouter><ScrollToTop/><Routes>
@@ -58,9 +59,9 @@ function App(){
     <Route path="/social/reservar" element={<Reserve/>}/>
     <Route path="/social/pqr" element={<PQR/>}/>
     <Route path="/social/admin" element={<Admin/>}/>
-    <Route path="*" element={<HomePage/>}/>
     <Route path="/admin/usuarios" element={<UsersRoles/>}/>
-  </Routes></BrowserRouter></AuthProvider></AccessibilityProvider>
-  
+    <Route path="*" element={<HomePage/>}/>
+  </Routes><SkaiWidget/></BrowserRouter></AuthProvider></AccessibilityProvider>
+
 }
 ReactDOM.createRoot(document.getElementById('root')!).render(<React.StrictMode><App/></React.StrictMode>);
