@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   LayoutDashboard,
+  Loader2,
   LogOut,
   Menu,
   MessageSquareText,
@@ -15,6 +16,7 @@ import {
   Plus,
   Search,
   Trash2,
+  Upload,
   Users,
   Wrench,
   X,
@@ -793,7 +795,7 @@ function AmbienteModal({ item, onClose, onSave }: { item?: Ambiente; onClose: ()
         precio_referencia_a: precio,
       });
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
   };
 
