@@ -12,7 +12,6 @@ export interface RegisterData {
   fecha_nacimiento_u: string;
   contrasena_u: string;
   contrasena_u_confirmation: string;
-  contexto?: 'deportivo' | 'social';
 }
 
 interface AuthContextValue {
@@ -20,18 +19,13 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<boolean>;
   register: (userData: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
-  deleteAccount: () => Promise<void>;
-    updateProfile: (data: {
+  updateProfile: (data: {
     nombre_u?: string;
     apellido_u?: string;
     correo_u?: string;
     telefono_u?: string;
     ciudad_u?: string;
-    tipo_documento_u?: string;
-    documento_u?: number;
-    fecha_nacimiento_u?: string;
   }) => Promise<void>;
-  updateFotoUrl: (fotoUrl: string) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -48,10 +42,6 @@ function buildUser(apiUser: any): User {
     email: apiUser.correo_u,
     telefono: apiUser.telefono_u,
     ciudad: apiUser.ciudad_u,
-    foto_url: apiUser.foto_url ?? null,
-    tipo_documento: apiUser.tipo_documento_u ?? '',
-    documento: apiUser.documento_u != null ? String(apiUser.documento_u) : '',
-    fecha_nacimiento: apiUser.fecha_nacimiento_u ?? null,
     role: nombresRoles.some((r) => r.toLowerCase().startsWith('admin')) ? 'admin' : 'participante',
     roles: nombresRoles,
   };
@@ -105,22 +95,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
     },
 
-      async deleteAccount() {
-      await apiFetch('/perfil', { method: 'DELETE' });
-      setToken(null);
-      setUser(null);
-    },
-
-        async updateProfile(data) {
+    async updateProfile(data) {
       const res = await apiFetch('/perfil', {
         method: 'PUT',
         body: JSON.stringify(data),
       });
       setUser(buildUser(res.user));
-    },
-
-    updateFotoUrl(fotoUrl) {
-      setUser((prev) => (prev ? { ...prev, foto_url: fotoUrl } : prev));
     },
   }), [user]);
 

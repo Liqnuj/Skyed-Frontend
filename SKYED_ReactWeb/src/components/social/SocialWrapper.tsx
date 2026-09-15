@@ -5,16 +5,11 @@ import { useAccessibility } from '../../context/AccessibilityContext';
 import SocialNav from './SocialNav';
 import SocialFooter from './SocialFooter';
 import { useRevealObserver } from '../../hooks/useRevealObserver';
-import { useEffect, } from 'react'; // agrega useEffect
-import { setSiteContext } from '../../utils/siteContext';
 
 const DEFAULT_ACCENT = '#9c02ae'; // color de marca SKYED Social
 
 export default function SocialWrapper({ children }: { children: ReactNode }) {
   const [panelOpen, setPanelOpen] = useState(false);
-  useEffect(() => {
-    setSiteContext('social');
-  }, []);
   const {
     darkMode, toggleDark,
     fontSize, setFontSize,
