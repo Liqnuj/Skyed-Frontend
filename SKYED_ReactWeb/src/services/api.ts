@@ -15,12 +15,10 @@ export function setToken(token: string | null) {
 
 export async function apiFetch(path: string, options: RequestInit = {}) {
   const token = getToken();
-  const isFormData = options.body instanceof FormData;
-
   const res = await fetch(`${apiConfig.baseURL}${path}`, {
     ...options,
     headers: {
-      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+      'Content-Type': 'application/json',
       Accept: 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
