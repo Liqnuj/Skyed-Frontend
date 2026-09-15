@@ -767,22 +767,26 @@ function AdminPage() {
           <SectionTable title="Gestión de eventos sociales" action="Nuevo evento" onAction={() => { setEditing(null); setModal("evento"); }}>
             <thead><tr><th>Foto</th><th>ID</th><th>Nombre</th><th>Fecha</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody>
-              {visibleEventos.map(e => (
-                <tr key={e.id_er}>
-                  <td>
-                    {(e.imagen_er || e.ambiente?.imagen_principal_a)
-                      ? <img className="admin-thumb" src={e.imagen_er || e.ambiente?.imagen_principal_a} alt={e.nombre_er} onError={ev => { (ev.target as HTMLImageElement).style.visibility = "hidden"; }} />
-                      : <span className="admin-thumb admin-thumb-empty" title="Sin foto">—</span>}
-                  </td>
-                  <td>#{e.id_er}</td><td><strong>{e.nombre_er}</strong></td><td>{formatDate(e.fecha_er)}</td>
-                  <td><Badge value={e.estado_er} /></td>
-                  <td><div className="row-actions">
+              {visibleEventos.map(e => {
+                const imageUrl = e.imagen_er ?? e.ambiente?.imagen_principal_a ?? undefined;
+
+                return (
+                  <tr key={e.id_er}>
+                    <td>
+                      {imageUrl
+                        ? <img className="admin-thumb" src={imageUrl} alt={e.nombre_er} onError={ev => { (ev.target as HTMLImageElement).style.visibility = "hidden"; }} />
+                        : <span className="admin-thumb admin-thumb-empty" title="Sin foto">—</span>}
+                    </td>
+                    <td>#{e.id_er}</td><td><strong>{e.nombre_er}</strong></td><td>{formatDate(e.fecha_er)}</td>
+                    <td><Badge value={e.estado_er} /></td>
+                    <td><div className="row-actions">
                     <button className="table-action" onClick={() => { setEditing(e); setModal("evento"); }}><Pencil size={15} /></button>
-                    <button className="table-action" onClick={() => toggleEvento(e)}>{e.estado_er === "activo" ? "Desactivar" : "Activar"}</button>
-                    <button className="table-action danger" onClick={() => deleteEvento(e.id_er)}><Trash2 size={15} /></button>
-                  </div></td>
-                </tr>
-              ))}
+                      <button className="table-action" onClick={() => toggleEvento(e)}>{e.estado_er === "activo" ? "Desactivar" : "Activar"}</button>
+                      <button className="table-action danger" onClick={() => deleteEvento(e.id_er)}><Trash2 size={15} /></button>
+                    </div></td>
+                  </tr>
+                );
+              })}
               {!visibleEventos.length && <tr><td colSpan={6}>No hay eventos sociales.</td></tr>}
             </tbody>
           </SectionTable>
