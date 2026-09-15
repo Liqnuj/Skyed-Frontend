@@ -4348,6 +4348,11 @@ html, .mod-principal {
   background: #010101;
 }
 
+.code-input:focus {
+  border-color: #38bdf8 !important; 
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2) !important;
+  outline: none;
+}
 
 
 /* ════════════════════════════════════════════════════════════
