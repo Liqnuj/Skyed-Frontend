@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import {
   Building2,
@@ -7,6 +7,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  ImagePlus,
   LayoutDashboard,
   Loader2,
   LogOut,
@@ -44,6 +45,7 @@ type Ambiente = {
   descripcion_a?: string | null;
   capacidad_a: number;
   precio_referencia_a?: number | string | null;
+  imagen_principal_a?: string | null;
   servicios?: Array<{ id_s: number; nombre_s: string }>;
 };
 
@@ -67,6 +69,7 @@ type EventoSocial = {
   nombre_er: string;
   descripcion_er?: string | null;
   fecha_er?: string | null;
+  imagen_er?: string | null;
   estado_er: "activo" | "inactivo";
   id_a?: number;
   id_tipo_eves?: number;
@@ -920,7 +923,7 @@ function AmbienteModal({ item, onClose, onSave }: { item?: Ambiente; onClose: ()
         precio_referencia_a: precio,
       });
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 

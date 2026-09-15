@@ -84,6 +84,7 @@ export interface EventoSocial {
   nombre_er: string;
   descripcion_er: string | null;
   fecha_er: string | null;
+  imagen_er?: string | null;
   estado_er: 'activo' | 'inactivo';
   id_tipo_eves: number;
   id_a: number;

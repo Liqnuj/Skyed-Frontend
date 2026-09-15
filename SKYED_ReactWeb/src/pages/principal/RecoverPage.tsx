@@ -1,11 +1,9 @@
-import { useState } from 'react';
-import type { FormEvent } from 'react';
+import { useState, useRef } from 'react';
+import type { FormEvent, ChangeEvent, KeyboardEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import PrincipalWrapper from '../../components/principal/PrincipalWrapper';
 import AuthTopbar from '../../components/principal/AuthTopbar';
 import { apiFetch } from '../../services/api';
-import PrincipalWrapper from '../../components/principal/PrincipalWrapper';
-import AuthTopbar from '../../components/principal/AuthTopbar';
 
 export default function RecoverPage() {
   const navigate = useNavigate();
@@ -74,6 +72,7 @@ export default function RecoverPage() {
     if (e.key === 'Backspace' && !code[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
+  };
 
   async function handleVerifyCode(e: FormEvent) {
     e.preventDefault();

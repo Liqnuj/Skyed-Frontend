@@ -1121,7 +1121,7 @@
 .mod-deportivo .mv-card p{color:var(--muted);line-height:1.7}
 .mod-deportivo.dark-mode .mv-card p{color:#c6b4b4}
 .mod-deportivo .mv-card--vision{border-color:var(--accent)}
-@media (max-width:768px){.mod-deportivo .mv-grid{grid-template-columns:1fr}} */ */
+@media (max-width:768px){.mod-deportivo .mv-grid{grid-template-columns:1fr}} */
 
 
 /* ===== Línea del tiempo ===== */

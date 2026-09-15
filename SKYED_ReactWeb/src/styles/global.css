@@ -293,7 +293,7 @@ section{padding:1rem 0}
 .dark-mode .about-list li{color:rgba(218, 218, 218, 0.842)}
 
 .about-list li::before{content:'✦';color:var(--accent);flex-shrink:0;margin-top:.05rem;font-size:.85rem}
-.about-cta{margin-top:2.5rem;display:flex;gap:1rem;flex-wrap:wrap} */
+.about-cta{margin-top:2.5rem;display:flex;gap:1rem;flex-wrap:wrap}
 
 /* EVENTS */
 .events-section{background:var(--cream)}
