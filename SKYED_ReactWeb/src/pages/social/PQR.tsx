@@ -66,6 +66,10 @@ function sanitizeNumeric(raw: string) {
   return raw.replace(/\D/g, '').slice(0, 15);
 }
 
+function sanitizeContrato(raw: string) {
+  return raw.replace(/[^A-Za-z0-9-]/g, '').slice(0, 20);
+}
+
 function WhatsAppIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -331,8 +335,9 @@ export default function PQR() {
                           type="text"
                           id="pqrContrato"
                           placeholder="Ej: SS-2024-0312"
+                          maxLength={20}
                           value={contrato}
-                          onChange={(e) => setContrato(e.target.value)}
+                          onChange={(e) => setContrato(sanitizeContrato(e.target.value))}
                         />
                       </div>
                     </div>
