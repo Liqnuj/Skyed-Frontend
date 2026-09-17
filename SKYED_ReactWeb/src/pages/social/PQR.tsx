@@ -66,6 +66,10 @@ function sanitizeNumeric(raw: string) {
   return raw.replace(/\D/g, '').slice(0, 15);
 }
 
+function sanitizeContrato(raw: string) {
+  return raw.replace(/[^A-Za-z0-9-]/g, '').slice(0, 20);
+}
+
 function WhatsAppIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -115,9 +119,12 @@ export default function PQR() {
     setFileName(file ? file.name : '');
   }
 
-  function submitPQR(e: FormEvent) {
-    e.preventDefault();
-
+  /**
+   * Valida el formulario y, si todo está bien, arma el radicado y el
+   * link de WhatsApp. Devuelve null si algo falta (y ya mostró el toast
+   * correspondiente), o los datos listos para radicar/enviar.
+   */
+  function validarYPrepararEnvio() {
     const cleanNombre = capitalizeName(nombre);
     const cleanApellido = capitalizeName(apellido);
     if (cleanNombre !== nombre) setNombre(cleanNombre);
@@ -125,19 +132,19 @@ export default function PQR() {
 
     if (!cleanNombre || !cleanApellido || !email.trim() || !evento || !asunto.trim() || !desc.trim()) {
       showToast('Por favor completa todos los campos obligatorios', '⚠️');
-      return;
+      return null;
     }
     if (!NAME_REGEX.test(cleanNombre) || !NAME_REGEX.test(cleanApellido)) {
       showToast('Nombre y apellido solo pueden tener letras y máximo 20 caracteres', '⚠️');
-      return;
+      return null;
     }
     if (tel && !/^\d+$/.test(tel)) {
       showToast('El teléfono solo puede contener números', '⚠️');
-      return;
+      return null;
     }
     if (!validateEmail(email.trim())) {
       showToast('Ingresa un correo electrónico válido', '⚠️');
-      return;
+      return null;
     }
 
     const code = 'SS-PQR-' + Date.now().toString().slice(-6);
@@ -151,20 +158,25 @@ export default function PQR() {
       asunto: asunto.trim(),
       descripcion: desc.trim(),
     });
-    const link = buildWhatsAppLink(mensaje);
 
+    return { code, link: buildWhatsAppLink(mensaje) };
+  }
+
+  function mostrarConfirmacion(code: string, link: string) {
     setRadicado(code);
     setWaLink(link);
     setSubmitted(true);
     window.setTimeout(() => {
       document.getElementById('pqrConfirm')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 0);
+  }
 
-    // Intento de apertura automática — sigue siendo el mismo evento de clic
-    // del usuario, así que la mayoría de navegadores no lo bloquea. El botón
-    // "Enviar por WhatsApp" en la confirmación queda como respaldo si el
-    // navegador sí lo bloquea.
-    window.open(link, '_blank', 'noopener,noreferrer');
+  function submitPQR(e: FormEvent) {
+    e.preventDefault();
+    const resultado = validarYPrepararEnvio();
+    if (!resultado) return;
+    mostrarConfirmacion(resultado.code, resultado.link);
+    window.open(resultado.link, '_blank', 'noopener,noreferrer');
   }
 
   function resetPQR() {
@@ -323,8 +335,9 @@ export default function PQR() {
                           type="text"
                           id="pqrContrato"
                           placeholder="Ej: SS-2024-0312"
+                          maxLength={20}
                           value={contrato}
-                          onChange={(e) => setContrato(e.target.value)}
+                          onChange={(e) => setContrato(sanitizeContrato(e.target.value))}
                         />
                       </div>
                     </div>
@@ -404,8 +417,12 @@ export default function PQR() {
                       . No compartimos tus datos con terceros.
                     </div>
 
-                    <button className="pf-submit" id="pqrSubmitBtn" type="submit">
-                      ✦ Radicar solicitud
+                    <button
+                      type="submit"
+                      id="pqrSubmitBtn"
+                      className="pqr-whatsapp-btn pqr-whatsapp-btn--form"
+                    >
+                      <WhatsAppIcon /> Enviar por WhatsApp
                     </button>
                   </form>
                 </div>
