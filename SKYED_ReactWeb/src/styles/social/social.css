@@ -3151,5 +3151,38 @@
 
 @media (max-width: 900px){.mod-social .profile-layout { grid-template-columns: 1fr; }.mod-social .stats-strip { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ---------- Botón de WhatsApp en confirmación de PQR ---------- */
+.mod-social .pqr-whatsapp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .6rem;
+  width: 100%;
+  padding: .95rem;
+  margin-bottom: .75rem;
+  background: #25d366;
+  color: #fff;
+  border: none;
+  border-radius: 50px;
+  font-size: calc(.95rem * var(--fs-scale, 1));
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all .25s;
+}
+.mod-social .pqr-whatsapp-btn:hover {
+  background: #1ebc59;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(37, 211, 102, .35);
+}
+.mod-social .pqr-whatsapp-hint {
+  font-size: calc(.78rem * var(--fs-scale, 1));
+  color: var(--text-muted);
+  line-height: 1.6;
+  max-width: 380px;
+  margin: 0 auto 1.75rem;
+}
 @media (max-width: 600px){.mod-social .profile-header-inner { flex-direction: column; text-align: center; }.mod-social .profile-actions { width: 100%; justify-content: center; }.mod-social .profile-tabs { overflow-x: auto; }.mod-social .stats-strip { grid-template-columns: 1fr 1fr; }
 }
