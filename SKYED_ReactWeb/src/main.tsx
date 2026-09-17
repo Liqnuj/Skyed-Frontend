@@ -33,36 +33,56 @@ import './styles/deportivo/deportivo.css';
 import Participant from './pages/deportivo/Participant';
 import UsersRoles from './pages/admin/UsersRoles';
 import SkaiWidget from './components/shared/SkaiWidget';
+import AdminProtectedRoute from './components/AdminProtectedRoute';
 
 function App(){
-  return <AccessibilityProvider><AuthProvider><BrowserRouter><ScrollToTop/><Routes>
-    <Route path="/" element={<HomePage/>}/>
-    <Route path="/login" element={<LoginPage/>}/>
-    <Route path="/registro" element={<RegisterPage/>}/>
-    <Route path="/recuperar" element={<RecoverPage/>}/>
-    <Route path="/perfil" element={<ProfilePage/>}/>
-    <Route path="/deportivo" element={<SportHome/>}/>
-    <Route path="/deportivo/eventos" element={<SportEvents/>}/>
-    <Route path="/deportivo/eventos/:id" element={<SportEventDetail/>}/>
-    <Route path="/deportivo/inscripcion/:id" element={<Inscription/>}/>
-    <Route path="/deportivo/checkout" element={<Checkout/>}/>
-    <Route path="/deportivo/mi-entrada" element={<MyEntry/>}/>
-    <Route path="/deportivo/mi-entrada/:idEvento" element={<MyEntry/>}/>
-    <Route path="/deportivo/resultados" element={<Results/>}/>
-    <Route path="/deportivo/notificaciones" element={<Notifications/>}/>
-    <Route path="/deportivo/nosotros" element={<AboutSport/>}/>
-    <Route path="/deportivo/entrega-kit" element={<Kit/>}/>
-    <Route path="/deportivo/perfil" element={<Participant/>}/>
-    <Route path="/social" element={<SocialHome/>}/>
-    <Route path="/social/eventos" element={<SocialEvents/>}/>
-    <Route path="/social/lugares" element={<Venues/>}/>
-    <Route path="/social/nosotros" element={<AboutSocial/>}/>
-    <Route path="/social/reservar" element={<Reserve/>}/>
-    <Route path="/social/pqr" element={<PQR/>}/>
-    <Route path="/social/admin" element={<Admin/>}/>
-    <Route path="/admin/usuarios" element={<UsersRoles/>}/>
-    <Route path="*" element={<HomePage/>}/>
-  </Routes><SkaiWidget/></BrowserRouter></AuthProvider></AccessibilityProvider>
+  return (
+    <AccessibilityProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <ScrollToTop/>
+          <Routes>
+            <Route path="/" element={<HomePage/>}/>
+            <Route path="/login" element={<LoginPage/>}/>
+            <Route path="/registro" element={<RegisterPage/>}/>
+            <Route path="/recuperar" element={<RecoverPage/>}/>
+            <Route path="/perfil" element={<ProfilePage/>}/>
+            
+            <Route path="/deportivo" element={<SportHome/>}/>
+            <Route path="/deportivo/eventos" element={<SportEvents/>}/>
+            <Route path="/deportivo/eventos/:id" element={<SportEventDetail/>}/>
+            <Route path="/deportivo/inscripcion/:id" element={<Inscription/>}/>
+            <Route path="/deportivo/checkout" element={<Checkout/>}/>
+            <Route path="/deportivo/mi-entrada" element={<MyEntry/>}/>
+            <Route path="/deportivo/resultados" element={<Results/>}/>
+            <Route path="/deportivo/notificaciones" element={<Notifications/>}/>
+            <Route path="/deportivo/nosotros" element={<AboutSport/>}/>
+            <Route path="/deportivo/entrega-kit" element={<Kit/>}/>
+            <Route path="/deportivo/perfil" element={<Participant/>}/>
+            
+            <Route path="/social" element={<SocialHome/>}/>
+            <Route path="/social/eventos" element={<SocialEvents/>}/>
+            <Route path="/social/lugares" element={<Venues/>}/>
+            <Route path="/social/nosotros" element={<AboutSocial/>}/>
+            <Route path="/social/reservar" element={<Reserve/>}/>
+            <Route path="/social/pqr" element={<PQR/>}/>
 
+            <Route element={<AdminProtectedRoute />}>
+              <Route path="/social/admin" element={<Admin/>}/>
+              <Route path="/admin/usuarios" element={<UsersRoles/>}/>
+            </Route>
+
+            <Route path="*" element={<HomePage/>}/>
+          </Routes>
+          <SkaiWidget/>
+        </BrowserRouter>
+      </AuthProvider>
+    </AccessibilityProvider>
+  );
 }
-ReactDOM.createRoot(document.getElementById('root')!).render(<React.StrictMode><App/></React.StrictMode>);
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <App/>
+  </React.StrictMode>
+);
