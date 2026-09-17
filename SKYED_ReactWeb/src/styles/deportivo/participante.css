@@ -675,6 +675,8 @@
   animation: partQrFadeIn .25s ease both;
   padding: 3rem;
 }
+
+.mod-deportivo.part-qr-overlay.dark-mode { background: rgba(10, 14, 20, .35); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); } 
 @keyframes partQrFadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 .part-qr-modal {
@@ -691,12 +693,16 @@
   box-shadow: 0 25px 60px rgba(0,0,0,.35);
   animation: partQrPop .35s cubic-bezier(.34,1.56,.64,1) both;
 }
+
+.dark-mode .part-qr-modal {
+  background: #1c2230;
+}
 @keyframes partQrPop {
   from { opacity: 0; transform: scale(.75); }
   to { opacity: 1; transform: scale(1); }
 }
 
-body.dark-mode .part-qr-modal { background: #1c2230; }
+/* body.dark-mode .part-qr-modal { background: #1c2230; } */
 
 .part-qr-close {
   position: absolute;
@@ -836,4 +842,182 @@ body.dark-mode .part-qr-modal { background: #1c2230; }
 
 .mod-deportivo .part-pass-toggle:hover {
   color: var(--accent);
+}
+
+
+/* --- Método de pago --- */
+.mod-deportivo .part-pay-tabs {
+  display: flex;
+  gap: .5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.mod-deportivo .part-pay-tab {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .55rem .9rem;
+  border-radius: 8px;
+  border: 1px solid var(--accent);
+  background: var(--surface, #fff);
+  color: inherit;
+  font-size: calc(.85rem * var(--fs-scale, 1));
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mod-deportivo .part-pay-tab.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.mod-deportivo .part-pay-bank {
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+  padding: .9rem 1.1rem;
+  margin-bottom: 1rem;
+}
+
+.mod-deportivo .part-pay-bank-title {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  font-weight: 700;
+  margin-bottom: .6rem;
+  font-size: calc(.9rem * var(--fs-scale, 1));
+}
+
+.mod-deportivo .part-pay-bank-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: .45rem 0;
+  border-bottom: 1px solid var(--border, #e5e7eb);
+  font-size: calc(.85rem * var(--fs-scale, 1));
+}
+
+.mod-deportivo .part-pay-bank-row:last-child { border-bottom: none; }
+.mod-deportivo .part-pay-bank-row span { color: var(--muted, #6b7280); }
+
+.mod-deportivo .part-pay-copy {
+  border: none;
+  background: none;
+  color: var(--accent);
+  font-weight: 600;
+  cursor: pointer;
+  margin-left: .4rem;
+  font-size: calc(.8rem * var(--fs-scale, 1));
+}
+
+.mod-deportivo .part-pay-ref { color: var(--accent); }
+
+.mod-deportivo .part-pay-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: .5rem;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+  border-radius: 10px;
+  padding: .75rem .9rem;
+  font-size: calc(.82rem * var(--fs-scale, 1));
+  margin-bottom: 1rem;
+}
+
+.mod-deportivo .part-pay-upload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .3rem;
+  text-align: center;
+  border: 1px dashed var(--accent);
+  border-radius: 10px;
+  padding: 1.6rem 1rem;
+  cursor: pointer;
+  font-size: calc(.85rem * var(--fs-scale, 1));
+  color: var(--muted, #6b7280);
+}
+
+.mod-deportivo .part-pay-upload i { font-size: 1.4rem; color: var(--accent); }
+.mod-deportivo .part-pay-upload.dragover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.mod-deportivo .part-pay-upload-hint { font-size: calc(.72rem * var(--fs-scale, 1)); color: var(--muted, #6b7280); }
+
+/* --- Resumen / revisión de inscripción --- */
+.mod-deportivo .part-review-block {
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+  padding: .9rem 1.1rem;
+  margin-bottom: 1rem;
+}
+
+.mod-deportivo .part-review-title {
+  font-size: calc(.72rem * var(--fs-scale, 1));
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 700;
+  margin-bottom: .5rem;
+}
+
+.mod-deportivo .part-review-row {
+  display: flex;
+  justify-content: space-between;
+  padding: .4rem 0;
+  border-bottom: 1px solid var(--border, #e5e7eb);
+  font-size: calc(.85rem * var(--fs-scale, 1));
+}
+
+.mod-deportivo .part-review-row:last-child { border-bottom: none; }
+.mod-deportivo .part-review-row span { color: var(--muted, #6b7280); }
+
+.mod-deportivo .part-review-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: .6rem;
+  margin-top: .3rem;
+  border-top: 1px solid var(--border, #e5e7eb);
+  font-weight: 700;
+}
+
+.mod-deportivo .part-review-total strong {
+  color: var(--accent);
+  font-size: calc(1.1rem * var(--fs-scale, 1));
+}
+
+.mod-deportivo .part-review-terms {
+  max-height: 140px;
+  overflow-y: auto;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+  padding: .8rem .9rem;
+  font-size: calc(.78rem * var(--fs-scale, 1));
+  color: var(--muted, #6b7280);
+  margin-bottom: .9rem;
+}
+
+.mod-deportivo .part-review-terms a { color: var(--accent); }
+
+.mod-deportivo .part-review-check {
+  display: flex;
+  align-items: flex-start;
+  gap: .5rem;
+  margin-bottom: .3rem;
+  font-size: calc(.85rem * var(--fs-scale, 1));
+  cursor: pointer;
+}
+
+.mod-deportivo .part-review-check input { margin-top: .2rem; }
+.mod-deportivo .part-review-check a { color: var(--accent); }
+
+.part-form-error {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #e24b4a;
+}
+
+.part-input-locked {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
