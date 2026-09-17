@@ -3172,6 +3172,10 @@
   cursor: pointer;
   transition: all .25s;
 }
+.mod-social .pqr-whatsapp-btn--form {
+  margin-top: .75rem;
+  margin-bottom: 0;
+}
 .mod-social .pqr-whatsapp-btn:hover {
   background: #1ebc59;
   transform: translateY(-2px);
