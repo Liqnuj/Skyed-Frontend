@@ -172,15 +172,6 @@ export default function PQR() {
     const resultado = validarYPrepararEnvio();
     if (!resultado) return;
     mostrarConfirmacion(resultado.code, resultado.link);
-  }
-
-  // Botón dedicado en el propio formulario: valida, radica y abre
-  // WhatsApp en el mismo clic del usuario (por eso va en un botón real,
-  // no dentro del submit) para que el navegador nunca lo bloquee.
-  function enviarPorWhatsApp() {
-    const resultado = validarYPrepararEnvio();
-    if (!resultado) return;
-    mostrarConfirmacion(resultado.code, resultado.link);
     window.open(resultado.link, '_blank', 'noopener,noreferrer');
   }
 
@@ -421,13 +412,10 @@ export default function PQR() {
                       . No compartimos tus datos con terceros.
                     </div>
 
-                    <button className="pf-submit" id="pqrSubmitBtn" type="submit">
-                      ✦ Radicar solicitud
-                    </button>
                     <button
-                      type="button"
+                      type="submit"
+                      id="pqrSubmitBtn"
                       className="pqr-whatsapp-btn pqr-whatsapp-btn--form"
-                      onClick={enviarPorWhatsApp}
                     >
                       <WhatsAppIcon /> Enviar por WhatsApp
                     </button>
