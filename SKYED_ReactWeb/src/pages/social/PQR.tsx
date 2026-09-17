@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import SocialWrapper from '../../components/social/SocialWrapper';
 import CanvasParticles from '../../components/social/CanvasParticles';
+import { buildPqrWhatsAppMessage, buildWhatsAppLink } from '../../utils/whatsapp';
 
 type PqrTypeKey = 'peticion' | 'queja' | 'reclamo' | 'sugerencia' | 'felicitacion';
 
@@ -65,6 +66,15 @@ function sanitizeNumeric(raw: string) {
   return raw.replace(/\D/g, '').slice(0, 15);
 }
 
+function WhatsAppIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
+      <path d="M12.004 2C6.486 2 2 6.486 2 12.004a9.96 9.96 0 001.334 4.986L2 22l5.146-1.312a9.98 9.98 0 004.858 1.237h.004c5.518 0 10.004-4.486 10.004-10.004C22.012 6.486 17.526 2 12.004 2zm0 18.163h-.003a8.15 8.15 0 01-4.153-1.137l-.298-.177-3.055.779.815-2.978-.194-.306a8.135 8.135 0 01-1.248-4.34c0-4.5 3.663-8.163 8.166-8.163 2.18 0 4.229.85 5.77 2.393a8.106 8.106 0 012.393 5.777c-.001 4.502-3.664 8.152-8.193 8.152z" />
+    </svg>
+  );
+}
+
 function validateEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
@@ -85,6 +95,7 @@ export default function PQR() {
 
   const [submitted, setSubmitted] = useState(false);
   const [radicado, setRadicado] = useState('');
+  const [waLink, setWaLink] = useState('');
 
   const [toast, setToast] = useState<{ msg: string; icon: string; show: boolean }>({
     msg: '',
@@ -130,11 +141,30 @@ export default function PQR() {
     }
 
     const code = 'SS-PQR-' + Date.now().toString().slice(-6);
+    const mensaje = buildPqrWhatsAppMessage({
+      tipo: current.label,
+      radicado: code,
+      nombre: cleanNombre,
+      apellido: cleanApellido,
+      evento,
+      fecha,
+      asunto: asunto.trim(),
+      descripcion: desc.trim(),
+    });
+    const link = buildWhatsAppLink(mensaje);
+
     setRadicado(code);
+    setWaLink(link);
     setSubmitted(true);
     window.setTimeout(() => {
       document.getElementById('pqrConfirm')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 0);
+
+    // Intento de apertura automática — sigue siendo el mismo evento de clic
+    // del usuario, así que la mayoría de navegadores no lo bloquea. El botón
+    // "Enviar por WhatsApp" en la confirmación queda como respaldo si el
+    // navegador sí lo bloquea.
+    window.open(link, '_blank', 'noopener,noreferrer');
   }
 
   function resetPQR() {
@@ -150,6 +180,7 @@ export default function PQR() {
     setAsunto('');
     setDesc('');
     setFileName('');
+    setWaLink('');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -392,6 +423,20 @@ export default function PQR() {
                   <div className="pqr-confirm-code" id="pqrCode">
                     Radicado: {radicado}
                   </div>
+
+                  <a
+                    href={waLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="pqr-whatsapp-btn"
+                  >
+                    <WhatsAppIcon /> Enviar por WhatsApp
+                  </a>
+                  <p className="pqr-whatsapp-hint">
+                    Te abrimos WhatsApp con tu solicitud ya escrita — solo confírmala para
+                    que le llegue directo al equipo de SkyedSocial. Si no se abrió sola,
+                    usa el botón de arriba.
+                  </p>
 
                   <div className="status-track">
                     <div className="status-step">
