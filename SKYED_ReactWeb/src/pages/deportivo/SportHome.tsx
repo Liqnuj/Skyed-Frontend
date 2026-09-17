@@ -101,6 +101,7 @@ export default function SportHome() {
         <div className="skyed-features__grid">
           {FEATURES.map((f) => (
             <div key={f.title} className={`skyed-card skyed-card--${f.cls}`}>
+              
               <div className="skyed-card__glow" />
               <div className="skyed-card__icon">
                 <svg viewBox="0 0 24 24">{f.icon}</svg>
