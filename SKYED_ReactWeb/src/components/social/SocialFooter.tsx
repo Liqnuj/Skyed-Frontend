@@ -1,4 +1,9 @@
+import { useState } from 'react';
+import TermsModal from '../shared/TermsModal';
+
 export default function SocialFooter() {
+  const [termsOpen, setTermsOpen] = useState(false);
+
   return (
     <footer className="sky-footer" id="contacto">
       <div className="sky-accent-bar"></div>
@@ -39,10 +44,16 @@ export default function SocialFooter() {
       <div className="sky-footer-bottom">
         <p className="sky-copy">© 2026 <span>SKYED</span>. Todos los derechos reservados.</p>
         <div className="sky-bottom-links">
-          <a href="#">Términos de uso</a>
-          <a href="#">Privacidad</a>
+          <button type="button" className="sky-bottom-link-btn" onClick={() => setTermsOpen(true)}>Términos de uso</button>
+          <button type="button" className="sky-bottom-link-btn" onClick={() => setTermsOpen(true)}>Privacidad</button>
         </div>
       </div>
+
+      <TermsModal
+        isOpen={termsOpen}
+        onClose={() => setTermsOpen(false)}
+        variant="social"
+      />
     </footer>
   );
 }

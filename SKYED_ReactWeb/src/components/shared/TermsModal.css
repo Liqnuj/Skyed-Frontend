@@ -1,3 +1,12 @@
+/*
+ * Colores acordes a la página: en vez de codificar una paleta fija,
+ * el modal se tiñe con --accent, la misma variable que ya define cada
+ * Wrapper (Principal #8827f0, Deportivo #2c9caf, Social #9c02ae) y que
+ * el propio usuario puede personalizar desde el panel de accesibilidad.
+ * Así el modal siempre combina con la sección desde donde se abrió,
+ * sin necesidad de tocar esta hoja cada vez que se agregue un módulo.
+ */
+
 .skyed-modal-overlay {
   position: fixed;
   inset: 0;
@@ -22,7 +31,7 @@
 
   overflow: hidden;
 
-  background: #29374d;
+  background: color-mix(in srgb, var(--accent, #3b82f6) 14%, #10121c);
   color: #f8fafc;
 
   border-radius: 18px;
@@ -39,7 +48,7 @@
 
   padding: 28px 32px 20px;
 
-  background: #34445e;
+  background: color-mix(in srgb, var(--accent, #3b82f6) 22%, #10121c);
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
 }
 
@@ -47,7 +56,7 @@
   display: flex;
   justify-content: center;
 
-  color: #3b82f6;
+  color: var(--accent, #3b82f6);
   font-size: 28px;
 
   margin-bottom: 12px;
@@ -56,7 +65,7 @@
 .skyed-modal__brand {
   margin-bottom: 8px;
 
-  color: #3b82f6;
+  color: var(--accent, #3b82f6);
 
   font-size: 12px;
   font-weight: 800;
@@ -110,7 +119,7 @@
 .skyed-modal__tabs {
   display: flex;
 
-  background: #29374d;
+  background: color-mix(in srgb, var(--accent, #3b82f6) 14%, #10121c);
 
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
 }
@@ -141,8 +150,8 @@
 }
 
 .skyed-tab.active {
-  color: #3b82f6;
-  border-bottom-color: #3b82f6;
+  color: var(--accent, #3b82f6);
+  border-bottom-color: var(--accent, #3b82f6);
 }
 
 /* BODY */
@@ -157,7 +166,7 @@
   padding: 28px 32px 40px;
 
   scrollbar-width: thin;
-  scrollbar-color: #3b82f6 transparent;
+  scrollbar-color: var(--accent, #3b82f6) transparent;
 }
 
 .skyed-modal__body::-webkit-scrollbar {
@@ -169,7 +178,7 @@
 }
 
 .skyed-modal__body::-webkit-scrollbar-thumb {
-  background: #3b82f6;
+  background: var(--accent, #3b82f6);
   border-radius: 10px;
 }
 
@@ -180,10 +189,10 @@
 
   padding: 16px 18px;
 
-  border-left: 4px solid #3b82f6;
+  border-left: 4px solid var(--accent, #3b82f6);
   border-radius: 0 8px 8px 0;
 
-  background: #344a68;
+  background: color-mix(in srgb, var(--accent, #3b82f6) 20%, #10121c);
 }
 
 .modal-intro p {
@@ -212,7 +221,8 @@
 }
 
 .modal-section__num {
-  color: #2862ad;
+  color: color-mix(in srgb, var(--accent, #3b82f6) 65%, white 5%);
+  opacity: .8;
 
   font-size: 30px;
   font-weight: 900;
@@ -255,7 +265,7 @@
 }
 
 .modal-section__content li::marker {
-  color: #3b82f6;
+  color: var(--accent, #3b82f6);
 }
 
 /* ALERT */
@@ -283,8 +293,8 @@
 }
 
 .modal-alert--info {
-  background: rgba(59, 130, 246, 0.12);
-  border-color: rgba(59, 130, 246, 0.25);
+  background: color-mix(in srgb, var(--accent, #3b82f6) 18%, transparent);
+  border-color: color-mix(in srgb, var(--accent, #3b82f6) 40%, transparent);
 }
 
 /* FOOTER */
@@ -296,7 +306,7 @@
 
   padding: 16px 32px;
 
-  background: #34445e;
+  background: color-mix(in srgb, var(--accent, #3b82f6) 22%, #10121c);
 
   border-top: 1px solid rgba(255, 255, 255, 0.12);
 }
@@ -318,7 +328,7 @@
 .progress-fill {
   height: 100%;
 
-  background: #3b82f6;
+  background: var(--accent, #3b82f6);
 
   transition: width 0.15s ease;
 }
@@ -346,7 +356,7 @@
   border: 0;
   border-radius: 8px;
 
-  background: #3b82f6;
+  background: var(--accent, #3b82f6);
   color: white;
 
   font-size: 13px;
@@ -360,7 +370,7 @@
 }
 
 .btn-modal-accept:hover:not(:disabled) {
-  background: #2563eb;
+  filter: brightness(1.12);
 }
 
 .btn-modal-accept:disabled {

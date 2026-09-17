@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import Protected from '../../components/Protected';
 import SportWrapper from '../../components/deportivo/SportWrapper';
+import TermsModal from '../../components/shared/TermsModal';
 import { useAuth } from '../../context/AuthContext';
 import { apiFetch } from '../../services/api';
 import jsQR from 'jsqr';
@@ -106,6 +107,7 @@ function InscriptionWizard() {
   const [validandoComprobante, setValidandoComprobante] = useState(false);
   const [aceptaTerminos, setAceptaTerminos] = useState(false);
   const [aceptaCondicionFisica, setAceptaCondicionFisica] = useState(false);
+  const [termsOpen, setTermsOpen] = useState(false);
 
   // Perfil incompleto (documento/teléfono/fecha de nacimiento bloqueados sin dato)
   const [perfilIncompleto, setPerfilIncompleto] = useState(false);
@@ -1132,7 +1134,17 @@ function InscriptionWizard() {
 
                 <label className="part-review-check">
                   <input type="checkbox" checked={aceptaTerminos} onChange={(e) => setAceptaTerminos(e.target.checked)} />
-                  <span>Acepto los <a href="/terminos" target="_blank" rel="noreferrer">términos y condiciones</a> y la <a href="/privacidad" target="_blank" rel="noreferrer">política de privacidad</a> *</span>
+                  <span>
+                    Acepto los{' '}
+                    <button type="button" className="part-link-terminos" onClick={() => setTermsOpen(true)}>
+                      términos y condiciones
+                    </button>
+                    {' '}y la{' '}
+                    <button type="button" className="part-link-terminos" onClick={() => setTermsOpen(true)}>
+                      política de privacidad
+                    </button>
+                    {' '}*
+                  </span>
                 </label>
                 {!aceptaTerminos && <p className="part-form-hint" style={{ margin: '0 0 .7rem' }}>Debes aceptar los términos para continuar</p>}
 
@@ -1229,6 +1241,13 @@ function InscriptionWizard() {
           </div>
         </div>
       </div>
+
+      <TermsModal
+        isOpen={termsOpen}
+        onClose={() => setTermsOpen(false)}
+        onAccept={() => setAceptaTerminos(true)}
+        variant="deportivo"
+      />
     </div>
   );
 }
