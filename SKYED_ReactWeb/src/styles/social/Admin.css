@@ -14,7 +14,7 @@
   --admin-sidebar-text: #bcaed0;
   --admin-accent: #9c02ae;
 
-  min-height: 100vh;
+  min-height: calc(100vh / var(--admin-scale, 1));
   width: 100%;
   background: var(--admin-bg);
   color: var(--admin-text);
@@ -253,7 +253,7 @@
   min-width: 244px !important;
   max-width: 244px !important;
 
-  height: calc(100vh - 64px) !important;
+  height: calc((100vh / var(--admin-scale, 1)) - 64px) !important;
 
   display: flex !important;
   flex-direction: column !important;
@@ -549,7 +549,7 @@
 
   width: auto !important;
 
-  min-height: 100vh !important;
+  min-height: calc(100vh / var(--admin-scale, 1)) !important;
 
   margin-left: 244px !important;
 
@@ -1779,7 +1779,7 @@
    ========================================================= */
 
 .social-admin .admin-footer-note {
-  position: fixed !important;
+  position: absolute !important;
 
   right: 24px !important;
   bottom: 13px !important;
@@ -1887,7 +1887,7 @@
   .social-admin .admin-sidebar {
     top: 60px !important;
 
-    height: calc(100vh - 60px) !important;
+    height: calc((100vh / var(--admin-scale, 1)) - 60px) !important;
   }
 
   .social-admin .admin-topbar {
