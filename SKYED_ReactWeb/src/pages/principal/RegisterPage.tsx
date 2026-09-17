@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import PrincipalWrapper from '../../components/principal/PrincipalWrapper';
 import AuthTopbar from '../../components/principal/AuthTopbar';
-import TermsModal from '../../components/TermsModal';
+import TermsModal from '../../components/shared/TermsModal';
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -495,6 +495,7 @@ export default function RegisterPage() {
           setTerms(true);
           setTermsOpen(false);
         }}
+        variant="principal"
       />
 
       <footer className="footer">

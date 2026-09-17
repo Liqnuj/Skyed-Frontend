@@ -380,12 +380,17 @@
 }.mod-social .sky-bottom-links {
     display:flex;
     gap:1.5rem;
-}.mod-social .sky-bottom-links a {
+}.mod-social .sky-bottom-links a, .mod-social .sky-bottom-link-btn {
     text-decoration:none;
     color:rgba(255,255,255,.3);
     font-size: calc(.8rem * var(--fs-scale, 1));
     transition:.2s;
-}.mod-social .sky-bottom-links a:hover {
+    background:none;
+    border:none;
+    padding:0;
+    cursor:pointer;
+    font-family:inherit;
+}.mod-social .sky-bottom-links a:hover, .mod-social .sky-bottom-link-btn:hover {
     color:rgba(255,255,255,.65);
 }
 
