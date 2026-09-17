@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import Protected from '../../components/Protected';
 import SportWrapper from '../../components/deportivo/SportWrapper';
 import { useAuth } from '../../context/AuthContext';
+import { useAccessibility } from '../../context/AccessibilityContext';
 import { apiFetch } from '../../services/api';
 import '../../styles/deportivo/participante.css';
 import { createPortal } from 'react-dom';
@@ -358,6 +359,7 @@ function DetalleInscripcion({
   onCerrarQr: () => void;
   onVolver: () => void;
 }) {
+  const { darkMode } = useAccessibility();
   const metodo = insc.pago?.metodo_pago
     ?.replace('transferencia', 'Transferencia bancaria')
     .replace('nequi', 'Nequi / Daviplata')
@@ -421,7 +423,7 @@ function DetalleInscripcion({
         )}
 
         {insc.qr?.codigo && verQr && createPortal(
-                    <div className="mod-deportivo part-qr-overlay" onClick={onCerrarQr}>
+                    <div className={`mod-deportivo part-qr-overlay${darkMode ? ' dark-mode' : ''}`} onClick={onCerrarQr}>
             <div className="part-qr-modal" onClick={(e) => e.stopPropagation()}>
               <button className="part-qr-close" onClick={onCerrarQr} aria-label="Cerrar">
                 <i className="ti ti-x" aria-hidden="true" />
@@ -447,6 +449,7 @@ function DetalleInscripcion({
 
 function AjustesTab() {
   const { user, updateProfile, updateFotoUrl, deleteAccount } = useAuth();
+  const { darkMode } = useAccessibility();
   const navigate = useNavigate();
   const [eliminandoCuenta, setEliminandoCuenta] = useState(false);
   const [confirmarEliminar, setConfirmarEliminar] = useState(false);
@@ -471,6 +474,7 @@ function AjustesTab() {
   const [tipoDocumento, setTipoDocumento] = useState(user?.tipo_documento || '');
   const [documento, setDocumento] = useState(user?.documento || '');
   const [fechaNacimiento, setFechaNacimiento] = useState(user?.fecha_nacimiento || '');
+  const [rh, setRh] = useState(user?.rh || '');
   useEffect(() => {
     if (!msg) return;
     const t = setTimeout(() => setMsg(null), 4000);
@@ -550,6 +554,7 @@ function AjustesTab() {
         ciudad_u: ciudad || undefined,
         tipo_documento_u: tipoDocumento || undefined,
         documento_u: documento ? Number(documento) : undefined,
+        rh_u: rh || undefined,
         fecha_nacimiento_u: fechaNacimiento || undefined,
       });
       setDatosMsg({ tipo: 'ok', texto: 'Datos actualizados correctamente.', id: Date.now() });
@@ -687,8 +692,18 @@ function AjustesTab() {
                 <input id="d-documento" type="text" inputMode="numeric" value={documento} onChange={(e) => setDocumento(e.target.value.replace(/\D/g, ''))} />
               </div>
               <div className="part-form-group">
-                <label htmlFor="d-correo">Correo electrónico</label>
-                <input id="d-correo" type="email" value={correo} onChange={(e) => setCorreo(e.target.value)} required />
+                <label htmlFor="d-rh">Tipo de sangre (RH)</label>
+                <select id="d-rh" value={rh} onChange={(e) => setRh(e.target.value)}>
+                  <option value="">Seleccionar...</option>
+                  <option value="O+">O+</option>
+                  <option value="O-">O-</option>
+                  <option value="A+">A+</option>
+                  <option value="A-">A-</option>
+                  <option value="B+">B+</option>
+                  <option value="B-">B-</option>
+                  <option value="AB+">AB+</option>
+                  <option value="AB-">AB-</option>
+                </select>
               </div>
               <div className="part-form-group">
                 <label htmlFor="d-telefono">Teléfono</label>
@@ -845,7 +860,7 @@ function AjustesTab() {
     </div>
 
       {confirmarEliminar && createPortal(
-        <div className="mod-deportivo part-qr-overlay" onClick={() => !eliminandoCuenta && setConfirmarEliminar(false)}>
+        <div className={`mod-deportivo part-qr-overlay${darkMode ? ' dark-mode' : ''}`} onClick={() => !eliminandoCuenta && setConfirmarEliminar(false)}>
           <div className="part-qr-modal" onClick={(e) => e.stopPropagation()}>
             <button
               className="part-qr-close"

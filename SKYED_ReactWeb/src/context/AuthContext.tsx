@@ -29,6 +29,7 @@ interface AuthContextValue {
     ciudad_u?: string;
     tipo_documento_u?: string;
     documento_u?: number;
+    rh_u?: string;
     fecha_nacimiento_u?: string;
   }) => Promise<void>;
   updateFotoUrl: (fotoUrl: string) => void;
@@ -51,6 +52,7 @@ function buildUser(apiUser: any): User {
     foto_url: apiUser.foto_url ?? null,
     tipo_documento: apiUser.tipo_documento_u ?? '',
     documento: apiUser.documento_u != null ? String(apiUser.documento_u) : '',
+    rh: apiUser.rh_u ?? '',
     fecha_nacimiento: apiUser.fecha_nacimiento_u ?? null,
     role: nombresRoles.some((r) => r.toLowerCase().startsWith('admin')) ? 'admin' : 'participante',
     roles: nombresRoles,

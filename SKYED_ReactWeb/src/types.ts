@@ -44,6 +44,7 @@ export interface User {
   foto_url: string | null;
   tipo_documento: string;
   documento: string;
+  rh: string;
   fecha_nacimiento: string | null;
   role: 'admin' | 'participante';
   roles: string[];

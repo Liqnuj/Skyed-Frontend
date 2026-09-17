@@ -47,6 +47,7 @@ function App(){
     <Route path="/deportivo/inscripcion/:id" element={<Inscription/>}/>
     <Route path="/deportivo/checkout" element={<Checkout/>}/>
     <Route path="/deportivo/mi-entrada" element={<MyEntry/>}/>
+    <Route path="/deportivo/mi-entrada/:idEvento" element={<MyEntry/>}/>
     <Route path="/deportivo/resultados" element={<Results/>}/>
     <Route path="/deportivo/notificaciones" element={<Notifications/>}/>
     <Route path="/deportivo/nosotros" element={<AboutSport/>}/>
