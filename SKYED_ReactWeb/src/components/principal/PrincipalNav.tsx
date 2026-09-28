@@ -20,32 +20,54 @@ export default function PrincipalNav() {
           <div className="nav-gem"><img src="/assets/principal/icon1.png" alt="logol" /></div>
           <span>SKY<em>ED</em></span>
         </div>
-        <div className="nav-links" />
+        
+        <div className="nav-links">
+          {/* === NUEVO: Renderizado condicional del Panel Admin (Escritorio) === */}
+          {user?.role === 'admin' && (
+            <Link to="/admin" style={{ display: 'flex', alignItems: 'center', gap: '6px', marginRight: '1rem', fontWeight: '600', color: 'inherit', textDecoration: 'none' }}>
+              <i className="ti ti-dashboard" /> Panel Admin
+            </Link>
+          )}
+        </div>
+
         {user ? (
           <button
             className={`nav-user${userMenuOpen ? ' nav-user--logout' : ''}`}
             onClick={() => (userMenuOpen ? logout() : setUserMenuOpen(true))}
           >
             <i className="ti ti-user-circle" />
-            <span>{userMenuOpen ? 'Cerrar sesión?' : user.name}</span>
+            <span>{userMenuOpen ? 'Cerrar sesión' : user.name}</span>
           </button>
         ) : (
           <Link to="/login" className="nav-login">
             <i className="ti ti-login" /> Iniciar sesión
           </Link>
         )}
+        
         <button className="nav-menu-btn" aria-label="Abrir menú" onClick={() => setOpen((o) => !o)}>
           <i className="ti ti-menu-2" />
         </button>
       </nav>
 
       <div className={`mobile-menu${open ? ' open' : ''}`}>
+        {/* === NUEVO: Renderizado condicional del Panel Admin (Móvil) === */}
+        {user?.role === 'admin' && (
+          <Link 
+            to="/admin" 
+            className="mobile-login" 
+            style={{ marginBottom: '10px', backgroundColor: '#3b82f6' }} 
+            onClick={() => setOpen(false)}
+          >
+            <i className="ti ti-dashboard" /> Panel Admin
+          </Link>
+        )}
+
         {user ? (
           <button
             className={`mobile-user${userMenuOpen ? ' mobile-user--logout' : ''}`}
             onClick={() => (userMenuOpen ? logout() : setUserMenuOpen(true))}
           >
-            {userMenuOpen ? 'Cerrar sesión?' : user.name}
+            {userMenuOpen ? 'Cerrar sesión' : user.name}
           </button>
         ) : (
           <Link to="/login" className="mobile-login" onClick={() => setOpen(false)}>Iniciar sesión</Link>

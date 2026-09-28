@@ -4,7 +4,7 @@ import SportWrapper from '../../components/deportivo/SportWrapper';
 import { useAuth } from '../../context/AuthContext';
 import { eventoDeportivoService, type EventoDeportivo } from '../../services/deportivoService';
 
-const INSCRIPCIONES_KEY = 'skyed_deportivo_inscripciones';
+
 
 const CATEGORY_LABELS: Record<string, string> = {
   ruta: 'Ruta',
@@ -27,14 +27,7 @@ function fmt(n: number) {
   return n.toLocaleString('es-CO');
 }
 
-function getInscripciones(): number[] {
-  try {
-    const raw = localStorage.getItem(INSCRIPCIONES_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
+
 
 export default function SportEvents() {
   const [eventos, setEventos] = useState<EventoDeportivo[]>([]);
@@ -76,11 +69,6 @@ export default function SportEvents() {
     if (!user) {
       showToast('Debes iniciar sesión para inscribirte', 'error');
       setTimeout(() => navigate('/login'), 1200);
-      return;
-    }
-    if (getInscripciones().includes(id)) {
-      showToast('Ya estás inscrito en este evento', 'error');
-      setTimeout(() => navigate(`/deportivo?evento=${id}`), 1200);
       return;
     }
     navigate(`/deportivo/inscripcion/${id}`);

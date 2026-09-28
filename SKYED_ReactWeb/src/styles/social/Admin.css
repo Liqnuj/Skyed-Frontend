@@ -14,7 +14,7 @@
   --admin-sidebar-text: #bcaed0;
   --admin-accent: #9c02ae;
 
-  min-height: 100vh;
+  min-height: calc(100vh / var(--admin-scale, 1));
   width: 100%;
   background: var(--admin-bg);
   color: var(--admin-text);
@@ -28,6 +28,10 @@
     sans-serif;
 
   font-size: 15px;
+
+  /* Escala el panel entero (texto, íconos, espaciados) según el tamaño
+     elegido en el widget de accesibilidad, igual que el zoom del navegador. */
+  zoom: var(--admin-scale, 1);
 
   position: relative;
   isolation: isolate;
@@ -249,7 +253,7 @@
   min-width: 244px !important;
   max-width: 244px !important;
 
-  height: calc(100vh - 64px) !important;
+  height: calc((100vh / var(--admin-scale, 1)) - 64px) !important;
 
   display: flex !important;
   flex-direction: column !important;
@@ -545,7 +549,7 @@
 
   width: auto !important;
 
-  min-height: 100vh !important;
+  min-height: calc(100vh / var(--admin-scale, 1)) !important;
 
   margin-left: 244px !important;
 
@@ -1775,7 +1779,7 @@
    ========================================================= */
 
 .social-admin .admin-footer-note {
-  position: fixed !important;
+  position: absolute !important;
 
   right: 24px !important;
   bottom: 13px !important;
@@ -1883,7 +1887,7 @@
   .social-admin .admin-sidebar {
     top: 60px !important;
 
-    height: calc(100vh - 60px) !important;
+    height: calc((100vh / var(--admin-scale, 1)) - 60px) !important;
   }
 
   .social-admin .admin-topbar {
@@ -2196,4 +2200,227 @@
   border-radius: 10px;
 
   color: white;
+}
+
+/* =========================================================
+   PANEL DE ACCESIBILIDAD
+   ========================================================= */
+
+.social-admin .acc-toggle {
+  position: fixed;
+  bottom: 26px;
+  right: 26px;
+
+  width: 50px;
+  height: 50px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: var(--admin-accent);
+  border: none;
+  border-radius: 50%;
+
+  cursor: pointer;
+
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--admin-accent) 45%, transparent);
+
+  z-index: 9999;
+
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.social-admin .acc-toggle:hover {
+  transform: scale(1.08);
+  box-shadow: 0 8px 26px color-mix(in srgb, var(--admin-accent) 55%, transparent);
+}
+
+.social-admin .acc-toggle svg {
+  width: 22px;
+  height: 22px;
+  fill: white;
+}
+
+.social-admin .acc-panel {
+  position: fixed;
+  bottom: 88px;
+  right: 26px;
+
+  width: 250px;
+
+  padding: 18px;
+
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-line);
+  border-radius: 16px;
+
+  box-shadow: 0 20px 50px rgba(0,0,0,.22);
+
+  z-index: 9998;
+
+  display: none;
+
+  transition: background .2s ease, border-color .2s ease;
+}
+
+.social-admin .acc-panel.open {
+  display: block;
+
+  animation: admin-modal-pop-in .18s ease;
+}
+
+.social-admin .acc-panel-title {
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+
+  border-bottom: 1px solid var(--admin-accent);
+
+  color: var(--admin-muted);
+
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.social-admin .acc-section {
+  margin-bottom: 14px;
+}
+
+.social-admin .acc-label {
+  display: block;
+  margin-bottom: 7px;
+
+  color: var(--admin-muted);
+
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+
+.social-admin .font-size-row {
+  display: flex;
+  gap: 6px;
+}
+
+.social-admin .size-btn,
+.social-admin .mode-btn {
+  flex: 1;
+
+  padding: 8px 4px;
+
+  border: 1px solid var(--admin-line);
+  border-radius: 8px;
+
+  background: var(--admin-surface-2);
+  color: var(--admin-muted);
+
+  cursor: pointer;
+
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+
+  transition: border-color .15s ease, color .15s ease, background .15s ease;
+}
+
+.social-admin .size-btn:hover,
+.social-admin .mode-btn:hover {
+  border-color: var(--admin-accent);
+  color: var(--admin-accent);
+}
+
+.social-admin .size-btn.active,
+.social-admin .mode-btn.active {
+  background: var(--admin-accent) !important;
+  border-color: var(--admin-accent) !important;
+  color: white !important;
+}
+
+.social-admin .mode-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.social-admin .color-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.social-admin .color-swatch {
+  width: 26px;
+  height: 26px;
+
+  border-radius: 50%;
+  border: 2px solid transparent;
+
+  cursor: pointer;
+
+  transition: transform .15s ease, border-color .15s ease;
+}
+
+.social-admin .color-swatch:hover {
+  transform: scale(1.12);
+}
+
+.social-admin .color-swatch.active {
+  border-color: var(--admin-text);
+  transform: scale(1.08);
+}
+
+.social-admin .acc-reset {
+  width: 100%;
+  margin-top: 2px;
+
+  padding: 9px;
+
+  background: none;
+  border: 1px solid var(--admin-accent);
+  border-radius: 8px;
+
+  color: var(--admin-accent);
+
+  cursor: pointer;
+
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+
+  transition: background .15s ease;
+}
+
+.social-admin .acc-reset:hover {
+  background: color-mix(in srgb, var(--admin-accent) 10%, transparent);
+}
+
+/* Modo dislexia: cambia la tipografía de todo el panel a una más legible,
+   con separación de letras y líneas en TODO el texto (nav, botones, badges,
+   tablas...), y un empujón extra en el texto de lectura larga. */
+.social-admin.dyslexia,
+.social-admin.dyslexia * {
+  font-family: 'Arial', sans-serif !important;
+}
+
+.social-admin.dyslexia {
+  letter-spacing: .06em !important;
+  word-spacing: .14em !important;
+  line-height: 1.7 !important;
+}
+
+.social-admin.dyslexia p,
+.social-admin.dyslexia td,
+.social-admin.dyslexia li,
+.social-admin.dyslexia label,
+.social-admin.dyslexia .field-hint,
+.social-admin.dyslexia .pqr-detail,
+.social-admin.dyslexia textarea {
+  letter-spacing: .09em !important;
+  word-spacing: .18em !important;
+  line-height: 1.85 !important;
 }

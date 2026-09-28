@@ -3274,19 +3274,19 @@ html, .mod-principal {
 .mod-principal {
 
   /* 🔵 Fondos más claros y modernos */
-  --modal-bg        : #2b3648;
-  --modal-surface   : #36455d;
+  --modal-bg        : color-mix(in srgb, var(--accent) 12%, #10121c);
+  --modal-surface   : color-mix(in srgb, var(--accent) 20%, #10121c);
   --modal-border    : rgba(255,255,255,0.10);
 
   /* 🔵 Paleta azul */
-  --modal-accent    : #3b82f6;
-  --modal-accent2   : #60a5fa;
+  --modal-accent    : var(--accent);
+  --modal-accent2   : color-mix(in srgb, var(--accent) 60%, white 40%);
 
   /* 🔵 Textos */
   --modal-text      : #e6edf7;
   --modal-text-dim  : #b4c0d0;
 
-  --modal-num       : rgba(59,130,246,0.15);
+  --modal-num       : color-mix(in srgb, var(--accent) 15%, transparent);
 
   --modal-radius    : 16px;
   --modal-shadow    : 0 20px 50px rgba(0,0,0,0.35);
@@ -3362,8 +3362,8 @@ html, .mod-principal {
 
   background: linear-gradient(
     160deg,
-    #3a4963 0%,
-    #2b3648 100%
+    color-mix(in srgb, var(--accent) 22%, #10121c) 0%,
+    color-mix(in srgb, var(--accent) 12%, #10121c) 100%
   );
 
   border-bottom: 1px solid var(--modal-border);
@@ -3465,7 +3465,7 @@ html, .mod-principal {
 }
 
 .mod-principal .skyed-modal__close:hover {
-  background: rgba(59,130,246,0.18);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
 
   border-color: var(--modal-accent);
 
@@ -3727,9 +3727,9 @@ html, .mod-principal {
 
   align-items: flex-start;
 
-  background: rgba(59,130,246,0.12);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
 
-  border: 1px solid rgba(59,130,246,0.25);
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
 
   border-radius: 8px;
 
@@ -3881,7 +3881,7 @@ html, .mod-principal {
 
   transform: translateY(-1px);
 
-  box-shadow: 0 6px 20px rgba(59,130,246,0.35);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 .mod-principal .btn-modal-accept:not(:disabled):active {
@@ -4365,19 +4365,19 @@ html, .mod-principal {
 .mod-principal {
 
   /* 🔵 Fondos más claros y modernos */
-  --modal-bg        : #2b3648;
-  --modal-surface   : #36455d;
+  --modal-bg        : color-mix(in srgb, var(--accent) 12%, #10121c);
+  --modal-surface   : color-mix(in srgb, var(--accent) 20%, #10121c);
   --modal-border    : rgba(255,255,255,0.10);
 
   /* 🔵 Paleta azul */
-  --modal-accent    : #3b82f6;
-  --modal-accent2   : #60a5fa;
+  --modal-accent    : var(--accent);
+  --modal-accent2   : color-mix(in srgb, var(--accent) 60%, white 40%);
 
   /* 🔵 Textos */
   --modal-text      : #e6edf7;
   --modal-text-dim  : #b4c0d0;
 
-  --modal-num       : rgba(59,130,246,0.15);
+  --modal-num       : color-mix(in srgb, var(--accent) 15%, transparent);
 
   --modal-radius    : 16px;
   --modal-shadow    : 0 20px 50px rgba(0,0,0,0.35);
@@ -4453,8 +4453,8 @@ html, .mod-principal {
 
   background: linear-gradient(
     160deg,
-    #3a4963 0%,
-    #2b3648 100%
+    color-mix(in srgb, var(--accent) 22%, #10121c) 0%,
+    color-mix(in srgb, var(--accent) 12%, #10121c) 100%
   );
 
   border-bottom: 1px solid var(--modal-border);
@@ -4556,7 +4556,7 @@ html, .mod-principal {
 }
 
 .mod-principal .skyed-modal__close:hover {
-  background: rgba(59,130,246,0.18);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
 
   border-color: var(--modal-accent);
 
@@ -4818,9 +4818,9 @@ html, .mod-principal {
 
   align-items: flex-start;
 
-  background: rgba(59,130,246,0.12);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
 
-  border: 1px solid rgba(59,130,246,0.25);
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
 
   border-radius: 8px;
 
@@ -4972,7 +4972,7 @@ html, .mod-principal {
 
   transform: translateY(-1px);
 
-  box-shadow: 0 6px 20px rgba(59,130,246,0.35);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 .mod-principal .btn-modal-accept:not(:disabled):active {

@@ -1,29 +1,75 @@
-import { useState } from 'react';
-import type { FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import PrincipalWrapper from '../../components/principal/PrincipalWrapper';
 import AuthTopbar from '../../components/principal/AuthTopbar';
+import TermsModal from '../../components/shared/TermsModal';
 
 export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const [termsOpen, setTermsOpen] = useState(false);
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [remember, setRemember] = useState(false);
+  
+  // Estados para alertas y carga
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+  
   const from = (location.state as { from?: string } | null)?.from || '/';
 
+  // ==========================================
+  // FUNCIÓN DE LOGIN
+  // ==========================================
   async function submit(e: FormEvent) {
     e.preventDefault();
-    setError('');
-    if (!(await login(email, password))) {
-      setError('Completa correo y contraseña.');
+
+    if (!email || !password) {
+      setError('Por favor, ingresa tu correo y contraseña.');
+      setTimeout(() => setError(''), 4000);
       return;
     }
-    navigate(from, { replace: true });
+
+    setError('');
+    setLoading(true);
+
+    try {
+      // Llamamos a tu función login del AuthContext
+      // (Asumimos que esta función internamente hace la petición y guarda el token en localStorage)
+      const success = await login(email, password);
+      
+      if (!success) {
+        // Si el login devuelve false, lanzamos el error
+        throw new Error('Correo o contraseña incorrectos. Verifica tus datos.');
+      }
+
+      setSuccessMsg('¡Inicio de sesión exitoso! Redirigiendo...');
+      
+      // Esperamos 2 segundos para que se vea la alerta verde y redirigimos
+      setTimeout(() => {
+        navigate(from, { replace: true });
+      }, 2000);
+
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : 'Error al iniciar sesión';
+      
+      // Verificamos si es un error de internet o servidor
+      if (errMsg.includes('Failed to fetch') || errMsg.includes('NetworkError') || errMsg.includes('Failed to load')) {
+        setError('No hay conexión a internet. Por favor, intenta de nuevo.');
+      } else {
+        setError(errMsg);
+      }
+
+      setTimeout(() => setError(''), 4000);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -67,8 +113,6 @@ export default function LoginPage() {
             <h2 className="auth-heading">Iniciar sesión</h2>
             <p className="auth-subheading">Ingresa tus credenciales para continuar.</p>
 
-            {error && <div className="form-error error">{error}</div>}
-
             <form onSubmit={submit} noValidate>
               <div className="form-group">
                 <label className="form-label" htmlFor="email">Correo electrónico<span className="req">*</span></label>
@@ -83,13 +127,35 @@ export default function LoginPage() {
 
               <div className="form-group">
                 <label className="form-label" htmlFor="password">Contraseña<span className="req">*</span></label>
-                <div className="input-wrap">
+                <div className="input-wrap" style={{ position: 'relative' }}>
                   <input
                     type={showPass ? 'text' : 'password'} id="password" className="form-input" placeholder="••••••••"
                     autoComplete="current-password" maxLength={50}
                     value={password} onChange={(e) => setPassword(e.target.value)}
+                    style={{ paddingRight: '45px' }} // Espacio para el ojito
                   />
-                  <button type="button" className="toggle-pass" aria-label="Mostrar contraseña" onClick={() => setShowPass((s) => !s)}>👁</button>
+                  <button 
+                    type="button" 
+                    className="toggle-pass" 
+                    aria-label="Mostrar contraseña" 
+                    onClick={() => setShowPass((s) => !s)}
+                    style={{ 
+                      position: 'absolute', 
+                      right: '12px', 
+                      top: '50%', 
+                      transform: 'translateY(-50%)', 
+                      background: 'none', 
+                      border: 'none', 
+                      cursor: 'pointer', 
+                      color: '#64748b', 
+                      fontSize: '1.4rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: 0
+                    }}
+                  >
+                    <i className={showPass ? 'ti ti-eye-off' : 'ti ti-eye'} />
+                  </button>
                 </div>
               </div>
 
@@ -101,8 +167,8 @@ export default function LoginPage() {
                 <Link to="/recuperar" className="link-accent">¿Olvidaste tu contraseña?</Link>
               </div>
 
-              <button type="submit" className="form-submit">
-                Iniciar sesión <i className="ti ti-arrow-right" />
+              <button type="submit" className="form-submit" disabled={loading}>
+                {loading ? 'Iniciando sesión...' : <>Iniciar sesión <i className="ti ti-arrow-right" /></>}
               </button>
 
               <div className="form-divider">o</div>
@@ -117,11 +183,58 @@ export default function LoginPage() {
       <footer className="footer">
         <span>© 2026 SKYED · Sogamoso, Boyacá, Colombia</span>
         <div className="footer-links">
-          <a href="#">Términos</a>
-          <a href="#">Privacidad</a>
+          <button type="button" onClick={() => setTermsOpen(true)}>Términos</button>
+          <button type="button" onClick={() => setTermsOpen(true)}>Privacidad</button>
           <a href="#">Soporte</a>
         </div>
       </footer>
+
+      <TermsModal
+        isOpen={termsOpen}
+        onClose={() => setTermsOpen(false)}
+        variant="principal"
+      />
+
+      {/* =========================================
+          TOAST DE ÉXITO Y ERROR ANIMADOS
+      ========================================== */}
+      {(error || successMsg) && (
+        <>
+          <style>
+            {`
+              @keyframes shrinkBar { from { width: 100%; } to { width: 0%; } }
+              @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+            `}
+          </style>
+          <div style={{
+            position: 'fixed',
+            top: '24px',
+            right: '24px',
+            backgroundColor: '#ffffff',
+            borderRadius: '8px',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+            zIndex: 9999,
+            overflow: 'hidden',
+            minWidth: '300px',
+            animation: 'slideIn 0.3s ease-out forwards'
+          }}>
+            <div style={{ 
+              display: 'flex', alignItems: 'center', gap: '12px', padding: '16px 24px', 
+              borderLeft: `4px solid ${error ? '#ef4444' : '#22c55e'}` 
+            }}>
+              <span style={{ fontSize: '1.2rem' }}>{error ? '⚠️' : '✅'}</span>
+              <span style={{ color: '#1e293b', fontSize: '0.95rem', fontWeight: '500' }}>
+                {error || successMsg}
+              </span>
+            </div>
+            <div style={{ 
+              height: '4px', backgroundColor: error ? '#ef4444' : '#22c55e', 
+              animation: `shrinkBar ${error ? '4s' : '2s'} linear forwards` 
+            }} />
+          </div>
+        </>
+      )}
+
     </PrincipalWrapper>
   );
 }

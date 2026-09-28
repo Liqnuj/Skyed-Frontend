@@ -43,7 +43,7 @@ function PQRForm() {
     e.preventDefault();
     if (!asunto.trim() || !desc.trim()) {
       showToast('Por favor completa todos los campos obligatorios', '⚠️');
-      return;
+      return null;
     }
     setSaving(true);
     try {
@@ -65,6 +65,14 @@ function PQRForm() {
     } finally {
       setSaving(false);
     }
+  }
+
+  function submitPQR(e: FormEvent) {
+    e.preventDefault();
+    const resultado = validarYPrepararEnvio();
+    if (!resultado) return;
+    mostrarConfirmacion(resultado.code, resultado.link);
+    window.open(resultado.link, '_blank', 'noopener,noreferrer');
   }
 
   function resetPQR() {

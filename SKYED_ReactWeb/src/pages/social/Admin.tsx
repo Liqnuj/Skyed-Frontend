@@ -62,6 +62,7 @@ type Servicio = {
 type TipoEvento = {
   id_tipo_eves: number;
   nombre_tipo_eves: string;
+  modulo_tipo_eves?: "deportivo" | "social";
 };
 
 type EventoSocial = {
@@ -202,7 +203,7 @@ function Field({
   );
 }
 
-const MAX_IMAGEN_MB = 4;
+const MAX_IMAGEN_MB = 8;
 
 function ImageUploadField({
   value,
@@ -236,17 +237,10 @@ function ImageUploadField({
     setUploading(true);
     try {
       const body = new FormData();
-body.append("imagen", file);
-body.append("carpeta", carpeta);
-
-const res = await apiFetch("/social/imagenes", {
-  method: "POST",
-  body,
-});
-
-console.log("RESPUESTA SUBIDA:", res);
-
-onChange(res.url);
+      body.append("imagen", file);
+      body.append("carpeta", carpeta);
+      const res = await apiFetch("/social/imagenes", { method: "POST", body });
+      onChange(res.url);
     } catch (err) {
       onError(err instanceof Error ? err.message : "No se pudo subir la imagen.");
     } finally {
@@ -371,6 +365,7 @@ function AdminPage() {
   const [search, setSearch] = useState("");
   const [toast, setToast] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(false);
 
   const [ambientes, setAmbientes] = useState<Ambiente[]>([]);
   const [servicios, setServicios] = useState<Servicio[]>([]);
@@ -399,14 +394,18 @@ function AdminPage() {
         apiFetch("/eventos-sociales"),
         apiFetch("/reservas"),
         apiFetch("/pqr"),
-        apiFetch("/tipos-evento"),
+        // Filtramos por módulo en el backend; igual filtramos otra vez abajo
+        // por si el backend todavía no tiene la migración de modulo_tipo_eves.
+        apiFetch("/tipos-evento?modulo=social"),
       ]);
       setAmbientes(a.data ?? []);
       setServicios(s.data ?? []);
       setEventos(e.data ?? []);
       setReservas(r.data ?? []);
       setPqrs(p.data ?? []);
-      setTipos(t.data ?? []);
+      // Nunca mostramos clasificaciones de Deportivo (ej. Ciclomontañismo)
+      // en el selector de "Tipo de evento" de un evento social.
+      setTipos((t.data ?? []).filter((tipo: TipoEvento) => tipo.modulo_tipo_eves !== "deportivo"));
       try {
         const u = await apiFetch("/users");
         setUsers(u.data ?? u.users ?? []);
@@ -460,7 +459,7 @@ function AdminPage() {
       .reduce((sum, r) => sum + Number(r.total_rese || 0), 0),
   }), [users, eventos, reservas, pqrs]);
 
-  if (!user || user.role !== "admin") return <Navigate to="/social" replace />;
+  if (!user || !user.roles.includes("adminSocial")) return <Navigate to="/social" replace />;
 
   const sectionMeta: Record<Section, { label: string; icon: any }> = {
     inicio: { label: "Inicio", icon: LayoutDashboard },
@@ -568,7 +567,7 @@ function AdminPage() {
 
   return (
     <div
-      className={`social-admin ${darkMode ? "dark" : ""} ${collapsed ? "is-collapsed" : ""} ${mobileOpen ? "mobile-open" : ""}`}
+      className={`social-admin ${darkMode ? "dark" : ""} ${dyslexia ? "dyslexia" : ""} ${collapsed ? "is-collapsed" : ""} ${mobileOpen ? "mobile-open" : ""}`}
       style={{ "--admin-accent": accent, "--admin-scale": scale } as React.CSSProperties}
     >
       <header className="admin-header">
@@ -714,10 +713,15 @@ function AdminPage() {
 
         {section === "lugares" && (
           <SectionTable title="Gestión de ambientes" action="Nuevo ambiente" onAction={() => { setEditing(null); setModal("ambiente"); }}>
-            <thead><tr><th>ID</th><th>Nombre</th><th>Capacidad</th><th>Precio referencia</th><th>Acciones</th></tr></thead>
+            <thead><tr><th>Foto</th><th>ID</th><th>Nombre</th><th>Capacidad</th><th>Precio referencia</th><th>Acciones</th></tr></thead>
             <tbody>
               {visibleAmbientes.map(a => (
                 <tr key={a.id_a}>
+                  <td>
+                    {a.imagen_principal_a
+                      ? <img className="admin-thumb" src={a.imagen_principal_a} alt={a.nombre_a} onError={e => { (e.target as HTMLImageElement).style.visibility = "hidden"; }} />
+                      : <span className="admin-thumb admin-thumb-empty" title="Sin foto">—</span>}
+                  </td>
                   <td>#{a.id_a}</td><td><strong>{a.nombre_a}</strong></td><td>{a.capacidad_a}</td>
                   <td>{money(a.precio_referencia_a)}</td>
                   <td><div className="row-actions">
@@ -726,7 +730,7 @@ function AdminPage() {
                   </div></td>
                 </tr>
               ))}
-              {!visibleAmbientes.length && <tr><td colSpan={5}>No hay ambientes.</td></tr>}
+              {!visibleAmbientes.length && <tr><td colSpan={6}>No hay ambientes.</td></tr>}
             </tbody>
           </SectionTable>
         )}
@@ -755,7 +759,7 @@ function AdminPage() {
 
         {section === "eventos" && (
           <SectionTable title="Gestión de eventos sociales" action="Nuevo evento" onAction={() => { setEditing(null); setModal("evento"); }}>
-            <thead><tr><th>ID</th><th>Nombre</th><th>Fecha</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <thead><tr><th>Foto</th><th>ID</th><th>Nombre</th><th>Fecha</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody>
               {visibleEventos.map(e => {
                 const imageUrl = e.imagen_er ?? e.ambiente?.imagen_principal_a ?? undefined;
@@ -770,7 +774,7 @@ function AdminPage() {
                     <td>#{e.id_er}</td><td><strong>{e.nombre_er}</strong></td><td>{formatDate(e.fecha_er)}</td>
                     <td><Badge value={e.estado_er} /></td>
                     <td><div className="row-actions">
-                    <button className="table-action" onClick={() => { setEditing(e); setModal("evento"); }}><Pencil size={15} /></button>
+                      <button className="table-action" onClick={() => { setEditing(e); setModal("evento"); }}><Pencil size={15} /></button>
                       <button className="table-action" onClick={() => toggleEvento(e)}>{e.estado_er === "activo" ? "Desactivar" : "Activar"}</button>
                       <button className="table-action danger" onClick={() => deleteEvento(e.id_er)}><Trash2 size={15} /></button>
                     </div></td>
@@ -840,8 +844,8 @@ function AdminPage() {
       <div className="admin-footer-note">SKYED SOCIAL · Panel administrativo <span>•</span> Gestión interna</div>
 
       <AccessibilityWidget
-        open={false}
-        onToggleOpen={() => {}}
+        open={panelOpen}
+        onToggleOpen={() => setPanelOpen(o => !o)}
         fontSize={fontSize}
         onFontSize={setFontSize}
         dyslexia={dyslexia}
@@ -858,6 +862,7 @@ function AdminPage() {
           item={editing}
           onClose={() => setModal(null)}
           onSave={editing ? data => updateAmbiente(editing.id_a, data) : createAmbiente}
+          notify={notify}
         />
       )}
 
@@ -878,6 +883,7 @@ function AdminPage() {
           tipos={tipos}
           onClose={() => setModal(null)}
           onSave={editing ? data => updateEvento(editing.id_er, data) : createEvento}
+          notify={notify}
         />
       )}
 
@@ -894,12 +900,13 @@ function Kpi({ icon, label, value, compact }: { icon: React.ReactNode; label: st
   return <div className="kpi-card"><div className="kpi-icon">{icon}</div><span>{label}</span><strong className={compact ? "compact" : ""}>{value}</strong></div>;
 }
 
-function AmbienteModal({ item, onClose, onSave }: { item?: Ambiente; onClose: () => void; onSave: (data: any) => Promise<void> }) {
+function AmbienteModal({ item, onClose, onSave, notify }: { item?: Ambiente; onClose: () => void; onSave: (data: any) => Promise<void>; notify: (message: string) => void }) {
   const [form, setForm] = useState({
     nombre_a: item?.nombre_a ?? "",
     descripcion_a: item?.descripcion_a ?? "",
     capacidad_a: item?.capacidad_a?.toString() ?? "",
     precio_referencia_a: item?.precio_referencia_a?.toString() ?? "",
+    imagen_principal_a: item?.imagen_principal_a ?? "",
   });
   const [saving, setSaving] = useState(false);
 
@@ -910,9 +917,11 @@ function AmbienteModal({ item, onClose, onSave }: { item?: Ambiente; onClose: ()
     const descripcion = sanitizeDescription(form.descripcion_a).trim();
     const capacidad = Number(form.capacidad_a);
     const precio = form.precio_referencia_a === "" ? undefined : Number(form.precio_referencia_a);
+    const imagen = form.imagen_principal_a.trim();
 
     if (!nombre || !Number.isInteger(capacidad) || capacidad < 1) return;
     if (precio !== undefined && (!Number.isFinite(precio) || precio < 0)) return;
+    if (!imagen) return;
 
     setSaving(true);
     try {
@@ -921,6 +930,7 @@ function AmbienteModal({ item, onClose, onSave }: { item?: Ambiente; onClose: ()
         descripcion_a: descripcion || undefined,
         capacidad_a: capacidad,
         precio_referencia_a: precio,
+        imagen_principal_a: imagen,
       });
     } finally {
       setSaving(false);
@@ -978,9 +988,19 @@ function AmbienteModal({ item, onClose, onSave }: { item?: Ambiente; onClose: ()
         </Field>
       </div>
 
+      <Field label="Foto principal (obligatoria)">
+        <ImageUploadField
+          value={form.imagen_principal_a}
+          onChange={url => setForm({...form, imagen_principal_a: url})}
+          carpeta="ambientes"
+          onError={notify}
+        />
+        <small className="field-hint">Esta foto es la que verán los clientes al elegir el lugar.</small>
+      </Field>
+
       <div className="modal-actions">
         <button type="button" className="secondary-btn" onClick={onClose}>Cancelar</button>
-        <button className="primary-btn" disabled={saving}>{saving ? "Guardando…" : "Guardar"}</button>
+        <button className="primary-btn" disabled={saving || !form.imagen_principal_a.trim()}>{saving ? "Guardando…" : "Guardar"}</button>
       </div>
     </form>
   </Modal>;
@@ -1044,11 +1064,12 @@ function ServicioModal({ item, onClose, onSave }: { item?: Servicio; onClose: ()
   </Modal>;
 }
 
-function EventoModal({ item, ambientes, tipos, onClose, onSave }: { item?: EventoSocial; ambientes: Ambiente[]; tipos: TipoEvento[]; onClose: () => void; onSave: (data: any) => Promise<void> }) {
+function EventoModal({ item, ambientes, tipos, onClose, onSave, notify }: { item?: EventoSocial; ambientes: Ambiente[]; tipos: TipoEvento[]; onClose: () => void; onSave: (data: any) => Promise<void>; notify: (message: string) => void }) {
   const [form, setForm] = useState({
     nombre_er: item?.nombre_er ?? "",
     descripcion_er: item?.descripcion_er ?? "",
     fecha_er: item?.fecha_er?.slice(0,10) ?? "",
+    imagen_er: item?.imagen_er ?? "",
     id_a: item?.id_a?.toString() ?? "",
     id_tipo_eves: item?.id_tipo_eves?.toString() ?? "",
   });
@@ -1068,6 +1089,7 @@ function EventoModal({ item, ambientes, tipos, onClose, onSave }: { item?: Event
         nombre_er: nombre,
         descripcion_er: descripcion || undefined,
         fecha_er: form.fecha_er || undefined,
+        imagen_er: form.imagen_er.trim() || null,
         id_a: Number(form.id_a),
         id_tipo_eves: Number(form.id_tipo_eves),
       });
@@ -1111,6 +1133,12 @@ function EventoModal({ item, ambientes, tipos, onClose, onSave }: { item?: Event
             <option value="">Seleccionar…</option>
             {tipos.map(t => <option key={t.id_tipo_eves} value={t.id_tipo_eves}>{t.nombre_tipo_eves}</option>)}
           </select>
+          <small className="field-hint">Solo se muestran clasificaciones de Social (las de Deportivo, como Ciclomontañismo, no aparecen aquí).</small>
+          {!tipos.length && (
+            <small className="field-hint field-hint-warn">
+              Aún no hay tipos de evento de Social en el catálogo. Pídele al admin de Deportivo que cree uno y lo marque como "social".
+            </small>
+          )}
         </Field>
       </div>
 
@@ -1122,6 +1150,16 @@ function EventoModal({ item, ambientes, tipos, onClose, onSave }: { item?: Event
           onChange={e => setForm({...form,descripcion_er: sanitizeDescription(e.target.value)})}
         />
         <small className="field-hint">{form.descripcion_er.length}/120 caracteres</small>
+      </Field>
+
+      <Field label="Imagen del evento (opcional)">
+        <ImageUploadField
+          value={form.imagen_er}
+          onChange={url => setForm({...form, imagen_er: url})}
+          carpeta="eventos"
+          onError={notify}
+        />
+        <small className="field-hint">Si no subes una foto, se usará la del ambiente asignado.</small>
       </Field>
 
       <div className="modal-actions">
