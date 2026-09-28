@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import SportWrapper from '../../components/deportivo/SportWrapper';
-import { sportHeroSlides, sportHomeEvents } from '../../data/sportHomeData';
+import { eventoDeportivoService, type EventoDeportivo } from '../../services/deportivoService';
+import { sportHeroSlides } from '../../data/sportHomeData';
+
 
 const FEATURES = [
   { cls: 'purple', title: 'Encuentra eventos cerca', desc: 'Mapa interactivo con jugadores y canchas disponibles en tiempo real', icon: <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" /> },
@@ -24,6 +26,14 @@ const STATS = [
   { target: 72, suffix: '%', label: 'Ciclistas que repiten' },
   { target: 98, suffix: '%', label: 'Satisfacción' },
 ];
+
+const CATEGORY_LABELS: Record<string, string> = {
+  ruta: 'Ruta',
+  mtb: 'MTB',
+  gravel: 'Gravel',
+  pista: 'Pista',
+  bmx: 'BMX',
+};
 
 function useCountUp(target: number, active: boolean) {
   const [value, setValue] = useState(0);
@@ -55,6 +65,15 @@ function StatItem({ target, suffix, label }: { target: number; suffix: string; l
 
 export default function SportHome() {
   const [slide, setSlide] = useState(0);
+
+    const [eventos, setEventos] = useState<EventoDeportivo[]>([]);
+
+  useEffect(() => {
+    eventoDeportivoService
+      .listar()
+      .then((res) => setEventos(res.data.slice(0, 3)))
+      .catch(() => setEventos([]));
+  }, []);
 
   useEffect(() => {
     const t = setInterval(() => setSlide((s) => (s + 1) % sportHeroSlides.length), 6000);
@@ -136,22 +155,26 @@ export default function SportHome() {
           <h2 className="section-title">Próximos eventos</h2>
           <p className="section-sub">Una selección de las competencias más esperadas de la temporada.</p>
           <div className="events-grid">
-            {sportHomeEvents.map((e) => (
-              <article key={e.id} className="event-card">
-                <div className="img" style={{ backgroundImage: `url('${e.image}')` }} role="img" aria-label={e.title}>
-                  <span className="badge" style={e.badgeColor ? { background: e.badgeColor } : undefined}>{e.badge}</span>
-                </div>
-                <div className="body">
-                  <h3>{e.title}</h3>
-                  <div className="meta">{e.meta}</div>
-                  <p className="desc">{e.desc}</p>
-                  <div className="footer">
-                    <span className="price">{e.price}</span>
-                    <Link to="/deportivo/eventos" className="btn-ghost">Ver más</Link>
+            {eventos.length === 0 ? (
+              <p>Cargando eventos...</p>
+            ) : (
+              eventos.map((e) => (
+                <article key={e.id} className="event-card">
+                  <div className="img" style={{ backgroundImage: `url('${e.imagen_url ?? ''}')` }} role="img" aria-label={e.nombre}>
+                    <span className="badge">{CATEGORY_LABELS[e.categoria] ?? e.categoria}</span>
                   </div>
-                </div>
-              </article>
-            ))}
+                  <div className="body">
+                    <h3>{e.nombre}</h3>
+                    <div className="meta">📅 {e.fecha.slice(0, 10)} · 📍 {e.ubicacion}</div>
+                    <p className="desc">{e.descripcion}</p>
+                    <div className="footer">
+                      <span className="price">${e.precio.toLocaleString('es-CO')}</span>
+                      <Link to={`/deportivo/evento/${e.id}`} className="btn-ghost">Ver más</Link>
+                    </div>
+                  </div>
+                </article>
+              ))
+            )}
           </div>
           <div style={{ textAlign: 'center', marginTop: '2rem' }}>
             <Link to="/deportivo/eventos" className="btn btn-primary">Ver todos los eventos →</Link>
