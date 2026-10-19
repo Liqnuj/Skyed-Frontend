@@ -359,6 +359,21 @@ function AdminPage() {
     reset,
   } = useAccessibility();
 
+  // Pinta el fondo de la página con el color del admin mientras esta pantalla está montada,
+  // así nunca asoma el fondo claro del sitio por debajo del panel (zoom / A-).
+  useEffect(() => {
+    const bg = darkMode ? "#0e1420" : "#f4f6fa";
+    const html = document.documentElement;
+    const prevHtml = html.style.background;
+    const prevBody = document.body.style.background;
+    html.style.background = bg;
+    document.body.style.background = bg;
+    return () => {
+      html.style.background = prevHtml;
+      document.body.style.background = prevBody;
+    };
+  }, [darkMode]);
+
   const [section, setSection] = useState<Section>("inicio");
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -588,8 +603,11 @@ function AdminPage() {
 
       <aside className="admin-sidebar">
         <div className="sidebar-brand">
-          <strong>Skyed <em>Social</em></strong>
-          <span>ADMINISTRACIÓN</span>
+          <img className="sidebar-logo" src="/assets/social/logo_social.png" alt="Skyed Social" width={37} height={37} style={{ width: 37, height: 37, maxWidth: 37, flex: "0 0 37px" }} />
+          <div className="sidebar-brand-text">
+            <strong>Skyed <em>Social</em></strong>
+            <span>ADMINISTRACIÓN</span>
+          </div>
         </div>
 
         <nav className="sidebar-nav">
