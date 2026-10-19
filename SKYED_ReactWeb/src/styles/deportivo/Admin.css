@@ -1,0 +1,2437 @@
+/* =========================================================
+   SKYED DEPORTIVO - ADMIN
+   CSS LIMPIO Y AISLADO
+   ========================================================= */
+
+.deportivo-admin {
+  --admin-bg: #f4f6fa;
+  --admin-surface: #ffffff;
+  --admin-surface-2: #f8f9fc;
+  --admin-line: #e5e9f0;
+  --admin-text: #172033;
+  --admin-muted: #718096;
+  --admin-sidebar: #091d36;
+  --admin-sidebar-text: #a9b9cc;
+  --admin-accent: #2c9caf;
+
+  min-height: 100vh;
+  width: 100%;
+  background: var(--admin-bg);
+  color: var(--admin-text);
+
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
+  font-size: 15px;
+
+  /* Escala el panel entero (texto, íconos, espaciados) según el tamaño
+     elegido en el widget de accesibilidad, igual que el zoom del navegador. */
+  zoom: var(--admin-scale, 1);
+
+  position: relative;
+  isolation: isolate;
+
+  overflow-x: hidden;
+}
+
+.deportivo-admin.dark {
+  --admin-bg: #0e1420;
+  --admin-surface: #141d2b;
+  --admin-surface-2: #101824;
+  --admin-line: #283448;
+  --admin-text: #f2f5f8;
+  --admin-muted: #91a0b5;
+  --admin-sidebar: #050e1c;
+  --admin-sidebar-text: #b8c1d1;
+}
+
+.deportivo-admin *,
+.deportivo-admin *::before,
+.deportivo-admin *::after {
+  box-sizing: border-box;
+}
+
+/* =========================================================
+   ELEMENTOS GENERALES
+   ========================================================= */
+
+.deportivo-admin button,
+.deportivo-admin input,
+.deportivo-admin select,
+.deportivo-admin textarea {
+  font: inherit;
+}
+
+.deportivo-admin button {
+  line-height: normal;
+}
+
+.deportivo-admin a {
+  text-decoration: none;
+}
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.deportivo-admin .admin-header {
+  position: fixed !important;
+
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+
+  width: 100% !important;
+  height: 64px !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+
+  padding: 0 20px !important;
+
+  background: var(--admin-sidebar) !important;
+  color: white !important;
+
+  border-bottom: 1px solid rgba(255,255,255,.08) !important;
+
+  z-index: 10000 !important;
+}
+
+.deportivo-admin .admin-header-left,
+.deportivo-admin .admin-header-right {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+
+.deportivo-admin .admin-brand {
+  display: flex !important;
+  align-items: center !important;
+  gap: 9px !important;
+
+  color: white !important;
+
+  font-weight: 900 !important;
+  font-size: 18px !important;
+
+  letter-spacing: .05em !important;
+}
+
+.deportivo-admin .admin-brand img {
+  width: 34px !important;
+  height: 34px !important;
+
+  border-radius: 9px !important;
+  object-fit: cover !important;
+}
+
+.deportivo-admin .admin-brand em {
+  color: var(--admin-accent) !important;
+  font-style: normal !important;
+}
+
+.deportivo-admin .icon-btn {
+  width: 34px !important;
+  height: 34px !important;
+
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  border: 1px solid var(--admin-line) !important;
+  border-radius: 9px !important;
+
+  background: var(--admin-surface) !important;
+  color: var(--admin-muted) !important;
+
+  cursor: pointer !important;
+
+  transition: .18s ease !important;
+}
+
+.deportivo-admin .admin-header .icon-btn {
+  background: transparent !important;
+  border-color: rgba(255,255,255,.14) !important;
+  color: #e0d8e8 !important;
+}
+
+.deportivo-admin .icon-btn:hover {
+  border-color: var(--admin-accent) !important;
+  color: var(--admin-accent) !important;
+}
+
+.deportivo-admin .admin-header .icon-btn:hover {
+  color: white !important;
+}
+
+.deportivo-admin .header-bell {
+  position: relative !important;
+}
+
+.deportivo-admin .header-bell > span {
+  position: absolute !important;
+
+  right: -4px !important;
+  top: -6px !important;
+
+  min-width: 17px !important;
+  height: 17px !important;
+
+  display: grid !important;
+  place-items: center !important;
+
+  border-radius: 50% !important;
+
+  background: var(--admin-accent) !important;
+  color: white !important;
+
+  font-size: 10px !important;
+  font-weight: 800 !important;
+
+  border: 2px solid var(--admin-sidebar) !important;
+}
+
+.deportivo-admin .admin-role {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+
+  padding: 7px 11px !important;
+
+  border: 1px solid var(--admin-accent) !important;
+  border-radius: 999px !important;
+
+  background: rgba(156,2,174,.12) !important;
+
+  color: white !important;
+
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+.deportivo-admin .back-link {
+  display: inline-flex !important;
+  align-items: center !important;
+
+  padding: 7px 12px !important;
+
+  border: 1px solid rgba(255,255,255,.16) !important;
+  border-radius: 9px !important;
+
+  color: #ddd4e5 !important;
+
+  font-size: 12px !important;
+}
+
+.deportivo-admin .back-link:hover {
+  color: white !important;
+  border-color: var(--admin-accent) !important;
+}
+
+.deportivo-admin .mobile-logout {
+  display: none !important;
+}
+
+/* =========================================================
+   SIDEBAR
+   ========================================================= */
+
+.deportivo-admin .admin-sidebar {
+  position: fixed !important;
+
+  top: 64px !important;
+  left: 0 !important;
+  bottom: 0 !important;
+
+  width: 244px !important;
+  min-width: 244px !important;
+  max-width: 244px !important;
+
+  height: calc(100vh - 64px) !important;
+
+  display: flex !important;
+  flex-direction: column !important;
+
+  background: var(--admin-sidebar) !important;
+
+  border-right: 1px solid rgba(255,255,255,.08) !important;
+
+  overflow: hidden !important;
+
+  z-index: 9000 !important;
+
+  transform: none !important;
+}
+
+/* =========================================================
+   CABECERA DEL SIDEBAR
+   ========================================================= */
+
+.deportivo-admin .sidebar-brand {
+  width: 100% !important;
+  min-height: 78px !important;
+
+  flex: 0 0 78px !important;
+
+  display: flex !important;
+  align-items: center !important;
+
+  gap: 11px !important;
+
+  padding: 18px 17px !important;
+
+  border-bottom: 1px solid rgba(255,255,255,.08) !important;
+
+  position: relative !important;
+}
+
+.deportivo-admin .sidebar-mark {
+  width: 37px !important;
+  height: 37px !important;
+
+  flex: 0 0 37px !important;
+
+  display: grid !important;
+  place-items: center !important;
+
+  border-radius: 10px !important;
+
+  background: var(--admin-accent) !important;
+  color: white !important;
+}
+
+.deportivo-admin .sidebar-brand-text {
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+.deportivo-admin .sidebar-brand-text strong {
+  display: block !important;
+
+  color: white !important;
+
+  font-size: 13px !important;
+  font-weight: 800 !important;
+}
+
+.deportivo-admin .sidebar-brand-text span {
+  display: block !important;
+
+  margin-top: 3px !important;
+
+  color: #8e7da5 !important;
+
+  font-size: 9px !important;
+  font-weight: 800 !important;
+
+  letter-spacing: .12em !important;
+}
+
+/* =========================================================
+   NAVEGACIÓN
+   ========================================================= */
+
+.deportivo-admin .sidebar-nav {
+  position: static !important;
+
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+
+  flex: 1 1 auto !important;
+
+  display: flex !important;
+  flex-direction: column !important;
+
+  padding: 14px 10px !important;
+
+  margin: 0 !important;
+
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+
+  isolation: isolate !important;
+}
+
+.deportivo-admin .nav-caption {
+  position: static !important;
+
+  display: block !important;
+
+  width: 100% !important;
+
+  margin: 0 !important;
+  padding: 5px 11px 9px !important;
+
+  color: #6f5d88 !important;
+
+  font-size: 10px !important;
+  font-weight: 800 !important;
+
+  letter-spacing: .14em !important;
+}
+
+/* =========================================================
+   BOTONES DE NAVEGACIÓN
+   ========================================================= */
+
+.deportivo-admin .admin-nav-item,
+.deportivo-admin .admin-nav-item.active,
+.deportivo-admin .admin-nav-item:hover {
+  position: static !important;
+  inset: auto !important;
+
+  display: flex !important;
+  align-items: center !important;
+
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+
+  height: 42px !important;
+
+  flex: 0 0 42px !important;
+
+  margin: 2px 0 !important;
+  padding: 0 11px !important;
+
+  gap: 12px !important;
+
+  border: 0 !important;
+  border-radius: 10px !important;
+
+  background: transparent !important;
+
+  color: var(--admin-sidebar-text) !important;
+
+  cursor: pointer !important;
+
+  text-align: left !important;
+
+  white-space: nowrap !important;
+
+  transform: none !important;
+
+  box-shadow: none !important;
+}
+
+.deportivo-admin .admin-nav-item:hover {
+  background: rgba(255,255,255,.07) !important;
+  color: white !important;
+}
+
+.deportivo-admin .admin-nav-item.active {
+  background: var(--admin-accent) !important;
+  color: white !important;
+
+  box-shadow: 0 7px 20px rgba(156,2,174,.24) !important;
+}
+
+.deportivo-admin .admin-nav-item span {
+  position: static !important;
+
+  display: block !important;
+
+  overflow: hidden !important;
+
+  text-overflow: ellipsis !important;
+
+  color: inherit !important;
+
+  font-size: 14px !important;
+  font-weight: 600 !important;
+}
+
+/* =========================================================
+   PERFIL DEL SIDEBAR
+   ========================================================= */
+
+.deportivo-admin .sidebar-footer {
+  position: static !important;
+
+  width: 100% !important;
+
+  min-height: 70px !important;
+
+  flex: 0 0 70px !important;
+
+  display: flex !important;
+  align-items: center !important;
+
+  gap: 9px !important;
+
+  margin: 0 !important;
+  padding: 13px 11px !important;
+
+  border-top: 1px solid rgba(255,255,255,.08) !important;
+
+  background: var(--admin-sidebar) !important;
+
+  z-index: 5 !important;
+}
+
+.deportivo-admin .admin-avatar,
+.deportivo-admin .mini-avatar {
+  width: 34px !important;
+  height: 34px !important;
+
+  flex: 0 0 34px !important;
+
+  display: grid !important;
+  place-items: center !important;
+
+  border-radius: 50% !important;
+
+  background: linear-gradient(
+    135deg,
+    var(--admin-accent),
+    #4c9eea
+  ) !important;
+
+  color: white !important;
+
+  font-size: 11px !important;
+  font-weight: 800 !important;
+}
+
+.deportivo-admin .admin-user {
+  min-width: 0 !important;
+  flex: 1 1 auto !important;
+
+  overflow: hidden !important;
+}
+
+.deportivo-admin .admin-user strong,
+.deportivo-admin .admin-user span {
+  display: block !important;
+
+  overflow: hidden !important;
+
+  text-overflow: ellipsis !important;
+
+  white-space: nowrap !important;
+}
+
+.deportivo-admin .admin-user strong {
+  color: white !important;
+  font-size: 11px !important;
+}
+
+.deportivo-admin .admin-user span {
+  margin-top: 2px !important;
+
+  color: #8e7da5 !important;
+
+  font-size: 9px !important;
+}
+
+.deportivo-admin .logout-btn {
+  flex: 0 0 34px !important;
+
+  background: transparent !important;
+  border-color: transparent !important;
+
+  color: #a999b9 !important;
+}
+
+/* =========================================================
+   CONTENIDO PRINCIPAL
+   ========================================================= */
+
+.deportivo-admin .admin-main {
+  position: relative !important;
+
+  width: auto !important;
+
+  min-height: 100vh !important;
+
+  margin-left: 244px !important;
+
+  padding: 94px 28px 52px !important;
+
+  background: var(--admin-bg) !important;
+
+  z-index: 1 !important;
+
+  transition: margin-left .25s ease !important;
+}
+
+/* =========================================================
+   ESTADO CONTRAÍDO
+   ========================================================= */
+
+.deportivo-admin.is-collapsed .admin-sidebar {
+  width: 72px !important;
+  min-width: 72px !important;
+  max-width: 72px !important;
+}
+
+.deportivo-admin.is-collapsed .admin-main {
+  margin-left: 72px !important;
+}
+
+.deportivo-admin.is-collapsed .sidebar-brand {
+  justify-content: center !important;
+  padding: 18px 10px !important;
+}
+
+.deportivo-admin.is-collapsed .sidebar-brand-text,
+.deportivo-admin.is-collapsed .nav-caption,
+.deportivo-admin.is-collapsed .admin-user {
+  display: none !important;
+}
+
+.deportivo-admin.is-collapsed .sidebar-nav {
+  padding-left: 10px !important;
+  padding-right: 10px !important;
+}
+
+.deportivo-admin.is-collapsed .admin-nav-item {
+  width: 52px !important;
+  max-width: 52px !important;
+
+  justify-content: center !important;
+
+  padding: 0 !important;
+}
+
+.deportivo-admin.is-collapsed .admin-nav-item span {
+  display: none !important;
+}
+
+.deportivo-admin.is-collapsed .sidebar-footer {
+  justify-content: center !important;
+  padding: 13px 10px !important;
+}
+
+.deportivo-admin.is-collapsed .logout-btn {
+  display: none !important;
+}
+
+/* =========================================================
+   TOPBAR
+   ========================================================= */
+
+.deportivo-admin .admin-topbar {
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: space-between !important;
+
+  gap: 20px !important;
+
+  margin-bottom: 25px !important;
+}
+
+.deportivo-admin .admin-eyebrow,
+.deportivo-admin .card-kicker {
+  display: block !important;
+
+  color: var(--admin-accent) !important;
+
+  font-size: 10px !important;
+  font-weight: 900 !important;
+
+  letter-spacing: .16em !important;
+}
+
+.deportivo-admin .admin-topbar h1 {
+  margin: 5px 0 0 !important;
+
+  color: var(--admin-text) !important;
+
+  font-family: "Playfair Display", serif !important;
+  font-size: 30px !important;
+  font-weight: 700 !important;
+  line-height: 1.1 !important;
+
+  letter-spacing: -.02em !important;
+}
+
+.deportivo-admin .admin-search {
+  width: min(350px, 42vw) !important;
+  height: 42px !important;
+
+  display: flex !important;
+  align-items: center !important;
+
+  gap: 9px !important;
+
+  padding: 0 12px !important;
+
+  background: var(--admin-surface) !important;
+
+  border: 1px solid var(--admin-line) !important;
+  border-radius: 12px !important;
+
+  color: var(--admin-muted) !important;
+
+  box-shadow: 0 2px 10px rgba(25,34,50,.03) !important;
+}
+
+.deportivo-admin .admin-search input {
+  width: 100% !important;
+  min-width: 0 !important;
+
+  border: 0 !important;
+  outline: 0 !important;
+
+  background: transparent !important;
+
+  color: var(--admin-text) !important;
+}
+
+.deportivo-admin .admin-search button {
+  border: 0 !important;
+  background: transparent !important;
+
+  color: var(--admin-muted) !important;
+
+  cursor: pointer !important;
+}
+
+/* =========================================================
+   TARJETAS KPI
+   ========================================================= */
+
+.deportivo-admin .kpi-grid {
+  display: grid !important;
+
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+
+  gap: 13px !important;
+
+  margin-bottom: 18px !important;
+}
+
+.deportivo-admin .kpi-card {
+  min-width: 0 !important;
+
+  padding: 15px !important;
+
+  background: var(--admin-surface) !important;
+
+  border: 1px solid var(--admin-line) !important;
+  border-radius: 15px !important;
+
+  box-shadow: 0 5px 18px rgba(24,34,54,.04) !important;
+}
+
+.deportivo-admin .kpi-icon {
+  width: 36px !important;
+  height: 36px !important;
+
+  display: grid !important;
+  place-items: center !important;
+
+  margin-bottom: 12px !important;
+
+  border-radius: 10px !important;
+
+  background: color-mix(
+    in srgb,
+    var(--admin-accent) 11%,
+    white
+  ) !important;
+
+  color: var(--admin-accent) !important;
+}
+
+.deportivo-admin .kpi-card > span {
+  display: block !important;
+
+  color: var(--admin-muted) !important;
+
+  font-size: 10px !important;
+  font-weight: 800 !important;
+
+  text-transform: uppercase !important;
+
+  letter-spacing: .07em !important;
+}
+
+.deportivo-admin .kpi-card > strong {
+  display: block !important;
+
+  margin-top: 5px !important;
+
+  color: var(--admin-text) !important;
+
+  font-size: 24px !important;
+
+  letter-spacing: -.03em !important;
+}
+
+.deportivo-admin .kpi-card > strong.compact {
+  font-size: 18px !important;
+}
+
+/* =========================================================
+   CONTENIDO DASHBOARD
+   ========================================================= */
+
+.deportivo-admin .dashboard-grid-main {
+  display: grid !important;
+
+  grid-template-columns:
+    minmax(0, 1.7fr)
+    minmax(310px, .9fr) !important;
+
+  gap: 18px !important;
+}
+
+.deportivo-admin .admin-card {
+  background: var(--admin-surface) !important;
+
+  border: 1px solid var(--admin-line) !important;
+  border-radius: 16px !important;
+
+  box-shadow: 0 5px 18px rgba(24,34,54,.04) !important;
+}
+
+.deportivo-admin .calendar-card {
+  overflow: hidden !important;
+}
+
+.deportivo-admin .card-head,
+.deportivo-admin .section-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+
+  gap: 15px !important;
+}
+
+.deportivo-admin .calendar-head {
+  padding: 18px 20px 14px !important;
+}
+
+.deportivo-admin .card-head h2,
+.deportivo-admin .section-header h2 {
+  margin: 5px 0 0 !important;
+
+  color: var(--admin-text) !important;
+
+  font-size: 18px !important;
+
+  letter-spacing: -.02em !important;
+}
+
+/* =========================================================
+   CALENDARIO
+   ========================================================= */
+
+.deportivo-admin .calendar-actions,
+.deportivo-admin .section-header-actions {
+  display: flex !important;
+  align-items: center !important;
+
+  gap: 8px !important;
+}
+
+.deportivo-admin .segmented {
+  display: flex !important;
+
+  overflow: hidden !important;
+
+  border: 1px solid var(--admin-line) !important;
+  border-radius: 9px !important;
+}
+
+.deportivo-admin .segmented button {
+  border: 0 !important;
+
+  padding: 7px 11px !important;
+
+  background: transparent !important;
+
+  color: var(--admin-muted) !important;
+
+  cursor: pointer !important;
+
+  font-size: 12px !important;
+}
+
+.deportivo-admin .segmented button.active {
+  background: var(--admin-accent) !important;
+  color: white !important;
+}
+
+.deportivo-admin .small-primary,
+.deportivo-admin .primary-btn {
+  border: 0 !important;
+
+  background: linear-gradient(135deg, var(--admin-accent), color-mix(in srgb, var(--admin-accent) 78%, #091d36)) !important;
+  color: white !important;
+
+  border-radius: 10px !important;
+
+  padding: 10px 16px !important;
+
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  letter-spacing: .01em !important;
+
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  gap: 6px !important;
+
+  cursor: pointer !important;
+
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--admin-accent) 35%, transparent) !important;
+  transition: transform .15s ease, box-shadow .15s ease, filter .15s ease !important;
+}
+
+.deportivo-admin .primary-btn:hover:not(:disabled) {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--admin-accent) 45%, transparent) !important;
+  filter: brightness(1.04) !important;
+}
+
+.deportivo-admin .primary-btn:active:not(:disabled) {
+  transform: translateY(0) !important;
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--admin-accent) 35%, transparent) !important;
+}
+
+.deportivo-admin .calendar-toolbar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+
+  padding: 8px 20px 12px !important;
+}
+
+.deportivo-admin .calendar-nav {
+  display: flex !important;
+  align-items: center !important;
+
+  gap: 7px !important;
+}
+
+.deportivo-admin .calendar-nav strong {
+  min-width: 165px !important;
+
+  text-align: center !important;
+
+  color: var(--admin-text) !important;
+
+  text-transform: capitalize !important;
+
+  font-size: 15px !important;
+}
+
+.deportivo-admin .today-btn,
+.deportivo-admin .secondary-btn {
+  border: 1px solid var(--admin-line) !important;
+
+  background: var(--admin-surface) !important;
+
+  color: var(--admin-text) !important;
+
+  border-radius: 10px !important;
+
+  padding: 8px 13px !important;
+
+  cursor: pointer !important;
+
+  font-size: 12px !important;
+  font-weight: 700 !important;
+
+  transition: border-color .15s ease, background .15s ease, transform .15s ease !important;
+}
+
+.deportivo-admin .secondary-btn:hover {
+  border-color: color-mix(in srgb, var(--admin-accent) 45%, var(--admin-line)) !important;
+  background: var(--admin-surface-2) !important;
+  transform: translateY(-1px) !important;
+}
+
+.deportivo-admin .calendar-grid {
+  border-top: 1px solid var(--admin-line) !important;
+}
+
+.deportivo-admin .calendar-weekdays,
+.deportivo-admin .calendar-days {
+  display: grid !important;
+
+  grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+}
+
+.deportivo-admin .calendar-weekdays span {
+  padding: 9px 10px !important;
+
+  color: var(--admin-muted) !important;
+
+  font-size: 10px !important;
+  font-weight: 800 !important;
+
+  text-transform: uppercase !important;
+
+  border-bottom: 1px solid var(--admin-line) !important;
+}
+
+.deportivo-admin .calendar-day {
+  min-height: 80px !important;
+
+  padding: 7px !important;
+
+  position: relative !important;
+
+  overflow: hidden !important;
+
+  border-right: 1px solid var(--admin-line) !important;
+  border-bottom: 1px solid var(--admin-line) !important;
+}
+
+.deportivo-admin .calendar-day:nth-child(7n) {
+  border-right: 0 !important;
+}
+
+.deportivo-admin .calendar-day.muted {
+  background: var(--admin-surface-2) !important;
+
+  color: #aab3c1 !important;
+}
+
+.deportivo-admin .day-number {
+  width: 24px !important;
+  height: 24px !important;
+
+  display: grid !important;
+  place-items: center !important;
+
+  margin-bottom: 3px !important;
+
+  border-radius: 50% !important;
+
+  color: var(--admin-text) !important;
+
+  font-size: 11px !important;
+  font-weight: 800 !important;
+}
+
+.deportivo-admin .calendar-day.today .day-number {
+  background: var(--admin-accent) !important;
+  color: white !important;
+}
+
+.deportivo-admin .calendar-event {
+  display: block !important;
+
+  width: 100% !important;
+  max-width: 100% !important;
+
+  overflow: hidden !important;
+
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+
+  border: 0 !important;
+  border-radius: 5px !important;
+
+  padding: 3px 5px !important;
+  margin-top: 3px !important;
+
+  background: color-mix(
+    in srgb,
+    var(--admin-accent) 11%,
+    white
+  ) !important;
+
+  color: var(--admin-accent) !important;
+
+  font-size: 9px !important;
+  font-weight: 800 !important;
+
+  text-align: left !important;
+}
+
+.deportivo-admin .calendar-legend {
+  display: flex !important;
+  align-items: center !important;
+
+  gap: 16px !important;
+
+  padding: 11px 20px !important;
+
+  color: var(--admin-muted) !important;
+
+  font-size: 10px !important;
+}
+
+.deportivo-admin .calendar-legend span {
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+}
+
+.deportivo-admin .legend-note {
+  margin-left: auto !important;
+}
+
+/* =========================================================
+   RESERVAS DEL DASHBOARD
+   ========================================================= */
+
+.deportivo-admin .upcoming-card {
+  padding: 18px !important;
+}
+
+.deportivo-admin .link-button {
+  display: inline-flex !important;
+  align-items: center !important;
+
+  gap: 4px !important;
+
+  border: 0 !important;
+  background: transparent !important;
+
+  color: var(--admin-accent) !important;
+
+  font-size: 11px !important;
+  font-weight: 800 !important;
+
+  cursor: pointer !important;
+}
+
+.deportivo-admin .reservation-list {
+  margin-top: 13px !important;
+}
+
+.deportivo-admin .reservation-item {
+  display: flex !important;
+  align-items: center !important;
+
+  gap: 9px !important;
+
+  padding: 11px 0 !important;
+
+  border-top: 1px solid var(--admin-line) !important;
+}
+
+.deportivo-admin .reservation-main {
+  min-width: 0 !important;
+  flex: 1 !important;
+}
+
+.deportivo-admin .reservation-main strong,
+.deportivo-admin .reservation-main span {
+  display: block !important;
+
+  overflow: hidden !important;
+
+  text-overflow: ellipsis !important;
+
+  white-space: nowrap !important;
+}
+
+.deportivo-admin .reservation-main strong {
+  font-size: 12px !important;
+}
+
+.deportivo-admin .reservation-main span {
+  margin-top: 3px !important;
+
+  color: var(--admin-muted) !important;
+
+  font-size: 10px !important;
+}
+
+.deportivo-admin .reservation-side {
+  text-align: right !important;
+}
+
+.deportivo-admin .reservation-side strong {
+  display: block !important;
+
+  margin-bottom: 4px !important;
+
+  font-size: 10px !important;
+}
+
+/* =========================================================
+   BADGES
+   ========================================================= */
+
+.deportivo-admin .admin-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+
+  padding: 4px 7px !important;
+
+  border-radius: 999px !important;
+
+  font-size: 9px !important;
+  font-weight: 900 !important;
+
+  white-space: nowrap !important;
+
+  text-transform: capitalize !important;
+}
+
+.deportivo-admin .admin-badge.confirmada,
+.deportivo-admin .admin-badge.confirmado,
+.deportivo-admin .admin-badge.resuelto,
+.deportivo-admin .admin-badge.activo,
+.deportivo-admin .admin-badge.disponible {
+  background: #dcfce7 !important;
+  color: #15803d !important;
+}
+
+.deportivo-admin .admin-badge.pendiente,
+.deportivo-admin .admin-badge.en_proceso,
+.deportivo-admin .admin-badge.revision {
+  background: #fef3c7 !important;
+  color: #b45309 !important;
+}
+
+.deportivo-admin .admin-badge.cancelada,
+.deportivo-admin .admin-badge.cancelado,
+.deportivo-admin .admin-badge.rechazado,
+.deportivo-admin .admin-badge.inactivo,
+.deportivo-admin .admin-badge.inhabilitado,
+.deportivo-admin .admin-badge.no_disponible {
+  background: #fee2e2 !important;
+  color: #b91c1c !important;
+}
+
+/* =========================================================
+   TABLAS
+   ========================================================= */
+
+.deportivo-admin .section-view {
+  width: 100% !important;
+}
+
+.deportivo-admin .section-header {
+  margin-bottom: 15px !important;
+}
+
+.deportivo-admin .section-header > div:first-child p {
+  margin: 7px 0 0 !important;
+
+  color: var(--admin-muted) !important;
+
+  font-size: 12px !important;
+}
+
+.deportivo-admin .table-card {
+  overflow: hidden !important;
+}
+
+.deportivo-admin .table-scroll {
+  width: 100% !important;
+  overflow-x: auto !important;
+}
+
+.deportivo-admin .admin-table {
+  width: 100% !important;
+
+  min-width: 820px !important;
+
+  border-collapse: collapse !important;
+}
+
+.deportivo-admin .admin-table th {
+  padding: 12px 14px !important;
+
+  background: var(--admin-surface-2) !important;
+
+  color: var(--admin-muted) !important;
+
+  font-size: 9px !important;
+  font-weight: 800 !important;
+
+  text-align: left !important;
+
+  text-transform: uppercase !important;
+
+  letter-spacing: .09em !important;
+
+  white-space: nowrap !important;
+}
+
+.deportivo-admin .admin-table td {
+  padding: 12px 14px !important;
+
+  border-top: 1px solid var(--admin-line) !important;
+
+  color: var(--admin-text) !important;
+
+  font-size: 11px !important;
+
+  vertical-align: middle !important;
+}
+
+.deportivo-admin .admin-table tr:hover td {
+  background: color-mix(
+    in srgb,
+    var(--admin-accent) 5%,
+    var(--admin-surface)
+  ) !important;
+}
+
+.deportivo-admin .admin-table strong {
+  font-size: 11px !important;
+}
+
+.deportivo-admin .row-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+}
+
+.deportivo-admin .action-success,
+.deportivo-admin .action-danger {
+  width: 30px !important;
+  height: 30px !important;
+
+  display: grid !important;
+  place-items: center !important;
+
+  border: 1px solid var(--admin-line) !important;
+  border-radius: 8px !important;
+
+  background: var(--admin-surface) !important;
+
+  cursor: pointer !important;
+}
+
+.deportivo-admin .action-success {
+  color: #059669 !important;
+}
+
+.deportivo-admin .action-danger {
+  color: #dc2626 !important;
+}
+
+.deportivo-admin .action-success:hover {
+  background: #dcfce7 !important;
+}
+
+.deportivo-admin .action-danger:hover {
+  background: #fee2e2 !important;
+}
+
+.deportivo-admin .table-action {
+  display: inline-flex !important;
+  align-items: center !important;
+
+  gap: 5px !important;
+
+  padding: 6px 8px !important;
+
+  border: 1px solid var(--admin-line) !important;
+  border-radius: 8px !important;
+
+  background: var(--admin-surface) !important;
+
+  color: var(--admin-accent) !important;
+
+  font-size: 10px !important;
+  font-weight: 800 !important;
+
+  cursor: pointer !important;
+}
+
+.deportivo-admin .table-action:hover {
+  border-color: var(--admin-accent) !important;
+}
+
+/* =========================================================
+   RECURSOS
+   ========================================================= */
+
+.deportivo-admin .resource-list {
+  padding: 7px 18px !important;
+}
+
+.deportivo-admin .resource-item {
+  display: flex !important;
+  align-items: center !important;
+
+  gap: 12px !important;
+
+  padding: 15px 4px !important;
+
+  border-bottom: 1px solid var(--admin-line) !important;
+}
+
+.deportivo-admin .resource-item:last-child {
+  border-bottom: 0 !important;
+}
+
+.deportivo-admin .resource-icon {
+  width: 40px !important;
+  height: 40px !important;
+
+  flex: 0 0 40px !important;
+
+  display: grid !important;
+  place-items: center !important;
+
+  border-radius: 11px !important;
+
+  background: color-mix(
+    in srgb,
+    var(--admin-accent) 11%,
+    white
+  ) !important;
+
+  color: var(--admin-accent) !important;
+}
+
+.deportivo-admin .resource-main {
+  min-width: 0 !important;
+  flex: 1 !important;
+}
+
+.deportivo-admin .resource-main strong,
+.deportivo-admin .resource-main span {
+  display: block !important;
+
+  overflow: hidden !important;
+
+  text-overflow: ellipsis !important;
+
+  white-space: nowrap !important;
+}
+
+.deportivo-admin .resource-main strong {
+  font-size: 12px !important;
+}
+
+.deportivo-admin .resource-main span {
+  margin-top: 3px !important;
+
+  color: var(--admin-muted) !important;
+
+  font-size: 10px !important;
+}
+
+.deportivo-admin .resource-price {
+  text-align: right !important;
+
+  font-size: 11px !important;
+  font-weight: 900 !important;
+}
+
+.deportivo-admin .resource-price small {
+  display: block !important;
+
+  margin-top: 2px !important;
+
+  color: var(--admin-muted) !important;
+
+  font-size: 9px !important;
+  font-weight: 500 !important;
+}
+
+/* =========================================================
+   PERSONAS
+   ========================================================= */
+
+.deportivo-admin .person-cell {
+  display: flex !important;
+  align-items: center !important;
+
+  gap: 8px !important;
+}
+
+.deportivo-admin .mini-avatar {
+  width: 29px !important;
+  height: 29px !important;
+
+  flex-basis: 29px !important;
+
+  font-size: 9px !important;
+}
+
+.deportivo-admin .role-label {
+  margin-left: 5px !important;
+
+  color: var(--admin-muted) !important;
+
+  font-size: 10px !important;
+}
+
+.deportivo-admin .type-pill {
+  padding: 4px 7px !important;
+
+  border-radius: 999px !important;
+
+  background: color-mix(
+    in srgb,
+    var(--admin-accent) 11%,
+    white
+  ) !important;
+
+  color: var(--admin-accent) !important;
+
+  font-size: 9px !important;
+  font-weight: 800 !important;
+}
+
+/* =========================================================
+   SELECTS
+   ========================================================= */
+
+.deportivo-admin .admin-select {
+  padding: 8px 10px !important;
+
+  border: 1px solid var(--admin-line) !important;
+  border-radius: 9px !important;
+
+  background: var(--admin-surface) !important;
+
+  color: var(--admin-text) !important;
+
+  font-size: 11px !important;
+
+  outline: 0 !important;
+}
+
+/* =========================================================
+   MODALES
+   ========================================================= */
+
+@keyframes admin-modal-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes admin-modal-pop-in {
+  from { opacity: 0; transform: translateY(10px) scale(.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.deportivo-admin .admin-modal-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+
+  display: grid !important;
+  place-items: center !important;
+
+  padding: 20px !important;
+
+  background: rgba(8,12,20,.68) !important;
+
+  backdrop-filter: blur(5px) !important;
+
+  z-index: 50000 !important;
+
+  animation: admin-modal-fade-in .18s ease !important;
+}
+
+.deportivo-admin .admin-modal {
+  width: min(680px, 100%) !important;
+
+  max-height: 88vh !important;
+
+  overflow: auto !important;
+
+  background: var(--admin-surface) !important;
+
+  border: 1px solid var(--admin-line) !important;
+  border-radius: 20px !important;
+
+  box-shadow: 0 25px 80px rgba(0,0,0,.32), 0 2px 0 color-mix(in srgb, var(--admin-accent) 25%, transparent) !important;
+
+  animation: admin-modal-pop-in .2s cubic-bezier(.2,.8,.3,1.1) !important;
+}
+
+.deportivo-admin .admin-modal-head {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+
+  gap: 15px !important;
+
+  padding: 20px 22px !important;
+
+  border-bottom: 1px solid var(--admin-line) !important;
+
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--admin-accent) 14%, white),
+    var(--admin-surface) 65%
+  ) !important;
+
+  border-top-left-radius: 20px !important;
+  border-top-right-radius: 20px !important;
+
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 2 !important;
+}
+
+.deportivo-admin.dark .admin-modal-head {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--admin-accent) 22%, var(--admin-surface)),
+    var(--admin-surface) 65%
+  ) !important;
+}
+
+.deportivo-admin .admin-modal-head h2 {
+  margin: 0 !important;
+
+  color: var(--admin-text) !important;
+
+  font-size: 18px !important;
+  font-weight: 800 !important;
+}
+
+.deportivo-admin .admin-modal-head p {
+  margin: 5px 0 0 !important;
+
+  color: var(--admin-muted) !important;
+
+  font-size: 11px !important;
+}
+
+.deportivo-admin .modal-form,
+.deportivo-admin .pqr-detail {
+  padding: 22px !important;
+}
+
+.deportivo-admin .form-grid {
+  display: grid !important;
+
+  grid-template-columns: 1fr 1fr !important;
+
+  gap: 16px 14px !important;
+
+  margin-bottom: 16px !important;
+}
+
+.deportivo-admin .modal-form > .admin-field {
+  margin-bottom: 16px !important;
+}
+
+.deportivo-admin .modal-form > .admin-field:last-of-type {
+  margin-bottom: 0 !important;
+}
+
+.deportivo-admin .admin-field {
+  display: flex !important;
+  flex-direction: column !important;
+
+  gap: 7px !important;
+}
+
+.deportivo-admin .admin-field > span {
+  color: var(--admin-muted) !important;
+
+  font-size: 10px !important;
+  font-weight: 800 !important;
+
+  letter-spacing: .07em !important;
+  text-transform: uppercase !important;
+}
+
+.deportivo-admin .admin-field:has(input:required) > span::after,
+.deportivo-admin .admin-field:has(select:required) > span::after,
+.deportivo-admin .admin-field:has(textarea:required) > span::after {
+  content: " *" !important;
+  color: var(--admin-accent) !important;
+}
+
+.deportivo-admin .admin-field input,
+.deportivo-admin .admin-field select,
+.deportivo-admin .admin-field textarea {
+  width: 100% !important;
+
+  padding: 11px 12px !important;
+
+  border: 1.5px solid var(--admin-line) !important;
+  border-radius: 11px !important;
+
+  outline: 0 !important;
+
+  background: var(--admin-surface-2) !important;
+
+  color: var(--admin-text) !important;
+
+  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease !important;
+}
+
+.deportivo-admin .admin-field input::placeholder,
+.deportivo-admin .admin-field textarea::placeholder {
+  color: var(--admin-muted) !important;
+  opacity: .75 !important;
+}
+
+.deportivo-admin .admin-field select {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+
+  background-image: linear-gradient(45deg, transparent 50%, var(--admin-muted) 50%),
+    linear-gradient(135deg, var(--admin-muted) 50%, transparent 50%) !important;
+  background-position: calc(100% - 18px) center, calc(100% - 13px) center !important;
+  background-size: 5px 5px, 5px 5px !important;
+  background-repeat: no-repeat !important;
+
+  padding-right: 34px !important;
+
+  cursor: pointer !important;
+}
+
+.deportivo-admin .admin-field input:hover:not(:focus),
+.deportivo-admin .admin-field select:hover:not(:focus),
+.deportivo-admin .admin-field textarea:hover:not(:focus) {
+  border-color: color-mix(in srgb, var(--admin-accent) 35%, var(--admin-line)) !important;
+}
+
+.deportivo-admin .admin-field input:focus,
+.deportivo-admin .admin-field select:focus,
+.deportivo-admin .admin-field textarea:focus {
+  border-color: var(--admin-accent) !important;
+  background: var(--admin-surface) !important;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--admin-accent) 14%, transparent) !important;
+}
+
+.deportivo-admin .admin-field textarea {
+  resize: vertical !important;
+  line-height: 1.5 !important;
+}
+
+.deportivo-admin .modal-actions {
+  display: flex !important;
+  justify-content: flex-end !important;
+
+  gap: 8px !important;
+
+  margin-top: 20px !important;
+  padding-top: 16px !important;
+
+  border-top: 1px solid var(--admin-line) !important;
+}
+
+.deportivo-admin .pqr-meta {
+  display: grid !important;
+
+  grid-template-columns: repeat(3, 1fr) !important;
+
+  gap: 9px !important;
+
+  margin-bottom: 15px !important;
+}
+
+.deportivo-admin .pqr-meta span {
+  padding: 10px !important;
+
+  background: var(--admin-surface-2) !important;
+
+  border: 1px solid var(--admin-line) !important;
+  border-radius: 10px !important;
+
+  color: var(--admin-muted) !important;
+
+  font-size: 10px !important;
+}
+
+.deportivo-admin .pqr-meta strong {
+  display: block !important;
+
+  margin-bottom: 4px !important;
+
+  color: var(--admin-text) !important;
+
+  font-size: 9px !important;
+
+  text-transform: uppercase !important;
+}
+
+.deportivo-admin .message-box {
+  margin-bottom: 15px !important;
+
+  padding: 13px !important;
+
+  border: 1px solid var(--admin-line) !important;
+  border-radius: 12px !important;
+
+  background: var(--admin-surface-2) !important;
+}
+
+.deportivo-admin .message-box > span {
+  color: var(--admin-accent) !important;
+
+  font-size: 9px !important;
+  font-weight: 900 !important;
+
+  text-transform: uppercase !important;
+}
+
+.deportivo-admin .message-box p {
+  margin: 8px 0 0 !important;
+
+  color: var(--admin-text) !important;
+
+  font-size: 12px !important;
+
+  line-height: 1.6 !important;
+}
+
+/* =========================================================
+   FOOTER
+   ========================================================= */
+
+.deportivo-admin .admin-footer-note {
+  position: fixed !important;
+
+  right: 24px !important;
+  bottom: 13px !important;
+
+  color: var(--admin-muted) !important;
+
+  font-size: 9px !important;
+
+  pointer-events: none !important;
+
+  z-index: 100 !important;
+}
+
+.deportivo-admin .admin-footer-note span {
+  color: var(--admin-accent) !important;
+}
+
+/* =========================================================
+   TOAST
+   ========================================================= */
+
+.deportivo-admin .admin-toast {
+  position: fixed !important;
+
+  right: 22px !important;
+  bottom: 24px !important;
+
+  display: flex !important;
+  align-items: center !important;
+
+  gap: 8px !important;
+
+  padding: 11px 15px !important;
+
+  background: var(--admin-sidebar) !important;
+  color: white !important;
+
+  border-radius: 11px !important;
+
+  font-size: 12px !important;
+  font-weight: 700 !important;
+
+  box-shadow: 0 12px 35px rgba(0,0,0,.22) !important;
+
+  z-index: 60000 !important;
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 1180px) {
+  .deportivo-admin .kpi-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+
+  .deportivo-admin .dashboard-grid-main {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 900px) {
+
+  .deportivo-admin .admin-sidebar {
+    width: 244px !important;
+    min-width: 244px !important;
+    max-width: 244px !important;
+
+    transform: translateX(-100%) !important;
+  }
+
+  .deportivo-admin.mobile-open .admin-sidebar {
+    transform: translateX(0) !important;
+  }
+
+  .deportivo-admin .admin-main,
+  .deportivo-admin.is-collapsed .admin-main {
+    margin-left: 0 !important;
+
+    padding-left: 18px !important;
+    padding-right: 18px !important;
+  }
+
+  .deportivo-admin .admin-role,
+  .deportivo-admin .back-link {
+    display: none !important;
+  }
+
+  .deportivo-admin .mobile-logout {
+    display: inline-flex !important;
+  }
+
+  .deportivo-admin .admin-search {
+    width: 300px !important;
+  }
+}
+
+@media (max-width: 650px) {
+
+  .deportivo-admin .admin-header {
+    height: 60px !important;
+    padding: 0 12px !important;
+  }
+
+  .deportivo-admin .admin-sidebar {
+    top: 60px !important;
+
+    height: calc(100vh - 60px) !important;
+  }
+
+  .deportivo-admin .admin-topbar {
+    align-items: stretch !important;
+    flex-direction: column !important;
+  }
+
+  .deportivo-admin .admin-search {
+    width: 100% !important;
+  }
+
+  .deportivo-admin .kpi-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .deportivo-admin .calendar-head,
+  .deportivo-admin .section-header {
+    align-items: flex-start !important;
+    flex-direction: column !important;
+  }
+
+  .deportivo-admin .calendar-actions {
+    width: 100% !important;
+    justify-content: space-between !important;
+  }
+
+  .deportivo-admin .calendar-day {
+    min-height: 62px !important;
+    padding: 4px !important;
+  }
+
+  .deportivo-admin .calendar-weekdays span {
+    padding: 7px 4px !important;
+    font-size: 8px !important;
+  }
+
+  .deportivo-admin .calendar-event {
+    font-size: 8px !important;
+  }
+
+  .deportivo-admin .legend-note {
+    display: none !important;
+  }
+
+  .deportivo-admin .calendar-legend {
+    gap: 8px !important;
+    padding: 9px 12px !important;
+  }
+
+  .deportivo-admin .form-grid,
+  .deportivo-admin .pqr-meta {
+    grid-template-columns: 1fr !important;
+  }
+
+  .deportivo-admin .resource-item {
+    flex-wrap: wrap !important;
+  }
+
+  .deportivo-admin .resource-main {
+    min-width: calc(100% - 54px) !important;
+  }
+
+  .deportivo-admin .resource-price {
+    margin-left: 52px !important;
+  }
+
+  .deportivo-admin .resource-item > .admin-badge {
+    margin-left: auto !important;
+  }
+
+  .deportivo-admin .admin-modal-backdrop {
+    padding: 10px !important;
+  }
+
+  .deportivo-admin .admin-modal-head,
+  .deportivo-admin .modal-form,
+  .deportivo-admin .pqr-detail {
+    padding: 15px !important;
+  }
+
+  .deportivo-admin .admin-footer-note {
+    display: none !important;
+  }
+}
+
+/* =========================================================
+   AJUSTES FINALES - SELECCIÓN Y VALIDACIÓN DE FORMULARIOS
+   ========================================================= */
+
+.deportivo-admin ::selection {
+  background: color-mix(in srgb, var(--admin-accent) 28%, #ffffff);
+  color: var(--admin-text);
+}
+
+.deportivo-admin .admin-sidebar ::selection {
+  background: rgba(156, 2, 174, .55);
+  color: #ffffff;
+}
+
+/* El encabezado del sidebar usa directamente <strong> y <span>. */
+.deportivo-admin .sidebar-brand > strong {
+  display: block;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.deportivo-admin .sidebar-brand > strong em {
+  color: var(--admin-accent);
+  font-style: normal;
+}
+
+.deportivo-admin .sidebar-brand > span {
+  display: block;
+  margin-top: 3px;
+  color: #8e7da5;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .12em;
+}
+
+.deportivo-admin .field-hint {
+  display: block;
+  align-self: flex-end;
+  margin-top: -1px;
+  color: var(--admin-muted);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.3;
+}
+
+.deportivo-admin .field-hint-warn {
+  color: #d97706 !important;
+  font-weight: 700 !important;
+}
+
+.deportivo-admin .admin-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 1px solid var(--admin-line);
+  display: block;
+  background: var(--admin-surface-2);
+}
+
+.deportivo-admin .admin-thumb-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--admin-muted);
+  font-size: 11px;
+}
+
+.deportivo-admin .admin-img-preview {
+  margin-top: 8px;
+  width: 100%;
+  max-width: 260px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--admin-line);
+  background: var(--admin-surface-2);
+  box-shadow: 0 8px 20px rgba(0,0,0,.12);
+}
+
+.deportivo-admin .admin-img-preview img {
+  display: block;
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  transition: transform .25s ease;
+}
+
+.deportivo-admin .admin-img-preview:hover img {
+  transform: scale(1.04);
+}
+
+.deportivo-admin .admin-field input:invalid:not(:placeholder-shown),
+.deportivo-admin .admin-field textarea:invalid:not(:placeholder-shown) {
+  border-color: #d97706 !important;
+}
+
+.deportivo-admin .primary-btn:disabled {
+  opacity: .65;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* =========================================================
+   SUBIDA DE IMÁGENES (drag & drop)
+   ========================================================= */
+
+@keyframes admin-spin {
+  to { transform: rotate(360deg); }
+}
+
+.deportivo-admin .admin-spin {
+  animation: admin-spin .8s linear infinite;
+}
+
+.deportivo-admin .secondary-btn.danger {
+  color: #d64545 !important;
+  border-color: color-mix(in srgb, #d64545 35%, var(--admin-line)) !important;
+}
+
+.deportivo-admin .secondary-btn.danger:hover {
+  background: color-mix(in srgb, #d64545 10%, var(--admin-surface)) !important;
+  border-color: #d64545 !important;
+}
+
+.deportivo-admin .admin-dropzone {
+  position: relative;
+
+  width: 100%;
+  min-height: 96px;
+
+  border: 1.5px dashed var(--admin-line);
+  border-radius: 14px;
+
+  background: var(--admin-surface-2);
+
+  cursor: pointer;
+  outline: 0;
+
+  transition: border-color .15s ease, background .15s ease;
+
+  overflow: hidden;
+}
+
+.deportivo-admin .admin-dropzone:hover,
+.deportivo-admin .admin-dropzone:focus-visible {
+  border-color: color-mix(in srgb, var(--admin-accent) 45%, var(--admin-line));
+}
+
+.deportivo-admin .admin-dropzone.is-dragover {
+  border-color: var(--admin-accent);
+  background: color-mix(in srgb, var(--admin-accent) 8%, var(--admin-surface-2));
+}
+
+.deportivo-admin .admin-dropzone.is-uploading {
+  cursor: wait;
+}
+
+.deportivo-admin .admin-dropzone-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+
+  padding: 20px 14px;
+
+  color: var(--admin-muted);
+  text-align: center;
+}
+
+.deportivo-admin .admin-dropzone-empty svg {
+  color: var(--admin-accent);
+  opacity: .8;
+}
+
+.deportivo-admin .admin-dropzone-empty span {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--admin-text);
+}
+
+.deportivo-admin .admin-dropzone-empty small {
+  font-size: 10px;
+  color: var(--admin-muted);
+}
+
+.deportivo-admin .admin-dropzone-preview {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  padding: 10px;
+}
+
+.deportivo-admin .admin-dropzone-preview img {
+  width: 84px;
+  height: 84px;
+
+  border-radius: 10px;
+  object-fit: cover;
+
+  border: 1px solid var(--admin-line);
+
+  flex: 0 0 auto;
+}
+
+.deportivo-admin .admin-dropzone-preview-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.deportivo-admin .admin-dropzone-preview-actions .secondary-btn {
+  padding: 6px 10px !important;
+  font-size: 11px !important;
+}
+
+.deportivo-admin .admin-dropzone-overlay {
+  position: absolute;
+  inset: 0;
+
+  display: grid;
+  place-items: center;
+
+  background: rgba(8,12,20,.45);
+  border-radius: 10px;
+
+  color: white;
+}
+
+/* =========================================================
+   PANEL DE ACCESIBILIDAD
+   ========================================================= */
+
+.deportivo-admin .acc-toggle {
+  position: fixed;
+  bottom: 26px;
+  right: 26px;
+
+  width: 50px;
+  height: 50px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: var(--admin-accent);
+  border: none;
+  border-radius: 50%;
+
+  cursor: pointer;
+
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--admin-accent) 45%, transparent);
+
+  z-index: 9999;
+
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.deportivo-admin .acc-toggle:hover {
+  transform: scale(1.08);
+  box-shadow: 0 8px 26px color-mix(in srgb, var(--admin-accent) 55%, transparent);
+}
+
+.deportivo-admin .acc-toggle svg {
+  width: 22px;
+  height: 22px;
+  fill: white;
+}
+
+.deportivo-admin .acc-panel {
+  position: fixed;
+  bottom: 88px;
+  right: 26px;
+
+  width: 250px;
+
+  padding: 18px;
+
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-line);
+  border-radius: 16px;
+
+  box-shadow: 0 20px 50px rgba(0,0,0,.22);
+
+  z-index: 9998;
+
+  display: none;
+
+  transition: background .2s ease, border-color .2s ease;
+}
+
+.deportivo-admin .acc-panel.open {
+  display: block;
+
+  animation: admin-modal-pop-in .18s ease;
+}
+
+.deportivo-admin .acc-panel-title {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+
+  border-bottom: 1px solid var(--admin-accent);
+
+  color: var(--admin-muted);
+
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+}
+
+.deportivo-admin .acc-section {
+  margin-bottom: 14px;
+}
+
+.deportivo-admin .acc-label {
+  display: block;
+  margin-bottom: 7px;
+
+  color: var(--admin-muted);
+
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+
+.deportivo-admin .font-size-row {
+  display: flex;
+  gap: 6px;
+}
+
+.deportivo-admin .size-btn,
+.deportivo-admin .mode-btn {
+  flex: 1;
+
+  padding: 8px 4px;
+
+  border: 1px solid var(--admin-line);
+  border-radius: 8px;
+
+  background: var(--admin-surface-2);
+  color: var(--admin-muted);
+
+  cursor: pointer;
+
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+
+  transition: border-color .15s ease, color .15s ease, background .15s ease;
+}
+
+.deportivo-admin .size-btn:hover,
+.deportivo-admin .mode-btn:hover {
+  border-color: var(--admin-accent);
+  color: var(--admin-accent);
+}
+
+.deportivo-admin .size-btn.active,
+.deportivo-admin .mode-btn.active {
+  background: var(--admin-accent) !important;
+  border-color: var(--admin-accent) !important;
+  color: white !important;
+}
+
+.deportivo-admin .mode-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.deportivo-admin .color-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.deportivo-admin .color-swatch {
+  width: 26px;
+  height: 26px;
+
+  border-radius: 50%;
+  border: 2px solid transparent;
+
+  cursor: pointer;
+
+  transition: transform .15s ease, border-color .15s ease;
+}
+
+.deportivo-admin .color-swatch:hover {
+  transform: scale(1.12);
+}
+
+.deportivo-admin .color-swatch.active {
+  border-color: var(--admin-text);
+  transform: scale(1.08);
+}
+
+.deportivo-admin .acc-reset {
+  width: 100%;
+  margin-top: 2px;
+
+  padding: 9px;
+
+  background: none;
+  border: 1px solid var(--admin-accent);
+  border-radius: 8px;
+
+  color: var(--admin-accent);
+
+  cursor: pointer;
+
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+
+  transition: background .15s ease;
+}
+
+.deportivo-admin .acc-reset:hover {
+  background: color-mix(in srgb, var(--admin-accent) 10%, transparent);
+}
+
+/* Modo dislexia: cambia la tipografía de todo el panel a una más legible,
+   con separación de letras y líneas en TODO el texto (nav, botones, badges,
+   tablas...), y un empujón extra en el texto de lectura larga. */
+.deportivo-admin.dyslexia,
+.deportivo-admin.dyslexia * {
+  font-family: 'Arial', sans-serif !important;
+}
+
+.deportivo-admin.dyslexia {
+  letter-spacing: .06em !important;
+  word-spacing: .14em !important;
+  line-height: 1.7 !important;
+}
+
+.deportivo-admin.dyslexia p,
+.deportivo-admin.dyslexia td,
+.deportivo-admin.dyslexia li,
+.deportivo-admin.dyslexia label,
+.deportivo-admin.dyslexia .field-hint,
+.deportivo-admin.dyslexia .pqr-detail,
+.deportivo-admin.dyslexia textarea {
+  letter-spacing: .09em !important;
+  word-spacing: .18em !important;
+  line-height: 1.85 !important;
+}

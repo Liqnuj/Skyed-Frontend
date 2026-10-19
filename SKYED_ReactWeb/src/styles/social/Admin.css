@@ -14,7 +14,7 @@
   --admin-sidebar-text: #bcaed0;
   --admin-accent: #9c02ae;
 
-  min-height: calc(100vh / var(--admin-scale, 1));
+  min-height: 100vh;
   width: 100%;
   background: var(--admin-bg);
   color: var(--admin-text);
@@ -253,7 +253,7 @@
   min-width: 244px !important;
   max-width: 244px !important;
 
-  height: calc((100vh / var(--admin-scale, 1)) - 64px) !important;
+  height: calc(100vh - 64px) !important;
 
   display: flex !important;
   flex-direction: column !important;
@@ -549,7 +549,7 @@
 
   width: auto !important;
 
-  min-height: calc(100vh / var(--admin-scale, 1)) !important;
+  min-height: 100vh !important;
 
   margin-left: 244px !important;
 
@@ -645,10 +645,12 @@
 
   color: var(--admin-text) !important;
 
+  font-family: "Playfair Display", serif !important;
   font-size: 30px !important;
+  font-weight: 700 !important;
   line-height: 1.1 !important;
 
-  letter-spacing: -.03em !important;
+  letter-spacing: -.02em !important;
 }
 
 .social-admin .admin-search {
@@ -1779,7 +1781,7 @@
    ========================================================= */
 
 .social-admin .admin-footer-note {
-  position: absolute !important;
+  position: fixed !important;
 
   right: 24px !important;
   bottom: 13px !important;
@@ -1887,7 +1889,7 @@
   .social-admin .admin-sidebar {
     top: 60px !important;
 
-    height: calc((100vh / var(--admin-scale, 1)) - 60px) !important;
+    height: calc(100vh - 60px) !important;
   }
 
   .social-admin .admin-topbar {
@@ -1994,6 +1996,11 @@
   font-size: 13px;
   font-weight: 800;
   line-height: 1.15;
+}
+
+.social-admin .sidebar-brand > strong em {
+  color: var(--admin-accent);
+  font-style: normal;
 }
 
 .social-admin .sidebar-brand > span {
@@ -2271,16 +2278,16 @@
 }
 
 .social-admin .acc-panel-title {
-  margin-bottom: 14px;
-  padding-bottom: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
 
   border-bottom: 1px solid var(--admin-accent);
 
   color: var(--admin-muted);
 
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: .12em;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .15em;
   text-transform: uppercase;
 }
 

@@ -581,14 +581,14 @@ function AdminPage() {
           </button>
           <Link to="/social" className="admin-brand">
             <img src="/assets/social/logo_social.png" alt="Skyed Social" />
-            <span>Skyed Social</span>
+            <span>Skyed <em>Social</em></span>
           </Link>
         </div>
       </header>
 
       <aside className="admin-sidebar">
         <div className="sidebar-brand">
-          <strong>Skyed Social</strong>
+          <strong>Skyed <em>Social</em></strong>
           <span>ADMINISTRACIÓN</span>
         </div>
 
