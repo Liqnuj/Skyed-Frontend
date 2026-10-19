@@ -25,6 +25,7 @@ import Venues from './pages/social/Venues';
 import AboutSocial from './pages/social/nosotros';
 import Reserve from './pages/social/Reserve';
 import PQR from './pages/social/PQR';
+import Perfil from './pages/social/Perfil';
 import Admin from './pages/social/Admin';
 import AdminDeportivo from './pages/deportivo/Admin';
 import AdminRedirect from './components/AdminRedirect';
@@ -68,8 +69,7 @@ function App(){
             <Route path="/social/nosotros" element={<AboutSocial/>}/>
             <Route path="/social/reservar" element={<Reserve/>}/>
             <Route path="/social/pqr" element={<PQR/>}/>
-
-            <Route path="/admin" element={<AdminRedirect/>}/>
+            <Route path="/social/perfil" element={<Perfil/>}/>
             <Route element={<AdminProtectedRoute />}>
               <Route path="/social/admin" element={<Admin/>}/>
               <Route path="/deportivo/admin" element={<AdminDeportivo/>}/>
