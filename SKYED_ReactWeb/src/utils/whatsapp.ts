@@ -7,8 +7,13 @@
  */
 const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_PQR || '573000000000';
 
+/**
+ * Se usa api.whatsapp.com/send y no wa.me: wa.me redirige a esta misma
+ * dirección y en ese redirect cambia cada emoji por "�" (comprobado: el
+ * Location que devuelve trae %EF%BF%BD en lugar del emoji).
+ */
 export function buildWhatsAppLink(mensaje: string, numero: string = WHATSAPP_NUMBER) {
-  return `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
+  return `https://api.whatsapp.com/send?phone=${numero}&text=${encodeURIComponent(mensaje)}`;
 }
 
 interface PqrWhatsAppData {
