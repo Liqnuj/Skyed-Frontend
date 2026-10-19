@@ -13,27 +13,69 @@ export function buildWhatsAppLink(mensaje: string, numero: string = WHATSAPP_NUM
 
 interface PqrWhatsAppData {
   tipo: string;
+  icono: string;
   radicado: string;
-  nombre: string;
-  apellido: string;
-  evento?: string;
-  fecha?: string;
+  nombreCompleto: string;
+  correo?: string;
+  telefono?: string;
+  /** Momento en que se radicó la solicitud. */
+  fecha: Date;
+  /** Por ejemplo "3 días hábiles" (sale del cuadro "Tiempos de respuesta"). */
+  tiempoRespuesta: string;
   asunto: string;
   descripcion: string;
 }
 
+const SEPARADOR = '━━━━━━━━━━━━━━━━━━';
+
+/**
+ * Mensaje de seguimiento de una PQR para WhatsApp. Usa el formato propio
+ * de WhatsApp: *negrita*, _cursiva_ y "> " para citar el detalle.
+ */
 export function buildPqrWhatsAppMessage(data: PqrWhatsAppData): string {
+  const fecha = data.fecha.toLocaleString('es-CO', {
+    timeZone: 'America/Bogota',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+
+  // WhatsApp solo cita una línea a la vez, así que cada línea del detalle
+  // lleva su propio "> ".
+  const detalleCitado = data.descripcion
+    .split('\n')
+    .map((linea) => `> ${linea}`)
+    .join('\n');
+
+  const contacto = [
+    data.correo ? `• Correo: ${data.correo}` : null,
+    data.telefono ? `• Teléfono: ${data.telefono}` : null,
+  ].filter((linea): linea is string => linea !== null);
+
   const lineas = [
-    `Hola, soy ${data.nombre} ${data.apellido}. Te escribo para hacer seguimiento a mi solicitud (*${data.tipo}*) radicada en SkyedSocial.`,
+    '✨ *SKYEDSOCIAL · ATENCIÓN AL CLIENTE* ✨',
+    SEPARADOR,
     '',
-    `*Radicado:* ${data.radicado}`,
-    `*Asunto:* ${data.asunto}`,
-    data.evento ? `*Tipo de evento:* ${data.evento}` : null,
-    data.fecha ? `*Fecha del evento:* ${data.fecha}` : null,
+    '¡Hola, equipo Skyed! 👋',
+    `Soy *${data.nombreCompleto}* y quiero hacer seguimiento a mi solicitud.`,
     '',
-    `*Detalle:*`,
-    data.descripcion,
+    `${data.icono} *Tipo:* ${data.tipo}`,
+    `🔖 *Radicado:* ${data.radicado}`,
+    `📅 *Radicada el:* ${fecha}`,
+    `⏳ *Respuesta estimada:* ${data.tiempoRespuesta}`,
+    '',
+    '📝 *Asunto*',
+    data.asunto,
+    '',
+    '💬 *Detalle*',
+    detalleCitado,
+    ...(contacto.length ? ['', '👤 *Mis datos de contacto*', ...contacto] : []),
+    '',
+    SEPARADOR,
+    '_Quedo pendiente de su respuesta. ¡Muchas gracias!_ 💜',
   ];
 
-  return lineas.filter((linea) => linea !== null).join('\n');
+  return lineas.join('\n');
 }
