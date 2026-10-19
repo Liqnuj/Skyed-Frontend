@@ -13,6 +13,28 @@ export function setToken(token: string | null) {
   else localStorage.removeItem(TOKEN_KEY);
 }
 
+/**
+ * Un 500 con HTML o un 204 sin cuerpo hacían fallar res.json() con un error
+ * críptico. Además, PHP a veces escribe una advertencia ("<b>Warning</b>:
+ * ...") ANTES del JSON de Laravel; en ese caso se lee el JSON que viene
+ * después, para mostrar el mensaje real en vez de "Error en la petición".
+ */
+function leerJson(texto: string): any {
+  try {
+    return JSON.parse(texto);
+  } catch {
+    const inicio = texto.indexOf('{');
+    if (inicio > 0) {
+      try {
+        return JSON.parse(texto.slice(inicio));
+      } catch {
+        // No era JSON después de todo.
+      }
+    }
+    return {};
+  }
+}
+
 export async function apiFetch(path: string, options: RequestInit = {}) {
   const token = getToken();
   const isFormData = options.body instanceof FormData;
@@ -26,9 +48,7 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
       ...options.headers,
     },
   });
-  // Un 500 con HTML o un 204 sin cuerpo hacían fallar res.json() con un
-  // error críptico ("Unexpected token <"); así el mensaje sigue siendo útil.
-  const data = await res.json().catch(() => ({}));
+  const data = leerJson(await res.text());
   if (!res.ok) {
     // Laravel responde "Too Many Attempts." en inglés cuando se pasa el
     // límite de intentos (por ejemplo 3 logins fallidos en un minuto).
