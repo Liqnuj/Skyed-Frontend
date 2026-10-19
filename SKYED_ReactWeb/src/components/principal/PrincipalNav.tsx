@@ -7,6 +7,14 @@ export default function PrincipalNav() {
   const [open, setOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
+  // Un admin puede serlo de Deportivo, de Social o de ambos: se muestra un
+  // acceso por cada panel (antes había un solo link a /admin, que no existía).
+  const panelesAdmin = [
+    user?.roles.includes('adminDeportivo') && { to: '/deportivo/admin', label: 'Panel Deportivo' },
+    user?.roles.includes('adminSocial') && { to: '/social/admin', label: 'Panel Social' },
+  ].filter((p): p is { to: string; label: string } => Boolean(p));
+  const etiquetaPanel = (label: string) => (panelesAdmin.length === 1 ? 'Panel Admin' : label);
+
   useEffect(() => {
     if (!userMenuOpen) return;
     const timer = setTimeout(() => setUserMenuOpen(false), 5000);
@@ -23,11 +31,11 @@ export default function PrincipalNav() {
         
         <div className="nav-links">
           {/* === NUEVO: Renderizado condicional del Panel Admin (Escritorio) === */}
-          {user?.role === 'admin' && (
-            <Link to="/admin" style={{ display: 'flex', alignItems: 'center', gap: '6px', marginRight: '1rem', fontWeight: '600', color: 'inherit', textDecoration: 'none' }}>
-              <i className="ti ti-dashboard" /> Panel Admin
+          {panelesAdmin.map((panel) => (
+            <Link key={panel.to} to={panel.to} style={{ display: 'flex', alignItems: 'center', gap: '6px', marginRight: '1rem', fontWeight: '600', color: 'inherit', textDecoration: 'none' }}>
+              <i className="ti ti-dashboard" /> {etiquetaPanel(panel.label)}
             </Link>
-          )}
+          ))}
         </div>
 
         {user ? (
@@ -51,16 +59,17 @@ export default function PrincipalNav() {
 
       <div className={`mobile-menu${open ? ' open' : ''}`}>
         {/* === NUEVO: Renderizado condicional del Panel Admin (Móvil) === */}
-        {user?.role === 'admin' && (
-          <Link 
-            to="/admin" 
-            className="mobile-login" 
-            style={{ marginBottom: '10px', backgroundColor: '#3b82f6' }} 
+        {panelesAdmin.map((panel) => (
+          <Link
+            key={panel.to}
+            to={panel.to}
+            className="mobile-login"
+            style={{ marginBottom: '10px', backgroundColor: '#3b82f6' }}
             onClick={() => setOpen(false)}
           >
-            <i className="ti ti-dashboard" /> Panel Admin
+            <i className="ti ti-dashboard" /> {etiquetaPanel(panel.label)}
           </Link>
-        )}
+        ))}
 
         {user ? (
           <button

@@ -27,6 +27,8 @@ import Reserve from './pages/social/Reserve';
 import PQR from './pages/social/PQR';
 import Perfil from './pages/social/Perfil';
 import Admin from './pages/social/Admin';
+import AdminDeportivo from './pages/deportivo/Admin';
+import AdminRedirect from './components/AdminRedirect';
 import './styles/global.css';
 import './styles/principal/principal.css';
 import './styles/social/social.css';
@@ -70,6 +72,7 @@ function App(){
             <Route path="/social/perfil" element={<Perfil/>}/>
             <Route element={<AdminProtectedRoute />}>
               <Route path="/social/admin" element={<Admin/>}/>
+              <Route path="/deportivo/admin" element={<AdminDeportivo/>}/>
               <Route path="/admin/usuarios" element={<UsersRoles/>}/>
             </Route>
 

@@ -26,6 +26,15 @@ const pqrTypes: PqrType[] = [
   { type: 'felicitacion', label: 'Felicitación', icon: '🌟', name: 'Felicitación', desc: 'Reconocimiento al equipo o a un servicio que superó tus expectativas.' },
 ];
 
+// Mismos plazos que muestra el cuadro "Tiempos de respuesta" de esta página.
+const TIEMPO_RESPUESTA: Record<PqrTypeKey, string> = {
+  peticion: '3 días hábiles',
+  queja: '5 días hábiles',
+  reclamo: '5 días hábiles',
+  sugerencia: 'acuse de recibo en 2 días hábiles',
+  felicitacion: '¡siempre bien recibida!',
+};
+
 function PQRForm() {
   const { user } = useAuth();
   const [selectedType, setSelectedType] = useState<PqrTypeKey>('peticion');
@@ -33,6 +42,7 @@ function PQRForm() {
   const [desc, setDesc] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [radicado, setRadicado] = useState('');
+  const [fechaRadicado, setFechaRadicado] = useState<Date | null>(null);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ msg: string; icon: string; show: boolean }>({ msg: '', icon: '✓', show: false });
 
@@ -60,6 +70,7 @@ function PQRForm() {
         }),
       });
       setRadicado(`SS-PQR-${res.pqr.id_pqr ?? res.pqr.id}`);
+      setFechaRadicado(new Date());
       setSubmitted(true);
       window.setTimeout(() => {
         document.getElementById('pqrConfirm')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -80,9 +91,13 @@ function PQRForm() {
     return buildWhatsAppLink(
       buildPqrWhatsAppMessage({
         tipo: current.label,
+        icono: current.icon,
         radicado,
-        nombre: user?.name?.split(' ')[0] ?? '',
-        apellido: user?.name?.split(' ').slice(1).join(' ') ?? '',
+        nombreCompleto: user?.name ?? '',
+        correo: user?.email,
+        telefono: user?.telefono,
+        fecha: fechaRadicado ?? new Date(),
+        tiempoRespuesta: TIEMPO_RESPUESTA[selectedType],
         asunto: asunto.trim(),
         descripcion: desc.trim(),
       }),

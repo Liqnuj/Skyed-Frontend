@@ -28,6 +28,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useAccessibility } from "../../context/AccessibilityContext";
 import AccessibilityWidget from "../../components/shared/AccessibilityWidget";
 import { apiFetch } from "../../services/api";
+import { prepararImagen } from "../../utils/prepararImagen";
 import "../../styles/social/Admin.css";
 
 type Section =
@@ -221,21 +222,24 @@ function ImageUploadField({
   const [dragOver, setDragOver] = useState(false);
   const [imgError, setImgError] = useState(false);
 
-  const handleFile = async (file?: File | null) => {
-    if (!file || uploading) return;
+  const handleFile = async (original?: File | null) => {
+    if (!original || uploading) return;
 
-    if (!file.type.startsWith("image/")) {
+    if (!original.type.startsWith("image/")) {
       onError("Selecciona un archivo de imagen (JPG, PNG o WEBP).");
-      return;
-    }
-    if (file.size > MAX_IMAGEN_MB * 1024 * 1024) {
-      onError(`La imagen no debe superar ${MAX_IMAGEN_MB} MB.`);
       return;
     }
 
     setImgError(false);
     setUploading(true);
     try {
+      // FIX: PHP acepta 2 MB por defecto; una foto de celular (3-6 MB)
+      // fallaba con "The imagen failed to upload". Se reduce antes de subir.
+      const file = await prepararImagen(original);
+      if (file.size > MAX_IMAGEN_MB * 1024 * 1024) {
+        onError(`La imagen no debe superar ${MAX_IMAGEN_MB} MB.`);
+        return;
+      }
       const body = new FormData();
       body.append("imagen", file);
       body.append("carpeta", carpeta);
