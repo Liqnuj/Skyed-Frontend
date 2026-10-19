@@ -7,6 +7,19 @@ interface ChatMessage {
   id: number;
   from: 'user' | 'bot';
   text: string;
+  /** Aviso de error de la interfaz, no una respuesta real de la IA. */
+  isError?: boolean;
+}
+
+/**
+ * Muestra **negritas** como <strong> sin usar dangerouslySetInnerHTML
+ * (el texto viene de la IA, así que nunca se interpreta como HTML).
+ * El prompt ya le pide texto plano; esto es por si igual las manda.
+ */
+function renderTexto(text: string) {
+  return text.split(/\*\*(.+?)\*\*/g).map((parte, i) =>
+    i % 2 === 1 ? <strong key={i}>{parte}</strong> : parte,
+  );
 }
 
 const MENSAJE_BIENVENIDA =
@@ -87,10 +100,12 @@ export default function SkaiWidget() {
     const userMsg: ChatMessage = { id: nextId.current++, from: 'user', text: trimmed };
     // El mensaje de bienvenida (id 0) es solo un saludo fijo de la
     // interfaz, no una respuesta real de la IA, así que no se manda
-    // como parte del historial de la conversación.
+    // como parte del historial de la conversación. Tampoco los avisos de
+    // error: si se mandaran, la IA "creería" que ella misma dijo "No pude
+    // conectar..." y lo repetiría o se confundiría en la siguiente respuesta.
     const historyParaEnviar: SkaiTurn[] = [
       ...messages
-        .filter((m) => m.id !== 0)
+        .filter((m) => m.id !== 0 && !m.isError)
         .map((m): SkaiTurn => ({ role: m.from === 'bot' ? 'assistant' : 'user', content: m.text })),
       { role: 'user', content: trimmed },
     ];
@@ -103,19 +118,13 @@ export default function SkaiWidget() {
       const reply = await preguntarSkai(trimmed, context, historyParaEnviar);
       setMessages((prev) => [...prev, { id: nextId.current++, from: 'bot', text: reply }]);
     } catch (err) {
-      // Mostramos el motivo real del error (viene de preguntarSkai) en
-      // vez de un texto genérico, para poder diagnosticar rápido si
-      // falta configurar la key de Gemini, si el modelo no existe, etc.
-      // Cuando esto ya esté estable en producción, esto se puede volver
-      // a cambiar por un mensaje genérico si se prefiere.
-      const motivo = err instanceof Error ? err.message : 'No pude conectar con el asistente.';
+      // preguntarSkai ya convierte cada fallo en un mensaje entendible
+      // para el usuario (y añade el detalle técnico solo en desarrollo).
+      const motivo =
+        err instanceof Error ? err.message : 'SKAI no pudo responder en este momento. Intenta de nuevo.';
       setMessages((prev) => [
         ...prev,
-        {
-          id: nextId.current++,
-          from: 'bot',
-          text: `No pude conectar con el asistente. (${motivo})`,
-        },
+        { id: nextId.current++, from: 'bot', text: motivo, isError: true },
       ]);
     } finally {
       setIsTyping(false);
@@ -169,7 +178,7 @@ export default function SkaiWidget() {
         <div className="skyed-messages" ref={messagesRef}>
           {messages.map((m) => (
             <div key={m.id} className={`skyed-msg from-${m.from}`}>
-              {m.text}
+              {m.from === 'bot' ? renderTexto(m.text) : m.text}
             </div>
           ))}
           {isTyping && (

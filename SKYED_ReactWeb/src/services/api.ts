@@ -26,8 +26,17 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
       ...options.headers,
     },
   });
-  const data = await res.json();
+  // Un 500 con HTML o un 204 sin cuerpo hacían fallar res.json() con un
+  // error críptico ("Unexpected token <"); así el mensaje sigue siendo útil.
+  const data = await res.json().catch(() => ({}));
   if (!res.ok) {
+    // Laravel responde "Too Many Attempts." en inglés cuando se pasa el
+    // límite de intentos (por ejemplo 3 logins fallidos en un minuto).
+    if (res.status === 429) {
+      throw new Error(data.message && data.message !== 'Too Many Attempts.'
+        ? data.message
+        : 'Demasiados intentos seguidos. Espera un minuto e inténtalo de nuevo.');
+    }
     if (res.status === 422 && data.errors) {
       const detalle = Object.values(data.errors).flat().join(' ');
       throw new Error(detalle || data.message || 'Error en la petición');

@@ -4,6 +4,8 @@ import SocialWrapper from '../../components/social/SocialWrapper';
 import CanvasParticles from '../../components/social/CanvasParticles';
 import Protected from '../../components/Protected';
 import { apiFetch } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
+import { buildPqrWhatsAppMessage, buildWhatsAppLink } from '../../utils/whatsapp';
 
 type PqrTypeKey = 'peticion' | 'queja' | 'reclamo' | 'sugerencia' | 'felicitacion';
 
@@ -24,6 +26,7 @@ const pqrTypes: PqrType[] = [
 ];
 
 function PQRForm() {
+  const { user } = useAuth();
   const [selectedType, setSelectedType] = useState<PqrTypeKey>('peticion');
   const [asunto, setAsunto] = useState('');
   const [desc, setDesc] = useState('');
@@ -67,12 +70,22 @@ function PQRForm() {
     }
   }
 
-  function submitPQR(e: FormEvent) {
-    e.preventDefault();
-    const resultado = validarYPrepararEnvio();
-    if (!resultado) return;
-    mostrarConfirmacion(resultado.code, resultado.link);
-    window.open(resultado.link, '_blank', 'noopener,noreferrer');
+  // FIX: el merge 26cbb53 dejó aquí una segunda función submitPQR (de la
+  // versión anterior por WhatsApp) que reemplazaba a la de arriba y llamaba
+  // a funciones que ya no existen, así que "Radicar solicitud" no hacía
+  // nada. Ahora se radica en el backend (lo ve el admin en su panel) y el
+  // WhatsApp queda como seguimiento opcional en la confirmación.
+  function enlaceWhatsApp() {
+    return buildWhatsAppLink(
+      buildPqrWhatsAppMessage({
+        tipo: current.label,
+        radicado,
+        nombre: user?.name?.split(' ')[0] ?? '',
+        apellido: user?.name?.split(' ').slice(1).join(' ') ?? '',
+        asunto: asunto.trim(),
+        descripcion: desc.trim(),
+      }),
+    );
   }
 
   function resetPQR() {
@@ -192,6 +205,17 @@ function PQRForm() {
                     <div className="status-step"><div className="status-dot">3</div><div className="status-label">En proceso</div></div>
                     <div className="status-step"><div className="status-dot">4</div><div className="status-label">Resuelta</div></div>
                   </div>
+                  <a
+                    className="pqr-whatsapp-btn"
+                    href={enlaceWhatsApp()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Hacer seguimiento por WhatsApp
+                  </a>
+                  <p className="pqr-whatsapp-hint">
+                    Opcional: abre un chat con nuestro equipo con tu radicado y el detalle ya escritos.
+                  </p>
                   <button className="btn-primary" onClick={resetPQR} style={{ fontSize: '.88rem' }}>Radicar otra solicitud</button>
                 </div>
               )}
