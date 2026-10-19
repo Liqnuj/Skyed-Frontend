@@ -25,6 +25,7 @@ import Venues from './pages/social/Venues';
 import AboutSocial from './pages/social/nosotros';
 import Reserve from './pages/social/Reserve';
 import PQR from './pages/social/PQR';
+import Perfil from './pages/social/Perfil';
 import Admin from './pages/social/Admin';
 import './styles/global.css';
 import './styles/principal/principal.css';
@@ -66,7 +67,7 @@ function App(){
             <Route path="/social/nosotros" element={<AboutSocial/>}/>
             <Route path="/social/reservar" element={<Reserve/>}/>
             <Route path="/social/pqr" element={<PQR/>}/>
-
+            <Route path="/social/perfil" element={<Perfil/>}/>
             <Route element={<AdminProtectedRoute />}>
               <Route path="/social/admin" element={<Admin/>}/>
               <Route path="/admin/usuarios" element={<UsersRoles/>}/>
