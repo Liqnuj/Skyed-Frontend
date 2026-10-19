@@ -24,7 +24,7 @@ interface PqrWhatsAppData {
 
 export function buildPqrWhatsAppMessage(data: PqrWhatsAppData): string {
   const lineas = [
-    `Hola, soy ${data.nombre} ${data.apellido}. Quiero radicar la siguiente solicitud (*${data.tipo}*) en SkyedSocial.`,
+    `Hola, soy ${data.nombre} ${data.apellido}. Te escribo para hacer seguimiento a mi solicitud (*${data.tipo}*) radicada en SkyedSocial.`,
     '',
     `*Radicado:* ${data.radicado}`,
     `*Asunto:* ${data.asunto}`,
