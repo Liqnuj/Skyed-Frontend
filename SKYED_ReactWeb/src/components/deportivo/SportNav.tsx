@@ -62,7 +62,7 @@ const menuRef = useRef<HTMLDivElement>(null);
               </button>
               {userMenuOpen && (
                 <div className="user-dropdown">
-                  <button onClick={irAMiPanel}><i className="ti ti-layout-dashboard" aria-hidden="true" /> Ir a mi panel</button>
+                  <button onClick={irAMiPanel}><i className="ti ti-layout-dashboard" aria-hidden="true" /> Perfil</button>
                   <button onClick={() => { setUserMenuOpen(false); logout(); navigate('/'); }}><i className="ti ti-logout" aria-hidden="true" /> Cerrar sesión</button>
                 </div>
               )}

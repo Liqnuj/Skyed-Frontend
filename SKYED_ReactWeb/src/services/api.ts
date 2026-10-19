@@ -27,6 +27,12 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
     },
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message ?? 'Error en la petición');
+  if (!res.ok) {
+    if (res.status === 422 && data.errors) {
+      const detalle = Object.values(data.errors).flat().join(' ');
+      throw new Error(detalle || data.message || 'Error en la petición');
+    }
+    throw new Error(data.message ?? 'Error en la petición');
+  }
   return data;
 }
