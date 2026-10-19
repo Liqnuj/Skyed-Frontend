@@ -3,12 +3,15 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import PrincipalWrapper from '../../components/principal/PrincipalWrapper';
 import AuthTopbar from '../../components/principal/AuthTopbar';
+import TermsModal from '../../components/shared/TermsModal';
 
 export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  
+
+  const [termsOpen, setTermsOpen] = useState(false);
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
@@ -180,11 +183,17 @@ export default function LoginPage() {
       <footer className="footer">
         <span>© 2026 SKYED · Sogamoso, Boyacá, Colombia</span>
         <div className="footer-links">
-          <a href="#">Términos</a>
-          <a href="#">Privacidad</a>
+          <button type="button" onClick={() => setTermsOpen(true)}>Términos</button>
+          <button type="button" onClick={() => setTermsOpen(true)}>Privacidad</button>
           <a href="#">Soporte</a>
         </div>
       </footer>
+
+      <TermsModal
+        isOpen={termsOpen}
+        onClose={() => setTermsOpen(false)}
+        variant="principal"
+      />
 
       {/* =========================================
           TOAST DE ÉXITO Y ERROR ANIMADOS

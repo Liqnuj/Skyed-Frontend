@@ -950,13 +950,20 @@
 .mod-deportivo .sky-copy span{ color: #5c7a96; }
 
 .mod-deportivo .sky-bottom-links{ display: flex; gap: 20px; }
-.mod-deportivo .sky-bottom-links a{
+.mod-deportivo .sky-bottom-links a,
+.mod-deportivo .sky-bottom-link-btn{
   font-size: calc(12px * var(--fs-scale, 1));
   color: #3a5068;
   text-decoration: none;
   transition: color 0.15s;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
 }
-.mod-deportivo .sky-bottom-links a:hover{ color: #7a96b2; }
+.mod-deportivo .sky-bottom-links a:hover,
+.mod-deportivo .sky-bottom-link-btn:hover{ color: #7a96b2; }
 
 @media (max-width: 600px) {
 .mod-deportivo .sky-footer-top{ grid-template-columns: 1fr; }
@@ -2363,6 +2370,7 @@
 }
 
 .mod-deportivo.dark-mode .sky-bottom-links a,
+.mod-deportivo.dark-mode .sky-bottom-link-btn,
 .mod-deportivo.dark-mode .sky-copy {
   color: #91a6b6;
 }
