@@ -1,7 +1,7 @@
 # Dependencias de Node y caché de Vite
 node_modules/
 SKYED_ReactWeb/node_modules/
-.vite/
+node_modules/.vite/
 
 # Archivos de logs
 npm-debug.log*
