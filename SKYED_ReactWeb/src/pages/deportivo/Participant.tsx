@@ -5,7 +5,6 @@ import SportWrapper from '../../components/deportivo/SportWrapper';
 import { useAuth } from '../../context/AuthContext';
 import { useAccessibility } from '../../context/AccessibilityContext';
 import { apiFetch } from '../../services/api';
-import { prepararImagen } from '../../utils/prepararImagen';
 import '../../styles/deportivo/participante.css';
 import { createPortal } from 'react-dom';
 
@@ -143,12 +142,10 @@ const [subiendoFoto, setSubiendoFoto] = useState(false);
 const handleFotoClick = () => fileInputRef.current?.click();
 
 const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-  const original = e.target.files?.[0];
+  const file = e.target.files?.[0];
   e.target.value = '';
-  if (!original) return;
-  if (!original.type.startsWith('image/')) return;
-  // Se reduce antes de subir: PHP acepta solo 2 MB por defecto.
-  const file = await prepararImagen(original);
+  if (!file) return;
+  if (!file.type.startsWith('image/')) return;
   if (file.size > 3 * 1024 * 1024) return;
 
   setSubiendoFoto(true);
@@ -499,16 +496,14 @@ function AjustesTab() {
   const handleFotoClick = () => fileInputRef.current?.click();
 
   const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const original = e.target.files?.[0];
+    const file = e.target.files?.[0];
     e.target.value = '';
-    if (!original) return;
+    if (!file) return;
 
-    if (!original.type.startsWith('image/')) {
+    if (!file.type.startsWith('image/')) {
       setDatosMsg({ tipo: 'error', texto: 'El archivo debe ser una imagen.', id: Date.now() });
       return;
     }
-    // Se reduce antes de subir: PHP acepta solo 2 MB por defecto.
-    const file = await prepararImagen(original);
     if (file.size > 3 * 1024 * 1024) {
       setDatosMsg({ tipo: 'error', texto: 'La imagen no debe superar 3MB.', id: Date.now() });
       return;

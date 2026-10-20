@@ -23,53 +23,35 @@ export async function preguntarSkai(
 ): Promise<string> {
   const token = getToken();
 
-  // El backend puede tardar hasta ~45 s en el peor caso (modelo principal
-  // agotado + modelo de respaldo); más que eso es que algo se colgó.
-  const controller = new AbortController();
-  const timer = window.setTimeout(() => controller.abort(), 60000);
-
-  let res: Response;
-  try {
-    res = await fetch(`${apiConfig.baseURL}/asistente`, {
-      method: 'POST',
-      signal: controller.signal,
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify({
-        message,
-        context,
-        // Enviamos solo el historial previo a este mensaje; el backend
-        // además limita cuántos turnos usa.
-        history: history.slice(0, -1),
-      }),
-    });
-  } catch {
-    // Servidor apagado, sin internet o se agotó la espera.
-    throw new Error('No pude conectarme con SKAI. Revisa tu conexión e intenta de nuevo.');
-  } finally {
-    window.clearTimeout(timer);
-  }
+  const res = await fetch(`${apiConfig.baseURL}/asistente`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({
+      message,
+      context,
+      // Enviamos solo el historial previo a este mensaje; el backend
+      // además limita cuántos turnos usa.
+      history: history.slice(0, -1),
+    }),
+  });
 
   const data = await res.json().catch(() => null);
 
   if (!res.ok || !data || data.error) {
-    let motivo: string;
-    if (res.status === 429) {
-      motivo = 'Enviaste muchos mensajes seguidos. Espera un minuto y vuelve a escribirme.';
-    } else if (data?.error) {
-      motivo = data.error;
-    } else {
-      motivo = 'SKAI no pudo responder en este momento. Intenta de nuevo en unos segundos.';
-    }
-
-    // El detalle técnico (lo manda el backend solo con APP_DEBUG=true)
-    // se muestra únicamente en desarrollo, para diagnosticar rápido.
-    if (import.meta.env.DEV && data?.detail) {
-      motivo += ` (${data.detail})`;
-    }
+    // Mientras se termina de configurar el asistente en el backend,
+    // mostramos el motivo real (por ejemplo "Falta GEMINI_API_KEY" o
+    // el error que devolvió Gemini) en vez de un mensaje genérico, así
+    // se puede diagnosticar sin tener que abrir las herramientas de
+    // desarrollador del navegador.
+    const motivo = data?.error
+      ? data.detail
+        ? `${data.error} (${data.detail})`
+        : data.error
+      : `Error HTTP ${res.status} al llamar /asistente`;
 
     throw new Error(motivo);
   }

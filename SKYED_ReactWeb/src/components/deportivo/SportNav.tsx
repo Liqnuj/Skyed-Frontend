@@ -63,9 +63,6 @@ const menuRef = useRef<HTMLDivElement>(null);
               {userMenuOpen && (
                 <div className="user-dropdown">
                   <button onClick={irAMiPanel}><i className="ti ti-layout-dashboard" aria-hidden="true" /> Perfil</button>
-                  {user.roles.includes('adminDeportivo') && (
-                    <button onClick={() => { setUserMenuOpen(false); navigate('/deportivo/admin'); }}><i className="ti ti-settings" aria-hidden="true" /> Panel admin</button>
-                  )}
                   <button onClick={() => { setUserMenuOpen(false); logout(); navigate('/'); }}><i className="ti ti-logout" aria-hidden="true" /> Cerrar sesión</button>
                 </div>
               )}
