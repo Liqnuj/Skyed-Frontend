@@ -1,0 +1,117 @@
+/* =========================================================
+   SKYED DEPORTIVO - ADMIN (extras)
+   Complementa styles/deportivo/Admin.css (la base del panel, con la
+   paleta deportiva) con lo que solo existe en este panel: control de
+   acceso por QR, categorías de un evento, filtros y estados propios.
+   ========================================================= */
+
+/* Tonos que en la base quedaron con el morado del panel social */
+.deportivo-admin .admin-header .icon-btn { color: #d6e9ee !important; }
+.deportivo-admin .admin-role { background: rgba(44, 156, 175, .12) !important; }
+.deportivo-admin .back-link { color: #d6e9ee !important; }
+.deportivo-admin .sidebar-brand-text span,
+.deportivo-admin .sidebar-brand > span,
+.deportivo-admin .admin-user span { color: #7d93ab !important; }
+.deportivo-admin .logout-btn { color: #9fb2c6 !important; }
+.deportivo-admin .admin-nav-item.active { box-shadow: 0 7px 20px rgba(44, 156, 175, .28) !important; }
+.deportivo-admin .admin-sidebar ::selection { background: rgba(44, 156, 175, .55); }
+
+/* Estados de pagos, QR y resultados que la base no tiene */
+.deportivo-admin .admin-badge.oficial {
+  background: #dcfce7 !important;
+  color: #15803d !important;
+}
+
+.deportivo-admin .admin-badge.usado {
+  background: #dbeafe !important;
+  color: #1d4ed8 !important;
+}
+
+.deportivo-admin .admin-badge.descalificado {
+  background: #fee2e2 !important;
+  color: #b91c1c !important;
+}
+
+/* ---------- Filtros sobre las tablas ---------- */
+.deportivo-admin .filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+/* ---------- Control de acceso (QR) ---------- */
+.deportivo-admin .qr-check {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.deportivo-admin .qr-check .admin-card { padding: 22px; }
+
+.deportivo-admin .qr-check-form {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.deportivo-admin .qr-check-form input {
+  flex: 1;
+  min-width: 0;
+  padding: 11px 14px;
+  border: 1px solid var(--admin-line);
+  border-radius: 12px;
+  background: var(--admin-surface-2);
+  color: var(--admin-text);
+  font-family: "Space Mono", ui-monospace, monospace;
+  letter-spacing: .02em;
+}
+
+.deportivo-admin .qr-video {
+  width: 100%;
+  max-height: 260px;
+  margin-top: 14px;
+  border-radius: 14px;
+  background: #000;
+  object-fit: cover;
+}
+
+.deportivo-admin .qr-result {
+  border-radius: 14px;
+  padding: 18px;
+  border: 1px solid var(--admin-line);
+  background: var(--admin-surface-2);
+}
+
+.deportivo-admin .qr-result.ok { border-color: #86efac; background: #f0fdf4; color: #14532d; }
+.deportivo-admin .qr-result.error { border-color: #fca5a5; background: #fef2f2; color: #7f1d1d; }
+.deportivo-admin.dark .qr-result.ok { background: rgba(22, 101, 52, .25); color: #bbf7d0; }
+.deportivo-admin.dark .qr-result.error { background: rgba(127, 29, 29, .3); color: #fecaca; }
+
+.deportivo-admin .qr-result strong { display: block; font-size: 1.05rem; margin-bottom: 6px; }
+.deportivo-admin .qr-result p { margin: 2px 0; }
+
+/* ---------- Categorías dentro del modal de un evento ---------- */
+.deportivo-admin .cat-list {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.deportivo-admin .cat-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--admin-line);
+  border-radius: 12px;
+  background: var(--admin-surface-2);
+}
+
+.deportivo-admin .cat-item span { color: var(--admin-muted); font-size: .85em; }
+
+@media (max-width: 900px) {
+  .deportivo-admin .qr-check { grid-template-columns: 1fr; }
+}
