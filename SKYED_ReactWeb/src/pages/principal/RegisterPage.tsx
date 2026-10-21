@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import PrincipalWrapper from '../../components/principal/PrincipalWrapper';
 import AuthTopbar from '../../components/principal/AuthTopbar';
 import TermsModal from '../../components/shared/TermsModal';
+import { errorContrasena, normalizarCorreo } from '../../utils/validaciones';
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -72,6 +73,21 @@ export default function RegisterPage() {
         return;
       }
 
+      // Mismas reglas que el backend: antes la barra de seguridad se ponía
+      // roja pero el formulario dejaba registrarse con "aaaaaaaa", y el
+      // documento o teléfono incompletos llegaban a la API.
+      const motivoFormato =
+        documento.length < 5 || documento.length > 12
+          ? 'El número de documento debe tener entre 5 y 12 dígitos.'
+          : telefono.length < 7 || telefono.length > 15
+            ? 'El teléfono debe tener entre 7 y 15 dígitos.'
+            : errorContrasena(password);
+      if (motivoFormato) {
+        setError(motivoFormato);
+        setTimeout(() => setError(''), 4000);
+        return;
+      }
+
       if (password !== confirm) {
         setError('Las contraseñas no coinciden.');
         setTimeout(() => setError(''), 4000);
@@ -108,7 +124,7 @@ export default function RegisterPage() {
           nombre_u: nombre,
           apellido_u: apellido,
           telefono_u: telefono,
-          correo_u: email,
+          correo_u: normalizarCorreo(email),
           fecha_nacimiento_u: fechaNac,
           contrasena_u: password,
           contrasena_u_confirmation: confirm
@@ -117,7 +133,9 @@ export default function RegisterPage() {
         setSuccessMsg('¡Registro exitoso! Bienvenido a SKYED.');
 
         setTimeout(() => {
-          navigate('/login');
+          // El registro ya deja la sesión iniciada (AuthContext guarda el
+          // token), así que no tiene sentido mandarlo a /login.
+          navigate('/', { replace: true });
         }, 2500);
 
       } catch (err) {
@@ -229,7 +247,7 @@ export default function RegisterPage() {
                     id="documento"
                     className="form-input"
                     placeholder={tipoDocumento ? 'Escribe tu número' : 'Selecciona primero el tipo'}
-                    maxLength={20}
+                    maxLength={12}
                     disabled={!tipoDocumento}
                     required
                     value={documento}
