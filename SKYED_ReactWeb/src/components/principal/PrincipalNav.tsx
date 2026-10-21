@@ -1,25 +1,41 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import AccountMenu from '../shared/AccountMenu';
+import type { GrupoMenu } from '../shared/AccountMenu';
+import PanelesAdmin from './PanelesAdmin';
 
 export default function PrincipalNav() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
-  // Un admin puede serlo de Deportivo, de Social o de ambos: se muestra un
-  // acceso por cada panel (antes había un solo link a /admin, que no existía).
-  const panelesAdmin = [
-    user?.roles.includes('adminDeportivo') && { to: '/deportivo/admin', label: 'Panel Deportivo' },
-    user?.roles.includes('adminSocial') && { to: '/social/admin', label: 'Panel Social' },
-  ].filter((p): p is { to: string; label: string } => Boolean(p));
-  const etiquetaPanel = (label: string) => (panelesAdmin.length === 1 ? 'Panel Admin' : label);
+  const esAdminDeportivo = user?.roles.includes('adminDeportivo') ?? false;
+  const esAdminSocial = user?.roles.includes('adminSocial') ?? false;
 
-  useEffect(() => {
-    if (!userMenuOpen) return;
-    const timer = setTimeout(() => setUserMenuOpen(false), 5000);
-    return () => clearTimeout(timer);
-  }, [userMenuOpen]);
+  // Menú de la cuenta: los dos módulos y, si aplica, sus paneles de
+  // administración (en celular es el único acceso a esos paneles).
+  const grupos: GrupoMenu[] = [
+    {
+      titulo: 'Mis espacios',
+      opciones: [
+        { to: '/deportivo/perfil', icono: 'ti-bike', titulo: 'SKYED Deportivo', detalle: 'Mi perfil, inscripciones y QR', color: 'deportivo' },
+        { to: '/social/perfil', icono: 'ti-confetti', titulo: 'SkyedSocial', detalle: 'Mis reservas y PQR', color: 'social' },
+      ],
+    },
+    {
+      titulo: 'Administración',
+      opciones: [
+        ...(esAdminDeportivo
+          ? [{ to: '/deportivo/admin', icono: 'ti-shield-check', titulo: 'Panel Deportivo', detalle: 'Eventos, pagos y acceso con QR', destacada: true, color: 'deportivo' as const }]
+          : []),
+        ...(esAdminSocial
+          ? [{ to: '/social/admin', icono: 'ti-shield-check', titulo: 'Panel Social', detalle: 'Eventos, reservas y PQRS', destacada: true, color: 'social' as const }]
+          : []),
+      ],
+    },
+  ];
+
+  const rol = esAdminDeportivo || esAdminSocial ? 'Administrador' : 'Miembro SKYED';
 
   return (
     <>
@@ -28,60 +44,32 @@ export default function PrincipalNav() {
           <div className="nav-gem"><img src="/assets/principal/icon1.png" alt="logol" /></div>
           <span>SKY<em>ED</em></span>
         </div>
-        
-        <div className="nav-links">
-          {/* === NUEVO: Renderizado condicional del Panel Admin (Escritorio) === */}
-          {panelesAdmin.map((panel) => (
-            <Link key={panel.to} to={panel.to} style={{ display: 'flex', alignItems: 'center', gap: '6px', marginRight: '1rem', fontWeight: '600', color: 'inherit', textDecoration: 'none' }}>
-              <i className="ti ti-dashboard" /> {etiquetaPanel(panel.label)}
-            </Link>
-          ))}
-        </div>
+
+        {/* Accesos a los paneles de administración (solo administradores). */}
+        <PanelesAdmin />
 
         {user ? (
-          <button
-            className={`nav-user${userMenuOpen ? ' nav-user--logout' : ''}`}
-            onClick={() => (userMenuOpen ? logout() : setUserMenuOpen(true))}
-          >
-            <i className="ti ti-user-circle" />
-            <span>{userMenuOpen ? 'Cerrar sesión' : user.name}</span>
-          </button>
+          <AccountMenu tema="principal" grupos={grupos} rol={rol} alSalirIrA="/" />
         ) : (
           <Link to="/login" className="nav-login">
             <i className="ti ti-login" /> Iniciar sesión
           </Link>
         )}
-        
-        <button className="nav-menu-btn" aria-label="Abrir menú" onClick={() => setOpen((o) => !o)}>
-          <i className="ti ti-menu-2" />
-        </button>
+
+        {/* Con sesión, todo está en el menú de la cuenta: el botón de
+            hamburguesa solo hace falta para "Iniciar sesión" en celular. */}
+        {!user && (
+          <button className="nav-menu-btn" aria-label="Abrir menú" onClick={() => setOpen((o) => !o)}>
+            <i className="ti ti-menu-2" />
+          </button>
+        )}
       </nav>
 
-      <div className={`mobile-menu${open ? ' open' : ''}`}>
-        {/* === NUEVO: Renderizado condicional del Panel Admin (Móvil) === */}
-        {panelesAdmin.map((panel) => (
-          <Link
-            key={panel.to}
-            to={panel.to}
-            className="mobile-login"
-            style={{ marginBottom: '10px', backgroundColor: '#3b82f6' }}
-            onClick={() => setOpen(false)}
-          >
-            <i className="ti ti-dashboard" /> {etiquetaPanel(panel.label)}
-          </Link>
-        ))}
-
-        {user ? (
-          <button
-            className={`mobile-user${userMenuOpen ? ' mobile-user--logout' : ''}`}
-            onClick={() => (userMenuOpen ? logout() : setUserMenuOpen(true))}
-          >
-            {userMenuOpen ? 'Cerrar sesión' : user.name}
-          </button>
-        ) : (
+      {!user && (
+        <div className={`mobile-menu${open ? ' open' : ''}`}>
           <Link to="/login" className="mobile-login" onClick={() => setOpen(false)}>Iniciar sesión</Link>
-        )}
-      </div>
+        </div>
+      )}
     </>
   );
 }

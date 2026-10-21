@@ -741,6 +741,19 @@
 .mod-deportivo .nav-links a.active{background:var(--bg);color:var(--accent)}
 
 .mod-deportivo .nav-cta{display:flex;gap: 0.5emrem;align-items:center; margin-right: 12vw;}
+
+/* FIX: styles/global.css tiene una regla .nav-cta (para el botón "Reservar
+   ahora" de Social) que también pintaba este contenedor: fondo turquesa,
+   bordes de píldora y resplandor al pasar el mouse, que se veía como un
+   segundo botón detrás del de la cuenta. Aquí el contenedor es invisible. */
+.mod-deportivo .nav-cta,
+.mod-deportivo .nav-cta:hover {
+  background: none !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
 .mod-deportivo .btn{
   display:inline-flex;align-items:center;justify-content:center;gap:.4rem;
   padding:.50rem 1.1rem;border-radius:10px;font-weight:700; margin-left: auto; margin-right: auto;
@@ -2517,4 +2530,18 @@
   font-size: calc(12px * var(--fs-scale, 1));
   font-weight: 500;
   color: white;
+}
+/* =========================================================
+   FIX celular: la barra se salía de la pantalla (página con
+   desplazamiento lateral y el menú de la cuenta fuera de vista)
+   porque el logo tenía margin-left: 100px y .nav-cta un
+   margin-right: 12vw fijos.
+   ========================================================= */
+@media (max-width: 600px) {
+  .mod-deportivo .site-header .nav { padding: .75rem; gap: .5rem; }
+  .mod-deportivo .site-header .home-btn { left: 12px; width: 34px; height: 34px; }
+  .mod-deportivo .site-header .brand { font-size: calc(1rem * var(--fs-scale, 1)); gap: .4rem; min-width: 0; }
+  .mod-deportivo .site-header .brand span { font-size: calc(1rem * var(--fs-scale, 1)); }
+  .mod-deportivo .site-header .brand img { width: 32px; margin-left: 44px; }
+  .mod-deportivo .site-header .nav-cta { margin-right: 0; }
 }

@@ -1,0 +1,311 @@
+/* =========================================================
+   SKYED principal - Selector de paneles de administración
+   (components/principal/PanelesAdmin.tsx)
+   ========================================================= */
+
+.mod-principal .pa-wrap {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* ---------- Píldora de la barra ---------- */
+.mod-principal .pa-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .55rem 1rem;
+  border: 1px solid rgba(136, 39, 240, .28);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .55);
+  color: #2d1454;
+  font: inherit;
+  font-size: calc(13px * var(--fs-scale, 1));
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: background .2s ease, border-color .2s ease, transform .15s ease, box-shadow .2s ease;
+}
+
+.mod-principal .pa-trigger:hover,
+.mod-principal .pa-wrap.is-open .pa-trigger {
+  background: rgba(255, 255, 255, .85);
+  border-color: rgba(136, 39, 240, .55);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(136, 39, 240, .18);
+}
+
+.mod-principal .pa-trigger:focus-visible {
+  outline: 2px solid #8827f0;
+  outline-offset: 3px;
+}
+
+.mod-principal .pa-trigger .ti-shield-check {
+  font-size: calc(1rem * var(--fs-scale, 1));
+  color: #8827f0;
+}
+
+.mod-principal .pa-count {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #8827f0, #47a3cc);
+  color: #fff;
+  font-size: calc(10px * var(--fs-scale, 1));
+  font-weight: 800;
+}
+
+.mod-principal .pa-chevron {
+  font-size: calc(.9rem * var(--fs-scale, 1));
+  transition: transform .25s ease;
+}
+
+.mod-principal .pa-wrap.is-open .pa-chevron {
+  transform: rotate(180deg);
+}
+
+/* Variante de un solo panel (link directo) */
+.mod-principal .pa-trigger--deportivo .ti-shield-check { color: #2c9caf; }
+.mod-principal .pa-trigger--social .ti-shield-check { color: #9c02ae; }
+
+/* Modo oscuro de la barra */
+.mod-principal.dark-mode .pa-trigger {
+  background: rgba(255, 255, 255, .06);
+  border-color: rgba(255, 255, 255, .16);
+  color: #f3f0ff;
+}
+
+.mod-principal.dark-mode .pa-trigger:hover,
+.mod-principal.dark-mode .pa-wrap.is-open .pa-trigger {
+  background: rgba(255, 255, 255, .12);
+  border-color: rgba(167, 139, 250, .55);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .35);
+}
+
+.mod-principal.dark-mode .pa-trigger .ti-shield-check { color: #c4a5ff; }
+
+/* ---------- Panel con las tarjetas ---------- */
+.mod-principal .pa-panel {
+  position: absolute;
+  top: calc(100% + 14px);
+  left: 50%;
+  width: 470px;
+  max-width: calc(100vw - 24px);
+  padding: 1.1rem;
+  border: 1px solid rgba(15, 23, 42, .08);
+  border-radius: 22px;
+  background: #ffffff;
+  box-shadow: 0 28px 70px rgba(30, 12, 70, .22), 0 2px 8px rgba(30, 12, 70, .06);
+  z-index: 1200;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translate(-50%, -8px) scale(.98);
+  transform-origin: top center;
+  transition: opacity .2s ease, transform .2s ease, visibility .2s;
+}
+
+.mod-principal .pa-wrap.is-open .pa-panel {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translate(-50%, 0);
+}
+
+.mod-principal .pa-panel::before {
+  content: '';
+  position: absolute;
+  top: -7px;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  margin-left: -7px;
+  background: #ffffff;
+  border-left: 1px solid rgba(15, 23, 42, .08);
+  border-top: 1px solid rgba(15, 23, 42, .08);
+  border-radius: 3px;
+  transform: rotate(45deg);
+}
+
+.mod-principal .pa-head {
+  margin: .1rem .2rem .9rem;
+}
+
+.mod-principal .pa-kicker {
+  display: block;
+  font-size: calc(10.5px * var(--fs-scale, 1));
+  font-weight: 800;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  background: linear-gradient(90deg, #8827f0, #47a3cc);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.mod-principal .pa-head p {
+  margin-top: .25rem;
+  font-size: calc(13px * var(--fs-scale, 1));
+  color: #64748b;
+}
+
+.mod-principal .pa-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .8rem;
+}
+
+.mod-principal .pa-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, .08);
+  border-radius: 16px;
+  background: #f8fafc;
+  color: #0f172a;
+  text-decoration: none;
+  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+
+.mod-principal .pa-card:hover,
+.mod-principal .pa-card:focus-visible {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 34px rgba(15, 23, 42, .14);
+  outline: none;
+}
+
+.mod-principal .pa-card--deportivo:hover { border-color: rgba(44, 156, 175, .55); }
+.mod-principal .pa-card--social:hover { border-color: rgba(156, 2, 174, .45); }
+
+.mod-principal .pa-card-banner {
+  position: relative;
+  height: 62px;
+  display: flex;
+  align-items: flex-end;
+  padding: 0 .9rem;
+}
+
+.mod-principal .pa-card--deportivo .pa-card-banner {
+  background: linear-gradient(135deg, #091d36, #2c9caf);
+}
+
+.mod-principal .pa-card--social .pa-card-banner {
+  background: linear-gradient(135deg, #1a0a2e, #9c02ae);
+}
+
+.mod-principal .pa-card-logo {
+  width: 46px;
+  height: 46px;
+  margin-bottom: -20px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, .18);
+}
+
+.mod-principal .pa-card-logo img {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+}
+
+.mod-principal .pa-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: .55rem;
+  padding: 1.6rem .95rem .95rem;
+}
+
+.mod-principal .pa-card-body strong {
+  font-size: calc(14.5px * var(--fs-scale, 1));
+  font-weight: 800;
+}
+
+.mod-principal .pa-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: .3rem;
+}
+
+.mod-principal .pa-card-list span {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  font-size: calc(12px * var(--fs-scale, 1));
+  color: #475569;
+}
+
+.mod-principal .pa-card-list .ti {
+  font-size: calc(.8rem * var(--fs-scale, 1));
+}
+
+.mod-principal .pa-card--deportivo .pa-card-list .ti { color: #2c9caf; }
+.mod-principal .pa-card--social .pa-card-list .ti { color: #9c02ae; }
+
+.mod-principal .pa-card-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  margin-top: .2rem;
+  font-size: calc(12.5px * var(--fs-scale, 1));
+  font-weight: 800;
+}
+
+.mod-principal .pa-card--deportivo .pa-card-cta { color: #1f7f92; }
+.mod-principal .pa-card--social .pa-card-cta { color: #9c02ae; }
+
+.mod-principal .pa-card-cta .ti {
+  transition: transform .2s ease;
+}
+
+.mod-principal .pa-card:hover .pa-card-cta .ti {
+  transform: translateX(3px);
+}
+
+/* Modo oscuro del panel */
+.mod-principal.dark-mode .pa-panel,
+.mod-principal.dark-mode .pa-panel::before {
+  background: #14121d;
+  border-color: rgba(255, 255, 255, .08);
+}
+
+.mod-principal.dark-mode .pa-panel {
+  box-shadow: 0 28px 70px rgba(0, 0, 0, .55);
+}
+
+.mod-principal.dark-mode .pa-head p,
+.mod-principal.dark-mode .pa-card-list span {
+  color: rgba(226, 232, 240, .65);
+}
+
+.mod-principal.dark-mode .pa-card {
+  background: rgba(255, 255, 255, .04);
+  border-color: rgba(255, 255, 255, .08);
+  color: #f1f5f9;
+}
+
+.mod-principal.dark-mode .pa-card--deportivo .pa-card-cta { color: #5fd0e2; }
+.mod-principal.dark-mode .pa-card--social .pa-card-cta { color: #e07cf0; }
+.mod-principal.dark-mode .pa-card--social .pa-card-list .ti { color: #e07cf0; }
+
+/* En celular los paneles quedan dentro del menú de la cuenta */
+@media (max-width: 768px) {
+  .mod-principal .pa-wrap {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mod-principal .pa-panel,
+  .mod-principal .pa-chevron,
+  .mod-principal .pa-card {
+    transition: none;
+  }
+}

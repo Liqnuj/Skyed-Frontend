@@ -1,32 +1,33 @@
-import { useEffect, useRef, useState } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import AccountMenu from '../shared/AccountMenu';
+import type { GrupoMenu } from '../shared/AccountMenu';
 
 export default function SportNav() {
 const [open, setOpen] = useState(false);
 const close = () => setOpen(false);
-const { user, logout } = useAuth();
-const initials = (user?.name || 'SK').split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
-const navigate = useNavigate();
-const [userMenuOpen, setUserMenuOpen] = useState(false);
-const menuRef = useRef<HTMLDivElement>(null);
+const { user } = useAuth();
 
-  useEffect(() => {
-    if (!userMenuOpen) return;
-    const onClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setUserMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', onClickOutside);
-    return () => document.removeEventListener('mousedown', onClickOutside);
-  }, [userMenuOpen]);
+  const esAdmin = user?.roles.includes('adminDeportivo') ?? false;
 
-  const irAMiPanel = () => {
-    setUserMenuOpen(false);
-    const ruta = user?.role === 'admin' ? '/deportivo/perfil' : '/deportivo/perfil';
-    navigate(ruta);
-  };
+  // Opciones del menú de la cuenta (mismo diseño que el de SkyedSocial).
+  const grupos: GrupoMenu[] = [
+    {
+      opciones: esAdmin
+        ? [{ to: '/deportivo/admin', icono: 'ti-shield-check', titulo: 'Panel de administración', detalle: 'Eventos, pagos y control de acceso', destacada: true }]
+        : [],
+    },
+    {
+      opciones: [
+        { to: '/deportivo/perfil', icono: 'ti-layout-dashboard', titulo: 'Mi perfil', detalle: 'Resumen y estadísticas' },
+        { to: '/deportivo/perfil?tab=inscripciones', icono: 'ti-bike', titulo: 'Mis inscripciones', detalle: 'Estado de tus carreras' },
+        { to: '/deportivo/mi-entrada', icono: 'ti-qrcode', titulo: 'Mi entrada', detalle: 'Tu QR para el día del evento' },
+        { to: '/deportivo/perfil?tab=historial', icono: 'ti-trophy', titulo: 'Historial', detalle: 'Tus participaciones y resultados' },
+        { to: '/deportivo/perfil?tab=ajustes', icono: 'ti-settings', titulo: 'Ajustes', detalle: 'Datos y contraseña' },
+      ],
+    },
+  ];
 
   return (
     <header className="site-header" role="banner">
@@ -49,27 +50,12 @@ const menuRef = useRef<HTMLDivElement>(null);
         </ul>
         <div className="nav-cta">
           {user ? (
-            <div className="user-menu-wrap" ref={menuRef}>
-              <button className="btn btn-primary nav-user-btn" onClick={() => setUserMenuOpen((o) => !o)}>
-                <span className="nav-avatar">
-                  {user.foto_url ? (
-                    <img src={user.foto_url} alt="" className="nav-avatar-img" />
-                  ) : (
-                    <span className="nav-avatar-initials">{initials}</span>
-                  )}
-                </span>
-                {user.name}
-              </button>
-              {userMenuOpen && (
-                <div className="user-dropdown">
-                  <button onClick={irAMiPanel}><i className="ti ti-layout-dashboard" aria-hidden="true" /> Perfil</button>
-                  {user.roles.includes('adminDeportivo') && (
-                    <button onClick={() => { setUserMenuOpen(false); navigate('/deportivo/admin'); }}><i className="ti ti-settings" aria-hidden="true" /> Panel admin</button>
-                  )}
-                  <button onClick={() => { setUserMenuOpen(false); logout(); navigate('/'); }}><i className="ti ti-logout" aria-hidden="true" /> Cerrar sesión</button>
-                </div>
-              )}
-            </div>
+            <AccountMenu
+              tema="deportivo"
+              grupos={grupos}
+              rol={esAdmin ? 'Administrador' : 'Ciclista SKYED'}
+              alSalirIrA="/deportivo"
+            />
           ) : (
             <Link to="/login" className="btn btn-primary">Iniciar sesión</Link>
           )}
