@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Protected from '../../components/Protected';
 import SportWrapper from '../../components/deportivo/SportWrapper';
 import { useAuth } from '../../context/AuthContext';
@@ -94,9 +94,18 @@ export default function Participant() {
   );
 }
 
+const TABS: TabId[] = ['resumen', 'historial', 'inscripciones', 'ajustes'];
+
 function ParticipantPanel() {
   const { user, updateFotoUrl } = useAuth();
-  const [tab, setTab] = useState<TabId>('resumen');
+
+  // La pestaña vive en la URL (/deportivo/perfil?tab=inscripciones) para que
+  // las opciones del menú de la cuenta abran directamente la sección elegida.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabUrl = searchParams.get('tab') as TabId | null;
+  const tab: TabId = tabUrl && TABS.includes(tabUrl) ? tabUrl : 'resumen';
+  const setTab = (nueva: TabId) =>
+    setSearchParams(nueva === 'resumen' ? {} : { tab: nueva }, { replace: true });
   const [inscripciones, setInscripciones] = useState<Inscripcion[] | null>(null);
   const [historial, setHistorial] = useState<HistorialItem[] | null>(null);
   const [detalle, setDetalle] = useState<Inscripcion | null>(null);
