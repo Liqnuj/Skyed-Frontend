@@ -1,14 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import Protected from '../../components/Protected';
 import SocialWrapper from '../../components/social/SocialWrapper';
 import { useAuth } from '../../context/AuthContext';
+import { apiFetch } from '../../services/api';
 import { pqrService, reservaService } from '../../services/socialService';
 import type { Pqr, Reserva, TipoPqr } from '../../services/socialService';
+import { prepararImagen } from '../../utils/prepararImagen';
+import { errorContrasena } from '../../utils/validaciones';
 import '../../styles/social/perfil.css';
 
 type TabId = 'resumen' | 'pqr' | 'reservas' | 'ajustes';
+const TABS: TabId[] = ['resumen', 'pqr', 'reservas', 'ajustes'];
 
 function tipoDocumentoLabel(tipo: string | null | undefined) {
   const map: Record<string, string> = {
@@ -67,7 +71,16 @@ export default function Perfil() {
 
 function PerfilPanel() {
   const { user, updateFotoUrl, updateProfile } = useAuth();
-  const [tab, setTab] = useState<TabId>('resumen');
+
+  // La pestaña vive en la URL (/social/perfil?tab=reservas) para que las
+  // opciones del menú de la cuenta abran directamente la sección elegida.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabUrl = searchParams.get('tab') as TabId | null;
+  const tab: TabId = tabUrl && TABS.includes(tabUrl) ? tabUrl : 'resumen';
+  const setTab = (nueva: TabId) =>
+    setSearchParams(nueva === 'resumen' ? {} : { tab: nueva }, { replace: true });
+
+  const esAdmin = user?.roles.includes('adminSocial') ?? false;
 
   const [pqrs, setPqrs] = useState<Pqr[] | null>(null);
   const [reservas, setReservas] = useState<Reserva[] | null>(null);
@@ -84,23 +97,34 @@ function PerfilPanel() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [subiendoFoto, setSubiendoFoto] = useState(false);
+  const [fotoMsg, setFotoMsg] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null);
   const handleFotoClick = () => fileInputRef.current?.click();
   const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const original = e.target.files?.[0];
     e.target.value = '';
-    if (!file) return;
-    if (!file.type.startsWith('image/')) return;
-    if (file.size > 3 * 1024 * 1024) return;
+    if (!original) return;
+    if (!original.type.startsWith('image/')) {
+      setFotoMsg({ tipo: 'error', texto: 'El archivo debe ser una imagen (JPG, PNG o WEBP).' });
+      return;
+    }
 
     setSubiendoFoto(true);
-    const formData = new FormData();
-    formData.append('foto', file);
+    setFotoMsg(null);
     try {
-      const { apiFetch } = await import('../../services/api');
+      // Se reduce antes de subir: PHP acepta solo 2 MB por defecto y una
+      // foto de celular pesa 3-6 MB (antes fallaba sin avisar).
+      const file = await prepararImagen(original);
+      if (file.size > 3 * 1024 * 1024) {
+        setFotoMsg({ tipo: 'error', texto: 'La imagen no debe superar 3 MB.' });
+        return;
+      }
+      const formData = new FormData();
+      formData.append('foto', file);
       const data = await apiFetch('/perfil/foto', { method: 'POST', body: formData });
       if (data?.foto_url) updateFotoUrl(data.foto_url);
+      setFotoMsg({ tipo: 'ok', texto: 'Foto de perfil actualizada.' });
     } catch (err) {
-      console.error(err);
+      setFotoMsg({ tipo: 'error', texto: err instanceof Error ? err.message : 'No se pudo subir la foto.' });
     } finally {
       setSubiendoFoto(false);
     }
@@ -138,12 +162,20 @@ function PerfilPanel() {
           </div>
 
           <div className="pf-meta">
-            <div className="pf-badge"><i className="ti ti-user-circle" aria-hidden="true" />Cliente SkyedSocial</div>
+            <div className="pf-badge">
+              <i className={`ti ${esAdmin ? 'ti-shield-check' : 'ti-user-circle'}`} aria-hidden="true" />
+              {esAdmin ? 'Administrador SkyedSocial' : 'Cliente SkyedSocial'}
+            </div>
             <h1>{user?.name || 'Tu perfil'}</h1>
             <p className="pf-handle">{user?.email}</p>
           </div>
 
           <div className="pf-actions">
+            {esAdmin && (
+              <Link to="/social/admin" className="btn-sm-outline pf-admin-link">
+                <i className="ti ti-shield-check" aria-hidden="true" /> Panel de administración
+              </Link>
+            )}
             <Link to="/social/pqr" className="btn-sm-outline">Nueva PQR</Link>
             <Link to="/social/eventos" className="btn-sm-outline">Ver eventos</Link>
           </div>
@@ -162,7 +194,8 @@ function PerfilPanel() {
       </div>
 
       <div className="pf-body">
-        {loadError && <p className="form-error error">{loadError}</p>}
+        {loadError && <p className="pf-alert error">{loadError}</p>}
+        {fotoMsg && <p className={`pf-alert ${fotoMsg.tipo}`}>{fotoMsg.texto}</p>}
 
         {tab === 'resumen' && (
           <div className="pf-grid">
@@ -231,7 +264,12 @@ function PerfilPanel() {
           </div>
         )}
 
-        {tab === 'ajustes' && <AjustesForm user={user} updateProfile={updateProfile} />}
+        {tab === 'ajustes' && (
+          <div className="pf-settings">
+            <AjustesForm user={user} updateProfile={updateProfile} />
+            <CambiarContrasena />
+          </div>
+        )}
       </div>
 
       {detallePqr && (
@@ -258,6 +296,10 @@ function PerfilPanel() {
   );
 }
 
+/** Solo letras (con tildes y ñ) y espacios, igual que el registro. */
+const soloLetras = (valor: string) => valor.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, '').slice(0, 50);
+const soloNumeros = (valor: string) => valor.replace(/\D/g, '').slice(0, 15);
+
 function AjustesForm({
   user,
   updateProfile,
@@ -274,8 +316,12 @@ function AjustesForm({
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    setSaving(true);
     setMsg(null);
+    if (telefono && (telefono.length < 7 || telefono.length > 15)) {
+      setMsg({ tipo: 'error', texto: 'El teléfono debe tener entre 7 y 15 dígitos.' });
+      return;
+    }
+    setSaving(true);
     try {
       await updateProfile({
         nombre_u: nombre.trim(),
@@ -292,18 +338,108 @@ function AjustesForm({
   };
 
   return (
-    <div className="pf-card" style={{ maxWidth: 520 }}>
+    <div className="pf-card">
       <div className="pf-card-head"><h3>Editar mis datos</h3></div>
-      <form className="modal-form" onSubmit={submit} style={{ padding: '1.25rem 1.5rem' }}>
-        {msg && <p className={msg.tipo === 'ok' ? 'form-success' : 'form-error error'}>{msg.texto}</p>}
-        <div className="form-grid">
-          <label>Nombre<input value={nombre} onChange={(e) => setNombre(e.target.value)} required /></label>
-          <label>Apellido<input value={apellido} onChange={(e) => setApellido(e.target.value)} required /></label>
+      <form className="pf-form" onSubmit={submit}>
+        {msg && <p className={`pf-alert ${msg.tipo}`}>{msg.texto}</p>}
+        <div className="pf-form-row">
+          <label className="pf-field">
+            <span>Nombre</span>
+            <input value={nombre} onChange={(e) => setNombre(soloLetras(e.target.value))} required maxLength={50} />
+          </label>
+          <label className="pf-field">
+            <span>Apellido</span>
+            <input value={apellido} onChange={(e) => setApellido(soloLetras(e.target.value))} required maxLength={50} />
+          </label>
         </div>
-        <label>Teléfono<input value={telefono} onChange={(e) => setTelefono(e.target.value)} /></label>
-        <label>Ciudad<input value={ciudad} onChange={(e) => setCiudad(e.target.value)} /></label>
-        <div className="modal-actions">
-          <button className="primary-btn" disabled={saving}>{saving ? 'Guardando…' : 'Guardar cambios'}</button>
+        <label className="pf-field">
+          <span>Teléfono</span>
+          <input value={telefono} onChange={(e) => setTelefono(soloNumeros(e.target.value))} inputMode="numeric" placeholder="3001234567" />
+        </label>
+        <label className="pf-field">
+          <span>Ciudad</span>
+          <input value={ciudad} onChange={(e) => setCiudad(e.target.value.slice(0, 80))} placeholder="Ej. Sogamoso, Boyacá" />
+        </label>
+        <div className="pf-form-actions">
+          <button className="pf-btn" disabled={saving}>{saving ? 'Guardando…' : 'Guardar cambios'}</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+/** Igual que en el perfil de SKYED Deportivo: PUT /cambiar-contrasena. */
+function CambiarContrasena() {
+  const [actual, setActual] = useState('');
+  const [nueva, setNueva] = useState('');
+  const [confirmar, setConfirmar] = useState('');
+  const [ver, setVer] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null);
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setMsg(null);
+    const motivo = errorContrasena(nueva);
+    if (motivo) {
+      setMsg({ tipo: 'error', texto: motivo });
+      return;
+    }
+    if (nueva === actual) {
+      setMsg({ tipo: 'error', texto: 'La nueva contraseña debe ser distinta a la actual.' });
+      return;
+    }
+    if (nueva !== confirmar) {
+      setMsg({ tipo: 'error', texto: 'Las contraseñas no coinciden.' });
+      return;
+    }
+    setSaving(true);
+    try {
+      await apiFetch('/cambiar-contrasena', {
+        method: 'PUT',
+        body: JSON.stringify({
+          contrasena_actual: actual,
+          nueva_contrasena: nueva,
+          nueva_contrasena_confirmation: confirmar,
+        }),
+      });
+      setMsg({ tipo: 'ok', texto: 'Contraseña actualizada correctamente.' });
+      setActual('');
+      setNueva('');
+      setConfirmar('');
+    } catch (err) {
+      setMsg({ tipo: 'error', texto: err instanceof Error ? err.message : 'No se pudo cambiar la contraseña.' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const tipo = ver ? 'text' : 'password';
+
+  return (
+    <div className="pf-card">
+      <div className="pf-card-head"><h3>Cambiar contraseña</h3></div>
+      <form className="pf-form" onSubmit={submit}>
+        {msg && <p className={`pf-alert ${msg.tipo}`}>{msg.texto}</p>}
+        <label className="pf-field">
+          <span>Contraseña actual</span>
+          <input type={tipo} value={actual} onChange={(e) => setActual(e.target.value)} required autoComplete="current-password" />
+        </label>
+        <label className="pf-field">
+          <span>Nueva contraseña</span>
+          <input type={tipo} value={nueva} onChange={(e) => setNueva(e.target.value)} required autoComplete="new-password" maxLength={72} />
+          <small>Mínimo 8 caracteres, con mayúscula, minúscula y número.</small>
+        </label>
+        <label className="pf-field">
+          <span>Confirmar nueva contraseña</span>
+          <input type={tipo} value={confirmar} onChange={(e) => setConfirmar(e.target.value)} required autoComplete="new-password" maxLength={72} />
+        </label>
+        <label className="pf-check">
+          <input type="checkbox" checked={ver} onChange={(e) => setVer(e.target.checked)} />
+          Mostrar contraseñas
+        </label>
+        <div className="pf-form-actions">
+          <button className="pf-btn" disabled={saving}>{saving ? 'Guardando…' : 'Actualizar contraseña'}</button>
         </div>
       </form>
     </div>

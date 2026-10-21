@@ -246,3 +246,196 @@
   .mod-social .pf-actions { margin-left: 0; width: 100%; }
   .mod-social .pf-body { padding: 1.75rem 1.1rem 3.5rem; }
 }
+
+/* =========================================================
+   Ajustes (editar datos y cambiar contraseña), mensajes y
+   acceso al panel de administración.
+   ========================================================= */
+
+/* El contenedor .pf-body se ajusta a su contenido, así que esta sección
+   define su propio ancho para que las dos tarjetas quepan lado a lado. */
+.mod-social .pf-settings {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.25rem;
+  align-items: start;
+  width: min(900px, calc(100vw - 4rem));
+}
+
+.mod-social .pf-form {
+  display: flex;
+  flex-direction: column;
+  gap: .95rem;
+  padding: 1.25rem 1.25rem 1.4rem;
+}
+
+.mod-social .pf-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .85rem;
+}
+
+.mod-social .pf-field {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+}
+
+.mod-social .pf-field span {
+  font-size: calc(.72rem * var(--fs-scale, 1));
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.mod-social .pf-field input {
+  width: 100%;
+  padding: .7rem .9rem;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  background: var(--cream);
+  color: var(--text-dark);
+  font: inherit;
+  font-size: calc(.92rem * var(--fs-scale, 1));
+  transition: border-color .2s, box-shadow .2s, background .2s;
+}
+
+.mod-social .pf-field input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--white);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent);
+}
+
+.mod-social .pf-field small {
+  font-size: calc(.72rem * var(--fs-scale, 1));
+  color: var(--text-muted);
+}
+
+.mod-social .pf-check {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  font-size: calc(.82rem * var(--fs-scale, 1));
+  color: var(--text-mid);
+  cursor: pointer;
+}
+
+.mod-social .pf-check input {
+  accent-color: var(--accent);
+}
+
+.mod-social .pf-form-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.mod-social .pf-btn {
+  padding: .75rem 1.5rem;
+  border: none;
+  border-radius: 50px;
+  background: linear-gradient(135deg, var(--plum), var(--plum-light));
+  color: var(--white);
+  font: inherit;
+  font-size: calc(.88rem * var(--fs-scale, 1));
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform .2s, box-shadow .2s, opacity .2s;
+}
+
+.mod-social .pf-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 28px rgba(26, 10, 46, .25);
+}
+
+.mod-social .pf-btn:disabled {
+  opacity: .6;
+  cursor: wait;
+}
+
+.mod-social .pf-alert {
+  margin: 0 0 1rem;
+  padding: .7rem .95rem;
+  border-radius: 12px;
+  font-size: calc(.85rem * var(--fs-scale, 1));
+  line-height: 1.5;
+}
+
+.mod-social .pf-form .pf-alert {
+  margin: 0;
+}
+
+.mod-social .pf-alert.ok {
+  background: #ecfdf3;
+  border: 1px solid #a7f3c8;
+  color: #166534;
+}
+
+.mod-social .pf-alert.error {
+  background: #fdf0f4;
+  border: 1px solid #f5c2d3;
+  color: var(--rose);
+}
+
+/* Botones del encabezado: antes eran morado oscuro sobre el fondo morado
+   oscuro del encabezado, así que "Nueva PQR" y "Ver eventos" no se veían. */
+.mod-social .pf-actions .btn-sm-outline {
+  color: var(--white);
+  border-color: rgba(255, 255, 255, .45);
+}
+
+.mod-social .pf-actions .btn-sm-outline:hover {
+  background: var(--white);
+  color: var(--plum);
+}
+
+/* Acceso al panel de administración (solo cuentas adminSocial) */
+.mod-social .pf-admin-link {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  border-color: var(--gold) !important;
+  background: linear-gradient(135deg, var(--gold), var(--gold-light)) !important;
+  color: var(--plum) !important;
+  font-weight: 700;
+}
+
+.mod-social .pf-admin-link:hover {
+  filter: brightness(1.05);
+}
+
+/* Modo oscuro */
+.mod-social.dark-mode .pf-field input {
+  background: rgba(255, 255, 255, .05);
+  border-color: rgba(255, 255, 255, .12);
+  color: var(--white);
+}
+
+.mod-social.dark-mode .pf-field input:focus {
+  background: rgba(255, 255, 255, .08);
+}
+
+.mod-social.dark-mode .pf-field span,
+.mod-social.dark-mode .pf-field small,
+.mod-social.dark-mode .pf-check {
+  color: rgba(255, 255, 255, .6);
+}
+
+.mod-social.dark-mode .pf-alert.ok {
+  background: rgba(22, 101, 52, .2);
+  border-color: rgba(134, 239, 172, .3);
+  color: #bbf7d0;
+}
+
+.mod-social.dark-mode .pf-alert.error {
+  background: rgba(139, 34, 82, .2);
+  border-color: rgba(241, 154, 192, .3);
+  color: #f9c4da;
+}
+
+@media (max-width: 600px) {
+  .mod-social .pf-form-row {
+    grid-template-columns: 1fr;
+  }
+}

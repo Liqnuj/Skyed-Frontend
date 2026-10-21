@@ -1,0 +1,306 @@
+/* =========================================================
+   SKYED SOCIAL - Menú de la cuenta (SocialUserMenu.tsx)
+   Usa la paleta de social.css: --plum, --gold, --accent, --blush...
+   ========================================================= */
+
+.mod-social .um-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* Botón de la barra: conserva el estilo .nav-cta y suma el avatar. */
+.mod-social .um-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: .55rem;
+  padding: .3rem .9rem .3rem .3rem !important;
+  border-radius: 50px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.mod-social .um-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, .22);
+  color: #fff;
+  font-size: calc(.7rem * var(--fs-scale, 1));
+  font-weight: 700;
+  letter-spacing: .03em;
+}
+
+.mod-social .um-avatar img,
+.mod-social .um-head-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mod-social .um-chevron {
+  font-size: calc(.9rem * var(--fs-scale, 1));
+  transition: transform .25s ease;
+}
+
+.mod-social .um-wrap.is-open .um-chevron {
+  transform: rotate(180deg);
+}
+
+/* ---------- Panel desplegable ---------- */
+.mod-social .um-panel {
+  position: absolute;
+  top: calc(100% + 14px);
+  right: 0;
+  width: 300px;
+  max-width: calc(100vw - 24px);
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  box-shadow: 0 24px 60px rgba(26, 10, 46, .18), 0 2px 8px rgba(26, 10, 46, .06);
+  z-index: 1100;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-8px) scale(.98);
+  transform-origin: top right;
+  transition: opacity .2s ease, transform .2s ease, visibility .2s;
+}
+
+.mod-social .um-wrap.is-open .um-panel {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: none;
+}
+
+/* Piquito que apunta al botón */
+.mod-social .um-panel::before {
+  content: '';
+  position: absolute;
+  top: -7px;
+  right: 30px;
+  width: 14px;
+  height: 14px;
+  background: var(--plum);
+  border-radius: 3px;
+  transform: rotate(45deg);
+}
+
+.mod-social .um-head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: .85rem;
+  padding: 1.1rem 1.15rem;
+  border-radius: 19px 19px 0 0;
+  background: linear-gradient(135deg, var(--plum), var(--plum-light));
+  color: #fff;
+}
+
+.mod-social .um-head-avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  color: var(--plum);
+  font-family: 'Playfair Display', serif;
+  font-size: calc(.95rem * var(--fs-scale, 1));
+  font-weight: 700;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, .15);
+}
+
+.mod-social .um-head-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mod-social .um-head-name {
+  font-family: 'Playfair Display', serif;
+  font-size: calc(1rem * var(--fs-scale, 1));
+  font-weight: 700;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mod-social .um-head-mail {
+  font-size: calc(.74rem * var(--fs-scale, 1));
+  color: rgba(255, 255, 255, .65);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mod-social .um-role {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  align-self: flex-start;
+  margin-top: .45rem;
+  padding: .18rem .6rem;
+  border-radius: 50px;
+  background: rgba(201, 168, 76, .18);
+  color: var(--gold-light);
+  font-size: calc(.64rem * var(--fs-scale, 1));
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.mod-social .um-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: .5rem;
+}
+
+.mod-social .um-item {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  width: 100%;
+  padding: .6rem .7rem;
+  border: none;
+  border-radius: 14px;
+  background: none;
+  color: var(--text-dark);
+  text-align: left;
+  text-decoration: none;
+  font: inherit;
+  cursor: pointer;
+  transition: background .15s ease;
+}
+
+.mod-social .um-item:hover,
+.mod-social .um-item:focus-visible {
+  background: var(--blush);
+  outline: none;
+}
+
+.mod-social .um-item-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--accent);
+  font-size: calc(1.05rem * var(--fs-scale, 1));
+}
+
+.mod-social .um-item-text strong {
+  display: block;
+  font-size: calc(.86rem * var(--fs-scale, 1));
+  font-weight: 600;
+}
+
+.mod-social .um-item-text small {
+  display: block;
+  margin-top: .1rem;
+  font-size: calc(.72rem * var(--fs-scale, 1));
+  color: var(--text-muted);
+}
+
+/* Panel de administración: resaltado en dorado */
+.mod-social .um-item.is-admin .um-item-icon {
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  color: var(--plum);
+}
+
+.mod-social .um-item.is-admin:hover {
+  background: var(--gold-pale);
+}
+
+.mod-social .um-item.is-logout {
+  color: var(--rose);
+}
+
+.mod-social .um-item.is-logout .um-item-icon {
+  background: rgba(139, 34, 82, .08);
+  color: var(--rose);
+}
+
+.mod-social .um-sep {
+  height: 1px;
+  margin: .35rem .6rem;
+  background: var(--border);
+}
+
+/* ---------- Modo oscuro ---------- */
+.mod-social.dark-mode .um-panel {
+  background: #221830;
+  border-color: rgba(255, 255, 255, .1);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .45);
+}
+
+.mod-social.dark-mode .um-item {
+  color: rgba(255, 255, 255, .88);
+}
+
+.mod-social.dark-mode .um-item:hover,
+.mod-social.dark-mode .um-item:focus-visible {
+  background: rgba(255, 255, 255, .06);
+}
+
+.mod-social.dark-mode .um-item-text small {
+  color: rgba(255, 255, 255, .5);
+}
+
+.mod-social.dark-mode .um-item.is-admin:hover {
+  background: rgba(201, 168, 76, .12);
+}
+
+.mod-social.dark-mode .um-item.is-logout {
+  color: #f19ac0;
+}
+
+.mod-social.dark-mode .um-item.is-logout .um-item-icon {
+  background: rgba(241, 154, 192, .1);
+  color: #f19ac0;
+}
+
+.mod-social.dark-mode .um-sep {
+  background: rgba(255, 255, 255, .08);
+}
+
+/* ---------- Celular ---------- */
+@media (max-width: 768px) {
+  .mod-social .um-trigger-name {
+    display: none;
+  }
+
+  .mod-social .um-trigger {
+    padding: .3rem .6rem .3rem .3rem !important;
+  }
+
+  .mod-social .um-panel {
+    position: fixed;
+    top: 72px;
+    right: 12px;
+  }
+
+  .mod-social .um-panel::before {
+    right: 64px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mod-social .um-panel,
+  .mod-social .um-chevron {
+    transition: none;
+  }
+}
