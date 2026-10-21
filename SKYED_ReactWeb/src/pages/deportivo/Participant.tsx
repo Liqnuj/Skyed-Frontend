@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useAccessibility } from '../../context/AccessibilityContext';
 import { apiFetch } from '../../services/api';
 import { prepararImagen } from '../../utils/prepararImagen';
+import { errorContrasena } from '../../utils/validaciones';
 import '../../styles/deportivo/participante.css';
 import { createPortal } from 'react-dom';
 
@@ -591,8 +592,11 @@ function AjustesTab() {
    const submitPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setMsg(null);
-    if (nueva.length < 8) {
-      setMsg({ tipo: 'error', texto: 'La nueva contraseña debe tener mínimo 8 caracteres.', id: Date.now() });
+    // Misma regla que el registro y el backend (antes solo pedía 8
+    // caracteres y la API rechazaba después una contraseña débil).
+    const motivo = errorContrasena(nueva);
+    if (motivo) {
+      setMsg({ tipo: 'error', texto: motivo, id: Date.now() });
       return;
     }
     if (nueva === actual) {

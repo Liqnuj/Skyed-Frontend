@@ -4,6 +4,26 @@ import { useAuth } from '../../context/AuthContext';
 import PrincipalWrapper from '../../components/principal/PrincipalWrapper';
 import AuthTopbar from '../../components/principal/AuthTopbar';
 import TermsModal from '../../components/shared/TermsModal';
+import { normalizarCorreo } from '../../utils/validaciones';
+
+const CLAVE_CORREO_RECORDADO = 'skyed_correo_recordado';
+
+function leerCorreoRecordado(): string {
+  try {
+    return localStorage.getItem(CLAVE_CORREO_RECORDADO) ?? '';
+  } catch {
+    return '';
+  }
+}
+
+function guardarCorreoRecordado(correo: string | null) {
+  try {
+    if (correo) localStorage.setItem(CLAVE_CORREO_RECORDADO, correo);
+    else localStorage.removeItem(CLAVE_CORREO_RECORDADO);
+  } catch {
+    // Navegador en modo privado: simplemente no se recuerda.
+  }
+}
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -12,10 +32,13 @@ export default function LoginPage() {
 
   const [termsOpen, setTermsOpen] = useState(false);
 
-  const [email, setEmail] = useState('');
+  // "Recordarme" guarda solo el correo (nunca la contraseña) para que la
+  // próxima vez aparezca ya escrito. Antes la casilla no hacía nada.
+  const correoRecordado = leerCorreoRecordado();
+  const [email, setEmail] = useState(correoRecordado);
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
-  const [remember, setRemember] = useState(false);
+  const [remember, setRemember] = useState(Boolean(correoRecordado));
   
   // Estados para alertas y carga
   const [loading, setLoading] = useState(false);
@@ -42,12 +65,15 @@ export default function LoginPage() {
     try {
       // Llamamos a tu función login del AuthContext
       // (Asumimos que esta función internamente hace la petición y guarda el token en localStorage)
-      const success = await login(email, password);
-      
+      const correo = normalizarCorreo(email);
+      const success = await login(correo, password);
+
       if (!success) {
         // Si el login devuelve false, lanzamos el error
         throw new Error('Correo o contraseña incorrectos. Verifica tus datos.');
       }
+
+      guardarCorreoRecordado(remember ? correo : null);
 
       setSuccessMsg('¡Inicio de sesión exitoso! Redirigiendo...');
       
