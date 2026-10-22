@@ -102,6 +102,7 @@ function ParticipantPanel() {
   // La pestaña vive en la URL (/deportivo/perfil?tab=inscripciones) para que
   // las opciones del menú de la cuenta abran directamente la sección elegida.
   const [searchParams, setSearchParams] = useSearchParams();
+  const entradaId = Number(searchParams.get('entrada')) || null;
   const tabUrl = searchParams.get('tab') as TabId | null;
   const tab: TabId = tabUrl && TABS.includes(tabUrl) ? tabUrl : 'resumen';
   const setTab = (nueva: TabId) =>
@@ -124,6 +125,21 @@ function ParticipantPanel() {
       .then((data) => setHistorial(data.historial ?? []))
       .catch(() => {});
   }, [user?.id]);
+
+  // Abre directamente el detalle (y el QR) de una inscripción cuando llega
+  // ?entrada=<id evento> en la URL, por ejemplo desde "Ver mi entrada".
+  // Una sola actualización de la URL: cambia a la pestaña y quita ?entrada=.
+  useEffect(() => {
+    if (!entradaId || !inscripciones) return;
+    const insc = inscripciones.find((i) => i.evento?.id === entradaId && i.estado !== 'cancelada');
+    if (insc) {
+      setDetalle(insc);
+      setVerQr(!!insc.qr?.codigo);
+      setSearchParams({ tab: 'inscripciones' }, { replace: true });
+    } else {
+      setSearchParams({}, { replace: true });
+    }
+  }, [entradaId, inscripciones]);
 
   const hoy = useMemo(() => {
     const d = new Date();
@@ -245,12 +261,12 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
           <div className="part-card">
             <div className="part-card-head"><h3>Información</h3></div>
             <div className="part-card-body">
-              <div className="part-stat-row"><span className="part-label">Rol</span><span>{user?.role === 'admin' ? 'Administrador' : 'Participante'}</span></div>
-              <div className="part-stat-row"><span className="part-label">Correo</span><span>{user?.email || '—'}</span></div>
-              <div className="part-stat-row"><span className="part-label">Teléfono</span><span>{user?.telefono || '—'}</span></div>
-              <div className="part-stat-row"><span className="part-label">Ciudad</span><span>{user?.ciudad || '—'}</span></div>
-              <div className="part-stat-row"><span className="part-label">Documento</span><span>{user?.documento ? `${tipoDocumentoLabel(user.tipo_documento)} ${user.documento}` : '—'}</span></div>
-              <div className="part-stat-row"><span className="part-label">Fecha de nacimiento</span><span>{fmtFechaLarga(user?.fecha_nacimiento)}</span></div>
+              <div className="part-info-row"><span className="part-info-label">Rol</span><span className="part-info-value">{user?.role === 'admin' ? 'Administrador' : 'Participante'}</span></div>
+              <div className="part-info-row"><span className="part-info-label">Correo</span><span className="part-info-value">{user?.email || '—'}</span></div>
+              <div className="part-info-row"><span className="part-info-label">Teléfono</span><span className="part-info-value">{user?.telefono || '—'}</span></div>
+              <div className="part-info-row"><span className="part-info-label">Ciudad</span><span className="part-info-value">{user?.ciudad || '—'}</span></div>
+              <div className="part-info-row"><span className="part-info-label">Documento</span><span className="part-info-value">{user?.documento ? `${tipoDocumentoLabel(user.tipo_documento)} ${user.documento}` : '—'}</span></div>
+              <div className="part-info-row"><span className="part-info-label">Nacimiento</span><span className="part-info-value">{fmtFechaLarga(user?.fecha_nacimiento)}</span></div>
             </div>
           </div>
           <div className="part-card">
@@ -291,7 +307,9 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
             <>
               <p className="part-section-label">Todos los resultados</p>
               {!historial && <div className="part-empty-row">Cargando historial…</div>}
-              {historial && historial.length === 0 && <div className="part-empty-row">Sin historial todavía.</div>}
+              {historial && historial.length === 0 && pasadas.length === 0 && (
+                <div className="part-empty-row">Sin historial todavía.</div>
+              )}
               {historial?.map((h) => (
                 <div className="part-event-row" key={h.id_hp}>
                   <div className="part-event-row-img">{(h.evento?.nombre || '?')[0].toUpperCase()}</div>
@@ -307,6 +325,11 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
                   </span>
                 </div>
               ))}
+              {pasadas
+                .filter((i) => !historial?.some((h) => h.evento?.id === i.evento?.id))
+                .map((i) => (
+                  <EventRow key={i.id} insc={i} onVerDetalle={() => abrirDetalle(i)} />
+                ))}
             </>
           )}
 
@@ -320,6 +343,14 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
               {proximas.map((i) => (
                 <EventRow key={i.id} insc={i} onVerDetalle={() => abrirDetalle(i)} />
               ))}
+              {pasadas.length > 0 && (
+                <>
+                  <p className="part-section-label">Eventos pasados</p>
+                  {pasadas.map((i) => (
+                    <EventRow key={i.id} insc={i} onVerDetalle={() => abrirDetalle(i)} />
+                  ))}
+                </>
+              )}
               <div style={{ textAlign: 'center', padding: '1rem 0' }}>
                 <Link to="/deportivo/eventos" className="btn btn-primary">Explorar más eventos →</Link>
               </div>

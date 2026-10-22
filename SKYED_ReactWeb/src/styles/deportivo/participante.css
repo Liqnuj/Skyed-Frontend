@@ -209,7 +209,8 @@
   margin: 1.5rem 0 .75rem;
 }
 
-.mod-deportivo .part-section-label a {
+.mod-deportivo .part-section-label a,
+.mod-deportivo .part-section-label button {
   font-size: calc(.82rem * var(--fs-scale, 1));
   font-weight: 600;
   color: var(--accent);
@@ -1029,4 +1030,28 @@
 .part-input-locked {
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+.part-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  font-size: 0.85rem;
+}
+
+.part-info-row + .part-info-row {
+  border-top: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+}
+
+.part-info-label {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.part-info-value {
+  text-align: right;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
