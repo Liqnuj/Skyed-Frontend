@@ -302,6 +302,15 @@
   }
 }
 
+/* En escritorio el acceso al panel ya está en la barra: se oculta del menú
+   de la cuenta (y la línea separadora que quedaría sola arriba de "Cerrar sesión"). */
+@media (min-width: 769px) {
+  .mod-principal .am-group.am-solo-movil,
+  .mod-principal .am-group.am-solo-movil + .am-sep {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .mod-principal .pa-panel,
   .mod-principal .pa-chevron,

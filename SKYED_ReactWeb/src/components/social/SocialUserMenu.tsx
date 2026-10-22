@@ -47,7 +47,10 @@ export default function SocialUserMenu() {
 
   if (!user) return null;
 
-  const esAdmin = user.roles.includes('adminSocial');
+  const esAdminSocial = user.roles.includes('adminSocial');
+  const esAdminDeportivo = user.roles.includes('adminDeportivo');
+  // Cualquier administrador: no tiene panel de cliente (reservas, PQR...).
+  const esAdmin = esAdminSocial || esAdminDeportivo;
   const nombreCorto = user.name.split(' ')[0];
   const iniciales = user.name
     .split(' ')
@@ -62,9 +65,11 @@ export default function SocialUserMenu() {
       ? 'Cliente SkyedSocial'
       : 'Miembro SKYED';
 
-  const opciones = [
-    { to: '/social/perfil', icono: 'ti-layout-dashboard', titulo: 'Perfil', detalle: 'Resumen de tu cuenta' },
-    { to: '/social/reservar', icono: 'ti-dollar-sign', titulo: 'Cotizar reserva', detalle: 'Solicita una cotización para tu reserva' }
+  const opciones: { to: string; icono: string; titulo: string; detalle: string }[] = esAdmin ? [] : [
+    { to: '/social/perfil', icono: 'ti-layout-dashboard', titulo: 'Mi panel', detalle: 'Resumen de tu cuenta' },
+    { to: '/social/perfil?tab=reservas', icono: 'ti-calendar-event', titulo: 'Mis reservas', detalle: 'Estado de tus eventos' },
+    { to: '/social/perfil?tab=pqr', icono: 'ti-message-2', titulo: 'Mis PQR', detalle: 'Solicitudes y respuestas' },
+    { to: '/social/perfil?tab=ajustes', icono: 'ti-settings', titulo: 'Ajustes', detalle: 'Datos y contraseña' },
   ];
 
   const cerrarSesion = async () => {
@@ -108,18 +113,16 @@ export default function SocialUserMenu() {
         </div>
 
         <div className="um-list">
-          {esAdmin && (
-            <>
-              <Link to="/social/admin" className="um-item is-admin" role="menuitem">
-                <span className="um-item-icon"><i className="ti ti-shield-check" aria-hidden="true" /></span>
-                <span className="um-item-text">
-                  <strong>Panel de administración</strong>
-                  <small>Eventos, reservas y PQRS</small>
-                </span>
-              </Link>
-              <div className="um-sep" role="separator" />
-            </>
+          {esAdminSocial && (
+            <Link to="/social/admin" className="um-item is-admin" role="menuitem">
+              <span className="um-item-icon"><i className="ti ti-shield-check" aria-hidden="true" /></span>
+              <span className="um-item-text">
+                <strong>Panel de administración</strong>
+                <small>Eventos, reservas y PQRS</small>
+              </span>
+            </Link>
           )}
+          {esAdminSocial && opciones.length > 0 && <div className="um-sep" role="separator" />}
 
           {opciones.map((opcion) => (
             <Link key={opcion.to} to={opcion.to} className="um-item" role="menuitem">

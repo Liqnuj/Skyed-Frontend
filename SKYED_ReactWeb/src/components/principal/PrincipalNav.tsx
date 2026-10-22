@@ -12,18 +12,31 @@ export default function PrincipalNav() {
   const esAdminDeportivo = user?.roles.includes('adminDeportivo') ?? false;
   const esAdminSocial = user?.roles.includes('adminSocial') ?? false;
 
-  // Menú de la cuenta: los dos módulos y, si aplica, sus paneles de
-  // administración (en celular es el único acceso a esos paneles).
+  const esAdmin = esAdminDeportivo || esAdminSocial;
+
+  // Menú de la cuenta.
+  // - Usuario normal: sus dos espacios (perfil deportivo / social).
+  // - Administrador: NO ve los botones de perfil; solo el acceso al panel
+  //   que le corresponde (adminDeportivo -> Panel Deportivo,
+  //   adminSocial -> Panel Social). En celular es el único acceso a esos
+  //   paneles, porque el botón de la barra se oculta.
   const grupos: GrupoMenu[] = [
-    {
-      titulo: 'Mis espacios',
-      opciones: [
-        { to: '/deportivo/perfil', icono: 'ti-bike', titulo: 'SKYED Deportivo', detalle: 'Mi perfil, inscripciones y QR', color: 'deportivo' },
-        { to: '/social/perfil', icono: 'ti-confetti', titulo: 'SkyedSocial', detalle: 'Mis reservas y PQR', color: 'social' },
-      ],
-    },
+    ...(esAdmin
+      ? []
+      : [
+          {
+            titulo: 'Mis espacios',
+            opciones: [
+              { to: '/deportivo/perfil', icono: 'ti-bike', titulo: 'SKYED Deportivo', detalle: 'Mi perfil, inscripciones y QR', color: 'deportivo' as const },
+              { to: '/social/perfil', icono: 'ti-confetti', titulo: 'SkyedSocial', detalle: 'Mis reservas y PQR', color: 'social' as const },
+            ],
+          },
+        ]),
     {
       titulo: 'Administración',
+      // En escritorio el acceso ya está en la barra (PanelesAdmin); aquí solo
+      // se muestra en celular, donde ese botón se oculta.
+      clase: 'am-solo-movil',
       opciones: [
         ...(esAdminDeportivo
           ? [{ to: '/deportivo/admin', icono: 'ti-shield-check', titulo: 'Panel Deportivo', detalle: 'Eventos, pagos y acceso con QR', destacada: true, color: 'deportivo' as const }]
@@ -35,7 +48,7 @@ export default function PrincipalNav() {
     },
   ];
 
-  const rol = esAdminDeportivo || esAdminSocial ? 'Administrador' : 'Miembro SKYED';
+  const rol = esAdmin ? 'Administrador' : 'Miembro SKYED';
 
   return (
     <>

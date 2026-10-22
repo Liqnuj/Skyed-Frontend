@@ -37,6 +37,7 @@ import Participant from './pages/deportivo/Participant';
 import UsersRoles from './pages/admin/UsersRoles';
 import SkaiWidget from './components/shared/SkaiWidget';
 import AdminProtectedRoute from './components/AdminProtectedRoute';
+import SoloUsuarios from './components/SoloUsuarios';
 
 function App(){
   return (
@@ -54,25 +55,38 @@ function App(){
             <Route path="/deportivo" element={<SportHome/>}/>
             <Route path="/deportivo/eventos" element={<SportEvents/>}/>
             <Route path="/deportivo/eventos/:id" element={<SportEventDetail/>}/>
-            <Route path="/deportivo/inscripcion/:id" element={<Inscription/>}/>
-            <Route path="/deportivo/checkout" element={<Checkout/>}/>
-            <Route path="/deportivo/mi-entrada" element={<MyEntry/>}/>
             <Route path="/deportivo/resultados" element={<Results/>}/>
-            <Route path="/deportivo/notificaciones" element={<Notifications/>}/>
             <Route path="/deportivo/nosotros" element={<AboutSport/>}/>
             <Route path="/deportivo/entrega-kit" element={<Kit/>}/>
-            <Route path="/deportivo/perfil" element={<Participant/>}/>
+            {/* Páginas de participante: un admin puede ver el sitio, pero no las usa. */}
+            <Route element={<SoloUsuarios modulo="deportivo" />}>
+              <Route path="/deportivo/inscripcion/:id" element={<Inscription/>}/>
+              <Route path="/deportivo/checkout" element={<Checkout/>}/>
+              <Route path="/deportivo/mi-entrada" element={<MyEntry/>}/>
+              <Route path="/deportivo/notificaciones" element={<Notifications/>}/>
+              <Route path="/deportivo/perfil" element={<Participant/>}/>
+            </Route>
             
             <Route path="/social" element={<SocialHome/>}/>
             <Route path="/social/eventos" element={<SocialEvents/>}/>
             <Route path="/social/lugares" element={<Venues/>}/>
             <Route path="/social/nosotros" element={<AboutSocial/>}/>
-            <Route path="/social/reservar" element={<Reserve/>}/>
-            <Route path="/social/pqr" element={<PQR/>}/>
-            <Route path="/social/perfil" element={<Perfil/>}/>
-            <Route element={<AdminProtectedRoute />}>
+            {/* Páginas de cliente: un admin puede ver el sitio, pero no reserva ni radica PQR. */}
+            <Route element={<SoloUsuarios modulo="social" />}>
+              <Route path="/social/reservar" element={<Reserve/>}/>
+              <Route path="/social/pqr" element={<PQR/>}/>
+              <Route path="/social/perfil" element={<Perfil/>}/>
+            </Route>
+
+            {/* Cada panel exige su propio rol de administrador. */}
+            <Route path="/admin" element={<AdminRedirect/>}/>
+            <Route element={<AdminProtectedRoute rol="adminSocial" />}>
               <Route path="/social/admin" element={<Admin/>}/>
+            </Route>
+            <Route element={<AdminProtectedRoute rol="adminDeportivo" />}>
               <Route path="/deportivo/admin" element={<AdminDeportivo/>}/>
+            </Route>
+            <Route element={<AdminProtectedRoute />}>
               <Route path="/admin/usuarios" element={<UsersRoles/>}/>
             </Route>
 

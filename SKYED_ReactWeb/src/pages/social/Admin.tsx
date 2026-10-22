@@ -28,7 +28,6 @@ import { useAuth } from "../../context/AuthContext";
 import { useAccessibility } from "../../context/AccessibilityContext";
 import AccessibilityWidget from "../../components/shared/AccessibilityWidget";
 import { apiFetch } from "../../services/api";
-import { prepararImagen } from "../../utils/prepararImagen";
 import "../../styles/social/Admin.css";
 
 type Section =
@@ -222,24 +221,21 @@ function ImageUploadField({
   const [dragOver, setDragOver] = useState(false);
   const [imgError, setImgError] = useState(false);
 
-  const handleFile = async (original?: File | null) => {
-    if (!original || uploading) return;
+  const handleFile = async (file?: File | null) => {
+    if (!file || uploading) return;
 
-    if (!original.type.startsWith("image/")) {
+    if (!file.type.startsWith("image/")) {
       onError("Selecciona un archivo de imagen (JPG, PNG o WEBP).");
+      return;
+    }
+    if (file.size > MAX_IMAGEN_MB * 1024 * 1024) {
+      onError(`La imagen no debe superar ${MAX_IMAGEN_MB} MB.`);
       return;
     }
 
     setImgError(false);
     setUploading(true);
     try {
-      // FIX: PHP acepta 2 MB por defecto; una foto de celular (3-6 MB)
-      // fallaba con "The imagen failed to upload". Se reduce antes de subir.
-      const file = await prepararImagen(original);
-      if (file.size > MAX_IMAGEN_MB * 1024 * 1024) {
-        onError(`La imagen no debe superar ${MAX_IMAGEN_MB} MB.`);
-        return;
-      }
       const body = new FormData();
       body.append("imagen", file);
       body.append("carpeta", carpeta);
@@ -1198,7 +1194,12 @@ function PqrModal({ item, onClose, onSave }: { item: Pqr; onClose: () => void; o
   const [saving, setSaving] = useState(false);
   const submit = async (e: React.FormEvent) => {
     e.preventDefault(); setSaving(true);
-    try { await onSave({ estado_pqr: estado, respuesta_pqr: respuesta || null }); } finally { setSaving(false); }
+    // Si hay respuesta y la PQR sigue activa (abierto / en proceso), pasa a "resuelto".
+    // Si el admin eligió "cerrado" o "resuelto" a mano, se respeta.
+    const tieneRespuesta = respuesta.trim().length > 0;
+    const estadoFinal: Pqr["estado_pqr"] =
+      tieneRespuesta && (estado === "abierto" || estado === "en_proceso") ? "resuelto" : estado;
+    try { await onSave({ estado_pqr: estadoFinal, respuesta_pqr: tieneRespuesta ? respuesta.trim() : null }); } finally { setSaving(false); }
   };
   return <Modal title={`PQR #${item.id_pqr}`} subtitle={item.asunto_pqr} onClose={onClose}>
     <div className="pqr-detail">
