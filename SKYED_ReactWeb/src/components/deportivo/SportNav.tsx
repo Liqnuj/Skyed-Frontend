@@ -9,17 +9,23 @@ const [open, setOpen] = useState(false);
 const close = () => setOpen(false);
 const { user } = useAuth();
 
-  const esAdmin = user?.roles.includes('adminDeportivo') ?? false;
+  const esAdminDeportivo = user?.roles.includes('adminDeportivo') ?? false;
+  const esAdminSocial = user?.roles.includes('adminSocial') ?? false;
+  // Cualquier administrador: no tiene perfil de participante (inscripciones, QR...).
+  const esAdmin = esAdminDeportivo || esAdminSocial;
 
   // Opciones del menú de la cuenta (mismo diseño que el de SkyedSocial).
   const grupos: GrupoMenu[] = [
     {
-      opciones: esAdmin
+      // Admin deportivo: acceso a su panel. Admin social (de visita): nada,
+      // el menú solo trae "Cerrar sesión".
+      opciones: esAdminDeportivo
         ? [{ to: '/deportivo/admin', icono: 'ti-shield-check', titulo: 'Panel de administración', detalle: 'Eventos, pagos y control de acceso', destacada: true }]
         : [],
     },
     {
-      opciones: [
+      // Los administradores no tienen perfil de participante.
+      opciones: esAdmin ? [] : [
         { to: '/deportivo/perfil', icono: 'ti-layout-dashboard', titulo: 'Mi perfil', detalle: 'Resumen y estadísticas' },
       ],
     },

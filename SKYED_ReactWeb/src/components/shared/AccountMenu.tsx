@@ -17,6 +17,8 @@ export type OpcionMenu = {
 export type GrupoMenu = {
   titulo?: string;
   opciones: OpcionMenu[];
+  /** Clase extra para el grupo (p. ej. para mostrarlo solo en celular). */
+  clase?: string;
 };
 
 type Props = {
@@ -94,7 +96,7 @@ export default function AccountMenu({ tema, grupos, rol, alSalirIrA }: Props) {
           {grupos
             .filter((grupo) => grupo.opciones.length > 0)
             .map((grupo, i) => (
-              <div className="am-group" key={grupo.titulo ?? i}>
+              <div className={`am-group${grupo.clase ? ` ${grupo.clase}` : ''}`} key={grupo.titulo ?? i}>
                 {grupo.titulo && <p className="am-group-title">{grupo.titulo}</p>}
                 {grupo.opciones.map((opcion) => (
                   <Link
