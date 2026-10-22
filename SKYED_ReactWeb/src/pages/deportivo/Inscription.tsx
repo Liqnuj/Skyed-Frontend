@@ -154,8 +154,8 @@ function InscriptionWizard() {
         );
         if (activa) {
           setYaInscrito(true);
-          mostrarMsg('error', 'Ya estás inscrito en este evento. Te llevamos a tu inscripción…');
-          setTimeout(() => { if (!cancelado) nav(`/deportivo/mi-entrada/${id}`); }, 2500);
+          mostrarMsg('error', 'Ya estás inscrito en este evento. Te llevamos a tu panel de participante…');
+          setTimeout(() => { if (!cancelado) nav('/deportivo/perfil'); }, 2500);
         }
       })
       .catch(() => {});
@@ -430,7 +430,15 @@ function InscriptionWizard() {
     if (!rh) { setErrorRh('Selecciona tu tipo de sangre.'); faltaAlgo = true; }
     if (!telefonoContacto) { setErrorTelefonoContacto('Este campo es obligatorio.'); faltaAlgo = true; }
     if (!fechaNacimiento) { setErrorFechaNacimiento('Este campo es obligatorio.'); faltaAlgo = true; }
-    if (!contactoEmergenciaNombre) { setErrorNombreContacto('Este campo es obligatorio.'); faltaAlgo = true; }
+    if (!contactoEmergenciaNombre) {
+      setErrorNombreContacto('Este campo es obligatorio.');
+      faltaAlgo = true;
+    } else if (contactoEmergenciaNombre.trim().split(/\s+/).filter(Boolean).length < 2) {
+      setErrorNombreContacto('Escribe el nombre completo (nombre y apellido).');
+      faltaAlgo = true;
+    } else {
+      setErrorNombreContacto('');
+    }
     if (!contactoEmergenciaTelefono) { setErrorTelefonoEmergencia('Este campo es obligatorio.'); faltaAlgo = true; }
     if (!parentesco) { setErrorParentesco('Selecciona el parentesco.'); faltaAlgo = true; }
     if (!categoriaId) { faltaAlgo = true; }
@@ -1191,7 +1199,7 @@ function InscriptionWizard() {
                 <p className="part-form-hint" style={{ margin: '0 0 1.5rem' }}>
                   Te enviamos un correo con tu código QR de entrada. También puedes verlo cuando quieras desde tu perfil.
                 </p>
-                <button type="button" className="btn btn-primary" onClick={() => nav(`/deportivo/mi-entrada/${evento.id}`)}>
+                <button type="button" className="btn btn-primary" onClick={() => nav(`/deportivo/perfil?entrada=${evento.id}`)}>
                   Ver mi entrada <i className="ti ti-arrow-right" aria-hidden="true" />
                 </button>
               </div>

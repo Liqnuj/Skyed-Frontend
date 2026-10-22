@@ -5015,3 +5015,75 @@ html, .mod-principal {
     min-width: 30px;
   }
 }
+
+.proximo-evento {
+  margin-top: auto;
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.dark-mode .proximo-evento {
+  background-color: rgba(21, 17, 43, 0.95);
+}
+
+.proximo-evento-etiqueta {
+  font-size: 0.7rem;
+  font-weight: bold;
+  color: #eab308;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.proximo-evento-titulo {
+  font-weight: bold;
+  font-size: 1.1rem;
+  color: #1e293b;
+}
+
+.dark-mode .proximo-evento-titulo {
+  color: #ffffff;
+}
+
+.proximo-evento-descripcion {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.proximo-evento-hashtag {
+  transform: rotate(-90deg);
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: #3b82f6;
+  letter-spacing: 2px;
+}
+
+
+.code-input-container {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin: 20px 0;
+}
+
+.code-input {
+  width: 50px;
+  height: 60px;
+  text-align: center;
+  font-size: 1.5rem;
+  padding: 0;
+  border-radius: 8px;
+  background-color: #ffffff;
+}
+
+.dark-mode .code-input{
+  background-color: #000;
+}

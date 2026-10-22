@@ -223,19 +223,22 @@ export default function RecoverPage() {
               <li><span className="feat-ico"><i className="ti ti-shield-check" /></span>Tu cuenta siempre protegida.</li>
             </ul>
 
-            <div style={{ marginTop: 'auto', backgroundColor: '#fff', borderRadius: '12px', padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', position: 'relative', overflow: 'hidden' }}>
+            <div className="proximo-evento">
               <div>
-                <div style={{ fontSize: '0.7rem', fontWeight: 'bold', color: '#eab308', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>
+                <div className="proximo-evento-etiqueta">
                   Tu próximo evento
                 </div>
-                <div style={{ fontWeight: 'bold', fontSize: '1.1rem', color: '#1e293b' }}>
+
+                <div className="proximo-evento-titulo">
                   Feria SKYED
                 </div>
-                <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2px' }}>
+
+                <div className="proximo-evento-descripcion">
                   Acceso general · Válido con tu cuenta
                 </div>
               </div>
-              <div style={{ transform: 'rotate(-90deg)', fontSize: '0.8rem', fontWeight: 'bold', color: '#3b82f6', letterSpacing: '2px' }}>
+
+              <div className="proximo-evento-hashtag">
                 #SKYED
               </div>
             </div>
@@ -288,31 +291,36 @@ export default function RecoverPage() {
                   Enviamos un código a <strong>{email}</strong>
                 </p>
 
+                
                 <div className="form-group">
                   <label className="form-label">
                     Ingresa el código de 6 dígitos <span className="req">*</span>
                   </label>
-                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', margin: '20px 0' }}>
+
+                  <div className="code-input-container">
                     {code.map((digit, index) => (
                       <input
                         key={index}
-                        ref={(el: HTMLInputElement | null) => { inputRefs.current[index] = el; }}
+                        ref={(el: HTMLInputElement | null) => {
+                          inputRefs.current[index] = el;
+                        }}
                         type="text"
                         inputMode="numeric"
                         maxLength={1}
                         value={digit}
-                        onChange={(e: ChangeEvent<HTMLInputElement>) => handleChangeCode(index, e.target.value)}
-                        onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => handleKeyDown(index, e)}
+                        onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                          handleChangeCode(index, e.target.value)
+                        }
+                        onKeyDown={(e: KeyboardEvent<HTMLInputElement>) =>
+                          handleKeyDown(index, e)
+                        }
                         onFocus={(e) => e.target.select()}
                         className="form-input code-input"
-                        style={{
-                          width: '50px', height: '60px', textAlign: 'center', fontSize: '1.5rem',
-                          padding: '0', borderRadius: '8px', backgroundColor: '#ffffff'
-                        }}
                       />
                     ))}
                   </div>
                 </div>
+
 
                 <button type="submit" className="form-submit" disabled={loading} style={{ width: '100%', marginTop: '10px' }}>
                   {loading ? 'Verificando...' : 'Verificar código'}
