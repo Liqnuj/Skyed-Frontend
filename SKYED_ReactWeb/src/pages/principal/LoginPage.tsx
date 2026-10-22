@@ -64,12 +64,10 @@ export default function LoginPage() {
 
     try {
       // Llamamos a tu función login del AuthContext
-      // (Asumimos que esta función internamente hace la petición y guarda el token en localStorage)
       const correo = normalizarCorreo(email);
       const success = await login(correo, password);
 
       if (!success) {
-        // Si el login devuelve false, lanzamos el error
         throw new Error('Correo o contraseña incorrectos. Verifica tus datos.');
       }
 
@@ -77,9 +75,16 @@ export default function LoginPage() {
 
       setSuccessMsg('¡Inicio de sesión exitoso! Redirigiendo...');
       
+      // Capturamos el parámetro "redirect" de la URL si existe
+      const queryParams = new URLSearchParams(location.search);
+      const redirectUrl = queryParams.get('redirect');
+      
+      // Decidimos a dónde enviarlo: a la redirección pendiente o a la ruta por defecto
+      const finalDestination = redirectUrl ? redirectUrl : from;
+
       // Esperamos 2 segundos para que se vea la alerta verde y redirigimos
       setTimeout(() => {
-        navigate(from, { replace: true });
+        navigate(finalDestination, { replace: true });
       }, 2000);
 
     } catch (err) {

@@ -37,11 +37,17 @@ export default function SocialNav() {
           <a href="#contacto" onClick={close}>Contacto</a>
         </div>
 
-        {/* Con sesión: menú de la cuenta (panel de usuario / admin / salir). */}
+        {/* Si hay usuario, muestra el menú desplegable. Si NO hay, muestra el botón que envía al login con redirección */}
         {user ? (
           <SocialUserMenu />
         ) : (
-          <Link to="/social/reservar" className="nav-cta" onClick={close}>Reservar ahora</Link>
+          <Link 
+            to="/login?redirect=/social/reservar" 
+            className="nav-cta" 
+            onClick={close}
+          >
+            Reservar ahora
+          </Link>
         )}
 
         <button className={`hamburger ${open ? 'active' : ''}`} id="hamburger" onClick={() => setOpen((o) => !o)} aria-label="Menú">
