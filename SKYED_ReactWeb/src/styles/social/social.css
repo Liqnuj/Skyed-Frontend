@@ -518,32 +518,6 @@
   color: var(--text-muted);
 }
 
-.mod-social .toast {
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
-  background: var(--plum);
-  color: var(--white);
-  padding: 1rem 1.5rem;
-  border-radius: 14px;
-  font-size: calc(.9rem * var(--fs-scale, 1));
-  font-weight: 500;
-  box-shadow: 0 12px 40px rgba(26, 10, 46, .4);
-  z-index: 3000;
-  transform: translateY(100px);
-  opacity: 0;
-  transition: all .4s;
-  display: flex;
-  align-items: center;
-  gap: .75rem;
-  max-width: 340px;
-}
-
-.mod-social .toast.show {
-  transform: none;
-  opacity: 1;
-}
-
 .mod-social .toast-icon {
   font-size: calc(1.2rem * var(--fs-scale, 1));
 }
@@ -2653,16 +2627,6 @@
       border-radius: 20px;
       text-transform: uppercase;
       letter-spacing: .05em;
-    }.mod-social .toast {
-      position: fixed;
-      bottom: 1.5rem; right: 1.5rem;
-      background: linear-gradient(135deg, var(--sidebar-bg), var(--accent));
-      color: #fff;
-      padding: 10px 20px;
-      border-radius: 10px;
-      font-size: calc(0.85rem * var(--fs-scale, 1));
-      z-index: 999;
-      box-shadow: 0 10px 25px var(--shadow-strong);
     }.mod-social .view[hidden] { display: none; }
 
     
@@ -3195,4 +3159,62 @@
   margin: 0 auto 1.75rem;
 }
 @media (max-width: 600px){.mod-social .profile-header-inner { flex-direction: column; text-align: center; }.mod-social .profile-actions { width: 100%; justify-content: center; }.mod-social .profile-tabs { overflow-x: auto; }.mod-social .stats-strip { grid-template-columns: 1fr 1fr; }
+}
+
+/* =========================================
+   TOAST NOTIFICACIÓN (Arriba + Barra de tiempo)
+   ========================================= */
+.mod-social .toast {
+  position: fixed;
+  top: 30px !important;    /* Lo fija en la parte superior */
+  bottom: auto !important; /* Evita que se estire hacia abajo */
+  right: 30px;
+  background-color: #ffffff !important; /* Fuerza el fondo blanco */
+  color: #333333 !important;
+  padding: 16px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  z-index: 99999 !important; /* Por encima del ícono de accesibilidad */
+  transform: translateY(-100px); /* Para que la animación entre desde arriba */
+  opacity: 0;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Efecto de rebote suave al entrar */
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 350px;
+  height: auto !important; /* Protege contra estiramientos */
+  overflow: hidden; /* Necesario para que la barrita no se salga del borde redondeado */
+}
+
+.mod-social .toast.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* BARRITA DE DURACIÓN ANIMADA */
+.mod-social .toast::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 4px;
+  background-color: #10b981; /* Verde de la primera imagen */
+  width: 100%;
+}
+
+.mod-social .toast.show::after {
+  animation: toast-progress 4s linear forwards; /* 4s exactos que dura la alerta */
+}
+
+@keyframes toast-progress {
+  0% { width: 100%; }
+  100% { width: 0%; }
+}
+
+/* MODO OSCURO */
+.mod-social.dark-mode .toast {
+  background-color: var(--plum) !important;
+  color: var(--white) !important;
 }
