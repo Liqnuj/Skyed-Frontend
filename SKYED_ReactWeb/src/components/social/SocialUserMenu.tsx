@@ -63,10 +63,8 @@ export default function SocialUserMenu() {
       : 'Miembro SKYED';
 
   const opciones = [
-    { to: '/social/perfil', icono: 'ti-layout-dashboard', titulo: 'Mi panel', detalle: 'Resumen de tu cuenta' },
-    { to: '/social/perfil?tab=reservas', icono: 'ti-calendar-event', titulo: 'Mis reservas', detalle: 'Estado de tus eventos' },
-    { to: '/social/perfil?tab=pqr', icono: 'ti-message-2', titulo: 'Mis PQR', detalle: 'Solicitudes y respuestas' },
-    { to: '/social/perfil?tab=ajustes', icono: 'ti-settings', titulo: 'Ajustes', detalle: 'Datos y contraseña' },
+    { to: '/social/perfil', icono: 'ti-layout-dashboard', titulo: 'Perfil', detalle: 'Resumen de tu cuenta' },
+    { to: '/social/reservar', icono: 'ti-dollar-sign', titulo: 'Cotizar reserva', detalle: 'Solicita una cotización para tu reserva' }
   ];
 
   const cerrarSesion = async () => {
