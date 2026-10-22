@@ -21,10 +21,6 @@ const { user } = useAuth();
     {
       opciones: [
         { to: '/deportivo/perfil', icono: 'ti-layout-dashboard', titulo: 'Mi perfil', detalle: 'Resumen y estadísticas' },
-        { to: '/deportivo/perfil?tab=inscripciones', icono: 'ti-bike', titulo: 'Mis inscripciones', detalle: 'Estado de tus carreras' },
-        { to: '/deportivo/mi-entrada', icono: 'ti-qrcode', titulo: 'Mi entrada', detalle: 'Tu QR para el día del evento' },
-        { to: '/deportivo/perfil?tab=historial', icono: 'ti-trophy', titulo: 'Historial', detalle: 'Tus participaciones y resultados' },
-        { to: '/deportivo/perfil?tab=ajustes', icono: 'ti-settings', titulo: 'Ajustes', detalle: 'Datos y contraseña' },
       ],
     },
   ];
