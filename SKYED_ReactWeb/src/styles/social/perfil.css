@@ -4,10 +4,10 @@
 
 .mod-social .pf-header {
   padding: 7rem 0 0;
-  background: var(--plum);
-  border-bottom: 1px solid rgba(255, 255, 255, .08);
+  background: #fff;
+  border-bottom: 1px solid var(--plum);
 }
-.mod-social.dark-mode .pf-header { background: var(--plum); }
+.mod-social.dark-mode .pf-header { background: #1c0329 }
 
 .mod-social .pf-header-inner {
   max-width: 1200px;
@@ -54,19 +54,30 @@
 }
 .mod-social .pf-avatar-edit:disabled { opacity: .6; cursor: wait; }
 
-.mod-social .pf-meta { color: var(--white); }
+/*   */
 .mod-social .pf-meta h1 {
   margin: .2rem 0 .15rem;
   font-family: 'Playfair Display', serif;
   font-size: calc(1.6rem * var(--fs-scale, 1));
+  color: var(--plum);
+  /* margin-left: 0.6rem; */
 }
-.mod-social .pf-handle { margin: 0; color: rgba(255, 255, 255, .6); font-size: calc(.88rem * var(--fs-scale, 1)); }
+
+.mod-social.dark-mode .pf-meta h1 {
+  color: var(--white);
+}
+
+.mod-social .pf-handle { margin: 0; color: rgba(9, 9, 9, 0.6); font-size: calc(.88rem * var(--fs-scale, 1)); }
+
+.mod-social.dark-mode .pf-handle {
+  color: rgba(255, 255, 255, 0.6);
+}
 
 .mod-social .pf-badge {
   display: inline-flex;
   align-items: center;
   gap: .4rem;
-  background: rgba(255, 255, 255, .08);
+  background: rgba(0, 0, 0, 0.041);
   color: var(--gold-light, var(--gold));
   padding: .3rem .8rem;
   border-radius: 50px;
@@ -74,6 +85,12 @@
   font-weight: 600;
   letter-spacing: .04em;
   text-transform: uppercase;
+
+}
+
+.mod-social.dark-mode .pf-badge {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--gold-light, var(--gold));
 }
 
 .mod-social .pf-actions { display: flex; gap: .6rem; flex-wrap: wrap; margin-left: auto; }
@@ -89,7 +106,7 @@
 .mod-social .pf-tabs button {
   background: none;
   border: none;
-  color: rgba(255, 255, 255, .55);
+  color: rgba(12, 12, 12, 0.55);
   padding: .85rem 1.1rem;
   font-size: calc(.88rem * var(--fs-scale, 1));
   font-weight: 600;
@@ -100,7 +117,13 @@
   align-items: center;
   gap: .4rem;
 }
-.mod-social .pf-tabs button.active { color: var(--white); border-bottom-color: var(--gold); }
+
+.mod-social.dark-mode .pf-tabs button { color: rgba(255, 255, 255, 0.55); }
+
+.mod-social .pf-tabs button.active { color: var(--plum); border-bottom-color: var(--gold); }
+
+.mod-social.dark-mode .pf-tabs button.active { color: var(--white); border-bottom-color: var(--gold); }
+
 .mod-social .pf-tab-count {
   background: var(--gold);
   color: var(--plum);
@@ -113,6 +136,13 @@
 }
 
 .mod-social .pf-body { max-width: 1200px; margin: 0 auto; padding: 2.5rem 2rem 5rem; }
+
+.mod-social.dark-mode .pf-body {
+  background: #14011e;
+  min-height: 0;
+  box-shadow: 0 0 0 100vmax #14011e;
+  clip-path: inset(0 -100vmax);
+}
 
 .mod-social .pf-grid {
   display: grid;
@@ -236,7 +266,6 @@
   margin-top: 1rem;
 }
 .mod-social.dark-mode .pf-message-box { background: rgba(255,255,255,.05); }
-.mod-social .pf-message-box.accent { background: color-mix(in srgb, var(--accent) 12%, var(--cream)); }
 .mod-social .pf-message-box span { display: block; font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); margin-bottom: .3rem; }
 .mod-social .pf-message-box p { margin: 0; font-size: calc(.88rem * var(--fs-scale, 1)); line-height: 1.6; }
 
@@ -381,13 +410,13 @@
 /* Botones del encabezado: antes eran morado oscuro sobre el fondo morado
    oscuro del encabezado, así que "Nueva PQR" y "Ver eventos" no se veían. */
 .mod-social .pf-actions .btn-sm-outline {
-  color: var(--white);
-  border-color: rgba(255, 255, 255, .45);
+  color: var(--plum);
+  border-color: rgba(14, 13, 13, 0.45);
 }
 
 .mod-social .pf-actions .btn-sm-outline:hover {
-  background: var(--white);
-  color: var(--plum);
+  background: #f5f5f5;
+  color: #000000;
 }
 
 /* Acceso al panel de administración (solo cuentas adminSocial) */
@@ -432,6 +461,66 @@
   background: rgba(139, 34, 82, .2);
   border-color: rgba(241, 154, 192, .3);
   color: #f9c4da;
+}
+
+/* ---- Toast de avisos: mismo estilo que .part-form-alert de Deportivo ----
+   Tarjeta flotante arriba a la derecha, borde de color y barra de progreso.
+   Los colores de estado se declaran una sola vez aquí. */
+.mod-social .pf-toast {
+  --toast-ok: #22c55e;
+  --toast-error: var(--rose, #ef4444);
+  --toast-dur: 4000ms;
+  position: fixed;
+  top: 110px;
+  right: 24px;
+  z-index: 1000; /* por encima de los modales (z-index 60) */
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  max-width: 340px;
+  padding: .9rem 1.1rem 1.05rem;
+  border-radius: 8px;
+  background: var(--white);
+  color: var(--plum);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .18);
+  font-size: calc(.9rem * var(--fs-scale, 1));
+  line-height: 1.4;
+  animation: pfToastIn .25s ease both;
+}
+
+.mod-social .pf-toast.ok { border-left: 4px solid var(--toast-ok); }
+.mod-social .pf-toast.error { border-left: 4px solid var(--toast-error); }
+
+.mod-social .pf-toast-icon { font-size: calc(1.1rem * var(--fs-scale, 1)); flex-shrink: 0; }
+
+.mod-social.dark-mode .pf-toast { background: var(--plum-mid, #241238); color: var(--white); }
+
+.mod-social .pf-toast-timer {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  width: 100%;
+  transform-origin: left;
+  animation: pfToastTimer var(--toast-dur) linear forwards;
+}
+
+.mod-social .pf-toast.ok .pf-toast-timer { background: var(--toast-ok); }
+.mod-social .pf-toast.error .pf-toast-timer { background: var(--toast-error); }
+
+@keyframes pfToastIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pfToastTimer {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+@media (max-width: 600px) {
+  .mod-social .pf-toast { top: 80px; left: 12px; right: 12px; max-width: none; }
 }
 
 @media (max-width: 600px) {
@@ -501,7 +590,7 @@
 .mod-social.dark-mode .pfx-card,
 .mod-social.dark-mode .pfx-box,
 .mod-social.dark-mode .pfx-item {
-  background: var(--plum-mid);
+  background: #14011e00;
   color: rgba(255, 255, 255, .92);
 }
 
@@ -600,12 +689,12 @@
 .mod-social .pfx-empty-line {
   padding: 1.2rem 1rem;
   text-align: center;
-  border: 1px dashed color-mix(in srgb, currentColor 22%, transparent);
+  border: 1px var(--accent) solid;
   border-radius: 14px;
 }
 .mod-social .pfx-empty-line a { font-weight: 700; color: var(--accent); text-decoration: underline; }
 .mod-social.dark-mode .pfx-empty-line { color: rgba(255, 255, 255, .85); }
-.mod-social.dark-mode .pfx-empty-line a { color: color-mix(in srgb, var(--accent) 55%, white); }
+.mod-social.dark-mode .pfx-empty-line a { color: color-mix(in srgb, var(--accent) 55%, white);text-decoration: none; }
 
 /* ---------- Perfil completo ---------- */
 .mod-social .pfx-pct { font-weight: 700; color: var(--accent); }
@@ -802,3 +891,33 @@
 .mod-social .pfx-danger-text { margin: .5rem 0 1.25rem; line-height: 1.6; }
 .mod-social .pfx-modal-actions { display: flex; gap: .75rem; justify-content: flex-end; flex-wrap: wrap; }
 .mod-social .pfx-modal-actions .pfx-btn { border-radius: 10px; padding: .7rem 1.2rem; }
+
+/* ---------- Mis PQR: estado vacío ---------- */
+.mod-social .pfq-empty {
+  max-width: 460px;
+  margin: 2rem auto;
+  padding: 2.2rem 1.8rem;
+  text-align: center;
+  background: var(--white);
+  border: 1px dashed color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: 16px;
+}
+.mod-social .pfq-empty-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: .9rem;
+  border-radius: 50%;
+  font-size: 1.6rem;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+}
+.mod-social .pfq-empty-title { margin: 0 0 .4rem; font-size: calc(1.05rem * var(--fs-scale, 1)); color: var(--plum); }
+.mod-social .pfq-empty-text { margin: 0 0 1.3rem; font-size: calc(.9rem * var(--fs-scale, 1)); line-height: 1.6; color: var(--text-muted); }
+
+.mod-social.dark-mode .pfq-empty { background: none }
+.mod-social.dark-mode .pfq-empty-icon { color: color-mix(in srgb, var(--accent) 55%, white); }
+.mod-social.dark-mode .pfq-empty-title { color: var(--white); }
+.mod-social.dark-mode .pfq-empty-text { color: rgba(255, 255, 255, .7); }

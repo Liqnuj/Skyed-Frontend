@@ -21,7 +21,7 @@ export default function HomePage() {
       <PrincipalNav />
 
       {/* ===== HERO ===== */}
-      <section className="hero">
+      <section className="hero" id="inicio">
         <div className="hero-bg"></div>
           <div className="hero-text">
 
@@ -128,7 +128,7 @@ export default function HomePage() {
       </div>
 
       {/* ===== QUÉ ENCONTRARÁS ===== */}
-      <section className="section section-find">
+      <section className="section section-find" id="encontraras">
         <p className="section-eyebrow muted">Qué encontrarás</p>
         <h2>Dos mundos, infinitas experiencias</h2>
         <p className="section-sub">Cada plataforma fue diseñada con un propósito claro: darte exactamente lo que necesitas.</p>
@@ -213,7 +213,7 @@ export default function HomePage() {
       </section>
 
       {/* ===== CTA ===== */}
-      <section className="cta-section">
+      <section className="cta-section" id="unete">
         <div className="cta-blob cta-blob--left" />
         <div className="cta-blob cta-blob--right" />
         <div className="cta-inner">

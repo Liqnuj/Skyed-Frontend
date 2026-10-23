@@ -3,6 +3,8 @@ import type { FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Protected from '../../components/Protected';
 import SocialWrapper from '../../components/social/SocialWrapper';
+import Toast from '../../components/social/Toast';
+import type { ToastMsg } from '../../components/social/Toast';
 import { useAuth } from '../../context/AuthContext';
 import { apiFetch } from '../../services/api';
 import { pqrService, reservaService } from '../../services/socialService';
@@ -101,47 +103,46 @@ function PerfilPanel() {
 
   const [pqrs, setPqrs] = useState<Pqr[] | null>(null);
   const [reservas, setReservas] = useState<Reserva[] | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
 
   const [detallePqr, setDetallePqr] = useState<Pqr | null>(null);
+  const [toast, setToast] = useState<ToastMsg | null>(null);
 
   useEffect(() => {
-    pqrService.misPqr().then((res) => setPqrs(res.data)).catch(() => setLoadError('No se pudieron cargar tus PQR.'));
-    reservaService.misReservas().then((res) => setReservas(res.data)).catch(() => setLoadError('No se pudieron cargar tus reservas.'));
+    pqrService.misPqr().then((res) => setPqrs(res.data)).catch(() => setToast({ tipo: 'error', texto: 'No se pudieron cargar tus PQR.', id: Date.now() }));
+    reservaService.misReservas().then((res) => setReservas(res.data)).catch(() => setToast({ tipo: 'error', texto: 'No se pudieron cargar tus reservas.', id: Date.now() }));
   }, []);
 
   const initials = (user?.name || 'SK').split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [subiendoFoto, setSubiendoFoto] = useState(false);
-  const [fotoMsg, setFotoMsg] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null);
   const handleFotoClick = () => fileInputRef.current?.click();
   const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const original = e.target.files?.[0];
     e.target.value = '';
     if (!original) return;
     if (!original.type.startsWith('image/')) {
-      setFotoMsg({ tipo: 'error', texto: 'El archivo debe ser una imagen (JPG, PNG o WEBP).' });
+      setToast({ tipo: 'error', texto: 'El archivo debe ser una imagen (JPG, PNG o WEBP).', id: Date.now() });
       return;
     }
 
     setSubiendoFoto(true);
-    setFotoMsg(null);
+    setToast(null);
     try {
       // Se reduce antes de subir: PHP acepta solo 2 MB por defecto y una
       // foto de celular pesa 3-6 MB (antes fallaba sin avisar).
       const file = await prepararImagen(original);
       if (file.size > 3 * 1024 * 1024) {
-        setFotoMsg({ tipo: 'error', texto: 'La imagen no debe superar 3 MB.' });
+        setToast({ tipo: 'error', texto: 'La imagen no debe superar 3 MB.', id: Date.now() });
         return;
       }
       const formData = new FormData();
       formData.append('foto', file);
       const data = await apiFetch('/perfil/foto', { method: 'POST', body: formData });
       if (data?.foto_url) updateFotoUrl(data.foto_url);
-      setFotoMsg({ tipo: 'ok', texto: 'Foto de perfil actualizada.' });
+      setToast({ tipo: 'ok', texto: 'Foto de perfil actualizada.', id: Date.now() });
     } catch (err) {
-      setFotoMsg({ tipo: 'error', texto: err instanceof Error ? err.message : 'No se pudo subir la foto.' });
+      setToast({ tipo: 'error', texto: err instanceof Error ? err.message : 'No se pudo subir la foto.', id: Date.now() });
     } finally {
       setSubiendoFoto(false);
     }
@@ -311,8 +312,7 @@ function PerfilPanel() {
       </div>
 
       <div className="pf-body">
-        {loadError && <p className="pf-alert error">{loadError}</p>}
-        {fotoMsg && <p className={`pf-alert ${fotoMsg.tipo}`}>{fotoMsg.texto}</p>}
+        <Toast msg={toast} onClose={() => setToast(null)} />
 
         {tab === 'resumen' && (
           <div className="pfx-layout">
@@ -344,7 +344,7 @@ function PerfilPanel() {
               </div>
               {reservasProximas.length === 0 ? (
                 <div className="pfx-empty-line">
-                  Sin reservas próximas. <Link to="/social/reservar">Reserva tu evento →</Link>
+                  Sin reservas próximas. <Link to="/social/reservar">reserva tu evento →</Link>
                 </div>
               ) : (
                 <div className="pfx-list">
@@ -372,7 +372,7 @@ function PerfilPanel() {
               </div>
               {pqrEnCurso.length === 0 ? (
                 <div className="pfx-empty-line">
-                  Sin PQR en curso. <Link to="/social/pqr">Radicar una PQR →</Link>
+                  Sin PQR en curso. <Link to="/social/pqr">radicar una PQR →</Link>
                 </div>
               ) : (
                 <div className="pfx-list">
@@ -400,7 +400,16 @@ function PerfilPanel() {
         {tab === 'pqr' && (
           <div className="pf-list">
             {pqrs === null && <p className="pf-loading">Cargando tus PQR…</p>}
-            {pqrs?.length === 0 && <p className="pf-empty">Todavía no has radicado ninguna PQR.</p>}
+            {pqrs?.length === 0 && (
+              <div className="pfq-empty">
+                <span className="pfq-empty-icon" aria-hidden="true"><i className="ti ti-message-report" /></span>
+                <h3 className="pfq-empty-title">Aún no has radicado ninguna PQR</h3>
+                <p className="pfq-empty-text">Preguntas, quejas o reclamos: te respondemos por este mismo perfil.</p>
+                <Link to="/social/pqr" className="pfx-btn pfx-btn-primary">
+                  <i className="ti ti-plus" aria-hidden="true" /> Radicar una PQR
+                </Link>
+              </div>
+            )}
             {pqrs?.map((p) => {
               const pill = pqrEstadoPill(p.estado_pqr);
               return (
@@ -419,7 +428,16 @@ function PerfilPanel() {
         {tab === 'reservas' && (
           <div className="pf-list">
             {reservas === null && <p className="pf-loading">Cargando tus reservas…</p>}
-            {reservas?.length === 0 && <p className="pf-empty">Todavía no tienes reservas registradas.</p>}
+            {reservas?.length === 0 && (
+              <div className="pfq-empty">
+                <span className="pfq-empty-icon" aria-hidden="true"><i className="ti ti-calendar-event" /></span>
+                <h3 className="pfq-empty-title">Aún no tienes reservas</h3>
+                <p className="pfq-empty-text">Explora los eventos disponibles y reserva el tuyo en pocos pasos.</p>
+                <Link to="/social/eventos" className="pfx-btn pfx-btn-primary">
+                  <i className="ti ti-search" aria-hidden="true" /> Ver eventos
+                </Link>
+              </div>
+            )}
             {reservas?.map((r) => {
               const pill = reservaEstadoPill(r.estado_rese);
               return (
@@ -515,21 +533,21 @@ function AjustesForm({
   const [documento, setDocumento] = useState(user?.documento ? String(user.documento) : '');
   const [fechaNacimiento, setFechaNacimiento] = useState(soloFecha(user?.fecha_nacimiento));
   const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null);
+  const [msg, setMsg] = useState<ToastMsg | null>(null);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setMsg(null);
     if (telefono && (telefono.length < 7 || telefono.length > 15)) {
-      setMsg({ tipo: 'error', texto: 'El teléfono debe tener entre 7 y 15 dígitos.' });
+      setMsg({ tipo: 'error', texto: 'El teléfono debe tener entre 7 y 15 dígitos.', id: Date.now() });
       return;
     }
     if (documento && (documento.length < 5 || documento.length > 15)) {
-      setMsg({ tipo: 'error', texto: 'El número de documento debe tener entre 5 y 15 dígitos.' });
+      setMsg({ tipo: 'error', texto: 'El número de documento debe tener entre 5 y 15 dígitos.', id: Date.now() });
       return;
     }
     if (fechaNacimiento && fechaNacimiento > new Date().toLocaleDateString('en-CA')) {
-      setMsg({ tipo: 'error', texto: 'La fecha de nacimiento no puede ser futura.' });
+      setMsg({ tipo: 'error', texto: 'La fecha de nacimiento no puede ser futura.', id: Date.now() });
       return;
     }
     setSaving(true);
@@ -543,9 +561,9 @@ function AjustesForm({
         documento_u: documento ? Number(documento) : undefined,
         fecha_nacimiento_u: fechaNacimiento || undefined,
       });
-      setMsg({ tipo: 'ok', texto: 'Tus datos se actualizaron correctamente.' });
+      setMsg({ tipo: 'ok', texto: 'Tus datos se actualizaron correctamente.', id: Date.now() });
     } catch (err) {
-      setMsg({ tipo: 'error', texto: err instanceof Error ? err.message : 'No se pudieron guardar los cambios.' });
+      setMsg({ tipo: 'error', texto: err instanceof Error ? err.message : 'No se pudieron guardar los cambios.', id: Date.now() });
     } finally {
       setSaving(false);
     }
@@ -558,7 +576,7 @@ function AjustesForm({
         <h3>Datos personales</h3>
       </div>
       <form className="pfx-form" onSubmit={submit}>
-        {msg && <p className={`pf-alert ${msg.tipo}`}>{msg.texto}</p>}
+        <Toast msg={msg} onClose={() => setMsg(null)} />
         <div className="pfx-form-row">
           <label className="pfx-field">
             <span>Nombre</span>
@@ -612,22 +630,22 @@ function CambiarContrasena() {
   const [confirmar, setConfirmar] = useState('');
   const [ver, setVer] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null);
+  const [msg, setMsg] = useState<ToastMsg | null>(null);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setMsg(null);
     const motivo = errorContrasena(nueva);
     if (motivo) {
-      setMsg({ tipo: 'error', texto: motivo });
+      setMsg({ tipo: 'error', texto: motivo, id: Date.now() });
       return;
     }
     if (nueva === actual) {
-      setMsg({ tipo: 'error', texto: 'La nueva contraseña debe ser distinta a la actual.' });
+      setMsg({ tipo: 'error', texto: 'La nueva contraseña debe ser distinta a la actual.', id: Date.now() });
       return;
     }
     if (nueva !== confirmar) {
-      setMsg({ tipo: 'error', texto: 'Las contraseñas no coinciden.' });
+      setMsg({ tipo: 'error', texto: 'Las contraseñas no coinciden.', id: Date.now() });
       return;
     }
     setSaving(true);
@@ -640,12 +658,12 @@ function CambiarContrasena() {
           nueva_contrasena_confirmation: confirmar,
         }),
       });
-      setMsg({ tipo: 'ok', texto: 'Contraseña actualizada correctamente.' });
+      setMsg({ tipo: 'ok', texto: 'Contraseña actualizada correctamente.', id: Date.now() });
       setActual('');
       setNueva('');
       setConfirmar('');
     } catch (err) {
-      setMsg({ tipo: 'error', texto: err instanceof Error ? err.message : 'No se pudo cambiar la contraseña.' });
+      setMsg({ tipo: 'error', texto: err instanceof Error ? err.message : 'No se pudo cambiar la contraseña.', id: Date.now() });
     } finally {
       setSaving(false);
     }
@@ -660,7 +678,7 @@ function CambiarContrasena() {
         <h3>Seguridad</h3>
       </div>
       <form className="pfx-form" onSubmit={submit}>
-        {msg && <p className={`pf-alert ${msg.tipo}`}>{msg.texto}</p>}
+        <Toast msg={msg} onClose={() => setMsg(null)} />
         <label className="pfx-field">
           <span>Contraseña actual</span>
           <input type={tipo} value={actual} onChange={(e) => setActual(e.target.value)} required autoComplete="current-password" />
@@ -697,7 +715,7 @@ function CuentaCard({
   const navigate = useNavigate();
   const [confirmar, setConfirmar] = useState(false);
   const [eliminando, setEliminando] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ToastMsg | null>(null);
 
   const eliminar = async () => {
     setEliminando(true);
@@ -706,7 +724,7 @@ function CuentaCard({
       await deleteAccount();
       navigate('/login');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo eliminar la cuenta. Intenta de nuevo.');
+      setError({ tipo: 'error', texto: err instanceof Error ? err.message : 'No se pudo eliminar la cuenta. Intenta de nuevo.', id: Date.now() });
       setEliminando(false);
     }
   };
@@ -749,7 +767,7 @@ function CuentaCard({
             <p className="pfx-danger-text">
               Vas a desactivar tu cuenta. Se cerrará tu sesión y no podrás iniciar sesión de nuevo hasta que un administrador la reactive.
             </p>
-            {error && <p className="pf-alert error">{error}</p>}
+            <Toast msg={error} onClose={() => setError(null)} />
             <div className="pfx-modal-actions">
               <button type="button" className="pfx-btn pfx-btn-outline" onClick={cerrar} disabled={eliminando}>Cancelar</button>
               <button type="button" className="pfx-btn pfx-btn-danger pfx-btn-solid" onClick={eliminar} disabled={eliminando}>
