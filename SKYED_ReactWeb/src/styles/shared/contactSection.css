@@ -1,0 +1,95 @@
+/* ===== Sección "Contáctanos" (páginas Nosotros social y deportivo) ===== */
+.ctu{
+  --ctu-dark-1:#1A0A2E; --ctu-dark-2:#2D1454; --ctu-gold:#d4af37;
+  --ctu-bg:#FAF8F5; --ctu-card:#ffffff; --ctu-ink:#1A0A2E; --ctu-muted:#6b5f7a;
+  --ctu-line:#e8e0f0; --ctu-field:#faf8fc;
+  position:relative; padding:5rem 1.5rem 4rem; background:var(--ctu-bg);
+  scroll-margin-top:80px;
+  /* Panel: oscuro por defecto */
+  --ctu-p-bg:linear-gradient(155deg,var(--ctu-dark-1) 0%,var(--ctu-dark-2) 100%);
+  --ctu-p-ink:#fff; --ctu-p-soft:rgba(255,255,255,.72); --ctu-p-label:rgba(255,255,255,.5);
+  --ctu-p-row:rgba(255,255,255,.06); --ctu-p-row-line:rgba(255,255,255,.1); --ctu-p-row-hover:rgba(255,255,255,.12);
+  --ctu-p-soc-line:rgba(255,255,255,.25); --ctu-p-orb-a:.45; --ctu-p-ring:rgba(255,255,255,.14);
+  --ctu-p-ring-1:rgba(255,255,255,.03); --ctu-p-ring-2:rgba(255,255,255,.02);
+  --ctu-p-shadow:rgba(26,10,46,.45); --ctu-p-brand:#fff; --ctu-p-accent-txt:var(--ctu-gold);
+}
+/* Social en modo claro: panel claro, acorde al resto de la página */
+.ctu--social{
+  --ctu-p-bg:#ffffff; --ctu-p-ink:#1A0A2E; --ctu-p-soft:#4A3860; --ctu-p-label:#8A7A9A;
+  --ctu-p-row:#faf8fc; --ctu-p-row-line:#e8e0f0; --ctu-p-row-hover:#f5e6ef;
+  --ctu-p-soc-line:#d9cfe6; --ctu-p-orb-a:.14; --ctu-p-ring:rgba(26,10,46,.08);
+  --ctu-p-ring-1:rgba(26,10,46,.025); --ctu-p-ring-2:rgba(26,10,46,.015);
+  --ctu-p-shadow:rgba(26,10,46,.18); --ctu-p-brand:#1A0A2E; --ctu-p-accent-txt:var(--accent);
+}
+.dark-mode .ctu--social{
+  --ctu-p-bg:linear-gradient(155deg,var(--ctu-dark-1) 0%,var(--ctu-dark-2) 100%);
+  --ctu-p-ink:#fff; --ctu-p-soft:rgba(255,255,255,.72); --ctu-p-label:rgba(255,255,255,.5);
+  --ctu-p-row:rgba(255,255,255,.06); --ctu-p-row-line:rgba(255,255,255,.1); --ctu-p-row-hover:rgba(255,255,255,.12);
+  --ctu-p-soc-line:rgba(255,255,255,.25); --ctu-p-orb-a:.45; --ctu-p-ring:rgba(255,255,255,.14);
+  --ctu-p-ring-1:rgba(255,255,255,.03); --ctu-p-ring-2:rgba(255,255,255,.02);
+  --ctu-p-shadow:rgba(26,10,46,.45); --ctu-p-brand:#fff; --ctu-p-accent-txt:var(--ctu-gold);
+}
+.ctu--deportivo{
+  --ctu-dark-1:#091d36; --ctu-dark-2:#0c4a63; --ctu-gold:#7ed3e1;
+  --ctu-bg:#f4f8fb; --ctu-ink:#0f172a; --ctu-muted:#5b6775; --ctu-line:#e3e8ef; --ctu-field:#f6f9fc;
+}
+.dark-mode .ctu{ --ctu-bg:#0e0818; --ctu-card:#1b1229; --ctu-ink:#f2edf8; --ctu-muted:#b9acc9; --ctu-line:rgba(255,255,255,.1); --ctu-field:#140d20; }
+.dark-mode .ctu--deportivo{ --ctu-bg:#07131f; --ctu-card:#0d1d2b; --ctu-ink:#f4f8fb; --ctu-muted:#b8c7d4; --ctu-line:rgba(126,211,225,.2); --ctu-field:#08141f; }
+
+.ctu-inner{ max-width:1100px; margin:0 auto; }
+.ctu-head{ text-align:center; margin-bottom:2.5rem; }
+.ctu-label{
+  display:inline-block; background:var(--accent); color:#fff; padding:.35rem .9rem; border-radius:50px;
+  font-size:calc(.72rem * var(--fs-scale,1)); font-weight:600; letter-spacing:.18em; text-transform:uppercase; margin-bottom:1rem;
+}
+.ctu-title{
+  font-family:'Playfair Display',Georgia,serif; color:var(--ctu-ink); line-height:1.15; letter-spacing:-.02em; margin:0;
+  font-size:calc(clamp(1.8rem,4vw,2.8rem) * var(--fs-scale,1)); font-weight:700;
+}
+.ctu--deportivo .ctu-title{ font-family:'Barlow Condensed','Segoe UI',sans-serif; font-weight:800; letter-spacing:0; }
+
+.ctu-card{
+  position:relative; overflow:hidden; border-radius:28px; color:var(--ctu-p-ink); padding:3rem;
+  display:grid; grid-template-columns:5fr 6fr; gap:3rem; align-items:center;
+  background:var(--ctu-p-bg);
+  border:1px solid var(--ctu-line); box-shadow:0 30px 70px -25px var(--ctu-p-shadow);
+}
+
+/* Panel izquierdo */
+.ctu-orb{ position:absolute; border-radius:50%; pointer-events:none; }
+.ctu-orb--a{ width:280px; height:280px; right:-90px; top:-90px; background:radial-gradient(circle,var(--accent) 0%,transparent 70%); opacity:var(--ctu-p-orb-a); }
+.ctu-orb--b{ width:220px; height:220px; left:-80px; bottom:-80px; border:1px solid var(--ctu-p-ring); box-shadow:0 0 0 28px var(--ctu-p-ring-1),0 0 0 56px var(--ctu-p-ring-2); }
+.ctu-left,.ctu-list{ position:relative; z-index:1; }
+.ctu-brand{ display:flex; align-items:center; gap:.7rem; font-size:calc(1.6rem * var(--fs-scale,1)); font-weight:800; letter-spacing:.02em; color:var(--ctu-p-brand); }
+.ctu-brand img{ width:44px; height:36px; object-fit:contain; }
+.ctu-brand em{ font-style:normal; color:var(--ctu-p-accent-txt); }
+.ctu-intro{ margin:1rem 0 1.75rem; color:var(--ctu-p-soft); line-height:1.7; font-size:calc(.95rem * var(--fs-scale,1)); }
+
+.ctu-list{ list-style:none; margin:0; padding:0; display:grid; grid-template-columns:1fr 1fr; gap:.9rem; }
+.ctu-row{
+  display:flex; align-items:center; gap:.9rem; padding:1.1rem 1.1rem; height:100%; box-sizing:border-box; border-radius:16px; text-decoration:none; color:inherit;
+  background:var(--ctu-p-row); border:1px solid var(--ctu-p-row-line); transition:transform .25s,background .25s,border-color .25s;
+}
+.ctu-row--link:hover{ background:var(--ctu-p-row-hover); border-color:var(--accent); transform:translateX(4px); }
+.ctu-ico{
+  width:42px; height:42px; min-width:42px; border-radius:12px; display:grid; place-items:center;
+  background:var(--accent); color:#fff; font-size:calc(1.1rem * var(--fs-scale,1));
+}
+.ctu-txt{ display:flex; flex-direction:column; line-height:1.35; color:var(--ctu-p-ink); font-size:calc(.95rem * var(--fs-scale,1)); overflow-wrap:anywhere; }
+.ctu-txt strong{ font-size:calc(.68rem * var(--fs-scale,1)); text-transform:uppercase; letter-spacing:.12em; color:var(--ctu-p-label); font-weight:600; margin-bottom:2px; }
+
+.ctu-socials{ padding-top:.5rem; display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; }
+.ctu-socials span{ font-size:calc(.75rem * var(--fs-scale,1)); letter-spacing:.12em; text-transform:uppercase; color:var(--ctu-p-label); margin-right:.3rem; }
+.ctu-socials a{
+  width:38px; height:38px; border-radius:50%; display:grid; place-items:center; text-decoration:none; color:var(--ctu-p-ink);
+  font-size:calc(.72rem * var(--fs-scale,1)); font-weight:700; border:1px solid var(--ctu-p-soc-line); transition:all .25s;
+}
+.ctu-socials a:hover{ background:var(--accent); color:#fff; border-color:var(--accent); transform:translateY(-3px); }
+
+@media (max-width:900px){
+  .ctu-card{ grid-template-columns:1fr; gap:2rem; padding:2rem 1.5rem; }
+}
+@media (max-width:560px){
+  .ctu{ padding:3.5rem 1rem 2.5rem; }
+  .ctu-list{ grid-template-columns:1fr; }
+}
