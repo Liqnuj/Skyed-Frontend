@@ -12,6 +12,13 @@ export default function RecoverPage() {
   const [email, setEmail] = useState('');
   const [code, setCode] = useState(['', '', '', '', '', '']);
   
+  // ESTADOS PARA RECUPERACIÓN POR DOCUMENTO
+  const [recoveryMethod, setRecoveryMethod] = useState<'email' | 'document'>('email');
+  const [docType, setDocType] = useState('');
+  const [docNumber, setDocNumber] = useState('');
+  const [maskedEmail, setMaskedEmail] = useState(''); // Para mostrar en el Paso 2 sin revelar el correo completo
+  
+  
   // Estados para las contraseñas
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -52,27 +59,40 @@ export default function RecoverPage() {
   const showMismatchError = isConfirmDirty && !passwordsMatch;
 
   // ==========================================
-  // PASO 1: Enviar el correo
+  // PASO 1: Enviar el correo o buscar documento
   // ==========================================
   async function handleSendEmail(e: FormEvent) {
     e.preventDefault();
-    if (!email) {
-      setError('Por favor, ingresa tu correo electrónico.');
-      setTimeout(() => setError(''), 4000);
-      return;
-    }
-
     setError('');
     setLoading(true);
 
     try {
-      await apiFetch('/enviar-codigo-recuperacion', {
-        method: 'POST',
-        body: JSON.stringify({ correo_u: email }),
-      });
+      if (recoveryMethod === 'email') {
+        if (!email) throw new Error('Por favor, ingresa tu correo electrónico.');
+        
+        await apiFetch('/enviar-codigo-recuperacion', {
+          method: 'POST',
+          body: JSON.stringify({ correo_u: email }),
+        });
+        setMaskedEmail(email); // Mostramos el correo completo si lo digitó el usuario
+      } else {
+        if (!docNumber) throw new Error('Por favor, ingresa tu número de documento.');
+
+        // Petición a la nueva ruta de Laravel que crearemos
+        const response = await apiFetch('/enviar-codigo-documento', { 
+          method: 'POST',
+          body: JSON.stringify({ tipo_documento_u: docType, documento_u: docNumber }),
+        });
+        
+        // Guardamos el correo real oculto para que los Pasos 2 y 3 sigan funcionando, 
+        // y el correo enmascarado para mostrarlo en pantalla.
+        setEmail(response.email_real); 
+        setMaskedEmail(response.email_enmascarado);
+      }
+      
       setStep(2); 
     } catch (err) {
-      let errorMessage = err instanceof Error ? err.message : 'Error al enviar el correo';
+      let errorMessage = err instanceof Error ? err.message : 'Error al enviar el código';
       if (
         errorMessage.includes('stream_socket_client') || 
         errorMessage.includes('smtp.gmail.com') || 
@@ -253,24 +273,74 @@ export default function RecoverPage() {
                 <h2 className="auth-heading" style={{ textAlign: 'left', marginBottom: '8px' }}>
                   Olvidé mi contraseña
                 </h2>
-                <p className="auth-subheading" style={{ textAlign: 'left', marginBottom: '30px' }}>
-                  Ingresa el correo asociado a tu cuenta y te enviaremos un código.
+                <p className="auth-subheading" style={{ textAlign: 'left', marginBottom: '20px' }}>
+                  Selecciona cómo quieres buscar tu cuenta.
                 </p>
 
-                <div className="form-group">
-                  <label className="form-label" htmlFor="email">
-                    Correo electrónico <span className="req">*</span>
+                {/* Selector de Método */}
+                <div style={{ display: 'flex', gap: '20px', marginBottom: '25px' }}>
+                  <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', color: '#1e293b' }}>
+                    <input 
+                      type="radio" 
+                      checked={recoveryMethod === 'email'} 
+                      onChange={() => { setRecoveryMethod('email'); setError(''); }} 
+                    /> Correo
                   </label>
-                  <input
-                    type="email"
-                    id="email"
-                    className="form-input"
-                    placeholder="tucorreo@ejemplo.com"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
+                  <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', color: '#1e293b' }}>
+                    <input 
+                      type="radio" 
+                      checked={recoveryMethod === 'document'} 
+                      onChange={() => { setRecoveryMethod('document'); setError(''); }} 
+                    /> Documento
+                  </label>
                 </div>
+
+                {recoveryMethod === 'email' ? (
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="email">
+                      Correo electrónico <span className="req">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      id="email"
+                      className="form-input"
+                      placeholder="tucorreo@ejemplo.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                    />
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', gap: '15px', marginBottom: '15px' }}>
+                    <div className="form-group" style={{ flex: '1', marginBottom: 0 }}>
+                      <label className="form-label">Tipo <span className="req">*</span></label>
+                      <select 
+                        className="form-input" 
+                        value={docType} 
+                        required
+                        onChange={(e) => setDocType(e.target.value)}
+                      >
+                        <option value="">Selecciona</option>
+                        <option value="cedula_ciudadania">Cédula de ciudadanía</option>
+                        <option value="tarjeta_identidad">Tarjeta de identidad</option>
+                        <option value="cedula_extranjeria">Cédula de extranjería</option>
+                        <option value="pasaporte">Pasaporte</option>
+                      </select>
+                    </div>
+                    <div className="form-group" style={{ flex: '2', marginBottom: 0 }}>
+                      <label className="form-label">Número <span className="req">*</span></label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder={docType ? 'Escribe tu número' : 'Selecciona primero el tipo'}
+                        maxLength={12}
+                        disabled={!docType}
+                        required
+                        value={docNumber}
+                        onChange={(e) => setDocNumber(e.target.value.replace(/\D/g, ''))}
+                      />
+                    </div>
+                  </div>
+                )}
 
                 <button type="submit" className="form-submit" disabled={loading} style={{ width: '100%', marginTop: '10px' }}>
                   {loading ? 'Enviando código...' : 'Enviar código'}
@@ -288,10 +358,9 @@ export default function RecoverPage() {
                   Verifica el código
                 </h2>
                 <p className="auth-subheading" style={{ textAlign: 'left', marginBottom: '30px' }}>
-                  Enviamos un código a <strong>{email}</strong>
+                  Enviamos un código a <strong>{maskedEmail}</strong>
                 </p>
 
-                
                 <div className="form-group">
                   <label className="form-label">
                     Ingresa el código de 6 dígitos <span className="req">*</span>
