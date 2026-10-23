@@ -277,23 +277,34 @@ export default function RecoverPage() {
                   Selecciona cómo quieres buscar tu cuenta.
                 </p>
 
+                
                 {/* Selector de Método */}
-                <div style={{ display: 'flex', gap: '20px', marginBottom: '25px' }}>
-                  <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', color: '#1e293b' }}>
-                    <input 
-                      type="radio" 
-                      checked={recoveryMethod === 'email'} 
-                      onChange={() => { setRecoveryMethod('email'); setError(''); }} 
-                    /> Correo
+                <div className="recovery-method">
+                  <label className="recovery-method__label">
+                    <input
+                      type="radio"
+                      checked={recoveryMethod === 'email'}
+                      onChange={() => {
+                        setRecoveryMethod('email');
+                        setError('');
+                      }}
+                    />
+                    Correo
                   </label>
-                  <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', color: '#1e293b' }}>
-                    <input 
-                      type="radio" 
-                      checked={recoveryMethod === 'document'} 
-                      onChange={() => { setRecoveryMethod('document'); setError(''); }} 
-                    /> Documento
+
+                  <label className="recovery-method__label">
+                    <input
+                      type="radio"
+                      checked={recoveryMethod === 'document'}
+                      onChange={() => {
+                        setRecoveryMethod('document');
+                        setError('');
+                      }}
+                    />
+                    Documento
                   </label>
                 </div>
+
 
                 {recoveryMethod === 'email' ? (
                   <div className="form-group">
