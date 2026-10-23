@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import type { FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import SocialWrapper from '../../components/social/SocialWrapper';
 import CanvasParticles from '../../components/social/CanvasParticles';
+import { useAuth } from '../../context/AuthContext'; // Importamos el contexto de autenticación
+import { apiFetch } from '../../services/api';
 
 function capitalizeName(raw: string) {
   const cleaned = raw
@@ -19,16 +20,28 @@ function validateEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+// Definimos la interfaz para el tipo de evento que vendrá de la API
+interface TipoEvento {
+  id_tipo_eves: number;
+  nombre_tipo_eves: string;
+}
+
 export default function Reserve() {
+  const { user } = useAuth(); // Extraemos el usuario autenticado
+
   const [fname, setFname] = useState('');
   const [lname, setLname] = useState('');
   const [fphone, setFphone] = useState('');
   const [femail, setFemail] = useState('');
+  
   const [ftype, setFtype] = useState('');
   const [fdate, setFdate] = useState('');
   const [fguests, setFguests] = useState('');
   const [fbudget, setFbudget] = useState('');
+  const [flocation, setFlocation] = useState(''); // Nuevo estado para Ubicación
   const [fmessage, setFmessage] = useState('');
+
+  const [tiposEvento, setTiposEvento] = useState<TipoEvento[]>([]);
 
   const [toast, setToast] = useState<{ msg: string; icon: string; show: boolean }>({
     msg: '',
@@ -36,12 +49,47 @@ export default function Reserve() {
     show: false,
   });
 
+// EFECTO 1: Autocompletar datos del usuario si está logueado
+  useEffect(() => {
+    if (user) {
+      // Separamos el nombre completo que viene de buildUser ("Nombre Apellido")
+      const [nombre, ...apellidos] = user.name.split(' ');
+      
+      setFname(nombre || '');
+      setLname(apellidos.join(' ') || '');
+      setFphone(user.telefono || '');
+      setFemail(user.email || '');
+    }
+  }, [user]);
+
+  // EFECTO 2: Cargar Tipos de Evento desde la API
+  useEffect(() => {
+      const fetchTiposEvento = async () => {
+        try {
+          const data = await apiFetch('/tipos-evento');
+          console.log("Lo que responde Laravel:", data); // Para revisar en consola
+          
+          if (Array.isArray(data)) {
+            setTiposEvento(data);
+          } else if (data && Array.isArray(data.data)) {
+            setTiposEvento(data.data); // Por si Laravel lo envolvió en un objeto "data"
+          } else {
+            setTiposEvento([]); // Si no es un arreglo, lo dejamos vacío para que no falle
+          }
+        } catch (error) {
+          console.error("Error cargando los tipos de evento:", error);
+          setTiposEvento([]);
+        }
+      };
+      fetchTiposEvento();
+    }, []);
+
   function showToast(msg: string, icon = '✓') {
     setToast({ msg, icon, show: true });
     window.setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 4000);
   }
 
-  function submitForm(e: FormEvent) {
+  async function submitForm(e: FormEvent) {
     e.preventDefault();
 
     const n = capitalizeName(fname);
@@ -52,8 +100,9 @@ export default function Reserve() {
     const phone = fphone.trim();
     const email = femail.trim();
     const guests = fguests.trim();
+    const location = flocation.trim();
 
-    if (!n || !a || !email || !ftype || !guests) {
+    if (!n || !a || !email || !ftype || !guests || !location || !fbudget || !fdate) {
       showToast('Por favor completa los campos requeridos', '⚠️');
       return;
     }
@@ -66,7 +115,7 @@ export default function Reserve() {
       return;
     }
     if (!/^\d+$/.test(guests) || Number(guests) < 0) {
-      showToast('El número de invitados solo puede contener números y no puede ser negativo', '⚠️');
+      showToast('El número de invitados solo puede ser numérico y positivo', '⚠️');
       return;
     }
     if (!validateEmail(email)) {
@@ -74,16 +123,47 @@ export default function Reserve() {
       return;
     }
 
-    showToast('¡Solicitud enviada! Te contactamos en 24h 🎉', '✦');
+  try {
+        await apiFetch('/reservas', {
+          method: 'POST',
+          body: JSON.stringify({
+            id_u: user?.id,
+            id_tipo_eves: ftype,
+            fecha_evento_rese: fdate,
+            invitados_rese: guests,
+            presupuesto_rese: fbudget,
+            ubicacion_rese: location,
+            Observaciones_rese: fmessage
+          })
+        });
 
-    setFname('');
-    setLname('');
-    setFphone('');
-    setFemail('');
+        showToast('¡Solicitud enviada! Te contactamos en 24h 🎉', '✦');
+        
+        // Limpiamos los campos
+        setFtype('');
+        setFdate('');
+        setFguests('');
+        setFbudget('');
+        setFlocation('');
+        setFmessage('');
+        
+      } catch (error) {
+        showToast('Error al enviar la solicitud. Intenta de nuevo.', '⚠️');
+        console.error(error);
+      }
+
+    // Limpiar campos (opcional, podrías no limpiar los de contacto si el user está logueado)
+    if (!user) {
+      setFname('');
+      setLname('');
+      setFphone('');
+      setFemail('');
+    }
     setFtype('');
     setFdate('');
     setFguests('');
     setFbudget('');
+    setFlocation('');
     setFmessage('');
   }
 
@@ -194,15 +274,17 @@ export default function Reserve() {
                   </div>
                 </div>
 
-                <div className="form-group">
-                  <label>Correo electrónico</label>
-                  <input
-                    type="email"
-                    id="femail"
-                    placeholder="tu@correo.com"
-                    value={femail}
-                    onChange={(e) => setFemail(e.target.value)}
-                  />
+                <div className="form-row">
+                    <div className="form-group span-two">
+                    <label>Correo electrónico</label>
+                    <input
+                        type="email"
+                        id="femail"
+                        placeholder="tu@correo.com"
+                        value={femail}
+                        onChange={(e) => setFemail(e.target.value)}
+                    />
+                    </div>
                 </div>
 
                 <div className="form-row">
@@ -210,12 +292,11 @@ export default function Reserve() {
                     <label>Tipo de evento</label>
                     <select id="ftype" value={ftype} onChange={(e) => setFtype(e.target.value)}>
                       <option value="">Seleccionar...</option>
-                      <option>Boda</option>
-                      <option>Quinceañera</option>
-                      <option>Cumpleaños</option>
-                      <option>Corporativo</option>
-                      <option>Baby shower</option>
-                      <option>Otro</option>
+                      {Array.isArray(tiposEvento) && tiposEvento.map((tipo) => (
+                        <option key={tipo.id_tipo_eves} value={tipo.id_tipo_eves}>
+                          {tipo.nombre_tipo_eves}
+                        </option>
+                      ))}
                     </select>
                   </div>
                   <div className="form-group">
@@ -237,15 +318,29 @@ export default function Reserve() {
                     />
                   </div>
                   <div className="form-group">
-                    <label>Presupuesto aprox.</label>
-                    <select id="fbudget" value={fbudget} onChange={(e) => setFbudget(e.target.value)}>
-                      <option value="">Seleccionar...</option>
-                      <option>Menos de $10M COP</option>
-                      <option>$10M – $20M COP</option>
-                      <option>$20M – $40M COP</option>
-                      <option>Más de $40M COP</option>
-                    </select>
+                    <label>Ubicación del evento</label>
+                    <input
+                      type="text"
+                      id="flocation"
+                      placeholder="Ciudad o Salón"
+                      value={flocation}
+                      onChange={(e) => setFlocation(e.target.value)}
+                    />
                   </div>
+                </div>
+                
+                <div className="form-row">
+                    <div className="form-group span-two">
+                        <label>Presupuesto aprox.</label>
+                        {/* Se ajustan los values a formato numérico para que cuadre con DECIMAL en BD */}
+                        <select id="fbudget" value={fbudget} onChange={(e) => setFbudget(e.target.value)}>
+                        <option value="">Seleccionar...</option>
+                        <option value="5000000">Menos de $10M COP</option>
+                        <option value="15000000">$10M – $20M COP</option>
+                        <option value="30000000">$20M – $40M COP</option>
+                        <option value="50000000">Más de $40M COP</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div className="form-group">
