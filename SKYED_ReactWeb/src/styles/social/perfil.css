@@ -439,3 +439,366 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+/* =========================================================
+   Resumen rediseñado (clases pfx-*): misma estructura que el
+   perfil de Deportivo. Va después de los estilos pf-* para que
+   gane en caso de empate de especificidad.
+   ========================================================= */
+
+/* Perfil SkyedSocial: Resumen con la misma estructura que el perfil de Deportivo.
+   Clases pfx-*. Solo usa tokens del módulo (var(--accent), var(--white), ...)
+   y currentColor. Importar DESPUÉS de perfil.css. */
+
+/* ---------- Botón principal del encabezado ---------- */
+.mod-social .btn-sm-outline.pfx-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--white);
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  font-weight: 700;
+}
+.mod-social .btn-sm-outline.pfx-primary:hover {
+  background: color-mix(in srgb, var(--accent) 85%, white);
+  border-color: color-mix(in srgb, var(--accent) 85%, white);
+  color: var(--white);
+}
+
+/* ---------- Estructura: columna izquierda + principal ---------- */
+.mod-social .pfx-layout {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+.mod-social .pfx-side { display: flex; flex-direction: column; gap: 1.25rem; }
+.mod-social .pfx-main { min-width: 0; }
+
+/* ---------- Tarjetas ---------- */
+.mod-social .pfx-card,
+.mod-social .pfx-box,
+.mod-social .pfx-item {
+  background: var(--white);
+  color: var(--text-dark);
+  border: 1px solid var(--accent);
+  border-radius: 16px;
+}
+.mod-social .pfx-card { overflow: hidden; }
+.mod-social .pfx-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+}
+.mod-social .pfx-card-head h3 { font-size: 1.05rem; font-weight: 700; }
+.mod-social .pfx-card-body { padding: .35rem 1.25rem 1.1rem; }
+
+.mod-social.dark-mode .pfx-card,
+.mod-social.dark-mode .pfx-box,
+.mod-social.dark-mode .pfx-item {
+  background: var(--plum-mid);
+  color: rgba(255, 255, 255, .92);
+}
+
+/* ---------- Filas de información ---------- */
+.mod-social .pfx-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .75rem 0;
+  border-bottom: 1px solid color-mix(in srgb, currentColor 10%, transparent);
+  font-size: .95rem;
+}
+.mod-social .pfx-row:last-child { border-bottom: none; }
+.mod-social .pfx-row-label { flex-shrink: 0; opacity: .7; }
+.mod-social .pfx-row-value { text-align: right; overflow-wrap: anywhere; }
+
+/* ---------- Enlace discreto ---------- */
+.mod-social .pfx-link {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: .85rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: var(--accent);
+}
+.mod-social .pfx-link:hover { text-decoration: underline; }
+.mod-social.dark-mode .pfx-link { color: color-mix(in srgb, var(--accent) 55%, white); }
+
+/* ---------- Fila de 4 cajas ---------- */
+.mod-social .pfx-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+.mod-social .pfx-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .35rem;
+  padding: 1.3rem .75rem;
+  text-align: center;
+}
+.mod-social .pfx-num { font-size: 1.9rem; font-weight: 700; line-height: 1; }
+.mod-social .pfx-box.accent .pfx-num { color: var(--accent); }
+.mod-social.dark-mode .pfx-box.accent .pfx-num { color: color-mix(in srgb, var(--accent) 55%, white); }
+.mod-social .pfx-lbl { font-size: .86rem; opacity: .75; }
+
+/* ---------- Secciones y listas ---------- */
+.mod-social .pfx-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 1.75rem 0 .85rem;
+}
+.mod-social .pfx-section-head h3 { font-size: 1.05rem; font-weight: 700; }
+.mod-social.dark-mode .pfx-section-head h3 { color: rgba(255, 255, 255, .92); }
+
+.mod-social .pfx-list { display: flex; flex-direction: column; gap: .75rem; }
+.mod-social .pfx-item {
+  display: flex;
+  align-items: center;
+  gap: .9rem;
+  width: 100%;
+  padding: .9rem 1rem;
+  text-align: left;
+  font: inherit;
+}
+.mod-social .pfx-item-btn { cursor: pointer; transition: transform .2s, box-shadow .2s; }
+.mod-social .pfx-item-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px color-mix(in srgb, var(--accent) 22%, transparent); }
+.mod-social .pfx-item-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .15rem; }
+.mod-social .pfx-item-title { font-weight: 700; overflow-wrap: anywhere; }
+.mod-social .pfx-item-sub { font-size: .82rem; opacity: .7; }
+
+.mod-social .pfx-chip {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  font-size: 1.15rem;
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+}
+.mod-social.dark-mode .pfx-chip { color: color-mix(in srgb, var(--accent) 55%, white); }
+
+/* ---------- Línea de estado vacío ---------- */
+.mod-social .pfx-empty-line {
+  padding: 1.2rem 1rem;
+  text-align: center;
+  border: 1px dashed color-mix(in srgb, currentColor 22%, transparent);
+  border-radius: 14px;
+}
+.mod-social .pfx-empty-line a { font-weight: 700; color: var(--accent); text-decoration: underline; }
+.mod-social.dark-mode .pfx-empty-line { color: rgba(255, 255, 255, .85); }
+.mod-social.dark-mode .pfx-empty-line a { color: color-mix(in srgb, var(--accent) 55%, white); }
+
+/* ---------- Perfil completo ---------- */
+.mod-social .pfx-pct { font-weight: 700; color: var(--accent); }
+.mod-social.dark-mode .pfx-pct { color: color-mix(in srgb, var(--accent) 55%, white); }
+.mod-social .pfx-progress-body { padding-top: 1.1rem; }
+.mod-social .pfx-bar {
+  height: 8px;
+  border-radius: 99px;
+  overflow: hidden;
+  background: color-mix(in srgb, currentColor 14%, transparent);
+}
+.mod-social .pfx-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 60%, white));
+  transition: width .4s ease;
+}
+.mod-social .pfx-progress-hint { margin: .6rem 0 .9rem; font-size: .85rem; opacity: .75; }
+
+/* ---------- Botones pequeños ---------- */
+.mod-social .pfx-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  padding: .6rem 1.2rem;
+  border-radius: 50px;
+  border: 1.5px solid var(--accent);
+  font: inherit;
+  font-size: .88rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background .2s, transform .2s;
+}
+.mod-social .pfx-btn:hover { transform: translateY(-1px); }
+.mod-social .pfx-btn-primary { background: var(--accent); color: var(--white); }
+.mod-social .pfx-btn-primary:hover { background: color-mix(in srgb, var(--accent) 85%, white); }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 900px) {
+  .mod-social .pfx-layout { grid-template-columns: 1fr; }
+  .mod-social .pfx-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 480px) {
+  .mod-social .pfx-item { flex-wrap: wrap; }
+}
+
+/* ---------- Ancho propio de la cuadrícula ----------
+   .pf-body se ajusta a su contenido (ver .pf-settings en perfil.css), así que
+   el Resumen define su ancho igual que Ajustes. */
+.mod-social .pfx-layout { width: min(1136px, calc(100vw - 4rem - 20px)); }
+@media (max-width: 640px) {
+  .mod-social .pfx-layout { width: calc(100vw - 2.2rem - 20px); }
+}
+
+/* =========================================================
+   Ajustes rediseñado: tarjeta de perfil, datos personales
+   y seguridad (misma estructura que el perfil de Deportivo).
+   ========================================================= */
+
+.mod-social .pfx-stack { display: flex; flex-direction: column; gap: 1.5rem; }
+
+/* Cabecera de tarjeta con ícono */
+.mod-social .pfx-card-head.pfx-head-icon { justify-content: flex-start; gap: .7rem; }
+.mod-social .pfx-chip-sm { width: 32px; height: 32px; border-radius: 9px; font-size: 1rem; }
+
+/* Tarjeta con la foto y el nombre */
+.mod-social .pfx-me {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: 1px solid var(--accent);
+  border-radius: 16px;
+  color: var(--text-dark);
+  background: linear-gradient(120deg, var(--white) 55%, color-mix(in srgb, var(--accent) 14%, var(--white)));
+}
+.mod-social.dark-mode .pfx-me {
+  color: rgba(255, 255, 255, .92);
+  background: linear-gradient(120deg, var(--plum-mid) 55%, color-mix(in srgb, var(--accent) 22%, var(--plum-mid)));
+}
+.mod-social .pfx-me-avatar-wrap { position: relative; flex-shrink: 0; }
+.mod-social .pfx-me-avatar {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--accent), var(--gold));
+  color: var(--white);
+  font-family: 'Playfair Display', serif;
+  font-size: 1.4rem;
+  font-weight: 700;
+  border: 2px solid color-mix(in srgb, var(--accent) 40%, transparent);
+}
+.mod-social .pfx-me-cam {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 2px solid var(--white);
+  background: var(--accent);
+  color: var(--white);
+  font-size: .75rem;
+  cursor: pointer;
+}
+.mod-social .pfx-me-cam:disabled { opacity: .6; cursor: wait; }
+.mod-social.dark-mode .pfx-me-cam { border-color: var(--plum-mid); }
+.mod-social .pfx-me-info { display: flex; flex-direction: column; align-items: flex-start; gap: .4rem; min-width: 0; }
+.mod-social .pfx-me-info strong { font-size: 1.1rem; overflow-wrap: anywhere; }
+.mod-social .pfx-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .25rem .7rem;
+  border-radius: 50px;
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .03em;
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+}
+.mod-social.dark-mode .pfx-tag { color: color-mix(in srgb, var(--accent) 55%, white); }
+
+/* Formularios */
+.mod-social .pfx-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem;
+}
+.mod-social .pfx-form .pf-alert { margin: 0; }
+.mod-social .pfx-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.mod-social .pfx-field { display: flex; flex-direction: column; gap: .4rem; }
+.mod-social .pfx-field span { font-size: .85rem; font-weight: 700; }
+.mod-social .pfx-field small { font-size: .76rem; opacity: .7; }
+.mod-social .pfx-field input,
+.mod-social .pfx-field select {
+  width: 100%;
+  padding: .7rem .9rem;
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  background: var(--white);
+  color: var(--text-dark);
+  font: inherit;
+  font-size: .92rem;
+  transition: box-shadow .2s;
+}
+.mod-social .pfx-field input::placeholder { color: var(--text-muted); }
+.mod-social .pfx-field input:focus,
+.mod-social .pfx-field select:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.mod-social.dark-mode .pfx-field input,
+.mod-social.dark-mode .pfx-field select {
+  background: rgba(255, 255, 255, .05);
+  border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+  color: var(--white);
+}
+.mod-social .pfx-form .pf-check { color: inherit; opacity: .85; }
+.mod-social .pfx-form-actions { display: flex; justify-content: flex-start; }
+.mod-social .pfx-form .pfx-btn { border-radius: 10px; padding: .7rem 1.4rem; }
+.mod-social .pfx-form .pfx-btn:disabled { opacity: .6; cursor: wait; }
+
+@media (max-width: 600px) {
+  .mod-social .pfx-form-row { grid-template-columns: 1fr; }
+}
+.mod-social.dark-mode .pfx-field select option { color: #111; }
+
+/* Tarjeta "Cuenta" y confirmación de desactivar cuenta */
+.mod-social .pfx-card-danger .pfx-chip { background: rgba(220, 38, 38, .12); color: #dc2626; }
+.mod-social .pfx-btn-danger {
+  background: transparent;
+  color: #dc2626;
+  border: 1.5px solid var(--accent);
+}
+.mod-social .pfx-btn-danger:hover { background: rgba(220, 38, 38, .08); }
+.mod-social .pfx-btn-danger.pfx-btn-solid { background: #dc2626; color: #fff; border-color: #dc2626; }
+.mod-social .pfx-btn-danger.pfx-btn-solid:hover { background: #b91c1c; }
+.mod-social .pfx-btn-outline { background: transparent; color: inherit; border: 1.5px solid var(--accent); }
+.mod-social .pfx-btn:disabled { opacity: .6; cursor: wait; }
+.mod-social .pf-modal .pfx-danger-title { color: #dc2626; }
+.mod-social.dark-mode .pf-modal .pfx-danger-title { color: #f87171; }
+.mod-social .pfx-danger-text { margin: .5rem 0 1.25rem; line-height: 1.6; }
+.mod-social .pfx-modal-actions { display: flex; gap: .75rem; justify-content: flex-end; flex-wrap: wrap; }
+.mod-social .pfx-modal-actions .pfx-btn { border-radius: 10px; padding: .7rem 1.2rem; }

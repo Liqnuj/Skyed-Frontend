@@ -1209,6 +1209,24 @@ function CategoriasModal({ evento, onClose, notify }: { evento: Evento; onClose:
 
 function PagoModal({ item, onClose, onCambiar }: { item: Pago; onClose: () => void; onCambiar: (estado: "confirmado" | "rechazado") => void }) {
   const ins = item.inscripcion;
+  // Los pagos viejos solo guardaron el NOMBRE del archivo; los nuevos guardan la imagen en "comprobantes/...".
+  const tieneImagen = !!item.comprobante_p?.startsWith("comprobantes/");
+  const [comprobanteUrl, setComprobanteUrl] = useState<string | null>(null);
+  const [cargandoImg, setCargandoImg] = useState(false);
+  const [errorImg, setErrorImg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!tieneImagen) return;
+    let cancelado = false;
+    setCargandoImg(true);
+    setErrorImg(null);
+    apiFetch(`/pagos/${item.id_pago}/comprobante`)
+      .then(res => { if (!cancelado) setComprobanteUrl(res.url); })
+      .catch(err => { if (!cancelado) setErrorImg(err instanceof Error ? err.message : "No se pudo cargar el comprobante."); })
+      .finally(() => { if (!cancelado) setCargandoImg(false); });
+    return () => { cancelado = true; };
+  }, [item.id_pago, tieneImagen]);
+
   return <Modal title={nombreDe(ins?.usuario)} subtitle={ins?.evento?.nombre_e ?? ""} onClose={onClose}>
     <div className="pqr-detail">
       <div className="pqr-meta">
@@ -1225,8 +1243,30 @@ function PagoModal({ item, onClose, onCambiar }: { item: Pago; onClose: () => vo
         <p>
           {money(item.monto_p)} · {human(item.metodo_pago_p ?? "sin método")}
           {item.referencia_p ? ` · Ref. ${item.referencia_p}` : ""}
-          {item.comprobante_p ? ` · Comprobante: ${item.comprobante_p}` : ""}
+          {item.comprobante_p && !tieneImagen ? ` · Comprobante: ${item.comprobante_p}` : ""}
         </p>
+      </div>
+      <div className="message-box">
+        <span>Comprobante</span>
+        {!tieneImagen
+          ? <p>{item.comprobante_p ? "Sin imagen: de este pago solo se guardó el nombre del archivo. Pídele al participante que lo vuelva a enviar." : "El participante no adjuntó comprobante."}</p>
+          : cargandoImg
+            ? <p>Cargando comprobante…</p>
+            : errorImg
+              ? <p>{errorImg}</p>
+              : comprobanteUrl && <>
+                <a href={comprobanteUrl} target="_blank" rel="noopener noreferrer" title="Abrir en una pestaña nueva">
+                  <img
+                    src={comprobanteUrl}
+                    alt="Comprobante de pago"
+                    style={{ display: "block", maxWidth: "100%", maxHeight: 280, objectFit: "contain", borderRadius: 12, border: "1px solid rgba(128,128,128,.35)", background: "rgba(128,128,128,.08)" }}
+                    onError={() => setErrorImg("No se pudo mostrar la imagen. Cierra y vuelve a abrir esta ventana.")}
+                  />
+                </a>
+                <a className="secondary-btn" href={comprobanteUrl} target="_blank" rel="noopener noreferrer" style={{ marginTop: 10, display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  <Eye size={15} /> Ver en grande
+                </a>
+              </>}
       </div>
       <div className="message-box">
         <span>Contacto de emergencia</span>
