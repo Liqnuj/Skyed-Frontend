@@ -4,7 +4,6 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import AccountMenu from '../shared/AccountMenu';
 import type { GrupoMenu } from '../shared/AccountMenu';
-import PanelesAdmin from './PanelesAdmin';
 
 // Secciones de la página de inicio (cada id está en HomePage.tsx).
 const SECCIONES = [
@@ -82,8 +81,8 @@ export default function PrincipalNav() {
   // - Usuario normal: sus dos espacios (perfil deportivo / social).
   // - Administrador: NO ve los botones de perfil; solo el acceso al panel
   //   que le corresponde (adminDeportivo -> Panel Deportivo,
-  //   adminSocial -> Panel Social). En celular es el único acceso a esos
-  //   paneles, porque el botón de la barra se oculta.
+  //   adminSocial -> Panel Social). Es el único acceso a los paneles, tanto
+  //   en escritorio como en celular (ya no hay botón suelto en la barra).
   const grupos: GrupoMenu[] = [
     ...(esAdmin
       ? []
@@ -98,9 +97,6 @@ export default function PrincipalNav() {
         ]),
     {
       titulo: 'Administración',
-      // En escritorio el acceso ya está en la barra (PanelesAdmin); aquí solo
-      // se muestra en celular, donde ese botón se oculta.
-      clase: 'am-solo-movil',
       opciones: [
         ...(esAdminDeportivo
           ? [{ to: '/deportivo/admin', icono: 'ti-shield-check', titulo: 'Panel Deportivo', detalle: 'Eventos, pagos y acceso con QR', destacada: true, color: 'deportivo' as const }]
@@ -137,9 +133,6 @@ export default function PrincipalNav() {
             </li>
           ))}
         </ul>
-
-        {/* Accesos a los paneles de administración (solo administradores). */}
-        <PanelesAdmin />
 
         {user ? (
           <AccountMenu tema="principal" grupos={grupos} rol={rol} alSalirIrA="/" />
