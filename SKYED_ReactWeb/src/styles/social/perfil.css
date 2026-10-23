@@ -211,7 +211,7 @@
   align-items: center;
   gap: 1rem;
   background: var(--white);
-  border: 1px solid var(--border, rgba(0,0,0,.08));
+  border: 1px solid var(--accent);
   border-radius: 14px;
   padding: 1rem 1.2rem;
   text-align: left;
@@ -219,7 +219,7 @@
   width: 100%;
   font-family: inherit;
 }
-.mod-social.dark-mode .pf-list-item { background: var(--plum-mid, #241238); border-color: rgba(255,255,255,.08); }
+.mod-social.dark-mode .pf-list-item { background: none; border: 1px solid var(--accent); }
 .mod-social .pf-list-item:hover { border-color: var(--accent); }
 .mod-social .pf-list-item-main { display: flex; flex-direction: column; gap: .2rem; }
 .mod-social .pf-list-item-title { font-weight: 700; color: var(--plum); font-size: calc(.92rem * var(--fs-scale, 1)); }
@@ -264,8 +264,12 @@
   border-radius: 12px;
   padding: .9rem 1rem;
   margin-top: 1rem;
+  border: 1px solid var(--accent);
 }
 .mod-social.dark-mode .pf-message-box { background: rgba(255,255,255,.05); }
+.mod-social .pf-message-box.accent { background: color-mix(in srgb, var(--accent) 12%, var(--cream)); }
+
+.mod-social.dark-mode .pf-message-box.accent { background: color-mix(in srgb, var(--accent) 12%, rgba(255, 255, 255, 0.151)); }
 .mod-social .pf-message-box span { display: block; font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); margin-bottom: .3rem; }
 .mod-social .pf-message-box p { margin: 0; font-size: calc(.88rem * var(--fs-scale, 1)); line-height: 1.6; }
 
@@ -921,3 +925,230 @@
 .mod-social.dark-mode .pfq-empty-icon { color: color-mix(in srgb, var(--accent) 55%, white); }
 .mod-social.dark-mode .pfq-empty-title { color: var(--white); }
 .mod-social.dark-mode .pfq-empty-text { color: rgba(255, 255, 255, .7); }
+
+/* =========================================================
+   Lista de PQR y reservas (rediseño)
+   Va al final para ganar sobre las reglas .pf-list-* anteriores.
+   ========================================================= */
+.mod-social .pf-list {
+  width: min(900px, calc(100vw - 4rem));
+  max-width: none;
+  gap: .85rem;
+}
+
+.mod-social .pf-list-head { margin: 0 0 .35rem; }
+.mod-social .pf-list-head h2 {
+  margin: 0 0 .2rem;
+  font-family: 'Playfair Display', serif;
+  font-size: calc(1.35rem * var(--fs-scale, 1));
+  color: var(--plum);
+}
+.mod-social.dark-mode .pf-list-head h2 { color: var(--white); }
+.mod-social .pf-list-head p {
+  margin: 0;
+  font-size: calc(.85rem * var(--fs-scale, 1));
+  color: var(--text-muted);
+}
+
+.mod-social .pf-list-item {
+  padding: 1rem 1.25rem;
+  border-radius: 16px;
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+.mod-social button.pf-list-item:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+  box-shadow: 0 10px 26px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.mod-social .pf-list-item-main { flex: 1; min-width: 0; }
+.mod-social .pf-list-item-title {
+  font-size: calc(1rem * var(--fs-scale, 1));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Icono del tipo de solicitud */
+.mod-social .pf-item-icon {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  font-size: calc(1.3rem * var(--fs-scale, 1));
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+}
+.mod-social.dark-mode .pf-item-icon { color: color-mix(in srgb, var(--accent) 55%, white); }
+
+/* Radicado */
+.mod-social .pf-item-code {
+  flex-shrink: 0;
+  padding: .25rem .6rem;
+  border-radius: 8px;
+  border: 1px dashed color-mix(in srgb, var(--accent) 45%, transparent);
+  font-size: calc(.74rem * var(--fs-scale, 1));
+  font-weight: 700;
+  letter-spacing: .06em;
+  white-space: nowrap;
+  color: var(--text-muted);
+}
+.mod-social.dark-mode .pf-item-code { color: rgba(255, 255, 255, .75); }
+
+.mod-social .pf-item-chevron {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: transform .18s ease, color .18s ease;
+}
+.mod-social button.pf-list-item:hover .pf-item-chevron {
+  transform: translateX(3px);
+  color: var(--accent);
+}
+
+/* Etiquetas de estado legibles sobre fondo oscuro */
+.mod-social.dark-mode .pf-pill.pending {
+  background: color-mix(in srgb, var(--gold) 20%, transparent);
+  color: color-mix(in srgb, var(--gold) 55%, white);
+}
+.mod-social.dark-mode .pf-pill.ok { background: rgba(34, 197, 94, .18); color: #86efac; }
+.mod-social.dark-mode .pf-pill.warn { background: rgba(220, 38, 38, .18); color: #fca5a5; }
+
+@media (max-width: 600px) {
+  .mod-social .pf-list { width: calc(100vw - 2.5rem); }
+  .mod-social .pf-list-item { padding: .9rem 1rem; gap: .75rem; }
+  .mod-social .pf-item-icon { width: 38px; height: 38px; }
+  .mod-social .pf-item-code { display: none; }
+}
+
+/* =========================================================
+   Barra de búsqueda y filtros de las listas
+   ========================================================= */
+.mod-social .pf-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: .65rem;
+  padding: .85rem;
+  border-radius: 16px;
+  background: var(--white);
+  border: 1px solid var(--accent);
+}
+.mod-social.dark-mode .pf-toolbar {
+  background: none;
+  border: 1px solid var(--accent);
+}
+
+.mod-social .pf-toolbar-row { display: flex; flex-wrap: wrap; gap: .6rem; }
+
+.mod-social .pf-search { position: relative; flex: 1 1 260px; display: flex; align-items: center; }
+.mod-social.dark-mode .pf-search { background: none; border-radius: 12px; border: 1px solid var(--accent); }
+.mod-social .pf-search i {
+  position: absolute;
+  left: .85rem;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+.mod-social .pf-search input[type="search"] { padding-left: 2.6rem; width: 100%; border:1px solid var(--accent); }
+
+.mod-social .pf-search input,
+.mod-social .pf-tool-select,
+.mod-social .pf-toolbar-dates input {
+  font: inherit;
+  font-size: calc(.9rem * var(--fs-scale, 1));
+  color: var(--plum);
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--plum) 18%, transparent);
+  border-radius: 12px;
+  padding: .6rem .85rem;
+  min-height: 42px;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.mod-social .pf-tool-select { flex: 0 1 190px; cursor: pointer; border: 1px solid var(--accent); }
+
+.mod-social .pf-search input:focus,
+.mod-social .pf-tool-select:focus,
+.mod-social .pf-toolbar-dates input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.mod-social.dark-mode .pf-search input,
+.mod-social.dark-mode .pf-tool-select,
+.mod-social.dark-mode .pf-toolbar-dates input {
+  color: var(--white);
+  background: rgba(255, 255, 255, .05);
+  border: 1px solid var(--accent);
+  color-scheme: dark;
+}
+.mod-social.dark-mode .pf-tool-select option { background: var(--plum-mid, #241238); color: var(--white); }
+
+.mod-social .pf-toolbar-dates { align-items: center; }
+.mod-social .pf-toolbar-dates label {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  font-size: calc(.82rem * var(--fs-scale, 1));
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.mod-social .pf-toolbar-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  font-size: calc(.8rem * var(--fs-scale, 1));
+  color: var(--text-muted);
+}
+.mod-social .pf-tool-clear {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  color: var(--accent);
+  cursor: pointer;
+}
+.mod-social .pf-tool-clear:hover { text-decoration: underline; }
+.mod-social.dark-mode .pf-tool-clear { color: color-mix(in srgb, var(--accent) 55%, white); }
+
+@media (max-width: 600px) {
+  .mod-social .pf-search { flex-basis: 100%; }
+  .mod-social .pf-tool-select { flex: 1 1 150px; }
+}
+
+/* Chips de estado */
+.mod-social .pf-chips { display: flex; flex-wrap: wrap; gap: .5rem; }
+.mod-social .pf-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  padding: .4rem .85rem;
+  border-radius: 50px;
+  font: inherit;
+  font-size: calc(.82rem * var(--fs-scale, 1));
+  font-weight: 600;
+  color: var(--plum);
+  background: transparent;
+  border: 1px solid var(--accent);
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+.mod-social .pf-chip:hover { border-color: var(--accent); }
+.mod-social .pf-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mod-social .pf-chip-count {
+  min-width: 1.35rem;
+  padding: .05rem .4rem;
+  border-radius: 50px;
+  font-size: calc(.72rem * var(--fs-scale, 1));
+  text-align: center;
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+}
+.mod-social .pf-chip.active { background: var(--accent); border-color: var(--accent); color: var(--white); }
+.mod-social .pf-chip.active .pf-chip-count { background: rgba(255, 255, 255, .25); }
+
+.mod-social.dark-mode .pf-chip { color: rgba(255, 255, 255, .85); border:1px solid var(--accent); }
+.mod-social.dark-mode .pf-chip:hover { border-color: var(--accent); }
+.mod-social.dark-mode .pf-chip.active { color: var(--white); }

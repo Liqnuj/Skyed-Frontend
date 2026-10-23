@@ -64,6 +64,14 @@ const pqrTipoLabel: Record<TipoPqr, string> = {
   felicitacion: 'Felicitación',
 };
 
+const pqrTipoIcon: Record<TipoPqr, string> = {
+  peticion: 'ti-file-text',
+  queja: 'ti-mood-sad',
+  reclamo: 'ti-alert-triangle',
+  sugerencia: 'ti-bulb',
+  felicitacion: 'ti-heart',
+};
+
 function pqrEstadoPill(estado: Pqr['estado_pqr']) {
   if (estado === 'abierto') return { cls: 'pending', txt: 'Abierto' };
   if (estado === 'en_proceso') return { cls: 'pending', txt: 'En proceso' };
@@ -76,6 +84,242 @@ function reservaEstadoPill(estado: Reserva['estado_rese']) {
   if (estado === 'cancelada') return { cls: 'warn', txt: 'Cancelada' };
   if (estado === 'completada') return { cls: 'ok', txt: 'Completada' };
   return { cls: 'ok', txt: 'Confirmada' };
+}
+
+/* ---------- Búsqueda y filtros de las listas (Mis PQR / Mis reservas) ---------- */
+type RangoFecha = 'todas' | '7d' | '30d' | 'mes' | 'anio' | 'proximas' | 'pasadas' | 'custom';
+
+interface Filtros {
+  q: string;
+  rango: RangoFecha;
+  desde: string;
+  hasta: string;
+  orden: 'recientes' | 'antiguos';
+  estado: string; // 'todos' o el valor del estado (abierto, pendiente, ...)
+}
+
+const FILTROS_INICIALES: Filtros = { q: '', rango: 'todas', desde: '', hasta: '', orden: 'recientes', estado: 'todos' };
+
+const ESTADOS_PQR: { value: string; label: string }[] = [
+  { value: 'todos', label: 'Todos' },
+  { value: 'abierto', label: 'Abierto' },
+  { value: 'en_proceso', label: 'En proceso' },
+  { value: 'resuelto', label: 'Resuelto' },
+  { value: 'cerrado', label: 'Cerrado' },
+];
+
+const ESTADOS_RESERVAS: { value: string; label: string }[] = [
+  { value: 'todos', label: 'Todas' },
+  { value: 'pendiente', label: 'Pendiente' },
+  { value: 'confirmada', label: 'Confirmada' },
+  { value: 'completada', label: 'Completada' },
+  { value: 'cancelada', label: 'Cancelada' },
+];
+
+function contarPor<T>(items: T[] | null, get: (x: T) => string): Record<string, number> {
+  const out: Record<string, number> = {};
+  (items ?? []).forEach((it) => {
+    const k = get(it);
+    out[k] = (out[k] ?? 0) + 1;
+  });
+  return out;
+}
+
+const RANGOS_PQR: { value: RangoFecha; label: string }[] = [
+  { value: 'todas', label: 'Todas las fechas' },
+  { value: '7d', label: 'Últimos 7 días' },
+  { value: '30d', label: 'Últimos 30 días' },
+  { value: 'mes', label: 'Este mes' },
+  { value: 'anio', label: 'Este año' },
+  { value: 'custom', label: 'Rango personalizado' },
+];
+
+const RANGOS_RESERVAS: { value: RangoFecha; label: string }[] = [
+  { value: 'todas', label: 'Todas las fechas' },
+  { value: 'proximas', label: 'Próximas' },
+  { value: 'pasadas', label: 'Pasadas' },
+  { value: 'mes', label: 'Este mes' },
+  { value: 'anio', label: 'Este año' },
+  { value: 'custom', label: 'Rango personalizado' },
+];
+
+/** Minúsculas y sin tildes, para que "felicitacion" encuentre "Felicitación". */
+function normalizar(t: string) {
+  return t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+function isoLocal(d: Date) {
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
+
+/** Límites (AAAA-MM-DD) del rango elegido; '' significa "sin límite". */
+function limitesRango(f: Filtros): { desde: string; hasta: string } {
+  const hoy = new Date();
+  const hoyIso = isoLocal(hoy);
+  const atras = (n: number) => {
+    const d = new Date(hoy);
+    d.setDate(d.getDate() - n);
+    return isoLocal(d);
+  };
+  switch (f.rango) {
+    case '7d': return { desde: atras(7), hasta: hoyIso };
+    case '30d': return { desde: atras(30), hasta: hoyIso };
+    case 'mes':
+      return {
+        desde: isoLocal(new Date(hoy.getFullYear(), hoy.getMonth(), 1)),
+        hasta: isoLocal(new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0)),
+      };
+    case 'anio': return { desde: `${hoy.getFullYear()}-01-01`, hasta: `${hoy.getFullYear()}-12-31` };
+    case 'proximas': return { desde: hoyIso, hasta: '' };
+    case 'pasadas': return { desde: '', hasta: atras(1) };
+    case 'custom': return { desde: f.desde, hasta: f.hasta };
+    default: return { desde: '', hasta: '' };
+  }
+}
+
+function filtrarLista<T>(
+  items: T[] | null,
+  f: Filtros,
+  getFecha: (x: T) => string | null | undefined,
+  getTexto: (x: T) => string,
+  getEstado: (x: T) => string,
+): T[] | null {
+  if (!items) return null;
+  const q = normalizar(f.q.trim());
+  const { desde, hasta } = limitesRango(f);
+
+  const res = items.filter((it) => {
+    if (q && !normalizar(getTexto(it)).includes(q)) return false;
+    if (f.estado !== 'todos' && getEstado(it) !== f.estado) return false;
+    if (desde || hasta) {
+      const dia = soloFecha(getFecha(it));
+      if (!dia) return false;
+      if (desde && dia < desde) return false;
+      if (hasta && dia > hasta) return false;
+    }
+    return true;
+  });
+
+    const marca = (it: T) => {
+    const t = Date.parse(getFecha(it) ?? '');
+    return Number.isNaN(t) ? 0 : t;
+  };
+
+  return res
+    .map((it, i) => ({ it, t: marca(it), i }))
+    .sort((a, b) => (f.orden === 'recientes' ? b.t - a.t : a.t - b.t) || a.i - b.i)
+    .map((x) => x.it);
+}
+
+interface ListToolbarProps {
+  filtros: Filtros;
+  onChange: (f: Filtros) => void;
+  rangos: { value: RangoFecha; label: string }[];
+  estados: { value: string; label: string }[];
+  conteos: Record<string, number>;
+  placeholder: string;
+  total: number;
+  mostrando: number;
+  singular: string;
+  plural: string;
+}
+
+function ListToolbar({ filtros, onChange, rangos, estados, conteos, placeholder, total, mostrando, singular, plural }: ListToolbarProps) {
+  const set = (parcial: Partial<Filtros>) => onChange({ ...filtros, ...parcial });
+  const activo = filtros.q.trim() !== '' || filtros.rango !== 'todas' || filtros.estado !== 'todos';
+  const unidad = (n: number) => (n === 1 ? singular : plural);
+
+  return (
+    <div className="pf-toolbar">
+      <div className="pf-toolbar-row">
+        <label className="pf-search">
+          <i className="ti ti-search" aria-hidden="true" />
+          <input
+            type="search"
+            value={filtros.q}
+            onChange={(e) => set({ q: e.target.value })}
+            placeholder={placeholder}
+            aria-label="Buscar"
+          />
+        </label>
+        <select
+          className="pf-tool-select"
+          value={filtros.rango}
+          onChange={(e) => set({ rango: e.target.value as RangoFecha })}
+          aria-label="Filtrar por fecha"
+        >
+          {rangos.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+        </select>
+        <select
+          className="pf-tool-select"
+          value={filtros.orden}
+          onChange={(e) => set({ orden: e.target.value as Filtros['orden'] })}
+          aria-label="Ordenar"
+        >
+          <option value="recientes">Más recientes primero</option>
+          <option value="antiguos">Más antiguas primero</option>
+        </select>
+      </div>
+
+      <div className="pf-chips" role="group" aria-label="Filtrar por estado">
+        {estados.map((e) => {
+          const n = e.value === 'todos' ? total : (conteos[e.value] ?? 0);
+          const sel = filtros.estado === e.value;
+          return (
+            <button
+              key={e.value}
+              type="button"
+              className={`pf-chip${sel ? ' active' : ''}`}
+              aria-pressed={sel}
+              onClick={() => set({ estado: e.value })}
+            >
+              {e.label} <span className="pf-chip-count">{n}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {filtros.rango === 'custom' && (
+        <div className="pf-toolbar-row pf-toolbar-dates">
+          <label>
+            Desde
+            <input
+              type="date"
+              value={filtros.desde}
+              max={filtros.hasta || undefined}
+              onChange={(e) => set({ desde: e.target.value })}
+            />
+          </label>
+          <label>
+            Hasta
+            <input
+              type="date"
+              value={filtros.hasta}
+              min={filtros.desde || undefined}
+              onChange={(e) => set({ hasta: e.target.value })}
+            />
+          </label>
+        </div>
+      )}
+
+      <div className="pf-toolbar-foot">
+        <span>
+          {activo ? `Mostrando ${mostrando} de ${total}` : `${total} ${unidad(total)}`}
+        </span>
+        {activo && (
+          <button
+            type="button"
+            className="pf-tool-clear"
+            onClick={() => onChange({ ...FILTROS_INICIALES, orden: filtros.orden })}
+          >
+            Limpiar filtros
+          </button>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export default function Perfil() {
@@ -106,6 +350,34 @@ function PerfilPanel() {
 
   const [detallePqr, setDetallePqr] = useState<Pqr | null>(null);
   const [toast, setToast] = useState<ToastMsg | null>(null);
+  const [filtrosPqr, setFiltrosPqr] = useState<Filtros>(FILTROS_INICIALES);
+  const [filtrosReservas, setFiltrosReservas] = useState<Filtros>(FILTROS_INICIALES);
+
+  const pqrsFiltradas = useMemo(
+    () =>
+      filtrarLista(
+        pqrs,
+        filtrosPqr,
+        (p) => p.creado_en_pqr,
+        (p) => `${p.asunto_pqr} ${pqrTipoLabel[p.tipo_pqr] ?? ''} ${pqrEstadoPill(p.estado_pqr).txt} SS-PQR-${p.id_pqr}`,
+        (p) => p.estado_pqr,
+      ),
+    [pqrs, filtrosPqr],
+  );
+  const conteosPqr = useMemo(() => contarPor(pqrs, (p) => p.estado_pqr), [pqrs]);
+
+  const reservasFiltradas = useMemo(
+    () =>
+      filtrarLista(
+        reservas,
+        filtrosReservas,
+        (r) => r.fecha_evento_rese,
+        (r) => `${r.evento?.nombre_er ?? ''} Reserva #${r.id_rese} ${reservaEstadoPill(r.estado_rese).txt}`,
+        (r) => r.estado_rese,
+      ),
+    [reservas, filtrosReservas],
+  );
+  const conteosReservas = useMemo(() => contarPor(reservas, (r) => r.estado_rese), [reservas]);
 
   useEffect(() => {
     pqrService.misPqr().then((res) => setPqrs(res.data)).catch(() => setToast({ tipo: 'error', texto: 'No se pudieron cargar tus PQR.', id: Date.now() }));
@@ -410,15 +682,50 @@ function PerfilPanel() {
                 </Link>
               </div>
             )}
-            {pqrs?.map((p) => {
+            {!!pqrs?.length && (
+              <>
+                <div className="pf-list-head">
+                  <h2>Mis PQR</h2>
+                  <p>Toca una solicitud para ver su detalle.</p>
+                </div>
+                <ListToolbar
+                  filtros={filtrosPqr}
+                  onChange={setFiltrosPqr}
+                  rangos={RANGOS_PQR}
+                  estados={ESTADOS_PQR}
+                  conteos={conteosPqr}
+                  placeholder="Buscar por asunto, tipo, estado o radicado"
+                  total={pqrs.length}
+                  mostrando={pqrsFiltradas?.length ?? 0}
+                  singular="solicitud"
+                  plural="solicitudes"
+                />
+              </>
+            )}
+            {!!pqrs?.length && pqrsFiltradas?.length === 0 && (
+              <div className="pfq-empty">
+                <span className="pfq-empty-icon" aria-hidden="true"><i className="ti ti-search-off" /></span>
+                <h3 className="pfq-empty-title">No encontramos resultados</h3>
+                <p className="pfq-empty-text">Prueba con otra palabra, otro estado o cambia el rango de fechas.</p>
+                <button type="button" className="pfx-btn pfx-btn-primary" onClick={() => setFiltrosPqr(FILTROS_INICIALES)}>
+                  Limpiar filtros
+                </button>
+              </div>
+            )}
+            {pqrsFiltradas?.map((p) => {
               const pill = pqrEstadoPill(p.estado_pqr);
               return (
                 <button key={p.id_pqr} className="pf-list-item" onClick={() => setDetallePqr(p)}>
+                  <span className="pf-item-icon" aria-hidden="true">
+                    <i className={`ti ${pqrTipoIcon[p.tipo_pqr] ?? 'ti-message-report'}`} />
+                  </span>
                   <div className="pf-list-item-main">
                     <span className="pf-list-item-title">{p.asunto_pqr}</span>
-                    <span className="pf-list-item-sub">{pqrTipoLabel[p.tipo_pqr]} · Radicado SS-PQR-{p.id_pqr} · {fmtFecha(p.creado_en_pqr)}</span>
+                    <span className="pf-list-item-sub">{pqrTipoLabel[p.tipo_pqr]} · {fmtFecha(p.creado_en_pqr)}</span>
                   </div>
+                  <span className="pf-item-code">SS-PQR-{p.id_pqr}</span>
                   <span className={`pf-pill ${pill.cls}`}>{pill.txt}</span>
+                  <i className="ti ti-chevron-right pf-item-chevron" aria-hidden="true" />
                 </button>
               );
             })}
@@ -438,10 +745,41 @@ function PerfilPanel() {
                 </Link>
               </div>
             )}
-            {reservas?.map((r) => {
+            {!!reservas?.length && (
+              <>
+                <div className="pf-list-head">
+                  <h2>Mis reservas</h2>
+                  <p>Aquí ves el estado de cada una de tus reservas.</p>
+                </div>
+                <ListToolbar
+                  filtros={filtrosReservas}
+                  onChange={setFiltrosReservas}
+                  rangos={RANGOS_RESERVAS}
+                  estados={ESTADOS_RESERVAS}
+                  conteos={conteosReservas}
+                  placeholder="Buscar por evento o estado"
+                  total={reservas.length}
+                  mostrando={reservasFiltradas?.length ?? 0}
+                  singular="reserva"
+                  plural="reservas"
+                />
+              </>
+            )}
+            {!!reservas?.length && reservasFiltradas?.length === 0 && (
+              <div className="pfq-empty">
+                <span className="pfq-empty-icon" aria-hidden="true"><i className="ti ti-search-off" /></span>
+                <h3 className="pfq-empty-title">No encontramos resultados</h3>
+                <p className="pfq-empty-text">Prueba con otra palabra, otro estado o cambia el rango de fechas.</p>
+                <button type="button" className="pfx-btn pfx-btn-primary" onClick={() => setFiltrosReservas(FILTROS_INICIALES)}>
+                  Limpiar filtros
+                </button>
+              </div>
+            )}
+            {reservasFiltradas?.map((r) => {
               const pill = reservaEstadoPill(r.estado_rese);
               return (
                 <div key={r.id_rese} className="pf-list-item" style={{ cursor: 'default' }}>
+                  <span className="pf-item-icon" aria-hidden="true"><i className="ti ti-calendar-event" /></span>
                   <div className="pf-list-item-main">
                     <span className="pf-list-item-title">{r.evento?.nombre_er || `Reserva #${r.id_rese}`}</span>
                     <span className="pf-list-item-sub">{fmtFecha(r.fecha_evento_rese)} · {r.invitados_rese} invitados · {fmtMoney(r.total_rese)}</span>
