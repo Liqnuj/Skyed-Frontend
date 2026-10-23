@@ -34,7 +34,7 @@ export default function SocialNav() {
           <NavLink to="/social/lugares" onClick={close}>Lugares</NavLink>
           <NavLink to="/social/nosotros" onClick={close}>Nosotros</NavLink>
           <NavLink to="/social/pqr" onClick={close}>PQRS</NavLink>
-          <a href="#contacto" onClick={close}>Contacto</a>
+          <Link to="/social/nosotros#contactanos" onClick={close}>Contacto</Link>
         </div>
 
         {/* Si hay usuario, muestra el menú desplegable. Si NO hay, muestra el botón que envía al login con redirección */}

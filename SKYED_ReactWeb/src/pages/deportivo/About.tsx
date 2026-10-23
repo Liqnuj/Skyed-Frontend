@@ -1,5 +1,7 @@
 import '../../styles/deportivo/deportivo.css';
 import SportWrapper from '../../components/deportivo/SportWrapper';
+import ContactSection from '../../components/shared/ContactSection';
+import '../../styles/shared/contactSection.css';
 
 export default function About() {
   return (
@@ -266,10 +268,11 @@ export default function About() {
                   </div>
                 </div>
               </div>
-              <br />
             </div>
           </div>
         </section>
+
+        <ContactSection variant="deportivo" />
 
         <div className="skyed-map-wrap">
           <div className="top-bar">
