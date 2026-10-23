@@ -98,6 +98,7 @@ const TABS: TabId[] = ['resumen', 'historial', 'inscripciones', 'ajustes'];
 
 function ParticipantPanel() {
   const { user, updateFotoUrl } = useAuth();
+  const { darkMode } = useAccessibility();
 
   // La pestaña vive en la URL (/deportivo/perfil?tab=inscripciones) para que
   // las opciones del menú de la cuenta abran directamente la sección elegida.
@@ -112,6 +113,9 @@ function ParticipantPanel() {
   const [detalle, setDetalle] = useState<Inscripcion | null>(null);
   const [verQr, setVerQr] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [cancelarInsc, setCancelarInsc] = useState<Inscripcion | null>(null);
+  const [cancelando, setCancelando] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
 
   useEffect(() => {
     apiFetch('/mis-inscripciones')
@@ -195,6 +199,41 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setDetalle(insc);
     setVerQr(false);
     setTab('inscripciones');
+  };
+
+  const pedirCancelacion = (insc: Inscripcion) => {
+    setCancelError(null);
+    setCancelarInsc(insc);
+  };
+
+  const cerrarCancelacion = () => {
+    if (cancelando) return;
+    setCancelarInsc(null);
+    setCancelError(null);
+  };
+
+  // DELETE /inscripciones/{id}: el backend marca la inscripción como cancelada,
+  // devuelve el cupo y cancela el QR y el pago pendiente.
+  const confirmarCancelacion = async () => {
+    if (!cancelarInsc) return;
+    const id = cancelarInsc.id;
+    setCancelando(true);
+    setCancelError(null);
+    try {
+      await apiFetch(`/inscripciones/${id}`, { method: 'DELETE' });
+      setInscripciones((prev) =>
+        (prev ?? []).map((i) => (i.id === id ? { ...i, estado: 'cancelada' } : i)),
+      );
+      if (detalle?.id === id) {
+        setDetalle(null);
+        setVerQr(false);
+      }
+      setCancelarInsc(null);
+    } catch (err: any) {
+      setCancelError(err.message || 'No se pudo cancelar la inscripción. Intenta de nuevo.');
+    } finally {
+      setCancelando(false);
+    }
   };
 
   return (
@@ -285,8 +324,8 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
               <div className="part-stats-strip">
                 <div className="part-strip-stat"><span className="part-num">{pasadas.length}</span><span className="part-lbl">Eventos completados</span></div>
                 <div className="part-strip-stat accent"><span className="part-num">{proximas.length}</span><span className="part-lbl">Próximos eventos</span></div>
-                <div className="part-strip-stat"><span className="part-num">{inscripciones?.length ?? 0}</span><span className="part-lbl">Inscripciones totales</span></div>
-                <div className="part-strip-stat accent"><span className="part-num">{fmtMoney(inscripciones?.reduce((s, i) => s + (i.precio_pagado || 0), 0))}</span><span className="part-lbl">Total invertido</span></div>
+                <div className="part-strip-stat"><span className="part-num">{inscripciones?.filter((i) => i.estado !== 'cancelada').length ?? 0}</span><span className="part-lbl">Inscripciones totales</span></div>
+                <div className="part-strip-stat accent"><span className="part-num">{fmtMoney(inscripciones?.filter((i) => i.estado !== 'cancelada').reduce((s, i) => s + (Number(i.precio_pagado) || 0), 0))}</span><span className="part-lbl">Total invertido</span></div>
               </div>
 
               <p className="part-section-label">
@@ -298,7 +337,7 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
                 <div className="part-empty-row">Sin eventos próximos. <Link to="/deportivo/eventos">Explora eventos →</Link></div>
               )}
               {proximas.slice(0, 3).map((i) => (
-                <EventRow key={i.id} insc={i} onVerDetalle={() => abrirDetalle(i)} />
+                <EventRow key={i.id} insc={i} onVerDetalle={() => abrirDetalle(i)} onCancelar={() => pedirCancelacion(i)} />
               ))}
             </>
           )}
@@ -341,7 +380,7 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
                 <div className="part-empty-row">No tienes inscripciones activas.</div>
               )}
               {proximas.map((i) => (
-                <EventRow key={i.id} insc={i} onVerDetalle={() => abrirDetalle(i)} />
+                <EventRow key={i.id} insc={i} onVerDetalle={() => abrirDetalle(i)} onCancelar={() => pedirCancelacion(i)} />
               ))}
               {pasadas.length > 0 && (
                 <>
@@ -364,17 +403,94 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
               onVerQr={() => setVerQr(true)}
               onCerrarQr={() => setVerQr(false)}
               onVolver={() => setDetalle(null)}
+              onCancelar={proximas.some((p) => p.id === detalle.id) ? () => pedirCancelacion(detalle) : undefined}
             />
           )}
 
           {tab === 'ajustes' && <AjustesTab />}
         </div>
       </div>
+
+      {cancelarInsc && createPortal(
+        <div className={`mod-deportivo part-qr-overlay${darkMode ? ' dark-mode' : ''}`} onClick={cerrarCancelacion}>
+          <div className="part-qr-modal" onClick={(e) => e.stopPropagation()}>
+            <button
+              className="part-qr-close"
+              onClick={cerrarCancelacion}
+              aria-label="Cerrar"
+              disabled={cancelando}
+            >
+              <i className="ti ti-x" aria-hidden="true" />
+            </button>
+            <div
+              aria-hidden="true"
+              style={{
+                width: 56,
+                height: 56,
+                margin: '0 auto 1rem',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1.6rem',
+                background: 'color-mix(in srgb, #dc2626 16%, transparent)',
+                color: '#ef4444',
+              }}
+            >
+              <i className="ti ti-calendar-x" />
+            </div>
+            <h3 style={{ textAlign: 'center', marginBottom: '.5rem' }}>¿Cancelar inscripción?</h3>
+            <p style={{ textAlign: 'center', lineHeight: 1.6, marginBottom: '1.5rem', opacity: 0.85 }}>
+              Vas a cancelar tu inscripción a <strong>{cancelarInsc.evento?.nombre || 'este evento'}</strong>.
+              Tu cupo quedará libre y tu código QR dejará de ser válido.
+            </p>
+            {cancelError && (
+              <div className="part-form-alert error" style={{ marginBottom: '1rem' }}>
+                <span className="part-alert-icon">⚠️</span>
+                {cancelError}
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: '.75rem' }}>
+              <button
+                type="button"
+                className="btn btn-outline"
+                style={{ flex: 1, justifyContent: 'center' }}
+                onClick={cerrarCancelacion}
+                disabled={cancelando}
+              >
+                Volver
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                style={{
+                  flex: 1,
+                  justifyContent: 'center',
+                  background: '#dc2626',
+                  border: 'none',
+                  whiteSpace: 'nowrap',
+                }}
+                onClick={confirmarCancelacion}
+                disabled={cancelando}
+              >
+                {cancelando ? 'Cancelando…' : 'Sí, cancelar'}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
     </>
   );
 }
 
-function EventRow({ insc, onVerDetalle }: { insc: Inscripcion; onVerDetalle: () => void }) {
+function EventRow({
+  insc, onVerDetalle, onCancelar,
+}: {
+  insc: Inscripcion;
+  onVerDetalle: () => void;
+  onCancelar?: () => void;
+}) {
   const pill = estadoPill(insc.estado);
   const bg = insc.evento?.imagen_url ? { backgroundImage: `url(${insc.evento.imagen_url})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined;
   return (
@@ -388,6 +504,15 @@ function EventRow({ insc, onVerDetalle }: { insc: Inscripcion; onVerDetalle: () 
           {insc.evento?.categoria && <span>{insc.evento.categoria}</span>}
         </div>
         <button className="part-btn-link-detail" onClick={onVerDetalle}>Ver detalles</button>
+        {onCancelar && (
+          <button
+            className="part-btn-link-detail"
+            style={{ marginLeft: '1rem', color: '#dc2626' }}
+            onClick={onCancelar}
+          >
+            Cancelar inscripción
+          </button>
+        )}
       </div>
       <span className={`part-status-pill ${pill.cls}`}>{pill.txt}</span>
     </div>
@@ -395,13 +520,14 @@ function EventRow({ insc, onVerDetalle }: { insc: Inscripcion; onVerDetalle: () 
 }
 
 function DetalleInscripcion({
-  insc, verQr, onVerQr, onCerrarQr, onVolver,
+  insc, verQr, onVerQr, onCerrarQr, onVolver, onCancelar,
 }: {
   insc: Inscripcion;
   verQr: boolean;
   onVerQr: () => void;
   onCerrarQr: () => void;
   onVolver: () => void;
+  onCancelar?: () => void;
 }) {
   const { darkMode } = useAccessibility();
   const metodo = insc.pago?.metodo_pago
@@ -458,11 +584,49 @@ function DetalleInscripcion({
             </div>
           </div>
         </div>
-        {insc.qr?.codigo && !verQr && (
-          <div style={{ marginTop: '1.5rem' }}>
-            <button className="btn btn-primary part-detail-qr-btn" onClick={onVerQr}>
-              <i className="ti ti-qrcode" aria-hidden="true" /> Ver mi QR
-            </button>
+        {((insc.qr?.codigo && !verQr) || onCancelar) && (
+          <div
+            style={{
+              marginTop: '1.5rem',
+              paddingTop: '1.25rem',
+              borderTop: '1px solid color-mix(in srgb, currentColor 12%, transparent)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '.75rem',
+            }}
+          >
+            {insc.qr?.codigo && !verQr && (
+              <button
+                className="btn btn-primary part-detail-qr-btn"
+                style={{ margin: 0 }}
+                onClick={onVerQr}
+              >
+                <i className="ti ti-qrcode" aria-hidden="true" /> Ver mi QR
+              </button>
+            )}
+            {onCancelar && (
+              <button
+                type="button"
+                onClick={onCancelar}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '.5rem',
+                  padding: '.7rem 1.1rem',
+                  border: 'none',
+                  borderRadius: '12px',
+                  background: 'color-mix(in srgb, #dc2626 14%, transparent)',
+                  color: '#ef4444',
+                  fontWeight: 700,
+                  fontSize: '.9rem',
+                  cursor: 'pointer',
+                }}
+              >
+                <i className="ti ti-circle-x" aria-hidden="true" /> Cancelar inscripción
+              </button>
+            )}
           </div>
         )}
 

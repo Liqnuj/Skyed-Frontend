@@ -6,6 +6,7 @@ import SportWrapper from '../../components/deportivo/SportWrapper';
 import TermsModal from '../../components/shared/TermsModal';
 import { useAuth } from '../../context/AuthContext';
 import { apiFetch } from '../../services/api';
+import { prepararImagen } from '../../utils/prepararImagen';
 import jsQR from 'jsqr';
 import { createWorker } from 'tesseract.js';
 import '../../styles/deportivo/participante.css';
@@ -128,6 +129,9 @@ function InscriptionWizard() {
   const [invCorreo, setInvCorreo] = useState('');
 
   const [enviando, setEnviando] = useState(false);
+  // Si la inscripción se creó pero la subida del comprobante falló, aquí queda el id del pago
+  // para reintentar SOLO la subida (volver a inscribirse daría 409: ya inscrito).
+  const [pagoPendienteComprobante, setPagoPendienteComprobante] = useState<number | null>(null);
   const [msg, setMsg] = useState<{ tipo: 'ok' | 'error'; texto: string; id: number } | null>(null);
   const [done, setDone] = useState(false);
 
@@ -386,6 +390,16 @@ function InscriptionWizard() {
   async function manejarComprobante(file: File | null) {
     if (!file) { setComprobante(null); return; }
 
+    // El admin verá esta imagen para confirmar el pago: solo se aceptan imágenes.
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type)) {
+      mostrarMsg('error', 'El comprobante debe ser una imagen JPG, PNG o WEBP (no PDF).');
+      return;
+    }
+    if (file.size > 15 * 1024 * 1024) {
+      mostrarMsg('error', 'La imagen es demasiado pesada. Usa una de menos de 15 MB.');
+      return;
+    }
+
     setValidandoComprobante(true);
 
     const tieneQR = await contieneCodigoQR(file);
@@ -472,8 +486,41 @@ function InscriptionWizard() {
     setStep(3);
   }
 
+  // Sube la imagen del comprobante para que el administrador pueda verla y confirmar el pago.
+  async function subirComprobante(pagoId: number) {
+    if (!comprobante) return;
+    // Se reduce en el navegador para no chocar con el límite de subida de PHP.
+    const imagen = await prepararImagen(comprobante).catch(() => comprobante);
+    const body = new FormData();
+    body.append('comprobante', imagen);
+    await apiFetch(`/pagos/${pagoId}/comprobante`, { method: 'POST', body });
+  }
+
   async function confirmarInscripcion() {
     if (!evento) return;
+
+    // Reintento: la inscripción ya existe, solo falta subir la imagen del comprobante.
+    if (pagoPendienteComprobante !== null) {
+      if (!comprobante) {
+        mostrarMsg('error', 'Adjunta tu comprobante de pago.');
+        return;
+      }
+      setEnviando(true);
+      try {
+        await subirComprobante(pagoPendienteComprobante);
+        setPagoPendienteComprobante(null);
+        if (id) {
+          try { localStorage.removeItem(DRAFT_KEY_PREFIX + id); } catch {}
+        }
+        setStep(3);
+        setDone(true);
+      } catch (err: any) {
+        mostrarMsg('error', `No se pudo subir el comprobante: ${err?.message || 'intenta de nuevo'}. Tu inscripción ya quedó registrada; pulsa de nuevo para reintentar.`);
+      } finally {
+        setEnviando(false);
+      }
+      return;
+    }
 
     if (evento.estado !== 'activo') {
       mostrarMsg('error', 'Este evento no está activo actualmente.');
@@ -512,7 +559,8 @@ function InscriptionWizard() {
       condiciones_medicas: condicionesMedicas || null,
       metodo_pago_p: metodoPago,
       referencia_p: referenciaPago,
-      comprobante_p: comprobante?.name ?? null,
+      // La imagen se sube aparte (POST /pagos/{id}/comprobante) cuando la inscripción ya existe.
+      comprobante_p: null,
     };
 
     if (mostrarInvitado) {
@@ -529,22 +577,42 @@ function InscriptionWizard() {
     }
 
     setEnviando(true);
+
+    // Fase 1: crear la inscripción (y su pago).
+    let pagoId: number | null = null;
     try {
-      await apiFetch(`/eventos/${evento.id}/inscripciones`, {
+      const res = await apiFetch(`/eventos/${evento.id}/inscripciones`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      if (id) {
-        try { localStorage.removeItem(DRAFT_KEY_PREFIX + id); } catch {}
-      }
-      setStep(3);
-      setDone(true);
+      pagoId = res?.inscripcion?.pago?.id ?? null;
     } catch (err: any) {
       mostrarMsg('error', err?.message || 'No se pudo completar la inscripción. Verifica los datos.');
-    } finally {
       setEnviando(false);
+      return;
     }
+
+    // Fase 2: subir la imagen del comprobante para que el admin la vea.
+    if (metodoPago !== 'efectivo' && comprobante) {
+      try {
+        if (pagoId === null) throw new Error('el servidor no devolvió el pago');
+        await subirComprobante(pagoId);
+      } catch (err: any) {
+        // La inscripción ya existe: se guarda el pago para reintentar solo la subida.
+        if (pagoId !== null) setPagoPendienteComprobante(pagoId);
+        mostrarMsg('error', `Tu inscripción quedó registrada, pero no se pudo subir el comprobante: ${err?.message || 'intenta de nuevo'}. Pulsa de nuevo para reintentar.`);
+        setEnviando(false);
+        return;
+      }
+    }
+
+    if (id) {
+      try { localStorage.removeItem(DRAFT_KEY_PREFIX + id); } catch {}
+    }
+    setStep(3);
+    setDone(true);
+    setEnviando(false);
   }
 
   if (cargando) {
@@ -1056,7 +1124,7 @@ function InscriptionWizard() {
                       <input
                         id="comprobante"
                         type="file"
-                        accept=".jpg,.jpeg,.png,.pdf"
+                        accept=".jpg,.jpeg,.png,.webp"
                         style={{ display: 'none' }}
                         disabled={validandoComprobante}
                         onChange={(e) => manejarComprobante(e.target.files?.[0] ?? null)}
@@ -1180,7 +1248,7 @@ function InscriptionWizard() {
                     disabled={enviando || !aceptaTerminos || !aceptaCondicionFisica}
                     onClick={confirmarInscripcion}
                   >
-                    <i className="ti ti-lock" aria-hidden="true" /> {enviando ? 'Enviando…' : 'Confirmar inscripción'}
+                    <i className="ti ti-lock" aria-hidden="true" /> {enviando ? 'Enviando…' : pagoPendienteComprobante !== null ? 'Reintentar subida del comprobante' : 'Confirmar inscripción'}
                   </button>
                 </div>
               </div>
