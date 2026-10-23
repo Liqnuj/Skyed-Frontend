@@ -39,6 +39,51 @@ type Section =
   | "lugares"
   | "servicios";
 
+/* ---------- Persistencia de la vista (sección + formulario abierto) ----------
+   Al recargar la página se vuelve a la misma sección y al mismo formulario.
+   Se guarda en sessionStorage: sobrevive al F5 pero no a cerrar la pestaña. */
+type ModalKind = "ambiente" | "servicio" | "evento" | "reserva" | "pqr";
+type SavedView = { section: Section; modal: ModalKind | null; editId: number | string | null };
+
+const VIEW_KEY = "skyed_admin_social_view";
+const SECTION_IDS: Section[] = ["inicio", "eventos", "reservas", "usuarios", "pqr", "lugares", "servicios"];
+const MODAL_KINDS: ModalKind[] = ["ambiente", "servicio", "evento", "reserva", "pqr"];
+
+function readSavedView(): SavedView {
+  const empty: SavedView = { section: "inicio", modal: null, editId: null };
+  try {
+    const raw = sessionStorage.getItem(VIEW_KEY);
+    if (!raw) return empty;
+    const v = JSON.parse(raw);
+    return {
+      section: SECTION_IDS.includes(v.section) ? v.section : "inicio",
+      modal: MODAL_KINDS.includes(v.modal) ? v.modal : null,
+      editId: v.editId ?? null,
+    };
+  } catch {
+    return empty;
+  }
+}
+
+function writeSavedView(view: SavedView) {
+  try {
+    sessionStorage.setItem(VIEW_KEY, JSON.stringify(view));
+  } catch {
+    /* sin almacenamiento disponible: simplemente no se persiste */
+  }
+}
+
+const editIdOf = (modal: ModalKind | null, item: any): number | string | null => {
+  if (!item) return null;
+  switch (modal) {
+    case "ambiente": return item.id_a ?? null;
+    case "servicio": return item.id_s ?? item.id ?? null;
+    case "evento": return item.id_er ?? null;
+    case "pqr": return item.id_pqr ?? null;
+    default: return null;
+  }
+};
+
 type Ambiente = {
   id_a: number;
   nombre_a: string;
@@ -374,7 +419,10 @@ function AdminPage() {
     };
   }, [darkMode]);
 
-  const [section, setSection] = useState<Section>("inicio");
+  const [saved] = useState<SavedView>(readSavedView);
+  const persistReady = useRef(false);
+
+  const [section, setSection] = useState<Section>(saved.section);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -390,9 +438,11 @@ function AdminPage() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [tipos, setTipos] = useState<TipoEvento[]>([]);
 
-  const [modal, setModal] = useState<
-    "ambiente" | "servicio" | "evento" | "reserva" | "pqr" | null
-  >(null);
+  // Los formularios de "crear" se restauran de inmediato; los de "editar"
+  // esperan a que lleguen los datos (ver restauración tras loadAll).
+  const [modal, setModal] = useState<ModalKind | null>(
+    saved.modal && saved.editId == null && saved.modal !== "pqr" ? saved.modal : null
+  );
   const [editing, setEditing] = useState<any>(null);
 
   const notify = (message: string) => {
@@ -427,6 +477,7 @@ function AdminPage() {
       } catch {
         // El módulo social funciona aunque la API de usuarios no esté expuesta.
       }
+      return { ambientes: a.data ?? [], servicios: s.data ?? [], eventos: e.data ?? [], pqrs: p.data ?? [] };
     } catch (error) {
       setToast(error instanceof Error ? error.message : "No se pudieron cargar los datos.");
     } finally {
@@ -435,8 +486,37 @@ function AdminPage() {
   };
 
   useEffect(() => {
-    loadAll();
+    loadAll().then(data => {
+      // Si se recargó con un formulario de "editar" abierto, se vuelve a abrir
+      // con el registro correspondiente (ya cargado desde la API).
+      if (data && saved.modal && saved.editId != null) {
+        const lista: any[] | undefined = {
+          ambiente: data.ambientes,
+          servicio: data.servicios,
+          evento: data.eventos,
+          pqr: data.pqrs,
+          reserva: undefined,
+        }[saved.modal];
+        const item = lista?.find(x => String(editIdOf(saved.modal, x)) === String(saved.editId));
+        if (item) {
+          persistReady.current = true;
+          setEditing(item);
+          setModal(saved.modal);
+          return;
+        }
+      }
+      persistReady.current = true;
+      // El registro que estaba en edición ya no existe: se limpia lo guardado.
+      if (saved.editId != null) writeSavedView({ section: saved.section, modal: null, editId: null });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Guarda la vista cada vez que cambia la sección o el formulario abierto.
+  useEffect(() => {
+    if (!persistReady.current) return;
+    writeSavedView({ section, modal, editId: editIdOf(modal, editing) });
+  }, [section, modal, editing]);
 
   const selectSection = (next: Section) => {
     setSection(next);
@@ -938,7 +1018,7 @@ function AmbienteModal({ item, onClose, onSave, notify }: { item?: Ambiente; onC
     const imagen = form.imagen_principal_a.trim();
 
     if (!nombre || !Number.isInteger(capacidad) || capacidad < 1) return;
-    if (precio !== undefined && (!Number.isFinite(precio) || precio < 0)) return;
+    if (precio !== undefined && (!Number.isFinite(precio) || precio < 0 || precio > 9999999999)) return;
     if (!imagen) return;
 
     setSaving(true);
@@ -987,11 +1067,11 @@ function AmbienteModal({ item, onClose, onSave, notify }: { item?: Ambiente; onC
           <input
             type="number"
             min="0"
-            max="999999999999"
+            max="9999999999"
             step="1"
             inputMode="numeric"
             value={form.precio_referencia_a}
-            onChange={e => setForm({...form, precio_referencia_a: sanitizeMoney(e.target.value)})}
+            onChange={e => setForm({...form, precio_referencia_a: sanitizeMoney(e.target.value, 10)})}
           />
         </Field>
 
