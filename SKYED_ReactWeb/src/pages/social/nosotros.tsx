@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
 import SocialWrapper from '../../components/social/SocialWrapper';
 import NsHeroParticles from '../../components/social/HeroParticles';
+import ContactSection from '../../components/shared/ContactSection';
+import '../../styles/shared/contactSection.css';
 
 const TIMELINE = [
   {
@@ -159,12 +161,15 @@ export default function About() {
               <p className="section-sub">
                 Cuéntanos tu idea y te ayudamos a convertirla en una experiencia inolvidable.
               </p>
-              <a href="#contacto" className="btn-primary">
+              <a href="#contactanos" className="btn-primary">
                 Hablar con un asesor →
               </a>
             </div>
           </div>
         </section>
+
+        {/* CONTÁCTANOS */}
+        <ContactSection variant="social" />
 
         {/* MAPA */}
         <div className="ns-map-section">

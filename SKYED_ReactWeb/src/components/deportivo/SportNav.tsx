@@ -48,7 +48,7 @@ const { user } = useAuth();
           <li><NavLink to="/deportivo" end onClick={close}>Inicio</NavLink></li>
           <li><NavLink to="/deportivo/eventos" onClick={close}>Eventos</NavLink></li>
           <li><NavLink to="/deportivo/nosotros" onClick={close}>Nosotros</NavLink></li>
-          <li><a href="#contacto" onClick={close}>Contacto</a></li>
+          <li><Link to="/deportivo/nosotros#contactanos" onClick={close}>Contacto</Link></li>
         </ul>
         <div className="nav-cta">
           {user ? (

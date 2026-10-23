@@ -1620,9 +1620,14 @@
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 18px;
-    max-width: 960px;
-    width: 1000px;
-    margin-left: 250px;
+    max-width: 1100px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 0 1.25rem;
+    box-sizing: border-box;
+  }
+  @media (max-width: 900px) {
+    .about-page .cards-grid { grid-template-columns: 1fr; max-width: 420px; }
   }
 
   .about-page .event-card {
