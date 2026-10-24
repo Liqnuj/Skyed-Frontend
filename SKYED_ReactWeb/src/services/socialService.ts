@@ -132,8 +132,16 @@ export const eventoSocialService = {
 /*  Reservas                                                          */
 /* ---------------------------------------------------------------- */
 
+/** Entrada del historial de una reserva (tabla de seguimientos). */
+export interface SeguimientoReserva {
+  fecha_actualizacion: string | null;
+  comentario: string | null;
+}
+
 export interface Reserva {
   id_rese: number;
+  /** Nombre que el cliente le pone a su reserva (opcional). */
+  nombre_rese?: string | null;
   fecha_evento_rese: string;
   invitados_rese: number;
   presupuesto_rese: string;
@@ -141,12 +149,15 @@ export interface Reserva {
   Observaciones_rese: string;
   total_rese: string;
   estado_rese: 'pendiente' | 'confirmada' | 'cancelada' | 'completada';
+  creado_en_rese?: string | null;
   id_u: number;
   id_er: number;
   evento?: EventoSocial;
+  seguimientos?: SeguimientoReserva[];
 }
 
 export interface CrearReservaPayload {
+  nombre_rese?: string;
   fecha_evento_rese: string;
   invitados_rese: number;
   presupuesto_rese: number;
@@ -167,6 +178,15 @@ export const reservaService = {
     });
     return data.reserva;
   },
+
+  /** El cliente le pone (o quita, con texto vacío) el nombre a su reserva. */
+  async renombrar(id: number, nombre: string): Promise<Pick<Reserva, 'id_rese' | 'nombre_rese'>> {
+    const data = await apiFetch(`/reservas/${id}/nombre`, {
+      method: 'PATCH',
+      body: JSON.stringify({ nombre_rese: nombre }),
+    });
+    return data.reserva;
+  },
 };
 
 /* ---------------------------------------------------------------- */
@@ -175,16 +195,31 @@ export const reservaService = {
 
 export type TipoPqr = 'peticion' | 'queja' | 'reclamo' | 'sugerencia' | 'felicitacion';
 
+/**
+ * Mensaje o evento del historial de una PQR.
+ * tipo_evento: 'respuesta_cliente' (escribe el cliente), 'respuesta' y
+ * 'solicitud_informacion' (escribe el equipo), 'actualizacion' y 'nota'.
+ */
+export interface PqrSeguimiento {
+  id_seguimiento: number;
+  tipo_evento: string | null;
+  estado_anterior?: string | null;
+  estado_nuevo?: string | null;
+  comentario_publico: string | null;
+  created_at: string;
+}
+
 export interface Pqr {
   id_pqr: number;
   tipo_pqr: TipoPqr;
   asunto_pqr: string;
   mensaje_pqr: string;
-  estado_pqr: 'abierto' | 'en_proceso' | 'resuelto' | 'cerrado';
+  estado_pqr: 'abierto' | 'en_revision' | 'en_proceso' | 'resuelto' | 'cerrado';
   respuesta_pqr: string | null;
   respondido_en_pqr: string | null;
   creado_en_pqr: string;
   id_u: number;
+  seguimientos?: PqrSeguimiento[];
 }
 
 export interface CrearPqrPayload {
@@ -204,5 +239,14 @@ export const pqrService = {
       body: JSON.stringify(payload),
     });
     return data.pqr;
+  },
+
+  /** El cliente escribe un mensaje nuevo en su PQR (POST /pqr/{id}/responder). */
+  async responder(id: number, mensaje: string): Promise<PqrSeguimiento> {
+    const data = await apiFetch(`/pqr/${id}/responder`, {
+      method: 'POST',
+      body: JSON.stringify({ mensaje }),
+    });
+    return data.seguimiento;
   },
 };

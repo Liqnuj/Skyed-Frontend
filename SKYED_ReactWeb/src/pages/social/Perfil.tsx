@@ -8,7 +8,7 @@ import type { ToastMsg } from '../../components/social/Toast';
 import { useAuth } from '../../context/AuthContext';
 import { apiFetch } from '../../services/api';
 import { pqrService, reservaService } from '../../services/socialService';
-import type { Pqr, Reserva, TipoPqr } from '../../services/socialService';
+import type { Pqr, PqrSeguimiento, Reserva, TipoPqr } from '../../services/socialService';
 import { prepararImagen } from '../../utils/prepararImagen';
 import { errorContrasena } from '../../utils/validaciones';
 import '../../styles/social/perfil.css';
@@ -72,11 +72,18 @@ const pqrTipoIcon: Record<TipoPqr, string> = {
   felicitacion: 'ti-heart',
 };
 
-function pqrEstadoPill(estado: Pqr['estado_pqr']) {
+function pqrEstadoPill(estadoPqr: Pqr['estado_pqr']) {
+  const estado = estadoPqr as string; // el backend también usa 'en_revision'
   if (estado === 'abierto') return { cls: 'pending', txt: 'Abierto' };
+  if (estado === 'en_revision') return { cls: 'pending', txt: 'En revisión' };
   if (estado === 'en_proceso') return { cls: 'pending', txt: 'En proceso' };
   if (estado === 'cerrado') return { cls: 'warn', txt: 'Cerrado' };
   return { cls: 'ok', txt: 'Resuelto' };
+}
+
+/** Nombre que se muestra: el que puso el cliente, si no el del evento, si no el número. */
+function nombreReserva(r: Reserva) {
+  return (r.nombre_rese ?? '').trim() || r.evento?.nombre_er || `Reserva #${r.id_rese}`;
 }
 
 function reservaEstadoPill(estado: Reserva['estado_rese']) {
@@ -103,6 +110,7 @@ const FILTROS_INICIALES: Filtros = { q: '', rango: 'todas', desde: '', hasta: ''
 const ESTADOS_PQR: { value: string; label: string }[] = [
   { value: 'todos', label: 'Todos' },
   { value: 'abierto', label: 'Abierto' },
+  { value: 'en_revision', label: 'En revisión' },
   { value: 'en_proceso', label: 'En proceso' },
   { value: 'resuelto', label: 'Resuelto' },
   { value: 'cerrado', label: 'Cerrado' },
@@ -202,7 +210,7 @@ function filtrarLista<T>(
     return true;
   });
 
-    const marca = (it: T) => {
+  const marca = (it: T) => {
     const t = Date.parse(getFecha(it) ?? '');
     return Number.isNaN(t) ? 0 : t;
   };
@@ -322,6 +330,432 @@ function ListToolbar({ filtros, onChange, rangos, estados, conteos, placeholder,
   );
 }
 
+/* ---------- Detalle de una PQR (modal con conversación) ---------- */
+type PqrSeguimientoItem = PqrSeguimiento;
+type PqrConSeguimientos = Pqr;
+
+interface MensajePqr {
+  key: string;
+  de: 'yo' | 'equipo' | 'sistema';
+  texto: string;
+  fecha: string | null | undefined;
+}
+
+const MENSAJE_GENERICO = 'Se ha publicado una respuesta a tu solicitud.';
+const ESTADOS_CON_RESPUESTA = ['abierto', 'en_revision', 'en_proceso'];
+
+function agregarSeguimiento(p: Pqr, seg: PqrSeguimientoItem): Pqr {
+  const actual = (p as PqrConSeguimientos).seguimientos ?? [];
+  return { ...p, seguimientos: [...actual, seg] } as Pqr;
+}
+
+function fmtFechaHora(iso: string | null | undefined) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleString('es-CO', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit' });
+}
+
+/** Une el mensaje inicial, el historial y la respuesta en una sola conversación. */
+function construirConversacion(pqr: PqrConSeguimientos): MensajePqr[] {
+  const segs = [...(pqr.seguimientos ?? [])].sort(
+    (a, b) =>
+      Date.parse(a.created_at) - Date.parse(b.created_at) ||
+      a.id_seguimiento - b.id_seguimiento,
+  );
+
+  let ultimaRespuesta = -1;
+  segs.forEach((sg, i) => { if (sg.tipo_evento === 'respuesta') ultimaRespuesta = i; });
+
+  const msgs: MensajePqr[] = [
+    { key: 'inicio', de: 'yo', texto: pqr.mensaje_pqr, fecha: pqr.creado_en_pqr },
+  ];
+
+  segs.forEach((sg, i) => {
+    const key = `seg-${sg.id_seguimiento}`;
+    let texto = (sg.comentario_publico ?? '').trim();
+
+    if (sg.tipo_evento === 'respuesta_cliente') {
+      msgs.push({ key, de: 'yo', texto, fecha: sg.created_at });
+    } else if (sg.tipo_evento === 'respuesta' || sg.tipo_evento === 'solicitud_informacion') {
+      // Respuestas antiguas guardaban un texto genérico: la última se completa con la real.
+      if (i === ultimaRespuesta && pqr.respuesta_pqr && (texto === '' || texto === MENSAJE_GENERICO)) {
+        texto = pqr.respuesta_pqr;
+      }
+      msgs.push({ key, de: 'equipo', texto: texto || MENSAJE_GENERICO, fecha: sg.created_at });
+    } else if (texto) {
+      msgs.push({ key, de: 'sistema', texto, fecha: sg.created_at });
+    } else if (sg.estado_anterior && sg.estado_nuevo) {
+      msgs.push({
+        key,
+        de: 'sistema',
+        texto: `Tu solicitud pasó a: ${pqrEstadoPill(sg.estado_nuevo as Pqr['estado_pqr']).txt}`,
+        fecha: sg.created_at,
+      });
+    }
+  });
+
+  // PQR respondidas antes de que existiera el historial.
+  if (ultimaRespuesta === -1 && pqr.respuesta_pqr) {
+    msgs.push({ key: 'respuesta-antigua', de: 'equipo', texto: pqr.respuesta_pqr, fecha: pqr.respondido_en_pqr });
+  }
+
+  return msgs;
+}
+
+interface PqrDetalleProps {
+  pqr: PqrConSeguimientos;
+  onClose: () => void;
+  /** Envía el mensaje; devuelve true si se guardó. */
+  onEnviar: (mensaje: string) => Promise<boolean>;
+}
+
+function PqrDetalle({ pqr, onClose, onEnviar }: PqrDetalleProps) {
+  const [texto, setTexto] = useState('');
+  const [enviando, setEnviando] = useState(false);
+  const hiloRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  const pill = pqrEstadoPill(pqr.estado_pqr);
+  const paso = ['resuelto', 'cerrado'].includes(pqr.estado_pqr) ? 3 : pqr.estado_pqr === 'abierto' ? 1 : 2;
+  const pasos = ['Radicada', 'En proceso', 'Resuelta'];
+  const puedeResponder = ESTADOS_CON_RESPUESTA.includes(pqr.estado_pqr);
+
+  const conversacion = useMemo(() => construirConversacion(pqr), [pqr]);
+  const hayRespuestaEquipo = conversacion.some((m) => m.de === 'equipo');
+
+  // Al abrir o llegar un mensaje nuevo, baja al final de la conversación.
+  useEffect(() => {
+    const el = hiloRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight });
+  }, [conversacion.length]);
+
+  const enviar = async (e?: FormEvent) => {
+    e?.preventDefault();
+    const mensaje = texto.trim();
+    if (!mensaje || enviando) return;
+    setEnviando(true);
+    const ok = await onEnviar(mensaje);
+    setEnviando(false);
+    if (ok) setTexto('');
+  };
+
+  return (
+    <div className="pf-modal-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="pf-modal pf-pqr-modal" role="dialog" aria-modal="true" aria-labelledby="pf-pqr-title">
+        <div className="pf-modal-head">
+          <span className="pf-item-icon" aria-hidden="true">
+            <i className={`ti ${pqrTipoIcon[pqr.tipo_pqr] ?? 'ti-message-report'}`} />
+          </span>
+          <div className="pf-pqr-heading">
+            <h3 id="pf-pqr-title">{pqr.asunto_pqr}</h3>
+            <p className="pf-list-item-sub">{pqrTipoLabel[pqr.tipo_pqr]} · {fmtFecha(pqr.creado_en_pqr)}</p>
+          </div>
+          <button className="pf-modal-close" onClick={onClose} aria-label="Cerrar">×</button>
+        </div>
+
+        <div className="pf-pqr-meta">
+          <span className="pf-item-code">SS-PQR-{pqr.id_pqr}</span>
+          <span className={`pf-pill ${pill.cls}`}>{pill.txt}</span>
+        </div>
+
+        <ol className="pf-steps" aria-label="Estado de la solicitud">
+          {pasos.map((txt, i) => {
+            const cls = paso === 3 || i < paso - 1 ? 'done' : i === paso - 1 ? 'current' : '';
+            return <li key={txt} className={cls}>{txt}</li>;
+          })}
+        </ol>
+
+        <div className="pf-thread" ref={hiloRef}>
+          {conversacion.map((m) =>
+            m.de === 'sistema' ? (
+              <div key={m.key} className="pf-thread-event">
+                <i className="ti ti-point-filled" aria-hidden="true" />
+                <span>{m.texto}</span>
+                {m.fecha && <small>{fmtFechaHora(m.fecha)}</small>}
+              </div>
+            ) : (
+              <div key={m.key} className={`pf-bubble ${m.de === 'yo' ? 'mine' : 'team'}`}>
+                <span className="pf-bubble-who">
+                  {m.de === 'yo' ? 'Tú' : 'Equipo SkyedSocial'}
+                  {m.fecha ? ` · ${fmtFechaHora(m.fecha)}` : ''}
+                </span>
+                <p>{m.texto}</p>
+              </div>
+            ),
+          )}
+          {!hayRespuestaEquipo && (
+            <div className="pf-thread-wait">
+              <i className="ti ti-clock" aria-hidden="true" />
+              <span>Aún sin respuesta. Te avisaremos aquí y por notificación cuando la tengamos.</span>
+            </div>
+          )}
+        </div>
+
+        {puedeResponder ? (
+          <form className="pf-reply" onSubmit={enviar}>
+            <textarea
+              value={texto}
+              onChange={(e) => setTexto(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) enviar(); }}
+              placeholder="Escribe tu respuesta…"
+              maxLength={2000}
+              rows={2}
+              aria-label="Tu respuesta"
+              disabled={enviando}
+            />
+            <div className="pf-reply-foot">
+              <span>{texto.length}/2000 · Ctrl + Enter para enviar</span>
+              <button type="submit" className="pf-reply-btn" disabled={enviando || texto.trim() === ''}>
+                <i className="ti ti-send" aria-hidden="true" />
+                {enviando ? 'Enviando…' : 'Enviar'}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <div className="pf-thread-wait pf-reply-closed">
+            <i className="ti ti-lock" aria-hidden="true" />
+            <span>Esta solicitud ya fue {pqr.estado_pqr === 'cerrado' ? 'cerrada' : 'resuelta'}. Si necesitas algo más, radica una nueva PQR.</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Detalle de una reserva (modal) ---------- */
+function fmtFechaLarga(iso: string | null | undefined) {
+  const f = soloFecha(iso);
+  if (!f) return '—';
+  const [y, m, d] = f.split('-').map(Number);
+  const txt = new Date(y, m - 1, d).toLocaleDateString('es-CO', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  });
+  return txt.charAt(0).toUpperCase() + txt.slice(1);
+}
+
+/** Días que faltan para la fecha (negativo si ya pasó); null si no hay fecha válida. */
+function diasPara(iso: string | null | undefined): number | null {
+  const f = soloFecha(iso);
+  if (!f) return null;
+  const [y, m, d] = f.split('-').map(Number);
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  return Math.round((new Date(y, m - 1, d).getTime() - hoy.getTime()) / 86400000);
+}
+
+const RESERVA_NOTA: Record<string, string> = {
+  pendiente: 'Tu reserva está pendiente de confirmación por parte del equipo.',
+  confirmada: '¡Tu reserva está confirmada! Nos vemos el día del evento.',
+  completada: 'Este evento ya se realizó. ¡Gracias por elegir SkyedSocial!',
+  cancelada: 'Esta reserva fue cancelada.',
+};
+
+type ReservaConDetalle = Reserva;
+
+/** "Estado cambiado a: confirmada" -> "Estado cambiado a: Confirmada". */
+function textoSeguimientoReserva(comentario: string) {
+  const m = /^Estado cambiado a:\s*(\w+)/i.exec(comentario);
+  if (!m) return comentario;
+  return `Estado cambiado a: ${reservaEstadoPill(m[1].toLowerCase() as Reserva['estado_rese']).txt}`;
+}
+
+interface ReservaDetalleProps {
+  reserva: Reserva;
+  onClose: () => void;
+  /** Guarda el nombre; devuelve true si se guardó. Texto vacío quita el nombre. */
+  onRenombrar: (nombre: string) => Promise<boolean>;
+}
+
+function ReservaDetalle({ reserva, onClose, onRenombrar }: ReservaDetalleProps) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  const r = reserva as unknown as ReservaConDetalle;
+
+  const [editando, setEditando] = useState(false);
+  const [nombre, setNombre] = useState(r.nombre_rese ?? '');
+  const [guardando, setGuardando] = useState(false);
+
+  const guardarNombre = async (e: FormEvent) => {
+    e.preventDefault();
+    if (guardando) return;
+    setGuardando(true);
+    const ok = await onRenombrar(nombre.trim());
+    setGuardando(false);
+    if (ok) setEditando(false);
+  };
+  const estado = reserva.estado_rese as string;
+  const pill = reservaEstadoPill(reserva.estado_rese);
+  const cancelada = estado === 'cancelada';
+  const paso = estado === 'completada' ? 3 : estado === 'confirmada' ? 2 : 1;
+  const pasos = ['Solicitada', 'Confirmada', 'Completada'];
+
+  const dias = diasPara(reserva.fecha_evento_rese);
+  let cuenta: string | null = null;
+  if (!cancelada && estado !== 'completada' && dias !== null && dias >= 0) {
+    cuenta = dias === 0 ? '¡Tu evento es hoy!' : dias === 1 ? 'Tu evento es mañana.' : `Faltan ${dias} días para tu evento.`;
+  }
+
+  // El total queda en 0 hasta que el equipo lo define.
+  const totalPorDefinir = !(Number(reserva.total_rese) > 0);
+  const observaciones = (r.Observaciones_rese ?? '').trim();
+  const ubicacion = (r.ubicacion_rese ?? '').trim();
+
+  const historial = useMemo(
+    () =>
+      [...(r.seguimientos ?? [])]
+        .filter((sg) => (sg.comentario ?? '').trim() !== '')
+        .sort((x, y) => (Date.parse(y.fecha_actualizacion ?? '') || 0) - (Date.parse(x.fecha_actualizacion ?? '') || 0))
+        .map((sg) => ({ texto: textoSeguimientoReserva(String(sg.comentario)), fecha: sg.fecha_actualizacion })),
+    [r.seguimientos],
+  );
+
+  return (
+    <div className="pf-modal-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="pf-modal pf-pqr-modal pf-rese-modal" role="dialog" aria-modal="true" aria-labelledby="pf-rese-title">
+        <div className="pf-modal-head">
+          <span className="pf-item-icon" aria-hidden="true"><i className="ti ti-calendar-event" /></span>
+          <div className="pf-pqr-heading">
+            {editando ? (
+              <form className="pf-rename" onSubmit={guardarNombre}>
+                <input
+                  type="text"
+                  value={nombre}
+                  onChange={(e) => setNombre(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                      e.stopPropagation();
+                      setEditando(false);
+                      setNombre(r.nombre_rese ?? '');
+                    }
+                  }}
+                  maxLength={80}
+                  placeholder="Ej: Cumpleaños de Sofía"
+                  aria-label="Nombre de tu reserva"
+                  autoFocus
+                  disabled={guardando}
+                />
+                <div className="pf-rename-actions">
+                  <button type="submit" className="pf-reply-btn" disabled={guardando}>
+                    {guardando ? 'Guardando…' : 'Guardar'}
+                  </button>
+                  <button
+                    type="button"
+                    className="pf-tool-clear"
+                    onClick={() => { setEditando(false); setNombre(r.nombre_rese ?? ''); }}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <>
+                <h3 id="pf-rese-title">{nombreReserva(reserva)}</h3>
+                <p className="pf-list-item-sub">{fmtFecha(reserva.fecha_evento_rese)}</p>
+                <button type="button" className="pf-rename-btn" onClick={() => setEditando(true)}>
+                  <i className="ti ti-pencil" aria-hidden="true" />
+                  {(r.nombre_rese ?? '').trim() ? 'Cambiar nombre' : 'Ponle un nombre'}
+                </button>
+              </>
+            )}
+          </div>
+          <button className="pf-modal-close" onClick={onClose} aria-label="Cerrar">×</button>
+        </div>
+
+        <div className="pf-pqr-meta">
+          <span className="pf-item-code">Reserva #{reserva.id_rese}</span>
+          <span className={`pf-pill ${pill.cls}`}>{pill.txt}</span>
+        </div>
+
+        {!cancelada && (
+          <ol className="pf-steps" aria-label="Estado de la reserva">
+            {pasos.map((txt, i) => {
+              const cls = paso === 3 || i < paso - 1 ? 'done' : i === paso - 1 ? 'current' : '';
+              return <li key={txt} className={cls}>{txt}</li>;
+            })}
+          </ol>
+        )}
+
+        <div className="pf-rese-body">
+          <div className="pf-info-grid">
+            <div className="pf-info-card wide">
+              <span className="pf-info-label">Fecha del evento</span>
+              <span className="pf-info-value">{fmtFechaLarga(reserva.fecha_evento_rese)}</span>
+            </div>
+            {ubicacion && (
+              <div className="pf-info-card wide">
+                <span className="pf-info-label">Ubicación</span>
+                <span className="pf-info-value">{ubicacion}</span>
+              </div>
+            )}
+            <div className="pf-info-card">
+              <span className="pf-info-label">Invitados</span>
+              <span className="pf-info-value">{reserva.invitados_rese}</span>
+            </div>
+            {r.presupuesto_rese != null && (
+              <div className="pf-info-card">
+                <span className="pf-info-label">Tu presupuesto</span>
+                <span className="pf-info-value">{fmtMoney(Number(r.presupuesto_rese))}</span>
+              </div>
+            )}
+            <div className="pf-info-card">
+              <span className="pf-info-label">Total</span>
+              <span className="pf-info-value">{totalPorDefinir ? 'Por definir' : fmtMoney(reserva.total_rese)}</span>
+            </div>
+            {r.creado_en_rese && (
+              <div className="pf-info-card">
+                <span className="pf-info-label">Reservada el</span>
+                <span className="pf-info-value">{fmtFecha(r.creado_en_rese)}</span>
+              </div>
+            )}
+          </div>
+
+          {observaciones && (
+            <div className="pf-bubble mine pf-rese-obs">
+              <span className="pf-bubble-who">Tus observaciones</span>
+              <p>{observaciones}</p>
+            </div>
+          )}
+
+          {cuenta && (
+            <div className="pf-rese-note">
+              <i className="ti ti-hourglass" aria-hidden="true" />
+              <span>{cuenta}</span>
+            </div>
+          )}
+          <div className={`pf-rese-note${cancelada ? ' cancel' : ''}`}>
+            <i className={`ti ${cancelada ? 'ti-circle-x' : 'ti-info-circle'}`} aria-hidden="true" />
+            <span>{RESERVA_NOTA[estado] ?? ''}</span>
+          </div>
+
+          {historial.length > 0 && (
+            <div className="pf-history">
+              <h4 className="pf-history-title">Historial</h4>
+              <ol>
+                {historial.map((h, i) => (
+                  <li key={`${h.fecha}-${i}`}>
+                    <span>{h.texto}</span>
+                    {h.fecha && <small>{fmtFechaHora(h.fecha)}</small>}
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Perfil() {
   return (
     <Protected>
@@ -352,6 +786,7 @@ function PerfilPanel() {
   const [toast, setToast] = useState<ToastMsg | null>(null);
   const [filtrosPqr, setFiltrosPqr] = useState<Filtros>(FILTROS_INICIALES);
   const [filtrosReservas, setFiltrosReservas] = useState<Filtros>(FILTROS_INICIALES);
+  const [detalleReserva, setDetalleReserva] = useState<Reserva | null>(null);
 
   const pqrsFiltradas = useMemo(
     () =>
@@ -372,12 +807,47 @@ function PerfilPanel() {
         reservas,
         filtrosReservas,
         (r) => r.fecha_evento_rese,
-        (r) => `${r.evento?.nombre_er ?? ''} Reserva #${r.id_rese} ${reservaEstadoPill(r.estado_rese).txt}`,
+        (r) => `${nombreReserva(r)} ${r.evento?.nombre_er ?? ''} Reserva #${r.id_rese} ${reservaEstadoPill(r.estado_rese).txt}`,
         (r) => r.estado_rese,
       ),
     [reservas, filtrosReservas],
   );
   const conteosReservas = useMemo(() => contarPor(reservas, (r) => r.estado_rese), [reservas]);
+
+  const renombrarReserva = async (reserva: Reserva, nombre: string): Promise<boolean> => {
+    try {
+      const res = await reservaService.renombrar(reserva.id_rese, nombre);
+      const nuevo = res.nombre_rese ?? null;
+      setReservas((prev) => prev && prev.map((x) => (x.id_rese === reserva.id_rese ? { ...x, nombre_rese: nuevo } : x)));
+      setDetalleReserva((prev) => (prev && prev.id_rese === reserva.id_rese ? { ...prev, nombre_rese: nuevo } : prev));
+      setToast({ tipo: 'ok', texto: nuevo ? 'Nombre guardado.' : 'Nombre quitado.', id: Date.now() });
+      return true;
+    } catch (err) {
+      setToast({
+        tipo: 'error',
+        texto: err instanceof Error ? err.message : 'No se pudo guardar el nombre. Intenta de nuevo.',
+        id: Date.now(),
+      });
+      return false;
+    }
+  };
+
+  const enviarRespuestaPqr = async (pqr: Pqr, mensaje: string): Promise<boolean> => {
+    try {
+      const seg = await pqrService.responder(pqr.id_pqr, mensaje);
+      setPqrs((prev) => prev && prev.map((p) => (p.id_pqr === pqr.id_pqr ? agregarSeguimiento(p, seg) : p)));
+      setDetallePqr((prev) => (prev && prev.id_pqr === pqr.id_pqr ? agregarSeguimiento(prev, seg) : prev));
+      setToast({ tipo: 'ok', texto: 'Tu mensaje fue enviado.', id: Date.now() });
+      return true;
+    } catch (err) {
+      setToast({
+        tipo: 'error',
+        texto: err instanceof Error ? err.message : 'No se pudo enviar tu mensaje. Intenta de nuevo.',
+        id: Date.now(),
+      });
+      return false;
+    }
+  };
 
   useEffect(() => {
     pqrService.misPqr().then((res) => setPqrs(res.data)).catch(() => setToast({ tipo: 'error', texto: 'No se pudieron cargar tus PQR.', id: Date.now() }));
@@ -626,7 +1096,7 @@ function PerfilPanel() {
                       <div className="pfx-item" key={r.id_rese}>
                         <span className="pfx-chip"><i className="ti ti-calendar-event" aria-hidden="true" /></span>
                         <div className="pfx-item-main">
-                          <span className="pfx-item-title">{r.evento?.nombre_er || `Reserva #${r.id_rese}`}</span>
+                          <span className="pfx-item-title">{nombreReserva(r)}</span>
                           <span className="pfx-item-sub">
                             {fmtFecha(r.fecha_evento_rese)} · {r.invitados_rese} invitados · {fmtMoney(r.total_rese)}
                           </span>
@@ -747,9 +1217,14 @@ function PerfilPanel() {
             )}
             {!!reservas?.length && (
               <>
-                <div className="pf-list-head">
-                  <h2>Mis reservas</h2>
-                  <p>Aquí ves el estado de cada una de tus reservas.</p>
+                <div className="pf-list-head pf-list-head-row">
+                  <div>
+                    <h2>Mis reservas</h2>
+                    <p>Aquí ves el estado de cada una de tus reservas.</p>
+                  </div>
+                  <Link to="/social/reservar" className="btn-sm-outline pfx-primary">
+                    <i className="ti ti-plus" aria-hidden="true" /> Nueva reserva
+                  </Link>
                 </div>
                 <ListToolbar
                   filtros={filtrosReservas}
@@ -778,14 +1253,16 @@ function PerfilPanel() {
             {reservasFiltradas?.map((r) => {
               const pill = reservaEstadoPill(r.estado_rese);
               return (
-                <div key={r.id_rese} className="pf-list-item" style={{ cursor: 'default' }}>
+                <button key={r.id_rese} className="pf-list-item" onClick={() => setDetalleReserva(r)}>
                   <span className="pf-item-icon" aria-hidden="true"><i className="ti ti-calendar-event" /></span>
                   <div className="pf-list-item-main">
-                    <span className="pf-list-item-title">{r.evento?.nombre_er || `Reserva #${r.id_rese}`}</span>
-                    <span className="pf-list-item-sub">{fmtFecha(r.fecha_evento_rese)} · {r.invitados_rese} invitados · {fmtMoney(r.total_rese)}</span>
+                    <span className="pf-list-item-title">{nombreReserva(r)}</span>
+                    <span className="pf-list-item-sub">{fmtFecha(r.fecha_evento_rese)} · {r.invitados_rese} invitados · {Number(r.total_rese) > 0 ? fmtMoney(r.total_rese) : 'Total por definir'}</span>
                   </div>
+                  <span className="pf-item-code">Reserva #{r.id_rese}</span>
                   <span className={`pf-pill ${pill.cls}`}>{pill.txt}</span>
-                </div>
+                  <i className="ti ti-chevron-right pf-item-chevron" aria-hidden="true" />
+                </button>
               );
             })}
           </div>
@@ -828,25 +1305,19 @@ function PerfilPanel() {
         )}
       </div>
 
+      {detalleReserva && (
+        <ReservaDetalle
+          reserva={detalleReserva}
+          onClose={() => setDetalleReserva(null)}
+          onRenombrar={(nombre) => renombrarReserva(detalleReserva, nombre)}
+        />
+      )}
       {detallePqr && (
-        <div className="pf-modal-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) setDetallePqr(null); }}>
-          <div className="pf-modal">
-            <div className="pf-modal-head">
-              <h3>PQR #{detallePqr.id_pqr}</h3>
-              <button className="pf-modal-close" onClick={() => setDetallePqr(null)} aria-label="Cerrar">×</button>
-            </div>
-            <p className="pf-list-item-sub">{pqrTipoLabel[detallePqr.tipo_pqr]} · {fmtFecha(detallePqr.creado_en_pqr)}</p>
-            <div className="pf-message-box"><span>Tu mensaje</span><p>{detallePqr.mensaje_pqr}</p></div>
-            {detallePqr.respuesta_pqr ? (
-              <div className="pf-message-box accent">
-                <span>Respuesta{detallePqr.respondido_en_pqr ? ` · ${fmtFecha(detallePqr.respondido_en_pqr)}` : ''}</span>
-                <p>{detallePqr.respuesta_pqr}</p>
-              </div>
-            ) : (
-              <p className="pf-empty-hint">Aún sin respuesta. Te avisaremos aquí y por notificación cuando la tengamos.</p>
-            )}
-          </div>
-        </div>
+        <PqrDetalle
+          pqr={detallePqr}
+          onClose={() => setDetallePqr(null)}
+          onEnviar={(mensaje) => enviarRespuestaPqr(detallePqr, mensaje)}
+        />
       )}
     </>
   );
