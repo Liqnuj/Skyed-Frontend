@@ -10,6 +10,7 @@ import {
   ImagePlus,
   LayoutDashboard,
   Loader2,
+  Lock,
   LogOut,
   Menu,
   MessageSquareText,
@@ -137,16 +138,30 @@ type Reserva = {
   evento_realizado?: EventoSocial;
 };
 
+/** Mensaje o evento del historial de una PQR (tabla pqr_seguimientos). */
+type PqrSeg = {
+  id_seguimiento: number;
+  id_admin?: number | null;
+  tipo_evento?: string | null;
+  estado_anterior?: string | null;
+  estado_nuevo?: string | null;
+  comentario_publico?: string | null;
+  nota_interna?: string | null;
+  created_at?: string | null;
+};
+
 type Pqr = {
   id_pqr: number;
   tipo_pqr: string;
   asunto_pqr: string;
   mensaje_pqr: string;
-  estado_pqr: "abierto" | "en_proceso" | "resuelto" | "cerrado";
+  estado_pqr: "abierto" | "en_revision" | "en_proceso" | "resuelto" | "cerrado";
   respuesta_pqr?: string | null;
+  respondido_en_pqr?: string | null;
   creado_en_pqr?: string | null;
   id_u?: number;
   usuario?: { nombre_u?: string; apellido_u?: string; correo_u?: string };
+  seguimientos?: PqrSeg[];
 };
 
 type UserRow = {
@@ -1268,36 +1283,167 @@ function EventoModal({ item, ambientes, tipos, onClose, onSave, notify }: { item
   </Modal>;
 }
 
+const PQR_ESTADO_LABEL: Record<string, string> = {
+  abierto: "Abierto",
+  en_revision: "En revisión",
+  en_proceso: "En proceso",
+  resuelto: "Resuelto",
+  cerrado: "Cerrado",
+};
+const pqrEstadoLabel = (e: string) => PQR_ESTADO_LABEL[e] ?? human(e);
+
+const dateTime = (value?: string | null) => {
+  if (!value) return "";
+  const d = new Date(value);
+  return Number.isNaN(d.getTime())
+    ? ""
+    : new Intl.DateTimeFormat("es-CO", { day: "2-digit", month: "short", hour: "numeric", minute: "2-digit" }).format(d);
+};
+
+type PqrMsg = {
+  key: string;
+  de: "cliente" | "equipo" | "nota" | "sistema";
+  texto: string;
+  fecha?: string | null;
+};
+
+const PQR_RESPUESTA_GENERICA = "Se ha publicado una respuesta a tu solicitud.";
+
+/** Une el mensaje inicial, los mensajes del cliente, las respuestas y las notas internas. */
+function buildPqrThread(item: Pqr): PqrMsg[] {
+  const segs = [...(item.seguimientos ?? [])].sort(
+    (a, b) =>
+      (Date.parse(a.created_at ?? "") || 0) - (Date.parse(b.created_at ?? "") || 0) ||
+      a.id_seguimiento - b.id_seguimiento,
+  );
+
+  let ultimaRespuesta = -1;
+  segs.forEach((sg, i) => { if (sg.tipo_evento === "respuesta") ultimaRespuesta = i; });
+
+  const out: PqrMsg[] = [{ key: "inicio", de: "cliente", texto: item.mensaje_pqr, fecha: item.creado_en_pqr }];
+
+  segs.forEach((sg, i) => {
+    const key = `seg-${sg.id_seguimiento}`;
+    let texto = (sg.comentario_publico ?? "").trim();
+
+    if (sg.tipo_evento === "respuesta_cliente") {
+      out.push({ key, de: "cliente", texto, fecha: sg.created_at });
+    } else if (sg.tipo_evento === "respuesta" || sg.tipo_evento === "solicitud_informacion") {
+      // Respuestas antiguas guardaban un texto genérico: la última se completa con la real.
+      if (i === ultimaRespuesta && item.respuesta_pqr && (texto === "" || texto === PQR_RESPUESTA_GENERICA)) {
+        texto = item.respuesta_pqr;
+      }
+      out.push({ key, de: "equipo", texto: texto || PQR_RESPUESTA_GENERICA, fecha: sg.created_at });
+    } else if (sg.estado_anterior && sg.estado_nuevo) {
+      out.push({
+        key,
+        de: "sistema",
+        texto: `Estado: ${pqrEstadoLabel(sg.estado_anterior)} → ${pqrEstadoLabel(sg.estado_nuevo)}`,
+        fecha: sg.created_at,
+      });
+    } else if (texto) {
+      out.push({ key, de: "sistema", texto, fecha: sg.created_at });
+    }
+
+    const nota = (sg.nota_interna ?? "").trim();
+    if (nota) out.push({ key: `${key}-nota`, de: "nota", texto: nota, fecha: sg.created_at });
+  });
+
+  // PQR respondidas antes de que existiera el historial.
+  if (ultimaRespuesta === -1 && item.respuesta_pqr) {
+    out.push({ key: "respuesta-antigua", de: "equipo", texto: item.respuesta_pqr, fecha: item.respondido_en_pqr });
+  }
+
+  return out;
+}
+
 function PqrModal({ item, onClose, onSave }: { item: Pqr; onClose: () => void; onSave: (data: any) => Promise<void> }) {
-  const [estado, setEstado] = useState(item.estado_pqr);
-  const [respuesta, setRespuesta] = useState(item.respuesta_pqr ?? "");
+  const [estado, setEstado] = useState<Pqr["estado_pqr"]>(item.estado_pqr);
+  const [respuesta, setRespuesta] = useState("");
   const [saving, setSaving] = useState(false);
+  const hiloRef = useRef<HTMLDivElement>(null);
+
+  const hilo = useMemo(() => buildPqrThread(item), [item]);
+  const cliente = [item.usuario?.nombre_u, item.usuario?.apellido_u].filter(Boolean).join(" ") || "Cliente";
+
+  // Al abrir, baja al último mensaje de la conversación.
+  useEffect(() => {
+    const el = hiloRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight });
+  }, [hilo.length]);
+
+  const texto = respuesta.trim();
+  const hayCambios = texto !== "" || estado !== item.estado_pqr;
+
   const submit = async (e: React.FormEvent) => {
-    e.preventDefault(); setSaving(true);
-    // Si hay respuesta y la PQR sigue activa (abierto / en proceso), pasa a "resuelto".
-    // Si el admin eligió "cerrado" o "resuelto" a mano, se respeta.
-    const tieneRespuesta = respuesta.trim().length > 0;
-    const estadoFinal: Pqr["estado_pqr"] =
-      tieneRespuesta && (estado === "abierto" || estado === "en_proceso") ? "resuelto" : estado;
-    try { await onSave({ estado_pqr: estadoFinal, respuesta_pqr: tieneRespuesta ? respuesta.trim() : null }); } finally { setSaving(false); }
+    e.preventDefault();
+    if (!hayCambios) return;
+    setSaving(true);
+    // Responder una PQR abierta la pasa a "en proceso" para que el cliente pueda seguir
+    // escribiendo; el equipo la marca "resuelto" o "cerrado" cuando termina.
+    const estadoFinal: Pqr["estado_pqr"] = texto !== "" && estado === "abierto" ? "en_proceso" : estado;
+    try {
+      await onSave({ estado_pqr: estadoFinal, ...(texto !== "" ? { respuesta_pqr: texto } : {}) });
+    } finally {
+      setSaving(false);
+    }
   };
+
   return <Modal title={`PQR #${item.id_pqr}`} subtitle={item.asunto_pqr} onClose={onClose}>
     <div className="pqr-detail">
-      <div className="pqr-meta"><span><strong>Tipo</strong>{human(item.tipo_pqr)}</span><span><strong>Estado</strong><Badge value={estado} /></span></div>
-      <div className="message-box"><span>Mensaje recibido</span><p>{item.mensaje_pqr}</p></div>
+      <div className="pqr-meta">
+        <span><strong>Tipo</strong>{human(item.tipo_pqr)}</span>
+        <span><strong>Estado</strong><Badge value={estado} /></span>
+        <span><strong>Cliente</strong>{cliente}</span>
+      </div>
+
+      <div className="adm-thread" ref={hiloRef}>
+        {hilo.map(m => m.de === "sistema" ? (
+          <div key={m.key} className="adm-thread-event">
+            <span>{m.texto}</span>
+            {m.fecha && <small>{dateTime(m.fecha)}</small>}
+          </div>
+        ) : (
+          <div key={m.key} className={`adm-bubble ${m.de}`}>
+            <span className="adm-bubble-who">
+              {m.de === "nota" && <Lock size={11} />}
+              {m.de === "cliente" ? cliente : m.de === "equipo" ? "Equipo" : "Nota interna · solo equipo"}
+              {m.fecha ? ` · ${dateTime(m.fecha)}` : ""}
+            </span>
+            <p>{m.texto}</p>
+          </div>
+        ))}
+      </div>
+
       <form className="modal-form" onSubmit={submit}>
-        <Field label="Estado"><select value={estado} onChange={e => setEstado(e.target.value as Pqr["estado_pqr"])}><option value="abierto">Abierto</option><option value="en_proceso">En proceso</option><option value="resuelto">Resuelto</option><option value="cerrado">Cerrado</option></select></Field>
-        <Field label="Respuesta">
+        <Field label="Estado">
+          <select value={estado} onChange={e => setEstado(e.target.value as Pqr["estado_pqr"])}>
+            <option value="abierto">Abierto</option>
+            <option value="en_revision">En revisión</option>
+            <option value="en_proceso">En proceso</option>
+            <option value="resuelto">Resuelto</option>
+            <option value="cerrado">Cerrado</option>
+          </select>
+          <small className="field-hint">
+            Al responder una PQR abierta pasa a «En proceso». Márcala «Resuelto» cuando termines: el cliente ya no podrá escribir.
+          </small>
+        </Field>
+        <Field label="Tu respuesta">
           <textarea
-            rows={5}
+            rows={4}
             maxLength={1000}
             value={respuesta}
             onChange={e => setRespuesta(e.target.value.slice(0, 1000))}
-            placeholder="Respuesta para el usuario…"
+            placeholder="Escribe tu respuesta para el usuario…"
           />
           <small className="field-hint">{respuesta.length}/1000 caracteres</small>
         </Field>
-        <div className="modal-actions"><button type="button" className="secondary-btn" onClick={onClose}>Cancelar</button><button className="primary-btn" disabled={saving}>{saving ? "Guardando…" : "Guardar respuesta"}</button></div>
+        <div className="modal-actions">
+          <button type="button" className="secondary-btn" onClick={onClose}>Cancelar</button>
+          <button className="primary-btn" disabled={saving || !hayCambios}>
+            {saving ? "Guardando…" : texto ? "Enviar respuesta" : "Guardar estado"}
+          </button>
+        </div>
       </form>
     </div>
   </Modal>;
