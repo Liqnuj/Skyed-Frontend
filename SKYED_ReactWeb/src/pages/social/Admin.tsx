@@ -29,6 +29,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useAccessibility } from "../../context/AccessibilityContext";
 import AccessibilityWidget from "../../components/shared/AccessibilityWidget";
 import { apiFetch } from "../../services/api";
+import type { EstadoPqr, Pqr } from "../../services/socialService";
 import "../../styles/social/Admin.css";
 
 type Section =
@@ -150,19 +151,7 @@ type PqrSeg = {
   created_at?: string | null;
 };
 
-type Pqr = {
-  id_pqr: number;
-  tipo_pqr: string;
-  asunto_pqr: string;
-  mensaje_pqr: string;
-  estado_pqr: "abierto" | "en_revision" | "en_proceso" | "resuelto" | "cerrado";
-  respuesta_pqr?: string | null;
-  respondido_en_pqr?: string | null;
-  creado_en_pqr?: string | null;
-  id_u?: number;
-  usuario?: { nombre_u?: string; apellido_u?: string; correo_u?: string };
-  seguimientos?: PqrSeg[];
-};
+
 
 type UserRow = {
   id_u: number;
@@ -450,6 +439,8 @@ function AdminPage() {
   const [eventos, setEventos] = useState<EventoSocial[]>([]);
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [pqrs, setPqrs] = useState<Pqr[]>([]);
+  const [pqrResumen, setPqrResumen] = useState<Partial<Record<EstadoPqr, number>>>({});
+  const [pqrTotal, setPqrTotal] = useState(0);
   const [users, setUsers] = useState<UserRow[]>([]);
   const [tipos, setTipos] = useState<TipoEvento[]>([]);
 
@@ -473,8 +464,9 @@ function AdminPage() {
         apiFetch("/servicios"),
         apiFetch("/eventos-sociales"),
         apiFetch("/reservas"),
-        apiFetch("/pqr"),
-        // Filtramos por módulo en el backend; igual filtramos otra vez abajo
+
+        // El backend pagina de 15 en 15; el panel pide hasta 100 de una vez.
+        apiFetch("/pqr?per_page=100"),        // Filtramos por módulo en el backend; igual filtramos otra vez abajo
         // por si el backend todavía no tiene la migración de modulo_tipo_eves.
         apiFetch("/tipos-evento?modulo=social"),
       ]);
@@ -483,6 +475,9 @@ function AdminPage() {
       setEventos(e.data ?? []);
       setReservas(r.data ?? []);
       setPqrs(p.data ?? []);
+
+      setPqrResumen(p.resumen ?? {});
+      setPqrTotal(p.total ?? 0);
       // Nunca mostramos clasificaciones de Deportivo (ej. Ciclomontañismo)
       // en el selector de "Tipo de evento" de un evento social.
       setTipos((t.data ?? []).filter((tipo: TipoEvento) => tipo.modulo_tipo_eves !== "deportivo"));
@@ -554,9 +549,7 @@ function AdminPage() {
   const visibleReservas = reservas.filter((r) =>
     filtered(`${r.id_rese} ${r.fecha_evento_rese} ${r.estado_rese}`)
   );
-  const visiblePqrs = pqrs.filter((p) =>
-    filtered(`${p.tipo_pqr} ${p.asunto_pqr} ${p.estado_pqr}`)
-  );
+
 
   const stats = useMemo(() => ({
     users: users.length,
@@ -665,15 +658,7 @@ function AdminPage() {
     await loadAll();
   };
 
-  const updatePqr = async (id: number, data: any) => {
-    await apiFetch(`/pqr/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(data),
-    });
-    notify("PQR actualizada");
-    setModal(null);
-    await loadAll();
-  };
+
 
   return (
     <div
@@ -923,19 +908,14 @@ function AdminPage() {
         )}
 
         {section === "pqr" && (
-          <SectionTable title="Gestión de PQRS">
-            <thead><tr><th>ID</th><th>Tipo</th><th>Asunto</th><th>Estado</th><th>Acciones</th></tr></thead>
-            <tbody>
-              {visiblePqrs.map(p => (
-                <tr key={p.id_pqr}>
-                  <td>#{p.id_pqr}</td><td>{human(p.tipo_pqr)}</td><td>{p.asunto_pqr}</td>
-                  <td><Badge value={p.estado_pqr} /></td>
-                  <td><button className="table-action" onClick={() => { setEditing(p); setModal("pqr"); }}><Pencil size={15} /></button></td>
-                </tr>
-              ))}
-              {!visiblePqrs.length && <tr><td colSpan={5}>No hay PQRS.</td></tr>}
-            </tbody>
-          </SectionTable>
+          <AdminPqrManager
+            pqrs={pqrs}
+            resumen={pqrResumen}
+            total={pqrTotal}
+            search={search}
+            onChanged={loadAll}
+            notify={notify}
+          />
         )}
 
         {section === "usuarios" && (
@@ -1000,9 +980,6 @@ function AdminPage() {
         />
       )}
 
-      {modal === "pqr" && editing && (
-        <PqrModal item={editing} onClose={() => setModal(null)} onSave={data => updatePqr(editing.id_pqr, data)} />
-      )}
 
       {toast && <div className="admin-toast"><Check size={17} />{toast}</div>}
     </div>
@@ -1326,9 +1303,9 @@ function buildPqrThread(item: Pqr): PqrMsg[] {
     const key = `seg-${sg.id_seguimiento}`;
     let texto = (sg.comentario_publico ?? "").trim();
 
-    if (sg.tipo_evento === "respuesta_cliente") {
+    if ((sg.tipo_evento as string) === "respuesta_cliente") {
       out.push({ key, de: "cliente", texto, fecha: sg.created_at });
-    } else if (sg.tipo_evento === "respuesta" || sg.tipo_evento === "solicitud_informacion") {
+    } else if ((sg.tipo_evento as string) === "respuesta" || (sg.tipo_evento as string) === "solicitud_informacion") {
       // Respuestas antiguas guardaban un texto genérico: la última se completa con la real.
       if (i === ultimaRespuesta && item.respuesta_pqr && (texto === "" || texto === PQR_RESPUESTA_GENERICA)) {
         texto = item.respuesta_pqr;
@@ -1357,97 +1334,78 @@ function buildPqrThread(item: Pqr): PqrMsg[] {
   return out;
 }
 
-function PqrModal({ item, onClose, onSave }: { item: Pqr; onClose: () => void; onSave: (data: any) => Promise<void> }) {
-  const [estado, setEstado] = useState<Pqr["estado_pqr"]>(item.estado_pqr);
-  const [respuesta, setRespuesta] = useState("");
-  const [saving, setSaving] = useState(false);
-  const hiloRef = useRef<HTMLDivElement>(null);
+function AdminPqrManager({
+  pqrs,
+  resumen,
+  total,
+  search,
+}: {
+  pqrs: Pqr[];
+  resumen: Partial<Record<EstadoPqr, number>>;
+  total: number;
+  search: string;
+  onChanged: () => Promise<unknown>;
+  notify: (message: string) => void;
+}) {
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const visible = pqrs.filter((item) =>
+    `${item.id_pqr} ${item.mensaje_pqr} ${item.estado_pqr}`
+      .toLowerCase()
+      .includes(search.toLowerCase()),
+  );
+  const selected = visible.find((item) => item.id_pqr === selectedId) ?? visible[0];
 
-  const hilo = useMemo(() => buildPqrThread(item), [item]);
-  const cliente = [item.usuario?.nombre_u, item.usuario?.apellido_u].filter(Boolean).join(" ") || "Cliente";
-
-  // Al abrir, baja al último mensaje de la conversación.
-  useEffect(() => {
-    const el = hiloRef.current;
-    if (el) el.scrollTo({ top: el.scrollHeight });
-  }, [hilo.length]);
-
-  const texto = respuesta.trim();
-  const hayCambios = texto !== "" || estado !== item.estado_pqr;
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!hayCambios) return;
-    setSaving(true);
-    // Responder una PQR abierta la pasa a "en proceso" para que el cliente pueda seguir
-    // escribiendo; el equipo la marca "resuelto" o "cerrado" cuando termina.
-    const estadoFinal: Pqr["estado_pqr"] = texto !== "" && estado === "abierto" ? "en_proceso" : estado;
-    try {
-      await onSave({ estado_pqr: estadoFinal, ...(texto !== "" ? { respuesta_pqr: texto } : {}) });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return <Modal title={`PQR #${item.id_pqr}`} subtitle={item.asunto_pqr} onClose={onClose}>
-    <div className="pqr-detail">
-      <div className="pqr-meta">
-        <span><strong>Tipo</strong>{human(item.tipo_pqr)}</span>
-        <span><strong>Estado</strong><Badge value={estado} /></span>
-        <span><strong>Cliente</strong>{cliente}</span>
+  return (
+    <section className="section-view">
+      <div className="section-header">
+        <div><span className="card-kicker">GESTIÓN</span><h2>Solicitudes PQR</h2></div>
       </div>
-
-      <div className="adm-thread" ref={hiloRef}>
-        {hilo.map(m => m.de === "sistema" ? (
-          <div key={m.key} className="adm-thread-event">
-            <span>{m.texto}</span>
-            {m.fecha && <small>{dateTime(m.fecha)}</small>}
-          </div>
-        ) : (
-          <div key={m.key} className={`adm-bubble ${m.de}`}>
-            <span className="adm-bubble-who">
-              {m.de === "nota" && <Lock size={11} />}
-              {m.de === "cliente" ? cliente : m.de === "equipo" ? "Equipo" : "Nota interna · solo equipo"}
-              {m.fecha ? ` · ${dateTime(m.fecha)}` : ""}
-            </span>
-            <p>{m.texto}</p>
-          </div>
+      <div className="kpi-grid">
+        <Kpi icon={<MessageSquareText size={19} />} label="Total" value={total} />
+        {Object.entries(resumen).map(([estado, cantidad]) => (
+          <Kpi key={estado} icon={<Check size={19} />} label={pqrEstadoLabel(estado)} value={cantidad ?? 0} />
         ))}
       </div>
-
-      <form className="modal-form" onSubmit={submit}>
-        <Field label="Estado">
-          <select value={estado} onChange={e => setEstado(e.target.value as Pqr["estado_pqr"])}>
-            <option value="abierto">Abierto</option>
-            <option value="en_revision">En revisión</option>
-            <option value="en_proceso">En proceso</option>
-            <option value="resuelto">Resuelto</option>
-            <option value="cerrado">Cerrado</option>
-          </select>
-          <small className="field-hint">
-            Al responder una PQR abierta pasa a «En proceso». Márcala «Resuelto» cuando termines: el cliente ya no podrá escribir.
-          </small>
-        </Field>
-        <Field label="Tu respuesta">
-          <textarea
-            rows={4}
-            maxLength={1000}
-            value={respuesta}
-            onChange={e => setRespuesta(e.target.value.slice(0, 1000))}
-            placeholder="Escribe tu respuesta para el usuario…"
-          />
-          <small className="field-hint">{respuesta.length}/1000 caracteres</small>
-        </Field>
-        <div className="modal-actions">
-          <button type="button" className="secondary-btn" onClick={onClose}>Cancelar</button>
-          <button className="primary-btn" disabled={saving || !hayCambios}>
-            {saving ? "Guardando…" : texto ? "Enviar respuesta" : "Guardar estado"}
-          </button>
+      <div className="dashboard-grid-main">
+        <div className="admin-card table-card">
+          <div className="table-scroll">
+            <table className="admin-table">
+              <thead><tr><th>ID</th><th>Solicitud</th><th>Fecha</th><th>Estado</th></tr></thead>
+              <tbody>
+                {visible.map((item) => (
+                  <tr key={item.id_pqr} onClick={() => setSelectedId(item.id_pqr)}>
+                    <td>#{item.id_pqr}</td>
+                    <td>{item.mensaje_pqr}</td>
+                    <td>{dateTime(item.creado_en_pqr)}</td>
+                    <td><Badge value={item.estado_pqr} /></td>
+                  </tr>
+                ))}
+                {!visible.length && <tr><td colSpan={4}>No hay solicitudes PQR.</td></tr>}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </form>
-    </div>
-  </Modal>;
+        {selected && (
+          <section className="admin-card upcoming-card">
+            <div className="card-head"><div><span className="card-kicker">SOLICITUD #{selected.id_pqr}</span><h2>Historial</h2></div></div>
+            <div className="reservation-list">
+              {buildPqrThread(selected).map((message) => (
+                <div className="reservation-item" key={message.key}>
+                  <div className="reservation-main">
+                    <strong>{human(message.de)}</strong>
+                    <span>{message.texto}</span>
+                    {message.fecha && <small>{dateTime(message.fecha)}</small>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
+    </section>
+  );
 }
+
 
 export default function Admin() {
   return <Protected><AdminPage /></Protected>;

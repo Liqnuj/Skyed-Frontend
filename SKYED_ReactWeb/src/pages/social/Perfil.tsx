@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Protected from '../../components/Protected';
@@ -9,6 +10,8 @@ import { useAuth } from '../../context/AuthContext';
 import { apiFetch } from '../../services/api';
 import { pqrService, reservaService } from '../../services/socialService';
 import type { Pqr, PqrSeguimiento, Reserva, TipoPqr } from '../../services/socialService';
+import { PqrEstadoPill, PqrPlazoChip, PqrStepper } from '../../components/social/pqr/PqrTracker';
+import { ESTADO_COLOR, ESTADO_LABEL, FASES, TIPO_LABEL, indiceFase } from '../../utils/pqr';
 import { prepararImagen } from '../../utils/prepararImagen';
 import { errorContrasena } from '../../utils/validaciones';
 import '../../styles/social/perfil.css';
@@ -56,13 +59,43 @@ function fmtMoney(n: string | number | null | undefined) {
   return '$' + (Number(n) || 0).toLocaleString('es-CO');
 }
 
-const pqrTipoLabel: Record<TipoPqr, string> = {
-  peticion: 'Petición',
-  queja: 'Queja',
-  reclamo: 'Reclamo',
-  sugerencia: 'Sugerencia',
-  felicitacion: 'Felicitación',
-};
+
+/* Novedades: se recuerda hasta qué actuación vio el usuario cada PQR. */
+const VISTO_KEY = 'skyed_pqr_visto';
+
+function leerVistos(): Record<string, string> {
+  try {
+    return JSON.parse(localStorage.getItem(VISTO_KEY) ?? '{}');
+  } catch {
+    return {};
+  }
+}
+
+function guardarVisto(id: number, iso: string) {
+  try {
+    localStorage.setItem(VISTO_KEY, JSON.stringify({ ...leerVistos(), [id]: iso }));
+  } catch {
+    // Sin almacenamiento disponible: simplemente no se recuerda.
+  }
+}
+
+/** El equipo actuó después de radicada y el usuario aún no lo ha visto. */
+function hayNovedad(p: Pqr, vistos: Record<string, string>) {
+  if (!p.ultima_actuacion_en) return false;
+  const ultima = new Date(p.ultima_actuacion_en).getTime();
+  const creada = new Date(p.creado_en_pqr).getTime();
+  if (Number.isNaN(ultima) || ultima - creada < 5000) return false;
+  const visto = vistos[p.id_pqr];
+  return !visto || ultima > new Date(visto).getTime();
+}
+
+/** Nombre del tipo y etiqueta/color de la fase (vienen de utils/pqr). */
+const pqrTipoLabel = TIPO_LABEL;
+
+function pqrEstadoPill(estado: Pqr['estado_pqr']) {
+  const cls = estado === 'resuelto' ? 'ok' : estado === 'cerrado' ? 'warn' : 'pending';
+  return { cls, txt: ESTADO_LABEL[estado] ?? estado };
+}
 
 const pqrTipoIcon: Record<TipoPqr, string> = {
   peticion: 'ti-file-text',
@@ -72,14 +105,6 @@ const pqrTipoIcon: Record<TipoPqr, string> = {
   felicitacion: 'ti-heart',
 };
 
-function pqrEstadoPill(estadoPqr: Pqr['estado_pqr']) {
-  const estado = estadoPqr as string; // el backend también usa 'en_revision'
-  if (estado === 'abierto') return { cls: 'pending', txt: 'Abierto' };
-  if (estado === 'en_revision') return { cls: 'pending', txt: 'En revisión' };
-  if (estado === 'en_proceso') return { cls: 'pending', txt: 'En proceso' };
-  if (estado === 'cerrado') return { cls: 'warn', txt: 'Cerrado' };
-  return { cls: 'ok', txt: 'Resuelto' };
-}
 
 /** Nombre que se muestra: el que puso el cliente, si no el del evento, si no el número. */
 function nombreReserva(r: Reserva) {
@@ -109,11 +134,11 @@ const FILTROS_INICIALES: Filtros = { q: '', rango: 'todas', desde: '', hasta: ''
 
 const ESTADOS_PQR: { value: string; label: string }[] = [
   { value: 'todos', label: 'Todos' },
-  { value: 'abierto', label: 'Abierto' },
+  { value: 'abierto', label: 'Radicada' },
   { value: 'en_revision', label: 'En revisión' },
   { value: 'en_proceso', label: 'En proceso' },
-  { value: 'resuelto', label: 'Resuelto' },
-  { value: 'cerrado', label: 'Cerrado' },
+  { value: 'resuelto', label: 'Resuelta' },
+  { value: 'cerrado', label: 'Cerrada' },
 ];
 
 const ESTADOS_RESERVAS: { value: string; label: string }[] = [
@@ -374,24 +399,37 @@ function construirConversacion(pqr: PqrConSeguimientos): MensajePqr[] {
   segs.forEach((sg, i) => {
     const key = `seg-${sg.id_seguimiento}`;
     let texto = (sg.comentario_publico ?? '').trim();
+    const cambioFase = !!sg.estado_anterior && !!sg.estado_nuevo && sg.estado_anterior !== sg.estado_nuevo;
 
     if (sg.tipo_evento === 'respuesta_cliente') {
       msgs.push({ key, de: 'yo', texto, fecha: sg.created_at });
-    } else if (sg.tipo_evento === 'respuesta' || sg.tipo_evento === 'solicitud_informacion') {
+      return;
+    }
+
+    // Cada cambio de fase queda como una línea del historial.
+    if (cambioFase) {
+      msgs.push({
+        key: `${key}-fase`,
+        de: 'sistema',
+        texto: `Tu solicitud pasó a: ${pqrEstadoPill(sg.estado_nuevo as Pqr['estado_pqr']).txt}`,
+        fecha: sg.created_at,
+      });
+    }
+
+    const esMensajeDelEquipo =
+      sg.tipo_evento === 'respuesta' ||
+      sg.tipo_evento === 'solicitud_informacion' ||
+      sg.tipo_evento === 'comentario' ||
+      (cambioFase && texto !== '');
+
+    if (esMensajeDelEquipo) {
       // Respuestas antiguas guardaban un texto genérico: la última se completa con la real.
       if (i === ultimaRespuesta && pqr.respuesta_pqr && (texto === '' || texto === MENSAJE_GENERICO)) {
         texto = pqr.respuesta_pqr;
       }
       msgs.push({ key, de: 'equipo', texto: texto || MENSAJE_GENERICO, fecha: sg.created_at });
-    } else if (texto) {
+    } else if (texto && !cambioFase) {
       msgs.push({ key, de: 'sistema', texto, fecha: sg.created_at });
-    } else if (sg.estado_anterior && sg.estado_nuevo) {
-      msgs.push({
-        key,
-        de: 'sistema',
-        texto: `Tu solicitud pasó a: ${pqrEstadoPill(sg.estado_nuevo as Pqr['estado_pqr']).txt}`,
-        fecha: sg.created_at,
-      });
     }
   });
 
@@ -421,9 +459,6 @@ function PqrDetalle({ pqr, onClose, onEnviar }: PqrDetalleProps) {
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  const pill = pqrEstadoPill(pqr.estado_pqr);
-  const paso = ['resuelto', 'cerrado'].includes(pqr.estado_pqr) ? 3 : pqr.estado_pqr === 'abierto' ? 1 : 2;
-  const pasos = ['Radicada', 'En proceso', 'Resuelta'];
   const puedeResponder = ESTADOS_CON_RESPUESTA.includes(pqr.estado_pqr);
 
   const conversacion = useMemo(() => construirConversacion(pqr), [pqr]);
@@ -459,17 +494,15 @@ function PqrDetalle({ pqr, onClose, onEnviar }: PqrDetalleProps) {
           <button className="pf-modal-close" onClick={onClose} aria-label="Cerrar">×</button>
         </div>
 
-        <div className="pf-pqr-meta">
-          <span className="pf-item-code">SS-PQR-{pqr.id_pqr}</span>
-          <span className={`pf-pill ${pill.cls}`}>{pill.txt}</span>
-        </div>
+        <div className="pqrx">
+          <div className="pf-pqr-meta">
+            <span className="pf-item-code">{pqr.radicado ?? `SS-PQR-${pqr.id_pqr}`}</span>
+            <PqrEstadoPill estado={pqr.estado_pqr} />
+            <PqrPlazoChip pqr={pqr} />
+          </div>
 
-        <ol className="pf-steps" aria-label="Estado de la solicitud">
-          {pasos.map((txt, i) => {
-            const cls = paso === 3 || i < paso - 1 ? 'done' : i === paso - 1 ? 'current' : '';
-            return <li key={txt} className={cls}>{txt}</li>;
-          })}
-        </ol>
+          <PqrStepper estado={pqr.estado_pqr} />
+        </div>
 
         <div className="pf-thread" ref={hiloRef}>
           {conversacion.map((m) =>
@@ -783,10 +816,22 @@ function PerfilPanel() {
   const [reservas, setReservas] = useState<Reserva[] | null>(null);
 
   const [detallePqr, setDetallePqr] = useState<Pqr | null>(null);
+  const [vistos, setVistos] = useState<Record<string, string>>(leerVistos);
+
   const [toast, setToast] = useState<ToastMsg | null>(null);
   const [filtrosPqr, setFiltrosPqr] = useState<Filtros>(FILTROS_INICIALES);
   const [filtrosReservas, setFiltrosReservas] = useState<Filtros>(FILTROS_INICIALES);
   const [detalleReserva, setDetalleReserva] = useState<Reserva | null>(null);
+
+  const cargarPqrs = useCallback((inicial: boolean) => {
+    pqrService
+      .misPqr()
+      .then((res) => setPqrs(res.data))
+      .catch(() => {
+        // Si ya hay datos en pantalla, un fallo al refrescar no los borra.
+        if (inicial) setToast({ tipo: 'error', texto: 'No se pudieron cargar tus PQR.', id: Date.now() });
+      });
+  }, []);
 
   const pqrsFiltradas = useMemo(
     () =>
@@ -850,9 +895,63 @@ function PerfilPanel() {
   };
 
   useEffect(() => {
-    pqrService.misPqr().then((res) => setPqrs(res.data)).catch(() => setToast({ tipo: 'error', texto: 'No se pudieron cargar tus PQR.', id: Date.now() }));
+    cargarPqrs(true);
     reservaService.misReservas().then((res) => setReservas(res.data)).catch(() => setToast({ tipo: 'error', texto: 'No se pudieron cargar tus reservas.', id: Date.now() }));
-  }, []);
+
+    // Cuando el equipo mueve tu PQR de fase, se refleja aquí sin recargar.
+    const refrescar = () => {
+      if (document.visibilityState === 'visible') cargarPqrs(false);
+    };
+    const timer = window.setInterval(refrescar, 30000);
+    document.addEventListener('visibilitychange', refrescar);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', refrescar);
+    };
+  }, [cargarPqrs]);
+
+  const abrirPqr = (p: Pqr) => {
+    setDetallePqr(p);
+    if (p.ultima_actuacion_en) {
+      guardarVisto(p.id_pqr, p.ultima_actuacion_en);
+      setVistos(leerVistos());
+    }
+  };
+  const cerrarPqr = () => {
+    setDetallePqr(null);
+    cargarPqrs(false);
+  };
+
+  // Al abrir una PQR se pide su seguimiento completo y se refresca solo
+  // mientras esté abierta (así el usuario ve cuando el equipo avanza la fase).
+  const detalleId = detallePqr?.id_pqr;
+  useEffect(() => {
+    if (detalleId === undefined) return;
+    let vivo = true;
+    const cargar = () =>
+      pqrService
+        .obtener(detalleId)
+        .then((p) => {
+          if (!vivo) return;
+          setDetallePqr((prev) => (prev && prev.id_pqr === p.id_pqr ? p : prev));
+          const ultimo = p.seguimientos?.[p.seguimientos.length - 1]?.created_at;
+          if (ultimo) {
+            guardarVisto(p.id_pqr, ultimo);
+            setVistos(leerVistos());
+          }
+        })
+        .catch(() => {
+          // Si falla el refresco, se queda con lo que ya está en pantalla.
+        });
+    cargar();
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === 'visible') cargar();
+    }, 20000);
+    return () => {
+      vivo = false;
+      window.clearInterval(timer);
+    };
+  }, [detalleId]);
 
   const initials = (user?.name || 'SK').split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
 
@@ -1118,21 +1217,16 @@ function PerfilPanel() {
                 </div>
               ) : (
                 <div className="pfx-list">
-                  {pqrEnCurso.slice(0, 3).map((p) => {
-                    const pill = pqrEstadoPill(p.estado_pqr);
-                    return (
-                      <button type="button" className="pfx-item pfx-item-btn" key={p.id_pqr} onClick={() => setDetallePqr(p)}>
-                        <span className="pfx-chip"><i className="ti ti-message-circle" aria-hidden="true" /></span>
-                        <div className="pfx-item-main">
-                          <span className="pfx-item-title">{p.asunto_pqr}</span>
-                          <span className="pfx-item-sub">
-                            {pqrTipoLabel[p.tipo_pqr]} · Radicado SS-PQR-{p.id_pqr} · {fmtFecha(p.creado_en_pqr)}
-                          </span>
-                        </div>
-                        <span className={`pf-pill ${pill.cls}`}>{pill.txt}</span>
-                      </button>
-                    );
-                  })}
+                  {pqrEnCurso.slice(0, 3).map((p) => (
+                    <div className="pfx-item" key={p.id_pqr}>
+                      <span className="pfx-chip"><i className={`ti ${pqrTipoIcon[p.tipo_pqr] ?? 'ti-message-report'}`} aria-hidden="true" /></span>
+                      <div className="pfx-item-main">
+                        <span className="pfx-item-title">{p.asunto_pqr}</span>
+                        <span className="pfx-item-sub">{pqrTipoLabel[p.tipo_pqr]} · {p.radicado} · {fmtFecha(p.creado_en_pqr)}</span>
+                      </div>
+                      <PqrEstadoPill estado={p.estado_pqr} />
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -1183,18 +1277,24 @@ function PerfilPanel() {
               </div>
             )}
             {pqrsFiltradas?.map((p) => {
-              const pill = pqrEstadoPill(p.estado_pqr);
+              const actual = indiceFase(p.estado_pqr);
               return (
-                <button key={p.id_pqr} className="pf-list-item" onClick={() => setDetallePqr(p)}>
-                  <span className="pf-item-icon" aria-hidden="true">
-                    <i className={`ti ${pqrTipoIcon[p.tipo_pqr] ?? 'ti-message-report'}`} />
-                  </span>
+                <button key={p.id_pqr} className="pf-list-item" onClick={() => abrirPqr(p)}>
+                  <span className="pf-item-icon" aria-hidden="true"><i className={`ti ${pqrTipoIcon[p.tipo_pqr] ?? 'ti-message-report'}`} /></span>
                   <div className="pf-list-item-main">
-                    <span className="pf-list-item-title">{p.asunto_pqr}</span>
+                    <span className="pf-list-item-title">
+                      {p.asunto_pqr}
+                      {hayNovedad(p, vistos) && <span className="pqrx-updated">Novedad</span>}
+                    </span>
                     <span className="pf-list-item-sub">{pqrTipoLabel[p.tipo_pqr]} · {fmtFecha(p.creado_en_pqr)}</span>
+                    <span className="pqrx pqrx-mini" aria-hidden="true" style={{ '--fase': ESTADO_COLOR[p.estado_pqr] } as CSSProperties}>
+                      {FASES.map((f, i) => (
+                        <span key={f.key} className={i < actual ? 'on' : i === actual ? 'now' : ''} />
+                      ))}
+                    </span>
                   </div>
-                  <span className="pf-item-code">SS-PQR-{p.id_pqr}</span>
-                  <span className={`pf-pill ${pill.cls}`}>{pill.txt}</span>
+                  <span className="pf-item-code">{p.radicado}</span>
+                  <PqrEstadoPill estado={p.estado_pqr} />
                   <i className="ti ti-chevron-right pf-item-chevron" aria-hidden="true" />
                 </button>
               );
@@ -1315,7 +1415,7 @@ function PerfilPanel() {
       {detallePqr && (
         <PqrDetalle
           pqr={detallePqr}
-          onClose={() => setDetallePqr(null)}
+          onClose={cerrarPqr}
           onEnviar={(mensaje) => enviarRespuestaPqr(detallePqr, mensaje)}
         />
       )}
