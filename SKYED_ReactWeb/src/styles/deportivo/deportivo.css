@@ -83,7 +83,23 @@
 }
 .mod-deportivo .stat-num{font-size: calc(2.2rem * var(--fs-scale, 1));font-weight:900;color:var(--accent);display:block}
 .mod-deportivo .stat-label{color:var(--muted);font-size: calc(.95rem * var(--fs-scale, 1));text-transform:uppercase;letter-spacing:.05em}
-@media (max-width:700px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
+
+@media (max-width: 768px) {
+  .mod-deportivo .stats-grid {
+    grid-template-columns: 1fr !important;
+    gap: 2.5rem !important;
+    padding: 2.5rem 1rem !important;
+  }
+  
+  .mod-deportivo .stat-item {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    width: 100% !important;
+  }
+}
 
 /* Features */
 .mod-deportivo .features-grid{
@@ -707,10 +723,13 @@
   /* font-size: calc(16px * var(--fs-scale, 1)); */
 
 .mod-deportivo .site-header{
-  position:sticky;top:0;z-index:100;
+  position:sticky;
+  top:0;
+  z-index:100;
   background:rgba(255,255,255,.95);
   backdrop-filter:blur(10px);
   border-bottom:1px solid var(--border);
+  overflow: visible !important;
 }
 
 
@@ -2549,4 +2568,206 @@
   .mod-deportivo .site-header .brand span { font-size: calc(1rem * var(--fs-scale, 1)); }
   .mod-deportivo .site-header .brand img { width: 32px; margin-left: 44px; }
   .mod-deportivo .site-header .nav-cta { margin-right: 0; }
+}
+
+/* =========================================
+   CORRECCIONES RESPONSIVE (MÓVIL) - SKYED DEPORTIVO
+   ========================================= */
+@media (max-width: 768px) {
+  /* 1. Arreglo de la barra de navegación (Header) */
+  .mod-deportivo .site-header .nav {
+    padding: 0.5rem 1rem !important;
+    gap: 0.5rem !important;
+  }
+  
+  .mod-deportivo .home-btn {
+    position: static !important;
+    transform: none !important;
+    margin-right: 0 !important;
+    flex-shrink: 0;
+  }
+  
+  .mod-deportivo .brand {
+    margin-left: 0 !important;
+    gap: 0.3rem !important;
+  }
+  
+  .mod-deportivo .brand img {
+    margin-left: 0 !important;
+    width: 36px !important;
+  }
+  
+  /* Ocultar la palabra "SKYED DEPORTIVO" para dar espacio a los botones */
+  .mod-deportivo .brand span {
+    display: none !important;
+  }
+
+  .mod-deportivo .nav-cta {
+    margin-right: 0 !important;
+    margin-left: auto !important;
+  }
+  
+  .mod-deportivo .menu-toggle {
+    margin-left: 0 !important;
+  }
+
+  /* 2. Arreglo del contenido del Hero (Texto desplazado) */
+  .mod-deportivo .hero-content {
+    margin-left: 0 !important;
+    padding: 2rem 1.5rem !important;
+    text-align: center;
+    align-items: center;
+  }
+  
+  .mod-deportivo .hero-content h1 {
+    font-size: clamp(2rem, 8vw, 3rem) !important;
+  }
+  
+  .mod-deportivo .hero-actions {
+    justify-content: center;
+    width: 100%;
+  }
+  
+  .mod-deportivo .hero-actions .btn {
+    margin: 0 auto !important;
+    width: 100%;
+  }
+
+  /* Ocultar flechas del carrusel en móvil */
+  .mod-deportivo .carousel-arrow {
+    display: none !important;
+  }
+}
+
+/* =========================================
+   DISEÑO HAMBURGUESA Y MENÚ DESPLEGABLE (MÓVIL)
+   ========================================= */
+/* Estilos base del botón hamburguesa (Oculto en PC) */
+.mod-deportivo .hamburger {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  z-index: 101;
+}
+
+.mod-deportivo .hamburger span {
+  display: block;
+  width: 24px;
+  height: 2px;
+  background: var(--primary);
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+.mod-deportivo.dark-mode .hamburger span {
+  background: #ffffff;
+}
+
+/* Animación de la hamburguesa al hacer clic */
+.mod-deportivo .hamburger.active span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.mod-deportivo .hamburger.active span:nth-child(2) { opacity: 0; }
+.mod-deportivo .hamburger.active span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+
+@media (max-width: 860px) {
+  /* Mostrar hamburguesa en móvil */
+  .mod-deportivo .hamburger {
+    display: flex !important;
+    margin-left: 0 !important;
+    z-index: 10000 !important;
+  }
+  
+  .mod-deportivo .menu-toggle {
+    display: none !important;
+  }
+  
+  /* Garantizar que el header siempre esté arriba y permita desbordamiento */
+  .mod-deportivo .site-header {
+    z-index: 9999 !important;
+    overflow: visible !important;
+  }
+
+  .mod-deportivo .nav-links,
+  .mod-deportivo.dark-mode .nav-links {
+    position: absolute !important;
+    inset: 100% 0 auto 0 !important;   /* top:100%, right:0, bottom:auto, left:0 */
+    height: auto !important;
+    max-height: calc(100vh - 80px) !important;
+    overflow-y: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    gap: 0 !important;
+
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;  /* anula el center de global.css */
+    align-items: stretch !important;
+
+    background-color: #0b1220!important;
+    border-top: 1px solid rgba(255,255,255,0.1) !important;
+    box-shadow: 0 15px 30px rgba(0,0,0,0.6) !important;
+    z-index: 9998 !important;
+
+    transform: translateY(-10px) !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transition: transform .3s ease, opacity .3s ease, visibility .3s ease !important;
+  }
+
+  .mod-deportivo .nav-links.open,
+  .mod-deportivo.dark-mode .nav-links.open {
+    transform: translateY(0) !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+  }
+
+    /* ===== Ítems del menú móvil ===== */
+  .mod-deportivo .nav-links li {
+    margin: 0 !important;
+    width: 100% !important;
+    list-style: none !important;
+  }
+
+  .mod-deportivo .nav-links a,
+  .mod-deportivo.dark-mode .nav-links a {
+    display: block !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 1.15rem 1.5rem !important;
+    border-radius: 0 !important;
+    border-left: 4px solid transparent !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background: transparent !important;
+    color: #f4f8fb !important;
+    font-size: 1.1rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.02em !important;
+    text-align: left !important;
+    transition: background .2s ease, padding-left .2s ease, border-color .2s ease !important;
+  }
+
+  .mod-deportivo .nav-links a:hover,
+  .mod-deportivo.dark-mode .nav-links a:hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+    color: #ffffff !important;
+    padding-left: 1.85rem !important;
+  }
+
+  /* Ítem activo: fondo teñido con el color de acento + barra lateral */
+  .mod-deportivo .nav-links a.active,
+  .mod-deportivo.dark-mode .nav-links a.active {
+    background: color-mix(in srgb, var(--accent) 22%, transparent) !important;
+    border-left-color: var(--accent) !important;
+    color: #ffffff !important;
+  }
+
+  .mod-deportivo .nav-links li:last-child a {
+    border-bottom: none !important;
+  }
 }

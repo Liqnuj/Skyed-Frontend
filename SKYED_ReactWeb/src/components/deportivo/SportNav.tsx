@@ -43,7 +43,9 @@ const { user } = useAuth();
           <i className="ti ti-home" aria-hidden="true" />
         </Link>
 
-        <button className="menu-toggle" aria-expanded={open} aria-controls="nav-list" aria-label="Abrir menú" onClick={() => setOpen((o) => !o)}>☰</button>
+        <button className={`hamburger ${open ? 'active' : ''}`} aria-expanded={open} aria-controls="nav-list" aria-label="Abrir menú" onClick={() => setOpen((o) => !o)}>
+          <span></span><span></span><span></span>
+        </button>
         <ul className={`nav-links ${open ? 'open' : ''}`} id="nav-list">
           <li><NavLink to="/deportivo" end onClick={close}>Inicio</NavLink></li>
           <li><NavLink to="/deportivo/eventos" onClick={close}>Eventos</NavLink></li>

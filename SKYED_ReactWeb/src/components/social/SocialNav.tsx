@@ -17,7 +17,7 @@ export default function SocialNav() {
   const close = () => setOpen(false);
 
   return (
-    <nav id="navbar" className={scrolled ? 'scrolled' : ''}>
+    <nav id="navbar" className={`${scrolled ? 'scrolled' : ''} ${open ? 'menu-open' : ''}`}>
       <div className="nav-inner">
         <Link className="brand" to="/social" aria-label="Inicio SKYED">
           <img src="/assets/social/logo_social.png" alt="logo social" />
