@@ -17,11 +17,22 @@ import {
   FASES,
   fmtFechaHora,
   hace,
-  indiceFase,
   plazoInfo,
   tituloEvento,
 } from '../../../utils/pqr';
 import '../../../styles/social/pqrTracking.css';
+
+/**
+ * Fases que se muestran al usuario. "En revisión" ya no se usa; una PQR vieja
+ * que haya quedado en ese estado se muestra como "En proceso".
+ */
+export const FASES_VISIBLES = FASES.filter((f) => f.key !== 'en_revision');
+
+export const indiceFaseVisible = (estado: EstadoPqr) => {
+  const efectivo = estado === 'en_revision' ? 'en_proceso' : estado;
+  const i = FASES_VISIBLES.findIndex((f) => f.key === efectivo);
+  return i < 0 ? 0 : i;
+};
 
 const colorVar = (estado: EstadoPqr) => ({ '--fase': ESTADO_COLOR[estado] }) as CSSProperties;
 
@@ -60,8 +71,8 @@ export function PqrPlazoChip({ pqr }: { pqr: Pick<Pqr, 'estado_pqr' | 'fecha_lim
  * Las fases ya recorridas quedan llenas, la actual late suavemente.
  */
 export function PqrStepper({ estado }: { estado: EstadoPqr }) {
-  const actual = indiceFase(estado);
-  const avance = (actual / (FASES.length - 1)) * 100;
+  const actual = indiceFaseVisible(estado);
+  const avance = (actual / (FASES_VISIBLES.length - 1)) * 100;
 
   return (
     <ol
@@ -69,7 +80,7 @@ export function PqrStepper({ estado }: { estado: EstadoPqr }) {
       aria-label={`Fase actual: ${ESTADO_LABEL[estado]}`}
       style={{ '--avance': `${avance}%` } as CSSProperties}
     >
-      {FASES.map((fase, i) => {
+      {FASES_VISIBLES.map((fase, i) => {
         const clase = i < actual ? 'done' : i === actual ? 'current' : 'todo';
         return (
           <li key={fase.key} className={`pqrx-stop ${clase}`} style={colorVar(fase.key)}>
