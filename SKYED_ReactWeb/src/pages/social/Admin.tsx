@@ -18,6 +18,7 @@ import {
   Plus,
   Search,
   Trash2,
+  EyeOff,
   Upload,
   Users,
   Wrench,
@@ -649,6 +650,21 @@ function AdminPage() {
     await loadAll();
   };
 
+  // Oculta la reserva solo de la vista del admin; el usuario sigue viéndola.
+  const hideReserva = async (id: number) => {
+    if (!window.confirm("¿Ocultar esta reserva de tu panel? El cliente la sigue viendo.")) return;
+    try {
+      await apiFetch(`/reservas/${id}/ocultar`, {
+        method: "POST",
+        body: JSON.stringify({ vista: "admin" }),
+      });
+      notify("Reserva oculta");
+      await loadAll();
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "No se pudo ocultar la reserva.");
+    }
+  };
+
   const updateReserva = async (id: number, estado_rese: Reserva["estado_rese"]) => {
     await apiFetch(`/reservas/${id}`, {
       method: "PUT",
@@ -886,7 +902,7 @@ function AdminPage() {
 
         {section === "reservas" && (
           <SectionTable title="Gestión de reservas">
-            <thead><tr><th>ID</th><th>Fecha</th><th>Invitados</th><th>Total</th><th>Estado</th></tr></thead>
+            <thead><tr><th>ID</th><th>Fecha</th><th>Invitados</th><th>Total</th><th>Estado</th><th></th></tr></thead>
             <tbody>
               {visibleReservas.map(r => (
                 <tr key={r.id_rese}>
@@ -900,9 +916,14 @@ function AdminPage() {
                       <option value="completada">Completada</option>
                     </select>
                   </td>
+                  <td>
+                    {(r.estado_rese === "cancelada" || r.estado_rese === "completada") && (
+                      <button className="table-action" title="Ocultar de mi panel" onClick={() => hideReserva(r.id_rese)}><EyeOff size={15} /></button>
+                    )}
+                  </td>
                 </tr>
               ))}
-              {!visibleReservas.length && <tr><td colSpan={5}>No hay reservas.</td></tr>}
+              {!visibleReservas.length && <tr><td colSpan={6}>No hay reservas.</td></tr>}
             </tbody>
           </SectionTable>
         )}
@@ -1356,8 +1377,6 @@ function AdminPqrManager({
   // "" = sin cambio manual. Solo "resuelto" y "cerrado" se eligen a mano.
   const [manual, setManual] = useState("");
   const [sending, setSending] = useState(false);
-  const clickedRef = useRef(false);
-  const [clickTick, setClickTick] = useState(0);
 
   const visible = pqrs.filter((item) =>
     `${item.id_pqr} ${item.mensaje_pqr} ${item.estado_pqr}`
@@ -1368,44 +1387,48 @@ function AdminPqrManager({
   const selectedKey = selected?.id_pqr ?? null;
   const current = detail && detail.id_pqr === selectedKey ? detail : selected;
 
-  // Abrir una solicitud con un clic la pasa de "Radicada" a "En revisión".
+  // Carga el historial completo de la solicitud seleccionada.
   useEffect(() => {
     setTexto("");
     setManual("");
     setDetail((d) => (d && d.id_pqr === selectedKey ? d : null));
     if (selectedKey == null) return;
-    const porClic = clickedRef.current;
-    clickedRef.current = false;
     let cancelled = false;
     (async () => {
       try {
         const res = await apiFetch(`/pqr/${selectedKey}`);
-        let pqr: Pqr | null = res.pqr ?? null;
-        if (porClic && pqr && pqr.estado_pqr === "abierto") {
-          try {
-            const r = await apiFetch(`/pqr/${selectedKey}/seguimiento`, {
-              method: "POST",
-              body: JSON.stringify({ estado_pqr: "en_revision" }),
-            });
-            pqr = r.pqr ?? pqr;
-            onChanged();
-          } catch {
-            // Si falla el cambio automático, igual se muestra la solicitud.
-          }
-        }
-        if (!cancelled) setDetail(pqr);
+        if (!cancelled) setDetail(res.pqr ?? null);
       } catch (error) {
         if (!cancelled) notify(error instanceof Error ? error.message : "No se pudo cargar el historial.");
       }
     })();
     return () => { cancelled = true; };
-  }, [selectedKey, clickTick]);
+  }, [selectedKey]);
 
-  const cerrada = current?.estado_pqr === "cerrado";
+  // Resuelta cierra el chat para el admin y para el usuario ("cerrado" queda por PQR antiguas).
+  const cerrada = current?.estado_pqr === "resuelto" || current?.estado_pqr === "cerrado";
+  const puedeOcultar = !!current && !["en_proceso", "en_revision"].includes(current.estado_pqr);
+
+  // Oculta la solicitud solo de la vista del admin; el usuario sigue viéndola.
+  const ocultar = async () => {
+    if (!current) return;
+    if (!window.confirm("¿Ocultar esta solicitud de tu panel? El usuario la sigue viendo.")) return;
+    try {
+      await apiFetch(`/pqr/${current.id_pqr}/ocultar`, {
+        method: "POST",
+        body: JSON.stringify({ vista: "admin" }),
+      });
+      setSelectedId(null);
+      setDetail(null);
+      notify("Solicitud oculta");
+      await onChanged();
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "No se pudo ocultar la solicitud.");
+    }
+  };
   const manualOpciones = [
     { value: "", label: "Sin cambiar el estado" },
-    ...(current?.estado_pqr !== "resuelto" ? [{ value: "resuelto", label: "Marcar como resuelta" }] : []),
-    { value: "cerrado", label: "Marcar como cerrada" },
+    { value: "resuelto", label: "Marcar como resuelta (cierra el chat)" },
   ];
 
   const enviar = async () => {
@@ -1464,7 +1487,7 @@ function AdminPqrManager({
                   <tr
                     key={item.id_pqr}
                     className={item.id_pqr === selectedKey ? "apqr-row-active" : undefined}
-                    onClick={() => { clickedRef.current = true; setSelectedId(item.id_pqr); setClickTick((t) => t + 1); }}
+                    onClick={() => setSelectedId(item.id_pqr)}
                   >
                     <td>#{item.id_pqr}</td>
                     <td>{item.mensaje_pqr}</td>
@@ -1479,7 +1502,11 @@ function AdminPqrManager({
         </div>
         {current && (
           <section className="admin-card upcoming-card apqr-panel">
-            <div className="card-head"><div><span className="card-kicker">SOLICITUD #{current.id_pqr}</span><h2>Historial</h2></div></div>
+            <div className="card-head"><div><span className="card-kicker">SOLICITUD #{current.id_pqr}</span><h2>Historial</h2></div>
+              {puedeOcultar && (
+                <button type="button" className="apqr-hide-btn" onClick={ocultar}><EyeOff size={15} /> Ocultar</button>
+              )}
+            </div>
             <div className="apqr-thread">
               {buildPqrThread(current).map((message) => (
                 <div className={`apqr-msg apqr-msg--${message.de}`} key={message.key}>
@@ -1496,7 +1523,7 @@ function AdminPqrManager({
               ))}
             </div>
             {cerrada ? (
-              <p className="apqr-closed">Esta solicitud está cerrada y ya no admite respuestas.</p>
+              <p className="apqr-closed">Esta solicitud fue resuelta y el chat está cerrado para ambas partes.</p>
             ) : (
               <div className="apqr-reply">
                 <textarea

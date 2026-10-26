@@ -10,8 +10,8 @@ import { useAuth } from '../../context/AuthContext';
 import { apiFetch } from '../../services/api';
 import { pqrService, reservaService } from '../../services/socialService';
 import type { Pqr, PqrSeguimiento, Reserva, TipoPqr } from '../../services/socialService';
-import { PqrEstadoPill, PqrStepper } from '../../components/social/pqr/PqrTracker';
-import { ESTADO_COLOR, ESTADO_LABEL, FASES, TIPO_LABEL, indiceFase } from '../../utils/pqr';
+import { FASES_VISIBLES, PqrEstadoPill, PqrStepper, indiceFaseVisible } from '../../components/social/pqr/PqrTracker';
+import { ESTADO_COLOR, ESTADO_LABEL, TIPO_LABEL } from '../../utils/pqr';
 import { prepararImagen } from '../../utils/prepararImagen';
 import { errorContrasena } from '../../utils/validaciones';
 import '../../styles/social/perfil.css';
@@ -135,10 +135,9 @@ const FILTROS_INICIALES: Filtros = { q: '', rango: 'todas', desde: '', hasta: ''
 const ESTADOS_PQR: { value: string; label: string }[] = [
   { value: 'todos', label: 'Todos' },
   { value: 'abierto', label: 'Radicada' },
-  { value: 'en_revision', label: 'En revisión' },
   { value: 'en_proceso', label: 'En proceso' },
   { value: 'resuelto', label: 'Resuelta' },
-  { value: 'cerrado', label: 'Cerrada' },
+  { value: 'ocultas', label: 'Ocultas' },
 ];
 
 const ESTADOS_RESERVAS: { value: string; label: string }[] = [
@@ -147,6 +146,7 @@ const ESTADOS_RESERVAS: { value: string; label: string }[] = [
   { value: 'confirmada', label: 'Confirmada' },
   { value: 'completada', label: 'Completada' },
   { value: 'cancelada', label: 'Cancelada' },
+  { value: 'ocultas', label: 'Ocultas' },
 ];
 
 function contarPor<T>(items: T[] | null, get: (x: T) => string): Record<string, number> {
@@ -446,9 +446,18 @@ interface PqrDetalleProps {
   onClose: () => void;
   /** Envía el mensaje; devuelve true si se guardó. */
   onEnviar: (mensaje: string) => Promise<boolean>;
+  /** Oculta la PQR de la lista del usuario (el equipo conserva el registro). */
+  onOcultar: () => Promise<void>;
+  /** true si la PQR está en "Ocultas": el botón pasa a "Mostrar en mi lista". */
+  oculta: boolean;
 }
 
-function PqrDetalle({ pqr, onClose, onEnviar }: PqrDetalleProps) {
+function PqrDetalle({ pqr, onClose, onEnviar, onOcultar, oculta }: PqrDetalleProps) {
+  const puedeOcultar = !['en_proceso', 'en_revision'].includes(pqr.estado_pqr);
+  const ocultar = () => {
+    if (oculta) { onOcultar(); return; }
+    if (window.confirm('¿Ocultar esta PQR de tu lista? El equipo conserva el registro.')) onOcultar();
+  };
   const [texto, setTexto] = useState('');
   const [enviando, setEnviando] = useState(false);
   const hiloRef = useRef<HTMLDivElement>(null);
@@ -555,6 +564,13 @@ function PqrDetalle({ pqr, onClose, onEnviar }: PqrDetalleProps) {
             <span>Esta solicitud ya fue {pqr.estado_pqr === 'cerrado' ? 'cerrada' : 'resuelta'}. Si necesitas algo más, radica una nueva PQR.</span>
           </div>
         )}
+
+        {(oculta || puedeOcultar) && (
+          <button type="button" className="pf-hide-btn" onClick={ocultar}>
+            <i className={`ti ${oculta ? 'ti-eye' : 'ti-eye-off'}`} aria-hidden="true" />
+            {oculta ? ' Mostrar en mi lista' : ' Ocultar de mi lista'}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -602,9 +618,18 @@ interface ReservaDetalleProps {
   onClose: () => void;
   /** Guarda el nombre; devuelve true si se guardó. Texto vacío quita el nombre. */
   onRenombrar: (nombre: string) => Promise<boolean>;
+  /** Oculta la reserva de la lista del usuario (el equipo conserva el registro). */
+  onOcultar: () => Promise<void>;
+  /** true si la reserva está en "Ocultas": el botón pasa a "Mostrar en mi lista". */
+  oculta: boolean;
 }
 
-function ReservaDetalle({ reserva, onClose, onRenombrar }: ReservaDetalleProps) {
+function ReservaDetalle({ reserva, onClose, onRenombrar, onOcultar, oculta }: ReservaDetalleProps) {
+  const puedeOcultar = ['cancelada', 'completada'].includes(reserva.estado_rese);
+  const ocultar = () => {
+    if (oculta) { onOcultar(); return; }
+    if (window.confirm('¿Ocultar esta reserva de tu lista? El equipo conserva el registro.')) onOcultar();
+  };
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);
@@ -782,6 +807,13 @@ function ReservaDetalle({ reserva, onClose, onRenombrar }: ReservaDetalleProps) 
               </ol>
             </div>
           )}
+
+          {(oculta || puedeOcultar) && (
+            <button type="button" className="pf-hide-btn" onClick={ocultar}>
+              <i className={`ti ${oculta ? 'ti-eye' : 'ti-eye-off'}`} aria-hidden="true" />
+              {oculta ? ' Mostrar en mi lista' : ' Ocultar de mi lista'}
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -821,6 +853,9 @@ function PerfilPanel() {
   const [filtrosPqr, setFiltrosPqr] = useState<Filtros>(FILTROS_INICIALES);
   const [filtrosReservas, setFiltrosReservas] = useState<Filtros>(FILTROS_INICIALES);
   const [detalleReserva, setDetalleReserva] = useState<Reserva | null>(null);
+  // Lo que el usuario ocultó: se ve en el chip "Ocultas" y se puede volver a mostrar.
+  const [pqrsOcultas, setPqrsOcultas] = useState<Pqr[] | null>(null);
+  const [reservasOcultas, setReservasOcultas] = useState<Reserva[] | null>(null);
 
   const cargarPqrs = useCallback((inicial: boolean) => {
     pqrService
@@ -835,28 +870,36 @@ function PerfilPanel() {
   const pqrsFiltradas = useMemo(
     () =>
       filtrarLista(
-        pqrs,
-        filtrosPqr,
+        filtrosPqr.estado === 'ocultas' ? pqrsOcultas : pqrs,
+        filtrosPqr.estado === 'ocultas' ? { ...filtrosPqr, estado: 'todos' } : filtrosPqr,
         (p) => p.creado_en_pqr,
         (p) => `${p.asunto_pqr} ${pqrTipoLabel[p.tipo_pqr] ?? ''} ${pqrEstadoPill(p.estado_pqr).txt} SS-PQR-${p.id_pqr}`,
         (p) => p.estado_pqr,
       ),
-    [pqrs, filtrosPqr],
+    [pqrs, pqrsOcultas, filtrosPqr],
   );
-  const conteosPqr = useMemo(() => contarPor(pqrs, (p) => p.estado_pqr), [pqrs]);
+  const conteosPqr = useMemo(
+    () => ({ ...contarPor(pqrs, (p) => p.estado_pqr), ocultas: pqrsOcultas?.length ?? 0 }),
+    [pqrs, pqrsOcultas],
+  );
+  const hayPqr = (pqrs?.length ?? 0) + (pqrsOcultas?.length ?? 0) > 0;
 
   const reservasFiltradas = useMemo(
     () =>
       filtrarLista(
-        reservas,
-        filtrosReservas,
+        filtrosReservas.estado === 'ocultas' ? reservasOcultas : reservas,
+        filtrosReservas.estado === 'ocultas' ? { ...filtrosReservas, estado: 'todos' } : filtrosReservas,
         (r) => r.fecha_evento_rese,
         (r) => `${nombreReserva(r)} ${r.evento?.nombre_er ?? ''} Reserva #${r.id_rese} ${reservaEstadoPill(r.estado_rese).txt}`,
         (r) => r.estado_rese,
       ),
-    [reservas, filtrosReservas],
+    [reservas, reservasOcultas, filtrosReservas],
   );
-  const conteosReservas = useMemo(() => contarPor(reservas, (r) => r.estado_rese), [reservas]);
+  const conteosReservas = useMemo(
+    () => ({ ...contarPor(reservas, (r) => r.estado_rese), ocultas: reservasOcultas?.length ?? 0 }),
+    [reservas, reservasOcultas],
+  );
+  const hayReservas = (reservas?.length ?? 0) + (reservasOcultas?.length ?? 0) > 0;
 
   const renombrarReserva = async (reserva: Reserva, nombre: string): Promise<boolean> => {
     try {
@@ -873,6 +916,73 @@ function PerfilPanel() {
         id: Date.now(),
       });
       return false;
+    }
+  };
+
+  // Carga las reservas; al refrescar, mantiene al día el detalle abierto.
+  const cargarReservas = useCallback((inicial: boolean) => {
+    reservaService
+      .misReservas()
+      .then((res) => {
+        setReservas(res.data);
+        setDetalleReserva((prev) => {
+          const nueva = prev && res.data.find((x) => x.id_rese === prev.id_rese);
+          return nueva && (nueva.estado_rese !== prev.estado_rese || nueva.total_rese !== prev.total_rese) ? nueva : prev;
+        });
+      })
+      .catch(() => {
+        if (inicial) setToast({ tipo: 'error', texto: 'No se pudieron cargar tus reservas.', id: Date.now() });
+      });
+  }, []);
+
+  const cargarOcultas = useCallback(() => {
+    apiFetch('/pqr?ocultas=1&mias=1&per_page=100')
+      .then((res) => setPqrsOcultas(res.data ?? []))
+      .catch(() => setPqrsOcultas([]));
+    apiFetch('/reservas?ocultas=1&per_page=100')
+      .then((res) => setReservasOcultas(res.data ?? []))
+      .catch(() => setReservasOcultas([]));
+  }, []);
+
+  // Oculta o vuelve a mostrar una reserva en la lista del usuario.
+  const alternarOcultaReserva = async (reserva: Reserva, ocultar: boolean) => {
+    try {
+      await apiFetch(`/reservas/${reserva.id_rese}/ocultar`, {
+        method: 'POST',
+        body: JSON.stringify({ vista: 'usuario', oculta: ocultar }),
+      });
+      if (ocultar) {
+        setReservas((prev) => prev && prev.filter((x) => x.id_rese !== reserva.id_rese));
+        setReservasOcultas((prev) => [reserva, ...(prev ?? [])]);
+      } else {
+        setReservasOcultas((prev) => prev && prev.filter((x) => x.id_rese !== reserva.id_rese));
+        setReservas((prev) => [reserva, ...(prev ?? [])]);
+      }
+      setDetalleReserva(null);
+      setToast({ tipo: 'ok', texto: ocultar ? 'Reserva oculta. La encuentras en "Ocultas".' : 'Reserva visible de nuevo.', id: Date.now() });
+    } catch (err) {
+      setToast({ tipo: 'error', texto: err instanceof Error ? err.message : 'No se pudo completar la acción.', id: Date.now() });
+    }
+  };
+
+  // Oculta o vuelve a mostrar una PQR en la lista del usuario.
+  const alternarOcultaPqr = async (pqr: Pqr, ocultar: boolean) => {
+    try {
+      await apiFetch(`/pqr/${pqr.id_pqr}/ocultar`, {
+        method: 'POST',
+        body: JSON.stringify({ vista: 'usuario', oculta: ocultar }),
+      });
+      if (ocultar) {
+        setPqrs((prev) => prev && prev.filter((p) => p.id_pqr !== pqr.id_pqr));
+        setPqrsOcultas((prev) => [pqr, ...(prev ?? [])]);
+      } else {
+        setPqrsOcultas((prev) => prev && prev.filter((p) => p.id_pqr !== pqr.id_pqr));
+        setPqrs((prev) => [pqr, ...(prev ?? [])]);
+      }
+      setDetallePqr(null);
+      setToast({ tipo: 'ok', texto: ocultar ? 'PQR oculta. La encuentras en "Ocultas".' : 'PQR visible de nuevo.', id: Date.now() });
+    } catch (err) {
+      setToast({ tipo: 'error', texto: err instanceof Error ? err.message : 'No se pudo completar la acción.', id: Date.now() });
     }
   };
 
@@ -895,11 +1005,15 @@ function PerfilPanel() {
 
   useEffect(() => {
     cargarPqrs(true);
-    reservaService.misReservas().then((res) => setReservas(res.data)).catch(() => setToast({ tipo: 'error', texto: 'No se pudieron cargar tus reservas.', id: Date.now() }));
+    cargarOcultas();
+    cargarReservas(true);
 
     // Cuando el equipo mueve tu PQR de fase, se refleja aquí sin recargar.
     const refrescar = () => {
-      if (document.visibilityState === 'visible') cargarPqrs(false);
+      if (document.visibilityState === 'visible') {
+        cargarPqrs(false);
+        cargarReservas(false);
+      }
     };
     const timer = window.setInterval(refrescar, 30000);
     document.addEventListener('visibilitychange', refrescar);
@@ -907,7 +1021,7 @@ function PerfilPanel() {
       window.clearInterval(timer);
       document.removeEventListener('visibilitychange', refrescar);
     };
-  }, [cargarPqrs]);
+  }, [cargarPqrs, cargarReservas, cargarOcultas]);
 
   const abrirPqr = (p: Pqr) => {
     setDetallePqr(p);
@@ -1235,7 +1349,7 @@ function PerfilPanel() {
         {tab === 'pqr' && (
           <div className="pf-list">
             {pqrs === null && <p className="pf-loading">Cargando tus PQR…</p>}
-            {pqrs?.length === 0 && (
+            {pqrs?.length === 0 && !pqrsOcultas?.length && (
               <div className="pfq-empty">
                 <span className="pfq-empty-icon" aria-hidden="true"><i className="ti ti-message-report" /></span>
                 <h3 className="pfq-empty-title">Aún no has radicado ninguna PQR</h3>
@@ -1245,7 +1359,7 @@ function PerfilPanel() {
                 </Link>
               </div>
             )}
-            {!!pqrs?.length && (
+            {hayPqr && (
               <>
                 <div className="pf-list-head">
                   <h2>Mis PQR</h2>
@@ -1258,25 +1372,25 @@ function PerfilPanel() {
                   estados={ESTADOS_PQR}
                   conteos={conteosPqr}
                   placeholder="Buscar por asunto, tipo, estado o radicado"
-                  total={pqrs.length}
+                  total={pqrs?.length ?? 0}
                   mostrando={pqrsFiltradas?.length ?? 0}
                   singular="solicitud"
                   plural="solicitudes"
                 />
               </>
             )}
-            {!!pqrs?.length && pqrsFiltradas?.length === 0 && (
+            {hayPqr && pqrsFiltradas?.length === 0 && (
               <div className="pfq-empty">
                 <span className="pfq-empty-icon" aria-hidden="true"><i className="ti ti-search-off" /></span>
-                <h3 className="pfq-empty-title">No encontramos resultados</h3>
-                <p className="pfq-empty-text">Prueba con otra palabra, otro estado o cambia el rango de fechas.</p>
+                <h3 className="pfq-empty-title">{filtrosPqr.estado === 'ocultas' ? 'No tienes nada oculto' : 'No encontramos resultados'}</h3>
+                <p className="pfq-empty-text">{filtrosPqr.estado === 'ocultas' ? 'Lo que ocultes desde el detalle aparecerá aquí para que puedas volver a mostrarlo.' : 'Prueba con otra palabra, otro estado o cambia el rango de fechas.'}</p>
                 <button type="button" className="pfx-btn pfx-btn-primary" onClick={() => setFiltrosPqr(FILTROS_INICIALES)}>
                   Limpiar filtros
                 </button>
               </div>
             )}
             {pqrsFiltradas?.map((p) => {
-              const actual = indiceFase(p.estado_pqr);
+              const actual = indiceFaseVisible(p.estado_pqr);
               return (
                 <button key={p.id_pqr} className="pf-list-item" onClick={() => abrirPqr(p)}>
                   <span className="pf-item-icon" aria-hidden="true"><i className={`ti ${pqrTipoIcon[p.tipo_pqr] ?? 'ti-message-report'}`} /></span>
@@ -1287,7 +1401,7 @@ function PerfilPanel() {
                     </span>
                     <span className="pf-list-item-sub">{pqrTipoLabel[p.tipo_pqr]} · {fmtFecha(p.creado_en_pqr)}</span>
                     <span className="pqrx pqrx-mini" aria-hidden="true" style={{ '--fase': ESTADO_COLOR[p.estado_pqr] } as CSSProperties}>
-                      {FASES.map((f, i) => (
+                      {FASES_VISIBLES.map((f, i) => (
                         <span key={f.key} className={i < actual ? 'on' : i === actual ? 'now' : ''} />
                       ))}
                     </span>
@@ -1304,7 +1418,7 @@ function PerfilPanel() {
         {tab === 'reservas' && (
           <div className="pf-list">
             {reservas === null && <p className="pf-loading">Cargando tus reservas…</p>}
-            {reservas?.length === 0 && (
+            {reservas?.length === 0 && !reservasOcultas?.length && (
               <div className="pfq-empty">
                 <span className="pfq-empty-icon" aria-hidden="true"><i className="ti ti-calendar-event" /></span>
                 <h3 className="pfq-empty-title">Aún no tienes reservas</h3>
@@ -1314,7 +1428,7 @@ function PerfilPanel() {
                 </Link>
               </div>
             )}
-            {!!reservas?.length && (
+            {hayReservas && (
               <>
                 <div className="pf-list-head pf-list-head-row">
                   <div>
@@ -1332,18 +1446,18 @@ function PerfilPanel() {
                   estados={ESTADOS_RESERVAS}
                   conteos={conteosReservas}
                   placeholder="Buscar por evento o estado"
-                  total={reservas.length}
+                  total={reservas?.length ?? 0}
                   mostrando={reservasFiltradas?.length ?? 0}
                   singular="reserva"
                   plural="reservas"
                 />
               </>
             )}
-            {!!reservas?.length && reservasFiltradas?.length === 0 && (
+            {hayReservas && reservasFiltradas?.length === 0 && (
               <div className="pfq-empty">
                 <span className="pfq-empty-icon" aria-hidden="true"><i className="ti ti-search-off" /></span>
-                <h3 className="pfq-empty-title">No encontramos resultados</h3>
-                <p className="pfq-empty-text">Prueba con otra palabra, otro estado o cambia el rango de fechas.</p>
+                <h3 className="pfq-empty-title">{filtrosReservas.estado === 'ocultas' ? 'No tienes nada oculto' : 'No encontramos resultados'}</h3>
+                <p className="pfq-empty-text">{filtrosReservas.estado === 'ocultas' ? 'Lo que ocultes desde el detalle aparecerá aquí para que puedas volver a mostrarlo.' : 'Prueba con otra palabra, otro estado o cambia el rango de fechas.'}</p>
                 <button type="button" className="pfx-btn pfx-btn-primary" onClick={() => setFiltrosReservas(FILTROS_INICIALES)}>
                   Limpiar filtros
                 </button>
@@ -1409,6 +1523,8 @@ function PerfilPanel() {
           reserva={detalleReserva}
           onClose={() => setDetalleReserva(null)}
           onRenombrar={(nombre) => renombrarReserva(detalleReserva, nombre)}
+          oculta={!!reservasOcultas?.some((x) => x.id_rese === detalleReserva.id_rese)}
+          onOcultar={() => alternarOcultaReserva(detalleReserva, !reservasOcultas?.some((x) => x.id_rese === detalleReserva.id_rese))}
         />
       )}
       {detallePqr && (
@@ -1416,6 +1532,8 @@ function PerfilPanel() {
           pqr={detallePqr}
           onClose={cerrarPqr}
           onEnviar={(mensaje) => enviarRespuestaPqr(detallePqr, mensaje)}
+          oculta={!!pqrsOcultas?.some((x) => x.id_pqr === detallePqr.id_pqr)}
+          onOcultar={() => alternarOcultaPqr(detallePqr, !pqrsOcultas?.some((x) => x.id_pqr === detallePqr.id_pqr))}
         />
       )}
     </>

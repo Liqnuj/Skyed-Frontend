@@ -2293,3 +2293,18 @@
   .social-admin .apqr-reply-actions { flex-direction: column; align-items: stretch; }
   .social-admin .apqr-reply-actions .primary-btn { width: 100%; }
 }
+
+.social-admin .apqr-hide-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--admin-line);
+  background: transparent;
+  color: var(--admin-muted);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.social-admin .apqr-hide-btn:hover { color: var(--admin-text); border-color: var(--admin-accent); }
