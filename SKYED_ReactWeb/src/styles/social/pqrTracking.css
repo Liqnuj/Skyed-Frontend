@@ -84,9 +84,9 @@
   position: relative;
   display: grid;
   /* --n = número de fases visibles (Radicada, En proceso, Resuelta, Cerrada) */
-  --n: 4;
+  --n: 3;
   grid-template-columns: repeat(var(--n), 1fr);
-  margin: 0.4rem 0 1.5rem;
+  margin: 1.2rem 0 1.5rem;
 }
 /* línea de fondo y línea recorrida: van de la 1.ª a la última parada */
 .pqrx-stepper::before,

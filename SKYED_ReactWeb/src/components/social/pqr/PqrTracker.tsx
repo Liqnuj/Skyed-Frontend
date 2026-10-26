@@ -23,13 +23,15 @@ import {
 import '../../../styles/social/pqrTracking.css';
 
 /**
- * Fases que se muestran al usuario. "En revisión" ya no se usa; una PQR vieja
- * que haya quedado en ese estado se muestra como "En proceso".
+ * Fases que se muestran al usuario: Radicada → En proceso → Resuelta.
+ * "En revisión" y "Cerrada" ya no se usan; una PQR vieja en "En revisión"
+ * se muestra como "En proceso" y una "Cerrada" como "Resuelta".
  */
-export const FASES_VISIBLES = FASES.filter((f) => f.key !== 'en_revision');
+export const FASES_VISIBLES = FASES.filter((f) => f.key !== 'en_revision' && f.key !== 'cerrado');
 
 export const indiceFaseVisible = (estado: EstadoPqr) => {
-  const efectivo = estado === 'en_revision' ? 'en_proceso' : estado;
+  const efectivo =
+    estado === 'en_revision' ? 'en_proceso' : estado === 'cerrado' ? 'resuelto' : estado;
   const i = FASES_VISIBLES.findIndex((f) => f.key === efectivo);
   return i < 0 ? 0 : i;
 };

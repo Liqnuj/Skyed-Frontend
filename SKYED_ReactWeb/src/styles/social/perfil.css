@@ -1552,3 +1552,22 @@
   max-height: calc(100vh - 96px - 1.5rem);
   max-height: calc(100dvh - 96px - 1.5rem);
 }
+
+.pf-hide-btn {
+  align-self: flex-start;
+  margin-top: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.8rem;
+  opacity: 0.75;
+  cursor: pointer;
+  transition: opacity 0.15s, border-color 0.15s;
+}
+.pf-hide-btn:hover { opacity: 1; border-color: #e879f9; }
