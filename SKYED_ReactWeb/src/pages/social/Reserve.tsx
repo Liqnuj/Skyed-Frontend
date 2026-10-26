@@ -5,11 +5,20 @@ import { useAuth } from '../../context/AuthContext'; // Importamos el contexto d
 import { apiFetch } from '../../services/api';
 
 function capitalizeName(raw: string) {
-  const cleaned = raw
+  let cleaned = raw
     .replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g, '')
     .replace(/\s+/g, ' ')
     .slice(0, 20);
-  return cleaned.replace(/\b\w/g, (char) => char.toUpperCase());
+
+  return cleaned
+    .split(' ')
+    .map(word => {
+      if (word.length > 0) {
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      }
+      return word;
+    })
+    .join(' ');
 }
 
 function sanitizeNumeric(raw: string) {
@@ -49,18 +58,26 @@ export default function Reserve() {
     show: false,
   });
 
-// EFECTO 1: Autocompletar datos del usuario si está logueado
-  useEffect(() => {
-    if (user) {
-      // Separamos el nombre completo que viene de buildUser ("Nombre Apellido")
-      const [nombre, ...apellidos] = user.name.split(' ');
-      
-      setFname(nombre || '');
-      setLname(apellidos.join(' ') || '');
-      setFphone(user.telefono || '');
-      setFemail(user.email || '');
-    }
-  }, [user]);
+  // EFECTO 1: Autocompletar datos del usuario si está logueado
+    useEffect(() => {
+      if (user) {
+        // Lógica inteligente para separar el nombre
+        const parts = user.name ? user.name.split(' ') : [];
+        let nombreCalculado = parts[0] || '';
+        let apellidoCalculado = parts.slice(1).join(' ') || '';
+
+        // Si el nombre tiene 4 palabras o más, divide 2 y 2
+        if (parts.length >= 4) {
+          nombreCalculado = parts.slice(0, 2).join(' ');
+          apellidoCalculado = parts.slice(2).join(' ');
+        }
+
+        setFname(nombreCalculado);
+        setLname(apellidoCalculado);
+        setFphone(user.telefono || '');
+        setFemail(user.email || '');
+      }
+    }, [user]);
 
   // EFECTO 2: Cargar Tipos de Evento desde la API
   useEffect(() => {

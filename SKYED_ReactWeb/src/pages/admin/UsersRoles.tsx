@@ -1,20 +1,11 @@
 import { useEffect, useState } from 'react';
 import { userService, type UserWithRoles } from '../../services/userRoleService';
 import Protected from '../../components/Protected';
-import { useAuth } from '../../context/AuthContext';
-import { modulosAdministrables, perteneceAlModulo } from '../../utils/usersScope';
 
-const TODOS_LOS_ROLES = ['cliente', 'participante', 'adminSocial', 'adminDeportivo'];
+const ROLES_DISPONIBLES = ['cliente', 'participante', 'adminSocial', 'adminDeportivo'];
+const CONTEXTOS_DISPONIBLES = ['social', 'deportivo', 'general'];
 
 function UsersRolesContent() {
-  const { user } = useAuth();
-  // Qué módulos administra quien está logueado: el admin social no ve ni
-  // gestiona nada de deportivo, y viceversa.
-  const modulos = modulosAdministrables(user?.roles);
-  const CONTEXTOS_DISPONIBLES: string[] = modulos;
-  const ROLES_DISPONIBLES = TODOS_LOS_ROLES.filter(
-    (r) => !(r === 'adminSocial' && !modulos.includes('social')) && !(r === 'adminDeportivo' && !modulos.includes('deportivo'))
-  );
   const [users, setUsers] = useState<UserWithRoles[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -27,7 +18,7 @@ function UsersRolesContent() {
     setLoading(true);
     userService
       .listar()
-      .then((res) => setUsers(res.data.filter((u) => modulos.some((m) => perteneceAlModulo(u, m)))))
+      .then((res) => setUsers(res.data))
       .catch(() => setError('No se pudieron cargar los usuarios.'))
       .finally(() => setLoading(false));
   }
@@ -99,8 +90,8 @@ function UsersRolesContent() {
                   </td>
                   <td>{u.correo_u}</td>
                   <td>
-                    {u.roles.filter((r) => modulos.includes(r.pivot.contexto as 'social' | 'deportivo')).length === 0 && <span>— sin roles —</span>}
-                    {u.roles.filter((r) => modulos.includes(r.pivot.contexto as 'social' | 'deportivo')).map((r) => (
+                    {u.roles.length === 0 && <span>— sin roles —</span>}
+                    {u.roles.map((r) => (
                       <div key={`${r.id_rol}-${r.pivot.contexto}`} style={{ marginBottom: 4 }}>
                         <span className="eyebrow social">
                           {r.nombre_rol} ({r.pivot.contexto})
