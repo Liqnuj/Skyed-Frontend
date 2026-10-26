@@ -65,10 +65,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return raw ? JSON.parse(raw) : null;
   });
 
-  useEffect(() => {
-    if (user) localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-    else localStorage.removeItem(STORAGE_KEY);
-  }, [user]);
+useEffect(() => {
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === 'skyed_token' && !event.newValue) {
+        setToken(null);
+        setUser(null);
+        window.location.href = '/login'; 
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
 
   const value = useMemo<AuthContextValue>(() => ({
     user,
