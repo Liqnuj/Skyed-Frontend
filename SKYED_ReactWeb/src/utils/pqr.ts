@@ -113,6 +113,8 @@ export function tituloEvento(ev: PqrSeguimiento): string {
       return 'Respuesta del equipo';
     case 'comentario':
       return 'Mensaje del equipo';
+          case 'respuesta_cliente':
+      return 'Mensaje del usuario';
     case 'nota_interna':
       return 'Nota interna';
     default:
