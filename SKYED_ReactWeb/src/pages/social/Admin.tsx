@@ -793,15 +793,15 @@ function AdminPage() {
                 <div className="resource-list">
                   <div className="resource-item">
                     <div className="resource-icon"><Building2 size={18} /></div>
-                    <div className="resource-main"><strong>Ambientes</strong><span>{ambientes.length} registrados</span></div>
+                    <div className="resource-main"><strong>Ambientes </strong><span>  {ambientes.length} registrados</span></div>
                   </div>
                   <div className="resource-item">
                     <div className="resource-icon"><Wrench size={18} /></div>
-                    <div className="resource-main"><strong>Servicios</strong><span>{servicios.length} registrados</span></div>
+                    <div className="resource-main"><strong>Servicios </strong><span>  {servicios.length} registrados</span></div>
                   </div>
                   <div className="resource-item">
                     <div className="resource-icon"><CalendarDays size={18} /></div>
-                    <div className="resource-main"><strong>Eventos sociales</strong><span>{eventos.filter(e => e.estado_er === "activo").length} activos</span></div>
+                    <div className="resource-main"><strong>Eventos sociales </strong><span>  {eventos.filter(e => e.estado_er === "activo").length} activos</span></div>
                   </div>
                 </div>
               </section>
