@@ -4,18 +4,25 @@ import { useAuth } from '../../context/AuthContext';
 import PrincipalWrapper from '../../components/principal/PrincipalWrapper';
 import AuthTopbar from '../../components/principal/AuthTopbar';
 import TermsModal from '../../components/shared/TermsModal';
+import { normalizarCorreo } from '../../utils/validaciones';
 
-const CLAVE_RECORDADO = 'skyed_identificacion_recordada';
+const CLAVE_CORREO_RECORDADO = 'skyed_correo_recordado';
 
-function leerRecordado(): string {
-  try { return localStorage.getItem(CLAVE_RECORDADO) ?? ''; } catch { return ''; }
+function leerCorreoRecordado(): string {
+  try {
+    return localStorage.getItem(CLAVE_CORREO_RECORDADO) ?? '';
+  } catch {
+    return '';
+  }
 }
 
-function guardarRecordado(valor: string | null) {
+function guardarCorreoRecordado(correo: string | null) {
   try {
-    if (valor) localStorage.setItem(CLAVE_RECORDADO, valor);
-    else localStorage.removeItem(CLAVE_RECORDADO);
-  } catch {}
+    if (correo) localStorage.setItem(CLAVE_CORREO_RECORDADO, correo);
+    else localStorage.removeItem(CLAVE_CORREO_RECORDADO);
+  } catch {
+    // Navegador en modo privado: simplemente no se recuerda.
+  }
 }
 
 export default function LoginPage() {
@@ -25,60 +32,71 @@ export default function LoginPage() {
 
   const [termsOpen, setTermsOpen] = useState(false);
 
-  const valorRecordado = leerRecordado();
-  const [identificacion, setIdentificacion] = useState(valorRecordado);
+  // "Recordarme" guarda solo el correo (nunca la contraseña) para que la
+  // próxima vez aparezca ya escrito. Antes la casilla no hacía nada.
+  const correoRecordado = leerCorreoRecordado();
+  const [email, setEmail] = useState(correoRecordado);
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
-  const [remember, setRemember] = useState(Boolean(valorRecordado));
+  const [remember, setRemember] = useState(Boolean(correoRecordado));
   
+  // Estados para alertas y carga
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   
   const from = (location.state as { from?: string } | null)?.from || '/';
 
+  // ==========================================
+  // FUNCIÓN DE LOGIN
+  // ==========================================
   async function submit(e: FormEvent) {
     e.preventDefault();
 
-    if (!identificacion) {
-      setError('Por favor, ingresa tu correo o documento.');
-      setTimeout(() => setError(''), 4000); return;
-    }
-    
-    if (!password) {
-      setError('Por favor, ingresa tu contraseña.');
-      setTimeout(() => setError(''), 4000); return;
+    if (!email || !password) {
+      setError('Por favor, ingresa tu correo y contraseña.');
+      setTimeout(() => setError(''), 4000);
+      return;
     }
 
     setError('');
     setLoading(true);
 
     try {
-      // Pasamos los dos campos al AuthContext
-      const success = await login(identificacion, password);
+      // Llamamos a tu función login del AuthContext
+      const correo = normalizarCorreo(email);
+      const success = await login(correo, password);
 
       if (!success) {
-        throw new Error('Credenciales incorrectas. Verifica tus datos.');
+        throw new Error('Correo o contraseña incorrectos. Verifica tus datos.');
       }
 
-      guardarRecordado(remember ? identificacion : null);
+      guardarCorreoRecordado(remember ? correo : null);
 
       setSuccessMsg('¡Inicio de sesión exitoso! Redirigiendo...');
+      
+      // Capturamos el parámetro "redirect" de la URL si existe
       const queryParams = new URLSearchParams(location.search);
       const redirectUrl = queryParams.get('redirect');
+      
+      // Decidimos a dónde enviarlo: a la redirección pendiente o a la ruta por defecto
       const finalDestination = redirectUrl ? redirectUrl : from;
 
+      // Esperamos 2 segundos para que se vea la alerta verde y redirigimos
       setTimeout(() => {
         navigate(finalDestination, { replace: true });
       }, 2000);
 
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : 'Error al iniciar sesión';
-      if (errMsg.includes('Failed to fetch') || errMsg.includes('NetworkError')) {
+      
+      // Verificamos si es un error de internet o servidor
+      if (errMsg.includes('Failed to fetch') || errMsg.includes('NetworkError') || errMsg.includes('Failed to load')) {
         setError('No hay conexión a internet. Por favor, intenta de nuevo.');
       } else {
         setError(errMsg);
       }
+
       setTimeout(() => setError(''), 4000);
     } finally {
       setLoading(false);
@@ -94,10 +112,14 @@ export default function LoginPage() {
           <div className="aside-blob aside-blob--blue" />
           <div className="aside-blob aside-blob--purple" />
           <div className="aside-blob aside-blob--gold" />
+
           <div className="aside-content">
             <span className="aside-eyebrow"><i className="ti ti-calendar-event" />&nbsp; Eventos</span>
             <h1 className="aside-title">Bienvenido de vuelta a <span className="hl">SKYED</span></h1>
-            <p className="aside-subtitle">Accede a tu cuenta para inscribirte en eventos, gestionar tus entradas y consultar el estado de tus resultados.</p>
+            <p className="aside-subtitle">
+              Accede a tu cuenta para inscribirte en eventos, gestionar tus entradas
+              y consultar el estado de tus resultados.
+            </p>
             <ul className="aside-features">
               <li><span className="feat-ico"><i className="ti ti-calendar" /></span> Calendario completo de eventos en tiempo real</li>
               <li><span className="feat-ico"><i className="ti ti-ticket" /></span> Historial de inscripciones y facturas</li>
@@ -109,7 +131,10 @@ export default function LoginPage() {
                 <div className="ticket-title">Feria SKYED</div>
                 <div className="ticket-meta">Acceso general · Válido con tu cuenta</div>
               </div>
-              <div className="ticket-stub"><span>PASE</span><strong>#00 SKYED</strong></div>
+              <div className="ticket-stub">
+                <span>PASE</span>
+                <strong>#00 SKYED</strong>
+              </div>
             </div>
           </div>
         </aside>
@@ -120,14 +145,13 @@ export default function LoginPage() {
             <p className="auth-subheading">Ingresa tus credenciales para continuar.</p>
 
             <form onSubmit={submit} noValidate>
-              
               <div className="form-group">
-                <label className="form-label" htmlFor="identificacion">Correo o Documento<span className="req">*</span></label>
+                <label className="form-label" htmlFor="email">Correo electrónico<span className="req">*</span></label>
                 <div className="input-wrap">
                   <input
-                    type="text" id="identificacion" className="form-input" placeholder="tucorreo@ejemplo.com o 10000000"
-                    maxLength={80} required
-                    value={identificacion} onChange={(e) => setIdentificacion(e.target.value)}
+                    type="email" id="email" className="form-input" placeholder="tucorreo@gmail.com"
+                    autoComplete="email" maxLength={80} required
+                    value={email} onChange={(e) => setEmail(e.target.value)}
                   />
                 </div>
               </div>
@@ -137,18 +161,28 @@ export default function LoginPage() {
                 <div className="input-wrap" style={{ position: 'relative' }}>
                   <input
                     type={showPass ? 'text' : 'password'} id="password" className="form-input" placeholder="••••••••"
-                    autoComplete="current-password" maxLength={50} required
+                    autoComplete="current-password" maxLength={50}
                     value={password} onChange={(e) => setPassword(e.target.value)}
-                    style={{ paddingRight: '45px' }}
+                    style={{ paddingRight: '45px' }} // Espacio para el ojito
                   />
                   <button 
                     type="button" 
                     className="toggle-pass" 
+                    aria-label="Mostrar contraseña" 
                     onClick={() => setShowPass((s) => !s)}
                     style={{ 
-                      position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', 
-                      background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', 
-                      fontSize: '1.4rem', display: 'flex', alignItems: 'center', padding: 0
+                      position: 'absolute', 
+                      right: '12px', 
+                      top: '50%', 
+                      transform: 'translateY(-50%)', 
+                      background: 'none', 
+                      border: 'none', 
+                      cursor: 'pointer', 
+                      color: '#64748b', 
+                      fontSize: '1.4rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: 0
                     }}
                   >
                     <i className={showPass ? 'ti ti-eye-off' : 'ti ti-eye'} />
@@ -186,8 +220,15 @@ export default function LoginPage() {
         </div>
       </footer>
 
-      <TermsModal isOpen={termsOpen} onClose={() => setTermsOpen(false)} variant="principal" />
+      <TermsModal
+        isOpen={termsOpen}
+        onClose={() => setTermsOpen(false)}
+        variant="principal"
+      />
 
+      {/* =========================================
+          TOAST DE ÉXITO Y ERROR ANIMADOS
+      ========================================== */}
       {(error || successMsg) && (
         <>
           <style>
@@ -197,15 +238,30 @@ export default function LoginPage() {
             `}
           </style>
           <div style={{
-            position: 'fixed', top: '24px', right: '24px', backgroundColor: '#ffffff',
-            borderRadius: '8px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', zIndex: 9999,
-            overflow: 'hidden', minWidth: '300px', animation: 'slideIn 0.3s ease-out forwards'
+            position: 'fixed',
+            top: '24px',
+            right: '24px',
+            backgroundColor: '#ffffff',
+            borderRadius: '8px',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+            zIndex: 9999,
+            overflow: 'hidden',
+            minWidth: '300px',
+            animation: 'slideIn 0.3s ease-out forwards'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px 24px', borderLeft: `4px solid ${error ? '#ef4444' : '#22c55e'}` }}>
+            <div style={{ 
+              display: 'flex', alignItems: 'center', gap: '12px', padding: '16px 24px', 
+              borderLeft: `4px solid ${error ? '#ef4444' : '#22c55e'}` 
+            }}>
               <span style={{ fontSize: '1.2rem' }}>{error ? '⚠️' : '✅'}</span>
-              <span style={{ color: '#1e293b', fontSize: '0.95rem', fontWeight: '500' }}>{error || successMsg}</span>
+              <span style={{ color: '#1e293b', fontSize: '0.95rem', fontWeight: '500' }}>
+                {error || successMsg}
+              </span>
             </div>
-            <div style={{ height: '4px', backgroundColor: error ? '#ef4444' : '#22c55e', animation: `shrinkBar ${error ? '4s' : '2s'} linear forwards` }} />
+            <div style={{ 
+              height: '4px', backgroundColor: error ? '#ef4444' : '#22c55e', 
+              animation: `shrinkBar ${error ? '4s' : '2s'} linear forwards` 
+            }} />
           </div>
         </>
       )}

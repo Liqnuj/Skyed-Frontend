@@ -232,7 +232,7 @@ function PQRForm() {
                   <p className="pqr-whatsapp-hint">
                     Opcional: abre un chat con nuestro equipo con tu radicado y el detalle ya escritos.
                   </p>
-                  <Link to="/social/perfil?tab=pqr" className="btn-primary"style={{ fontSize: '.88rem', display: 'inline-block', marginRight: '.75rem' }}>Ver mis PQR</Link>
+                  <Link to="/social/perfil" className="btn-primary" style={{ fontSize: '.88rem', display: 'inline-block', marginRight: '.75rem' }}>Ver mis PQR</Link>
                   <button className="btn-primary" onClick={resetPQR} style={{ fontSize: '.88rem' }}>Radicar otra solicitud</button>
                 </div>
               )}
