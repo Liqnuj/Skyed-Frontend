@@ -144,6 +144,7 @@ export default function SkaiWidget() {
 
       <button
         className="skyed-fab"
+        title={open ? 'Cerrar SKAI' : 'SKAI - Asistente virtual de SKYED'}
         aria-label={open ? 'Cerrar asistente Skyed' : 'Abrir asistente Skyed'}
         onClick={() => (open ? closePanel() : openPanel())}
       >
