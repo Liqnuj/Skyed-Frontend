@@ -1,3 +1,4 @@
+import { perteneceAlModulo } from "../../utils/usersScope";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import {
@@ -10,13 +11,13 @@ import {
   ImagePlus,
   LayoutDashboard,
   Loader2,
-  Lock,
   LogOut,
   Menu,
   MessageSquareText,
   Pencil,
   Plus,
   Search,
+  Settings,
   Trash2,
   Upload,
   Users,
@@ -28,8 +29,8 @@ import Protected from "../../components/Protected";
 import { useAuth } from "../../context/AuthContext";
 import { useAccessibility } from "../../context/AccessibilityContext";
 import AccessibilityWidget from "../../components/shared/AccessibilityWidget";
+import AdminAjustes from "../../components/shared/AdminAjustes";
 import { apiFetch } from "../../services/api";
-import type { EstadoPqr, Pqr } from "../../services/socialService";
 import "../../styles/social/Admin.css";
 
 type Section =
@@ -39,7 +40,8 @@ type Section =
   | "usuarios"
   | "pqr"
   | "lugares"
-  | "servicios";
+  | "servicios"
+  | "ajustes";
 
 /* ---------- Persistencia de la vista (sección + formulario abierto) ----------
    Al recargar la página se vuelve a la misma sección y al mismo formulario.
@@ -48,7 +50,7 @@ type ModalKind = "ambiente" | "servicio" | "evento" | "reserva" | "pqr";
 type SavedView = { section: Section; modal: ModalKind | null; editId: number | string | null };
 
 const VIEW_KEY = "skyed_admin_social_view";
-const SECTION_IDS: Section[] = ["inicio", "eventos", "reservas", "usuarios", "pqr", "lugares", "servicios"];
+const SECTION_IDS: Section[] = ["inicio", "eventos", "reservas", "usuarios", "pqr", "lugares", "servicios", "ajustes"];
 const MODAL_KINDS: ModalKind[] = ["ambiente", "servicio", "evento", "reserva", "pqr"];
 
 function readSavedView(): SavedView {
@@ -139,19 +141,17 @@ type Reserva = {
   evento_realizado?: EventoSocial;
 };
 
-/** Mensaje o evento del historial de una PQR (tabla pqr_seguimientos). */
-type PqrSeg = {
-  id_seguimiento: number;
-  id_admin?: number | null;
-  tipo_evento?: string | null;
-  estado_anterior?: string | null;
-  estado_nuevo?: string | null;
-  comentario_publico?: string | null;
-  nota_interna?: string | null;
-  created_at?: string | null;
+type Pqr = {
+  id_pqr: number;
+  tipo_pqr: string;
+  asunto_pqr: string;
+  mensaje_pqr: string;
+  estado_pqr: "abierto" | "en_proceso" | "resuelto" | "cerrado";
+  respuesta_pqr?: string | null;
+  creado_en_pqr?: string | null;
+  id_u?: number;
+  usuario?: { nombre_u?: string; apellido_u?: string; correo_u?: string };
 };
-
-
 
 type UserRow = {
   id_u: number;
@@ -159,6 +159,7 @@ type UserRow = {
   apellido_u?: string;
   correo_u: string;
   estado_u?: string;
+  roles?: Array<{ nombre_rol: string; pivot?: { contexto?: string } }>;
 };
 
 const money = (value: number | string | null | undefined) =>
@@ -439,8 +440,6 @@ function AdminPage() {
   const [eventos, setEventos] = useState<EventoSocial[]>([]);
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [pqrs, setPqrs] = useState<Pqr[]>([]);
-  const [pqrResumen, setPqrResumen] = useState<Partial<Record<EstadoPqr, number>>>({});
-  const [pqrTotal, setPqrTotal] = useState(0);
   const [users, setUsers] = useState<UserRow[]>([]);
   const [tipos, setTipos] = useState<TipoEvento[]>([]);
 
@@ -464,9 +463,8 @@ function AdminPage() {
         apiFetch("/servicios"),
         apiFetch("/eventos-sociales"),
         apiFetch("/reservas"),
-
-        // El backend pagina de 15 en 15; el panel pide hasta 100 de una vez.
-        apiFetch("/pqr?per_page=100"),        // Filtramos por módulo en el backend; igual filtramos otra vez abajo
+        apiFetch("/pqr"),
+        // Filtramos por módulo en el backend; igual filtramos otra vez abajo
         // por si el backend todavía no tiene la migración de modulo_tipo_eves.
         apiFetch("/tipos-evento?modulo=social"),
       ]);
@@ -475,15 +473,13 @@ function AdminPage() {
       setEventos(e.data ?? []);
       setReservas(r.data ?? []);
       setPqrs(p.data ?? []);
-
-      setPqrResumen(p.resumen ?? {});
-      setPqrTotal(p.total ?? 0);
       // Nunca mostramos clasificaciones de Deportivo (ej. Ciclomontañismo)
       // en el selector de "Tipo de evento" de un evento social.
       setTipos((t.data ?? []).filter((tipo: TipoEvento) => tipo.modulo_tipo_eves !== "deportivo"));
       try {
         const u = await apiFetch("/users");
-        setUsers(u.data ?? u.users ?? []);
+        // El admin social solo ve usuarios con algún rol del módulo social.
+        setUsers((u.data ?? u.users ?? []).filter((x: UserRow) => perteneceAlModulo(x, "social")));
       } catch {
         // El módulo social funciona aunque la API de usuarios no esté expuesta.
       }
@@ -549,7 +545,9 @@ function AdminPage() {
   const visibleReservas = reservas.filter((r) =>
     filtered(`${r.id_rese} ${r.fecha_evento_rese} ${r.estado_rese}`)
   );
-
+  const visiblePqrs = pqrs.filter((p) =>
+    filtered(`${p.tipo_pqr} ${p.asunto_pqr} ${p.estado_pqr}`)
+  );
 
   const stats = useMemo(() => ({
     users: users.length,
@@ -572,6 +570,7 @@ function AdminPage() {
     pqr: { label: "PQRS", icon: MessageSquareText },
     lugares: { label: "Lugares", icon: Building2 },
     servicios: { label: "Servicios", icon: Wrench },
+    ajustes: { label: "Ajustes", icon: Settings },
   };
 
   const accent = accentOverride ?? "#9c02ae";
@@ -658,7 +657,15 @@ function AdminPage() {
     await loadAll();
   };
 
-
+  const updatePqr = async (id: number, data: any) => {
+    await apiFetch(`/pqr/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+    notify("PQR actualizada");
+    setModal(null);
+    await loadAll();
+  };
 
   return (
     <div
@@ -692,7 +699,7 @@ function AdminPage() {
 
         <nav className="sidebar-nav">
           <p className="nav-caption">GESTIÓN</p>
-          {(Object.keys(sectionMeta) as Section[]).map(key => {
+          {(Object.keys(sectionMeta) as Section[]).filter(key => key !== "ajustes").map(key => {
             const Icon = sectionMeta[key].icon;
             return (
               <button
@@ -706,11 +713,23 @@ function AdminPage() {
               </button>
             );
           })}
+
+          <p className="nav-caption">CUENTA</p>
+          <button
+            className={`admin-nav-item ${section === "ajustes" ? "active" : ""}`}
+            onClick={() => selectSection("ajustes")}
+            title={sectionMeta.ajustes.label}
+          >
+            <Settings size={18} />
+            <span>{sectionMeta.ajustes.label}</span>
+          </button>
         </nav>
 
         <div className="sidebar-footer">
           <div className="admin-avatar">
-            {user.name?.split(" ").map(x => x[0]).slice(0, 2).join("").toUpperCase()}
+            {user.foto_url
+              ? <img src={user.foto_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} />
+              : user.name?.split(" ").map(x => x[0]).slice(0, 2).join("").toUpperCase()}
           </div>
           <div className="admin-user">
             <strong>{user.name}</strong>
@@ -728,7 +747,7 @@ function AdminPage() {
             <span className="admin-eyebrow">ADMINISTRACIÓN</span>
             <h1>{sectionMeta[section].label}</h1>
           </div>
-          <label className="admin-search">
+          {section !== "ajustes" && <label className="admin-search">
             <Search size={17} />
             <input
               value={search}
@@ -740,7 +759,7 @@ function AdminPage() {
                 <X size={15} />
               </button>
             )}
-          </label>
+          </label>}
         </div>
 
         {loading && <div className="admin-card" style={{ padding: 18 }}>Cargando información…</div>}
@@ -793,15 +812,15 @@ function AdminPage() {
                 <div className="resource-list">
                   <div className="resource-item">
                     <div className="resource-icon"><Building2 size={18} /></div>
-                    <div className="resource-main"><strong>Ambientes </strong><span>  {ambientes.length} registrados</span></div>
+                    <div className="resource-main"><strong>Ambientes</strong><span>{ambientes.length} registrados</span></div>
                   </div>
                   <div className="resource-item">
                     <div className="resource-icon"><Wrench size={18} /></div>
-                    <div className="resource-main"><strong>Servicios </strong><span>  {servicios.length} registrados</span></div>
+                    <div className="resource-main"><strong>Servicios</strong><span>{servicios.length} registrados</span></div>
                   </div>
                   <div className="resource-item">
                     <div className="resource-icon"><CalendarDays size={18} /></div>
-                    <div className="resource-main"><strong>Eventos sociales </strong><span>  {eventos.filter(e => e.estado_er === "activo").length} activos</span></div>
+                    <div className="resource-main"><strong>Eventos sociales</strong><span>{eventos.filter(e => e.estado_er === "activo").length} activos</span></div>
                   </div>
                 </div>
               </section>
@@ -832,6 +851,8 @@ function AdminPage() {
             </tbody>
           </SectionTable>
         )}
+
+        {section === "ajustes" && <AdminAjustes modulo="social" />}
 
         {section === "servicios" && (
           <SectionTable title="Gestión de servicios" action="Nuevo servicio" onAction={() => { setEditing(null); setModal("servicio"); }}>
@@ -908,14 +929,19 @@ function AdminPage() {
         )}
 
         {section === "pqr" && (
-          <AdminPqrManager
-            pqrs={pqrs}
-            resumen={pqrResumen}
-            total={pqrTotal}
-            search={search}
-            onChanged={loadAll}
-            notify={notify}
-          />
+          <SectionTable title="Gestión de PQRS">
+            <thead><tr><th>ID</th><th>Tipo</th><th>Asunto</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody>
+              {visiblePqrs.map(p => (
+                <tr key={p.id_pqr}>
+                  <td>#{p.id_pqr}</td><td>{human(p.tipo_pqr)}</td><td>{p.asunto_pqr}</td>
+                  <td><Badge value={p.estado_pqr} /></td>
+                  <td><button className="table-action" onClick={() => { setEditing(p); setModal("pqr"); }}><Pencil size={15} /></button></td>
+                </tr>
+              ))}
+              {!visiblePqrs.length && <tr><td colSpan={5}>No hay PQRS.</td></tr>}
+            </tbody>
+          </SectionTable>
         )}
 
         {section === "usuarios" && (
@@ -980,6 +1006,9 @@ function AdminPage() {
         />
       )}
 
+      {modal === "pqr" && editing && (
+        <PqrModal item={editing} onClose={() => setModal(null)} onSave={data => updatePqr(editing.id_pqr, data)} />
+      )}
 
       {toast && <div className="admin-toast"><Check size={17} />{toast}</div>}
     </div>
@@ -1260,273 +1289,40 @@ function EventoModal({ item, ambientes, tipos, onClose, onSave, notify }: { item
   </Modal>;
 }
 
-const PQR_ESTADO_LABEL: Record<string, string> = {
-  abierto: "Abierto",
-  en_revision: "En revisión",
-  en_proceso: "En proceso",
-  resuelto: "Resuelto",
-  cerrado: "Cerrado",
-};
-const pqrEstadoLabel = (e: string) => PQR_ESTADO_LABEL[e] ?? human(e);
-
-const dateTime = (value?: string | null) => {
-  if (!value) return "";
-  const d = new Date(value);
-  return Number.isNaN(d.getTime())
-    ? ""
-    : new Intl.DateTimeFormat("es-CO", { day: "2-digit", month: "short", hour: "numeric", minute: "2-digit" }).format(d);
-};
-
-type PqrMsg = {
-  key: string;
-  de: "cliente" | "equipo" | "nota" | "sistema";
-  texto: string;
-  fecha?: string | null;
-};
-
-const PQR_RESPUESTA_GENERICA = "Se ha publicado una respuesta a tu solicitud.";
-
-/** Une el mensaje inicial, los mensajes del cliente, las respuestas y las notas internas. */
-function buildPqrThread(item: Pqr): PqrMsg[] {
-  const segs = [...(item.seguimientos ?? [])].sort(
-    (a, b) =>
-      (Date.parse(a.created_at ?? "") || 0) - (Date.parse(b.created_at ?? "") || 0) ||
-      a.id_seguimiento - b.id_seguimiento,
-  );
-
-  let ultimaRespuesta = -1;
-  segs.forEach((sg, i) => { if (sg.tipo_evento === "respuesta") ultimaRespuesta = i; });
-
-  const out: PqrMsg[] = [{ key: "inicio", de: "cliente", texto: item.mensaje_pqr, fecha: item.creado_en_pqr }];
-
-  segs.forEach((sg, i) => {
-    const key = `seg-${sg.id_seguimiento}`;
-    let texto = (sg.comentario_publico ?? "").trim();
-
-    if ((sg.tipo_evento as string) === "respuesta_cliente") {
-      out.push({ key, de: "cliente", texto, fecha: sg.created_at });
-    } else if ((sg.tipo_evento as string) === "respuesta" || (sg.tipo_evento as string) === "solicitud_informacion") {
-      // Respuestas antiguas guardaban un texto genérico: la última se completa con la real.
-      if (i === ultimaRespuesta && item.respuesta_pqr && (texto === "" || texto === PQR_RESPUESTA_GENERICA)) {
-        texto = item.respuesta_pqr;
-      }
-      out.push({ key, de: "equipo", texto: texto || PQR_RESPUESTA_GENERICA, fecha: sg.created_at });
-    } else if (sg.estado_anterior && sg.estado_nuevo) {
-      out.push({
-        key,
-        de: "sistema",
-        texto: `Estado: ${pqrEstadoLabel(sg.estado_anterior)} → ${pqrEstadoLabel(sg.estado_nuevo)}`,
-        fecha: sg.created_at,
-      });
-    } else if (texto) {
-      out.push({ key, de: "sistema", texto, fecha: sg.created_at });
-    }
-
-    const nota = (sg.nota_interna ?? "").trim();
-    if (nota) out.push({ key: `${key}-nota`, de: "nota", texto: nota, fecha: sg.created_at });
-  });
-
-  // PQR respondidas antes de que existiera el historial.
-  if (ultimaRespuesta === -1 && item.respuesta_pqr) {
-    out.push({ key: "respuesta-antigua", de: "equipo", texto: item.respuesta_pqr, fecha: item.respondido_en_pqr });
-  }
-
-  return out;
-}
-
-function AdminPqrManager({
-  pqrs,
-  resumen,
-  total,
-  search,
-  onChanged,
-  notify,
-}: {
-  pqrs: Pqr[];
-  resumen: Partial<Record<EstadoPqr, number>>;
-  total: number;
-  search: string;
-  onChanged: () => Promise<unknown>;
-  notify: (message: string) => void;
-}) {
-  const [selectedId, setSelectedId] = useState<number | null>(null);
-  // La lista /pqr no trae los seguimientos; el detalle sí (GET /pqr/{id}).
-  const [detail, setDetail] = useState<Pqr | null>(null);
-  const [texto, setTexto] = useState("");
-  // "" = sin cambio manual. Solo "resuelto" y "cerrado" se eligen a mano.
-  const [manual, setManual] = useState("");
-  const [sending, setSending] = useState(false);
-  const clickedRef = useRef(false);
-  const [clickTick, setClickTick] = useState(0);
-
-  const visible = pqrs.filter((item) =>
-    `${item.id_pqr} ${item.mensaje_pqr} ${item.estado_pqr}`
-      .toLowerCase()
-      .includes(search.toLowerCase()),
-  );
-  const selected = visible.find((item) => item.id_pqr === selectedId) ?? visible[0];
-  const selectedKey = selected?.id_pqr ?? null;
-  const current = detail && detail.id_pqr === selectedKey ? detail : selected;
-
-  // Abrir una solicitud con un clic la pasa de "Radicada" a "En revisión".
-  useEffect(() => {
-    setTexto("");
-    setManual("");
-    setDetail((d) => (d && d.id_pqr === selectedKey ? d : null));
-    if (selectedKey == null) return;
-    const porClic = clickedRef.current;
-    clickedRef.current = false;
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await apiFetch(`/pqr/${selectedKey}`);
-        let pqr: Pqr | null = res.pqr ?? null;
-        if (porClic && pqr && pqr.estado_pqr === "abierto") {
-          try {
-            const r = await apiFetch(`/pqr/${selectedKey}/seguimiento`, {
-              method: "POST",
-              body: JSON.stringify({ estado_pqr: "en_revision" }),
-            });
-            pqr = r.pqr ?? pqr;
-            onChanged();
-          } catch {
-            // Si falla el cambio automático, igual se muestra la solicitud.
-          }
-        }
-        if (!cancelled) setDetail(pqr);
-      } catch (error) {
-        if (!cancelled) notify(error instanceof Error ? error.message : "No se pudo cargar el historial.");
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [selectedKey, clickTick]);
-
-  const cerrada = current?.estado_pqr === "cerrado";
-  const manualOpciones = [
-    { value: "", label: "Sin cambiar el estado" },
-    ...(current?.estado_pqr !== "resuelto" ? [{ value: "resuelto", label: "Marcar como resuelta" }] : []),
-    { value: "cerrado", label: "Marcar como cerrada" },
-  ];
-
-  const enviar = async () => {
-    if (!current || sending) return;
-    const mensaje = texto.trim();
-    if (!mensaje && !manual) {
-      notify("Escribe una respuesta o elige cómo cerrar la solicitud.");
-      return;
-    }
-    if (manual === "resuelto" && !mensaje && !current.respuesta_pqr) {
-      notify("Para resolver la solicitud escribe la respuesta que recibirá el usuario.");
-      return;
-    }
-    // Responder pasa la solicitud a "En proceso"; resolver y cerrar son manuales.
-    const auto = mensaje && (current.estado_pqr === "abierto" || current.estado_pqr === "en_revision") ? "en_proceso" : "";
-    const nuevo = manual || auto;
-    setSending(true);
-    try {
-      const body: Record<string, string> = {};
-      if (mensaje) body.respuesta_pqr = mensaje;
-      if (nuevo && nuevo !== current.estado_pqr) body.estado_pqr = nuevo;
-      const res = await apiFetch(`/pqr/${current.id_pqr}/seguimiento`, {
-        method: "POST",
-        body: JSON.stringify(body),
-      });
-      if (res.pqr) setDetail(res.pqr);
-      setTexto("");
-      setManual("");
-      notify("Respuesta enviada");
-      await onChanged();
-    } catch (error) {
-      notify(error instanceof Error ? error.message : "No se pudo enviar la respuesta.");
-    } finally {
-      setSending(false);
-    }
+function PqrModal({ item, onClose, onSave }: { item: Pqr; onClose: () => void; onSave: (data: any) => Promise<void> }) {
+  const [estado, setEstado] = useState(item.estado_pqr);
+  const [respuesta, setRespuesta] = useState(item.respuesta_pqr ?? "");
+  const [saving, setSaving] = useState(false);
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault(); setSaving(true);
+    // Si hay respuesta y la PQR sigue activa (abierto / en proceso), pasa a "resuelto".
+    // Si el admin eligió "cerrado" o "resuelto" a mano, se respeta.
+    const tieneRespuesta = respuesta.trim().length > 0;
+    const estadoFinal: Pqr["estado_pqr"] =
+      tieneRespuesta && (estado === "abierto" || estado === "en_proceso") ? "resuelto" : estado;
+    try { await onSave({ estado_pqr: estadoFinal, respuesta_pqr: tieneRespuesta ? respuesta.trim() : null }); } finally { setSaving(false); }
   };
-
-  return (
-    <section className="section-view">
-      <div className="section-header">
-        <div><span className="card-kicker">GESTIÓN</span><h2>Solicitudes PQR</h2></div>
-      </div>
-      <div className="kpi-grid">
-        <Kpi icon={<MessageSquareText size={19} />} label="Total" value={total} />
-        {Object.entries(resumen).map(([estadoKey, cantidad]) => (
-          <Kpi key={estadoKey} icon={<Check size={19} />} label={pqrEstadoLabel(estadoKey)} value={cantidad ?? 0} />
-        ))}
-      </div>
-      <div className="dashboard-grid-main">
-        <div className="admin-card table-card">
-          <div className="table-scroll">
-            <table className="admin-table">
-              <thead><tr><th>ID</th><th>Solicitud</th><th>Fecha</th><th>Estado</th></tr></thead>
-              <tbody>
-                {visible.map((item) => (
-                  <tr
-                    key={item.id_pqr}
-                    className={item.id_pqr === selectedKey ? "apqr-row-active" : undefined}
-                    onClick={() => { clickedRef.current = true; setSelectedId(item.id_pqr); setClickTick((t) => t + 1); }}
-                  >
-                    <td>#{item.id_pqr}</td>
-                    <td>{item.mensaje_pqr}</td>
-                    <td>{dateTime(item.creado_en_pqr)}</td>
-                    <td><Badge value={item.estado_pqr} /></td>
-                  </tr>
-                ))}
-                {!visible.length && <tr><td colSpan={4}>No hay solicitudes PQR.</td></tr>}
-              </tbody>
-            </table>
-          </div>
-        </div>
-        {current && (
-          <section className="admin-card upcoming-card apqr-panel">
-            <div className="card-head"><div><span className="card-kicker">SOLICITUD #{current.id_pqr}</span><h2>Historial</h2></div></div>
-            <div className="apqr-thread">
-              {buildPqrThread(current).map((message) => (
-                <div className={`apqr-msg apqr-msg--${message.de}`} key={message.key}>
-                  {message.de === "sistema" ? (
-                    <span className="apqr-system">{message.texto}</span>
-                  ) : (
-                    <div className="apqr-bubble">
-                      <strong>{message.de === "cliente" ? "Cliente" : message.de === "equipo" ? "Equipo" : "Nota interna"}</strong>
-                      <p>{message.texto}</p>
-                      {message.fecha && <small>{dateTime(message.fecha)}</small>}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-            {cerrada ? (
-              <p className="apqr-closed">Esta solicitud está cerrada y ya no admite respuestas.</p>
-            ) : (
-              <div className="apqr-reply">
-                <textarea
-                  className="apqr-textarea"
-                  rows={3}
-                  maxLength={2000}
-                  value={texto}
-                  placeholder="Escribe tu respuesta al cliente"
-                  onChange={(e) => setTexto(e.target.value)}
-                />
-                <p className="apqr-hint">Al enviar un mensaje, la solicitud pasa a En proceso.</p>
-                <div className="apqr-reply-actions">
-                  <select className="apqr-select" value={manual} onChange={(e) => setManual(e.target.value)}>
-                    {manualOpciones.map((o) => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
-                  </select>
-                  <button type="button" className="primary-btn" disabled={sending} onClick={enviar}>
-                    {sending ? "Enviando…" : "Enviar respuesta"}
-                  </button>
-                </div>
-              </div>
-            )}
-          </section>
-        )}
-      </div>
-    </section>
-  );
+  return <Modal title={`PQR #${item.id_pqr}`} subtitle={item.asunto_pqr} onClose={onClose}>
+    <div className="pqr-detail">
+      <div className="pqr-meta"><span><strong>Tipo</strong>{human(item.tipo_pqr)}</span><span><strong>Estado</strong><Badge value={estado} /></span></div>
+      <div className="message-box"><span>Mensaje recibido</span><p>{item.mensaje_pqr}</p></div>
+      <form className="modal-form" onSubmit={submit}>
+        <Field label="Estado"><select value={estado} onChange={e => setEstado(e.target.value as Pqr["estado_pqr"])}><option value="abierto">Abierto</option><option value="en_proceso">En proceso</option><option value="resuelto">Resuelto</option><option value="cerrado">Cerrado</option></select></Field>
+        <Field label="Respuesta">
+          <textarea
+            rows={5}
+            maxLength={1000}
+            value={respuesta}
+            onChange={e => setRespuesta(e.target.value.slice(0, 1000))}
+            placeholder="Respuesta para el usuario…"
+          />
+          <small className="field-hint">{respuesta.length}/1000 caracteres</small>
+        </Field>
+        <div className="modal-actions"><button type="button" className="secondary-btn" onClick={onClose}>Cancelar</button><button className="primary-btn" disabled={saving}>{saving ? "Guardando…" : "Guardar respuesta"}</button></div>
+      </form>
+    </div>
+  </Modal>;
 }
-
 
 export default function Admin() {
   return <Protected><AdminPage /></Protected>;

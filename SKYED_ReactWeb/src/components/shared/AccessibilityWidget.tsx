@@ -33,7 +33,7 @@ export default function AccessibilityWidget({
 }: Props) {
   return (
     <>
-      <button className="acc-toggle"title="Accesibilidad" aria-label="Opciones de accesibilidad" onClick={onToggleOpen}>
+      <button className="acc-toggle" aria-label="Opciones de accesibilidad" onClick={onToggleOpen}>
         <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path d="M12 2a2 2 0 1 1 0 4 2 2 0 0 1 0-4zm0 6c1.1 0 2 .9 2 2v5h-1v5h-2v-5H9v-5c0-1.1.9-2 2-2z" />
         </svg>
