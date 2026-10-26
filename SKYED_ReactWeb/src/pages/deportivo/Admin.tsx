@@ -1,4 +1,3 @@
-import { perteneceAlModulo } from "../../utils/usersScope";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import jsQR from "jsqr";
@@ -22,7 +21,6 @@ import {
   QrCode,
   ScanLine,
   Search,
-  Settings,
   Tags,
   Trash2,
   Trophy,
@@ -36,7 +34,6 @@ import Protected from "../../components/Protected";
 import { useAuth } from "../../context/AuthContext";
 import { useAccessibility } from "../../context/AccessibilityContext";
 import AccessibilityWidget from "../../components/shared/AccessibilityWidget";
-import AdminAjustes from "../../components/shared/AdminAjustes";
 import { apiFetch } from "../../services/api";
 import { prepararImagen } from "../../utils/prepararImagen";
 // Base del panel: mismo diseño del panel social con la paleta deportiva
@@ -51,8 +48,7 @@ type Section =
   | "acceso"
   | "resultados"
   | "kits"
-  | "usuarios"
-  | "ajustes";
+  | "usuarios";
 
 type Categoria = {
   id: number;
@@ -139,7 +135,7 @@ type UserRow = {
   apellido_u?: string;
   correo_u: string;
   estado_u?: string;
-  roles?: Array<{ nombre_rol: string; pivot?: { contexto?: string } }>;
+  roles?: Array<{ nombre_rol: string }>;
 };
 
 type Ingreso = { ok: boolean; titulo: string; detalle: string[]; hora: string };
@@ -446,8 +442,7 @@ function AdminPage() {
       setResultados(r.resultados?.data ?? []);
       try {
         const u = await apiFetch("/users?per_page=200");
-        // El admin deportivo solo ve usuarios con algún rol del módulo deportivo.
-        setUsers((u.data ?? []).filter((x: UserRow) => perteneceAlModulo(x, "deportivo")));
+        setUsers(u.data ?? []);
       } catch {
         // El panel funciona aunque la API de usuarios no responda.
       }
@@ -537,7 +532,6 @@ function AdminPage() {
     resultados: { label: "Resultados", icon: Trophy },
     kits: { label: "Kits", icon: Package },
     usuarios: { label: "Usuarios", icon: Users },
-    ajustes: { label: "Ajustes", icon: Settings },
   };
 
   const accent = accentOverride ?? "#2c9caf";
@@ -612,7 +606,7 @@ function AdminPage() {
 
         <nav className="sidebar-nav">
           <p className="nav-caption">GESTIÓN</p>
-          {(Object.keys(sectionMeta) as Section[]).filter(key => key !== "ajustes").map(key => {
+          {(Object.keys(sectionMeta) as Section[]).map(key => {
             const Icon = sectionMeta[key].icon;
             return (
               <button
@@ -626,23 +620,11 @@ function AdminPage() {
               </button>
             );
           })}
-
-          <p className="nav-caption">CUENTA</p>
-          <button
-            className={`admin-nav-item ${section === "ajustes" ? "active" : ""}`}
-            onClick={() => selectSection("ajustes")}
-            title={sectionMeta.ajustes.label}
-          >
-            <Settings size={18} />
-            <span>{sectionMeta.ajustes.label}</span>
-          </button>
         </nav>
 
         <div className="sidebar-footer">
           <div className="admin-avatar">
-            {user.foto_url
-              ? <img src={user.foto_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} />
-              : user.name?.split(" ").map(x => x[0]).slice(0, 2).join("").toUpperCase()}
+            {user.name?.split(" ").map(x => x[0]).slice(0, 2).join("").toUpperCase()}
           </div>
           <div className="admin-user">
             <strong>{user.name}</strong>
@@ -660,7 +642,7 @@ function AdminPage() {
             <span className="admin-eyebrow">ADMINISTRACIÓN</span>
             <h1>{sectionMeta[section].label}</h1>
           </div>
-          {section !== "acceso" && section !== "inicio" && section !== "ajustes" && (
+          {section !== "acceso" && section !== "inicio" && (
             <label className="admin-search">
               <Search size={17} />
               <input
@@ -878,8 +860,6 @@ function AdminPage() {
           </SectionTable>
         )}
 
-        {section === "ajustes" && <AdminAjustes modulo="deportivo" />}
-
         {section === "usuarios" && (
           <SectionTable
             title="Usuarios registrados"
@@ -890,7 +870,7 @@ function AdminPage() {
               {users.filter(u => filtered(`${u.nombre_u} ${u.apellido_u ?? ""} ${u.correo_u}`)).map(u => (
                 <tr key={u.id_u}>
                   <td>#{u.id_u}</td><td>{u.nombre_u} {u.apellido_u ?? ""}</td><td>{u.correo_u}</td>
-                  <td>{u.roles?.filter(r => r.pivot?.contexto === "deportivo").map(r => r.nombre_rol).join(", ") || "—"}</td>
+                  <td>{u.roles?.map(r => r.nombre_rol).join(", ") || "—"}</td>
                   <td><Badge value={u.estado_u ?? "activo"} /></td>
                 </tr>
               ))}

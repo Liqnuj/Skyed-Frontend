@@ -17,7 +17,7 @@ export interface RegisterData {
 
 interface AuthContextValue {
   user: User | null;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (identificacion: string, contrasena_u: string) => Promise<boolean>;
   register: (userData: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   deleteAccount: () => Promise<void>;
@@ -65,18 +65,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return raw ? JSON.parse(raw) : null;
   });
 
-  useEffect(() => {
-    if (user) localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-    else localStorage.removeItem(STORAGE_KEY);
-  }, [user]);
+useEffect(() => {
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === 'skyed_token' && !event.newValue) {
+        setToken(null);
+        setUser(null);
+        window.location.href = '/login'; 
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
 
   const value = useMemo<AuthContextValue>(() => ({
     user,
 
-    async login(email, password) {
+    async login(identificacion, password) {
       const data = await apiFetch('/login', {
         method: 'POST',
-        body: JSON.stringify({ correo_u: email, contrasena_u: password }),
+        body: JSON.stringify({ identificacion, contrasena_u: password }),
       });
 
       setToken(data.token);
