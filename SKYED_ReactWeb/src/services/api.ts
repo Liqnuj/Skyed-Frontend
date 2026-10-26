@@ -50,8 +50,14 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
   });
 
   if (res.status === 401) {
+    const errorData = leerJson(await res.text());
+    
+    if (path === '/login') {
+      throw new Error(errorData.message || 'Credenciales incorrectas.');
+    }
+
     localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem('skyed_user');
+    localStorage.removeItem('skyed_user'); 
     window.location.href = '/login'; 
     throw new Error('Sesión expirada');
   }

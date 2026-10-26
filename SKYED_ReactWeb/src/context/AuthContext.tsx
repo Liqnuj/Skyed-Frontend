@@ -17,7 +17,7 @@ export interface RegisterData {
 
 interface AuthContextValue {
   user: User | null;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (identificacion: string, contrasena_u: string) => Promise<boolean>;
   register: (userData: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   deleteAccount: () => Promise<void>;
@@ -84,10 +84,10 @@ useEffect(() => {
   const value = useMemo<AuthContextValue>(() => ({
     user,
 
-    async login(email, password) {
+    async login(identificacion, password) {
       const data = await apiFetch('/login', {
         method: 'POST',
-        body: JSON.stringify({ correo_u: email, contrasena_u: password }),
+        body: JSON.stringify({ identificacion, contrasena_u: password }),
       });
 
       setToken(data.token);
