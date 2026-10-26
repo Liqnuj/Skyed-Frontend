@@ -1553,21 +1553,113 @@
   max-height: calc(100dvh - 96px - 1.5rem);
 }
 
-.pf-hide-btn {
-  align-self: flex-start;
-  margin-top: 14px;
+/* ===== Confirmación (prefijo pfc-) ===== */
+.mod-social .pfc-backdrop {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  padding: 1.5rem;
+  background: rgba(20, 1, 30, .72);
+  backdrop-filter: blur(3px);
+  z-index: 900; /* sobre los modales (60), bajo el toast (1000) */
+  animation: pfc-fade .18s ease-out;
+}
+.mod-social .pfc-card {
+  width: 100%; max-width: 380px;
+  padding: 1.75rem 1.5rem 1.4rem;
+  border-radius: 20px;
+  border: 1px solid var(--border, rgba(0, 0, 0, .08));
+  background: var(--white);
+  color: var(--plum);
+  text-align: center;
+  box-shadow: 0 24px 60px rgba(20, 1, 30, .45);
+  animation: pfc-pop .22s cubic-bezier(.2, .9, .3, 1.2);
+}
+.mod-social.dark-mode .pfc-card {
+  background: var(--plum-mid, #241238);
+  border-color: rgba(255, 255, 255, .08);
+  color: var(--white);
+}
+.mod-social .pfc-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 54px; height: 54px; margin-bottom: .8rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+  font-size: calc(1.5rem * var(--fs-scale, 1));
+}
+.mod-social .pfc-title {
+  margin: 0 0 .4rem;
+  font-family: 'Playfair Display', serif;
+  font-size: calc(1.3rem * var(--fs-scale, 1));
+  color: var(--plum);
+}
+.mod-social.dark-mode .pfc-title { color: var(--white); }
+.mod-social .pfc-text {
+  margin: 0 0 1.3rem;
+  font-size: calc(.9rem * var(--fs-scale, 1));
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+.mod-social .pfc-actions { display: flex; gap: .6rem; }
+.mod-social .pfc-btn {
+  flex: 1;
+  padding: .7rem 1rem;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 600;
+  font-size: calc(.9rem * var(--fs-scale, 1));
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.mod-social .pfc-btn--ghost {
+  border: 1.5px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  background: transparent;
+  color: var(--accent);
+}
+.mod-social .pfc-btn--ghost:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.mod-social .pfc-btn--main {
+  border: 1.5px solid transparent;
+  background: var(--accent);
+  color: #fff;
+}
+.mod-social .pfc-btn--main:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.mod-social .pfc-btn:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 40%, transparent); outline-offset: 2px; }
+@keyframes pfc-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pfc-pop { from { opacity: 0; transform: scale(.94) translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .mod-social .pfc-backdrop, .mod-social .pfc-card { animation: none; }
+}
+@media (max-width: 420px) {
+  .mod-social .pfc-actions { flex-direction: column-reverse; }
+}
+
+/* 
+/* ===== Botón ocultar / mostrar de mi lista (restaurado) === */
+.mod-social .pf-hide-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
+  gap: .4rem;
+  margin-top: 1rem;
+  padding: .55rem 1.1rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
   background: transparent;
-  color: inherit;
+  color: var(--accent);
   font: inherit;
-  font-size: 0.8rem;
-  opacity: 0.75;
+  font-size: calc(.85rem * var(--fs-scale, 1));
+  font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.15s, border-color 0.15s;
+  transition: background .15s ease, transform .15s ease;
 }
-.pf-hide-btn:hover { opacity: 1; border-color: #e879f9; }
+.mod-social .pf-hide-btn:hover {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  transform: translateY(-1px);
+}
+.mod-social .pf-hide-btn:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  outline-offset: 2px;
+} 
+

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import type { FormEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Protected from '../../components/Protected';
 import SocialWrapper from '../../components/social/SocialWrapper';
@@ -441,6 +442,53 @@ function construirConversacion(pqr: PqrConSeguimientos): MensajePqr[] {
   return msgs;
 }
 
+interface PfConfirmarProps {
+  titulo: string;
+  texto: string;
+  confirmar: string;
+  onConfirmar: () => void;
+  onCancelar: () => void;
+}
+
+/** Ventana de confirmación con el estilo del sitio (reemplaza window.confirm). */
+function PfConfirmar({ titulo, texto, confirmar, onConfirmar, onCancelar }: PfConfirmarProps) {
+  const cancelarRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    cancelarRef.current?.focus();
+    // En fase de captura: Escape cierra solo esta ventana y no el detalle de abajo.
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.stopPropagation();
+      onCancelar();
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [onCancelar]);
+
+  return createPortal(
+    <div className="pfc-backdrop" role="presentation" onClick={(e) => { e.stopPropagation(); onCancelar(); }}>
+      <div
+        className="pfc-card"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="pfc-titulo"
+        aria-describedby="pfc-texto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <span className="pfc-icon" aria-hidden="true"><i className="ti ti-eye-off" /></span>
+        <h3 id="pfc-titulo" className="pfc-title">{titulo}</h3>
+        <p id="pfc-texto" className="pfc-text">{texto}</p>
+        <div className="pfc-actions">
+          <button ref={cancelarRef} type="button" className="pfc-btn pfc-btn--ghost" onClick={onCancelar}>Cancelar</button>
+          <button type="button" className="pfc-btn pfc-btn--main" onClick={onConfirmar}>{confirmar}</button>
+        </div>
+      </div>
+    </div>,
+    document.querySelector('.mod-social') ?? document.body,
+  );
+}
+
 interface PqrDetalleProps {
   pqr: PqrConSeguimientos;
   onClose: () => void;
@@ -454,9 +502,10 @@ interface PqrDetalleProps {
 
 function PqrDetalle({ pqr, onClose, onEnviar, onOcultar, oculta }: PqrDetalleProps) {
   const puedeOcultar = !['en_proceso', 'en_revision'].includes(pqr.estado_pqr);
+  const [confirmando, setConfirmando] = useState(false);
   const ocultar = () => {
     if (oculta) { onOcultar(); return; }
-    if (window.confirm('¿Ocultar esta PQR de tu lista? El equipo conserva el registro.')) onOcultar();
+    setConfirmando(true);
   };
   const [texto, setTexto] = useState('');
   const [enviando, setEnviando] = useState(false);
@@ -571,6 +620,15 @@ function PqrDetalle({ pqr, onClose, onEnviar, onOcultar, oculta }: PqrDetallePro
             {oculta ? ' Mostrar en mi lista' : ' Ocultar de mi lista'}
           </button>
         )}
+        {confirmando && (
+          <PfConfirmar
+            titulo="¿Ocultar esta PQR?"
+            texto="Dejará de verse en tu lista, pero el equipo conserva el registro. La encuentras en “Ocultas”."
+            confirmar="Sí, ocultar"
+            onConfirmar={() => { setConfirmando(false); onOcultar(); }}
+            onCancelar={() => setConfirmando(false)}
+          />
+        )}
       </div>
     </div>
   );
@@ -626,9 +684,10 @@ interface ReservaDetalleProps {
 
 function ReservaDetalle({ reserva, onClose, onRenombrar, onOcultar, oculta }: ReservaDetalleProps) {
   const puedeOcultar = ['cancelada', 'completada'].includes(reserva.estado_rese);
+  const [confirmando, setConfirmando] = useState(false);
   const ocultar = () => {
     if (oculta) { onOcultar(); return; }
-    if (window.confirm('¿Ocultar esta reserva de tu lista? El equipo conserva el registro.')) onOcultar();
+    setConfirmando(true);
   };
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -813,6 +872,15 @@ function ReservaDetalle({ reserva, onClose, onRenombrar, onOcultar, oculta }: Re
               <i className={`ti ${oculta ? 'ti-eye' : 'ti-eye-off'}`} aria-hidden="true" />
               {oculta ? ' Mostrar en mi lista' : ' Ocultar de mi lista'}
             </button>
+          )}
+          {confirmando && (
+            <PfConfirmar
+              titulo="¿Ocultar esta reserva?"
+              texto="Dejará de verse en tu lista, pero el equipo conserva el registro. La encuentras en “Ocultas”."
+              confirmar="Sí, ocultar"
+              onConfirmar={() => { setConfirmando(false); onOcultar(); }}
+              onCancelar={() => setConfirmando(false)}
+            />
           )}
         </div>
       </div>
