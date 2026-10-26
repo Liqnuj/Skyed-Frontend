@@ -10,7 +10,7 @@ import { useAuth } from '../../context/AuthContext';
 import { apiFetch } from '../../services/api';
 import { pqrService, reservaService } from '../../services/socialService';
 import type { Pqr, PqrSeguimiento, Reserva, TipoPqr } from '../../services/socialService';
-import { PqrEstadoPill, PqrPlazoChip, PqrStepper } from '../../components/social/pqr/PqrTracker';
+import { PqrEstadoPill, PqrStepper } from '../../components/social/pqr/PqrTracker';
 import { ESTADO_COLOR, ESTADO_LABEL, FASES, TIPO_LABEL, indiceFase } from '../../utils/pqr';
 import { prepararImagen } from '../../utils/prepararImagen';
 import { errorContrasena } from '../../utils/validaciones';
@@ -498,7 +498,6 @@ function PqrDetalle({ pqr, onClose, onEnviar }: PqrDetalleProps) {
           <div className="pf-pqr-meta">
             <span className="pf-item-code">{pqr.radicado ?? `SS-PQR-${pqr.id_pqr}`}</span>
             <PqrEstadoPill estado={pqr.estado_pqr} />
-            <PqrPlazoChip pqr={pqr} />
           </div>
 
           <PqrStepper estado={pqr.estado_pqr} />

@@ -1339,6 +1339,8 @@ function AdminPqrManager({
   resumen,
   total,
   search,
+  onChanged,
+  notify,
 }: {
   pqrs: Pqr[];
   resumen: Partial<Record<EstadoPqr, number>>;
@@ -1348,12 +1350,98 @@ function AdminPqrManager({
   notify: (message: string) => void;
 }) {
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  // La lista /pqr no trae los seguimientos; el detalle sí (GET /pqr/{id}).
+  const [detail, setDetail] = useState<Pqr | null>(null);
+  const [texto, setTexto] = useState("");
+  // "" = sin cambio manual. Solo "resuelto" y "cerrado" se eligen a mano.
+  const [manual, setManual] = useState("");
+  const [sending, setSending] = useState(false);
+  const clickedRef = useRef(false);
+  const [clickTick, setClickTick] = useState(0);
+
   const visible = pqrs.filter((item) =>
     `${item.id_pqr} ${item.mensaje_pqr} ${item.estado_pqr}`
       .toLowerCase()
       .includes(search.toLowerCase()),
   );
   const selected = visible.find((item) => item.id_pqr === selectedId) ?? visible[0];
+  const selectedKey = selected?.id_pqr ?? null;
+  const current = detail && detail.id_pqr === selectedKey ? detail : selected;
+
+  // Abrir una solicitud con un clic la pasa de "Radicada" a "En revisión".
+  useEffect(() => {
+    setTexto("");
+    setManual("");
+    setDetail((d) => (d && d.id_pqr === selectedKey ? d : null));
+    if (selectedKey == null) return;
+    const porClic = clickedRef.current;
+    clickedRef.current = false;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await apiFetch(`/pqr/${selectedKey}`);
+        let pqr: Pqr | null = res.pqr ?? null;
+        if (porClic && pqr && pqr.estado_pqr === "abierto") {
+          try {
+            const r = await apiFetch(`/pqr/${selectedKey}/seguimiento`, {
+              method: "POST",
+              body: JSON.stringify({ estado_pqr: "en_revision" }),
+            });
+            pqr = r.pqr ?? pqr;
+            onChanged();
+          } catch {
+            // Si falla el cambio automático, igual se muestra la solicitud.
+          }
+        }
+        if (!cancelled) setDetail(pqr);
+      } catch (error) {
+        if (!cancelled) notify(error instanceof Error ? error.message : "No se pudo cargar el historial.");
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [selectedKey, clickTick]);
+
+  const cerrada = current?.estado_pqr === "cerrado";
+  const manualOpciones = [
+    { value: "", label: "Sin cambiar el estado" },
+    ...(current?.estado_pqr !== "resuelto" ? [{ value: "resuelto", label: "Marcar como resuelta" }] : []),
+    { value: "cerrado", label: "Marcar como cerrada" },
+  ];
+
+  const enviar = async () => {
+    if (!current || sending) return;
+    const mensaje = texto.trim();
+    if (!mensaje && !manual) {
+      notify("Escribe una respuesta o elige cómo cerrar la solicitud.");
+      return;
+    }
+    if (manual === "resuelto" && !mensaje && !current.respuesta_pqr) {
+      notify("Para resolver la solicitud escribe la respuesta que recibirá el usuario.");
+      return;
+    }
+    // Responder pasa la solicitud a "En proceso"; resolver y cerrar son manuales.
+    const auto = mensaje && (current.estado_pqr === "abierto" || current.estado_pqr === "en_revision") ? "en_proceso" : "";
+    const nuevo = manual || auto;
+    setSending(true);
+    try {
+      const body: Record<string, string> = {};
+      if (mensaje) body.respuesta_pqr = mensaje;
+      if (nuevo && nuevo !== current.estado_pqr) body.estado_pqr = nuevo;
+      const res = await apiFetch(`/pqr/${current.id_pqr}/seguimiento`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      if (res.pqr) setDetail(res.pqr);
+      setTexto("");
+      setManual("");
+      notify("Respuesta enviada");
+      await onChanged();
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "No se pudo enviar la respuesta.");
+    } finally {
+      setSending(false);
+    }
+  };
 
   return (
     <section className="section-view">
@@ -1362,8 +1450,8 @@ function AdminPqrManager({
       </div>
       <div className="kpi-grid">
         <Kpi icon={<MessageSquareText size={19} />} label="Total" value={total} />
-        {Object.entries(resumen).map(([estado, cantidad]) => (
-          <Kpi key={estado} icon={<Check size={19} />} label={pqrEstadoLabel(estado)} value={cantidad ?? 0} />
+        {Object.entries(resumen).map(([estadoKey, cantidad]) => (
+          <Kpi key={estadoKey} icon={<Check size={19} />} label={pqrEstadoLabel(estadoKey)} value={cantidad ?? 0} />
         ))}
       </div>
       <div className="dashboard-grid-main">
@@ -1373,7 +1461,11 @@ function AdminPqrManager({
               <thead><tr><th>ID</th><th>Solicitud</th><th>Fecha</th><th>Estado</th></tr></thead>
               <tbody>
                 {visible.map((item) => (
-                  <tr key={item.id_pqr} onClick={() => setSelectedId(item.id_pqr)}>
+                  <tr
+                    key={item.id_pqr}
+                    className={item.id_pqr === selectedKey ? "apqr-row-active" : undefined}
+                    onClick={() => { clickedRef.current = true; setSelectedId(item.id_pqr); setClickTick((t) => t + 1); }}
+                  >
                     <td>#{item.id_pqr}</td>
                     <td>{item.mensaje_pqr}</td>
                     <td>{dateTime(item.creado_en_pqr)}</td>
@@ -1385,20 +1477,49 @@ function AdminPqrManager({
             </table>
           </div>
         </div>
-        {selected && (
-          <section className="admin-card upcoming-card">
-            <div className="card-head"><div><span className="card-kicker">SOLICITUD #{selected.id_pqr}</span><h2>Historial</h2></div></div>
-            <div className="reservation-list">
-              {buildPqrThread(selected).map((message) => (
-                <div className="reservation-item" key={message.key}>
-                  <div className="reservation-main">
-                    <strong>{human(message.de)}</strong>
-                    <span>{message.texto}</span>
-                    {message.fecha && <small>{dateTime(message.fecha)}</small>}
-                  </div>
+        {current && (
+          <section className="admin-card upcoming-card apqr-panel">
+            <div className="card-head"><div><span className="card-kicker">SOLICITUD #{current.id_pqr}</span><h2>Historial</h2></div></div>
+            <div className="apqr-thread">
+              {buildPqrThread(current).map((message) => (
+                <div className={`apqr-msg apqr-msg--${message.de}`} key={message.key}>
+                  {message.de === "sistema" ? (
+                    <span className="apqr-system">{message.texto}</span>
+                  ) : (
+                    <div className="apqr-bubble">
+                      <strong>{message.de === "cliente" ? "Cliente" : message.de === "equipo" ? "Equipo" : "Nota interna"}</strong>
+                      <p>{message.texto}</p>
+                      {message.fecha && <small>{dateTime(message.fecha)}</small>}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
+            {cerrada ? (
+              <p className="apqr-closed">Esta solicitud está cerrada y ya no admite respuestas.</p>
+            ) : (
+              <div className="apqr-reply">
+                <textarea
+                  className="apqr-textarea"
+                  rows={3}
+                  maxLength={2000}
+                  value={texto}
+                  placeholder="Escribe tu respuesta al cliente"
+                  onChange={(e) => setTexto(e.target.value)}
+                />
+                <p className="apqr-hint">Al enviar un mensaje, la solicitud pasa a En proceso.</p>
+                <div className="apqr-reply-actions">
+                  <select className="apqr-select" value={manual} onChange={(e) => setManual(e.target.value)}>
+                    {manualOpciones.map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                  <button type="button" className="primary-btn" disabled={sending} onClick={enviar}>
+                    {sending ? "Enviando…" : "Enviar respuesta"}
+                  </button>
+                </div>
+              </div>
+            )}
           </section>
         )}
       </div>
