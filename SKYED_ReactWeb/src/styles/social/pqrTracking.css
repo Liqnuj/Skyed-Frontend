@@ -83,8 +83,10 @@
 .pqrx-stepper {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  margin: 0.4rem 0 0.2rem;
+  /* --n = número de fases visibles (Radicada, En proceso, Resuelta, Cerrada) */
+  --n: 4;
+  grid-template-columns: repeat(var(--n), 1fr);
+  margin: 0.4rem 0 1.5rem;
 }
 /* línea de fondo y línea recorrida: van de la 1.ª a la última parada */
 .pqrx-stepper::before,
@@ -92,16 +94,16 @@
   content: '';
   position: absolute;
   top: 16px;
-  left: 10%;
+  left: calc(50% / var(--n));
   height: 3px;
   border-radius: 3px;
 }
 .pqrx-stepper::before {
-  right: 10%;
+  right: calc(50% / var(--n));
   background: var(--pq-line);
 }
 .pqrx-stepper::after {
-  width: calc(var(--avance, 0%) * 0.8);
+  width: calc(var(--avance, 0%) * (var(--n) - 1) / var(--n));
   background: var(--pq-accent);
   transition: width 0.6s cubic-bezier(0.3, 0.8, 0.3, 1);
 }
@@ -638,4 +640,9 @@
   .pqrx-drawer-backdrop,
   .pqrx-skeleton { animation: none; }
   .pqrx-stepper::after { transition: none; }
+}
+
+/* separa el historial de mensajes de la línea del tiempo */
+.pqrx + .pf-thread {
+  margin-top: 1.5rem;
 }
