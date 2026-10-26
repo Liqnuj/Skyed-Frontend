@@ -847,8 +847,7 @@
   background: rgba(255, 255, 255, 0.08);
   color: rgba(232, 228, 222, 0.6);
 }.mod-social nav {
-  background:rgb(248 231 253 / 96%);
-
+  background:rgba(255, 255, 255, 0.96);
 }.mod-social.dark-mode nav {
   background:#14011e;
 }.mod-social.dark-mode .nav-logo {

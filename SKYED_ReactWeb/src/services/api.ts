@@ -48,23 +48,10 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
       ...options.headers,
     },
   });
-
-  if (res.status === 401) {
-    const errorData = leerJson(await res.text());
-    
-    if (path === '/login') {
-      throw new Error(errorData.message || 'Credenciales incorrectas.');
-    }
-
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem('skyed_user'); 
-    window.location.href = '/login'; 
-    throw new Error('Sesión expirada');
-  }
-
   const data = leerJson(await res.text());
-  
   if (!res.ok) {
+    // Laravel responde "Too Many Attempts." en inglés cuando se pasa el
+    // límite de intentos (por ejemplo 3 logins fallidos en un minuto).
     if (res.status === 429) {
       throw new Error(data.message && data.message !== 'Too Many Attempts.'
         ? data.message
@@ -76,7 +63,5 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
     }
     throw new Error(data.message ?? 'Error en la petición');
   }
-  
   return data;
 }
-
