@@ -1055,3 +1055,179 @@
   min-width: 0;
   overflow-wrap: anywhere;
 }
+
+/* Filtros de Inscripciones e Historial.
+   Guárdalo como src/styles/deportivo/filtros-participante.css
+   (Participant.tsx ya lo importa). No lo pegues en participante.css. */
+
+.part-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0 0 1.1rem;
+  font-size: 0.875rem;
+}
+
+.part-toolbar .part-toolbar-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 170px 190px;
+  gap: 0.5rem;
+}
+
+/* Buscador: el input va sin fondo propio; el fondo lo pone el contenedor */
+.part-toolbar .part-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 38px;
+  padding: 0 0.75rem;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+  background: color-mix(in srgb, currentColor 5%, transparent);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.part-toolbar .part-search:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.part-toolbar .part-search i {
+  font-size: 1rem;
+  opacity: 0.6;
+  flex: none;
+}
+.part-toolbar .part-search input {
+  all: unset;
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 0.875rem;
+  color: inherit;
+  background: transparent !important;
+  box-shadow: none !important;
+  border: 0 !important;
+}
+.part-toolbar .part-search input::placeholder {
+  color: inherit;
+  opacity: 0.5;
+}
+.part-toolbar .part-search input::-webkit-search-cancel-button { cursor: pointer; }
+
+/* Selectores con flecha propia */
+.part-toolbar .part-tool-select {
+  appearance: none;
+  -webkit-appearance: none;
+  height: 38px;
+  width: 100%;
+  padding: 0 2rem 0 0.75rem;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+  background-color: color-mix(in srgb, currentColor 5%, transparent);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239aa3b2' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.7rem center;
+  color: inherit;
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+  text-overflow: ellipsis;
+}
+.part-toolbar .part-tool-select:focus {
+  outline: 0;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.part-toolbar .part-tool-select option { color: initial; }
+
+/* Chips */
+.part-toolbar .part-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.part-toolbar .part-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: 30px;
+  padding: 0 0.7rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.8rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.part-toolbar .part-chip:hover { border-color: var(--accent); }
+.part-toolbar .part-chip.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast, #fff);
+  font-weight: 600;
+}
+.part-toolbar .part-chip-count {
+  min-width: 1.2rem;
+  padding: 0.12rem 0.35rem;
+  border-radius: 999px;
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: color-mix(in srgb, currentColor 14%, transparent);
+}
+.part-toolbar .part-chip.active .part-chip-count {
+  background: color-mix(in srgb, currentColor 22%, transparent);
+}
+
+/* Fechas personalizadas */
+.part-toolbar .part-toolbar-dates {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.part-toolbar .part-toolbar-dates label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+}
+.part-toolbar .part-toolbar-dates input {
+  flex: 1;
+  min-width: 0;
+  height: 38px;
+  padding: 0 0.65rem;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+  background: color-mix(in srgb, currentColor 5%, transparent);
+  color: inherit;
+  font: inherit;
+  font-size: 0.85rem;
+  color-scheme: inherit;
+}
+
+/* Pie */
+.part-toolbar .part-toolbar-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.78rem;
+  opacity: 0.75;
+}
+.part-tool-clear {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+@media (max-width: 720px) {
+  .part-toolbar .part-toolbar-row { grid-template-columns: 1fr 1fr; }
+  .part-toolbar .part-search { grid-column: 1 / -1; }
+}
+@media (max-width: 420px) {
+  .part-toolbar .part-toolbar-row,
+  .part-toolbar .part-toolbar-dates { grid-template-columns: 1fr; }
+}
