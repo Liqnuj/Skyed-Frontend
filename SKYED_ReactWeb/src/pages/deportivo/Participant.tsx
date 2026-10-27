@@ -628,27 +628,35 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
       </div>
 
       <div className="part-body">
-        <aside>
-          <div className="part-card">
-            <div className="part-card-head"><h3>Información</h3></div>
-            <div className="part-card-body">
-              <div className="part-info-row"><span className="part-info-label">Rol</span><span className="part-info-value">{user?.role === 'admin' ? 'Administrador' : 'Participante'}</span></div>
-              <div className="part-info-row"><span className="part-info-label">Correo</span><span className="part-info-value">{user?.email || '—'}</span></div>
-              <div className="part-info-row"><span className="part-info-label">Teléfono</span><span className="part-info-value">{user?.telefono || '—'}</span></div>
-              <div className="part-info-row"><span className="part-info-label">Ciudad</span><span className="part-info-value">{user?.ciudad || '—'}</span></div>
-              <div className="part-info-row"><span className="part-info-label">Documento</span><span className="part-info-value">{user?.documento ? `${tipoDocumentoLabel(user.tipo_documento)} ${user.documento}` : '—'}</span></div>
-              <div className="part-info-row"><span className="part-info-label">RH</span><span className="part-info-value">{user?.rh && user.rh !== 'N/A' ? user.rh : '—'}</span></div>
-              <div className="part-info-row"><span className="part-info-label">Nacimiento</span><span className="part-info-value">{fmtFechaLarga(user?.fecha_nacimiento)}</span></div>
-            </div>
-          </div>
-          <div className="part-card">
-            <div className="part-card-head"><h3>Disciplinas</h3></div>
-            <div className="part-card-body">
-              <div className="part-tags">
-                <span className="part-tag"><i className="ti ti-bike" aria-hidden="true" /> Ruta</span>
+        <aside className="part-info-aside">
+          <details className="part-info-details">
+            <summary className="part-info-summary">
+              <i className="ti ti-info-circle" aria-hidden="true" /> Ver información del perfil
+              <i className="ti ti-chevron-down part-info-chevron" aria-hidden="true" />
+            </summary>
+            
+            <div className="part-info-content">
+              <div className="part-card">
+                <div className="part-card-head"><h3>Información</h3></div>
+                <div className="part-card-body">
+                  <div className="part-info-row"><span className="part-info-label">Rol</span><span className="part-info-value">{user?.role === 'admin' ? 'Administrador' : 'Participante'}</span></div>
+                  <div className="part-info-row"><span className="part-info-label">Correo</span><span className="part-info-value">{user?.email || '—'}</span></div>
+                  <div className="part-info-row"><span className="part-info-label">Teléfono</span><span className="part-info-value">{user?.telefono || '—'}</span></div>
+                  <div className="part-info-row"><span className="part-info-label">Ciudad</span><span className="part-info-value">{user?.ciudad || '—'}</span></div>
+                  <div className="part-info-row"><span className="part-info-label">Documento</span><span className="part-info-value">{user?.documento ? `${tipoDocumentoLabel(user.tipo_documento)} ${user.documento}` : '—'}</span></div>
+                  <div className="part-info-row"><span className="part-info-label">Nacimiento</span><span className="part-info-value">{fmtFechaLarga(user?.fecha_nacimiento)}</span></div>
+                </div>
+              </div>
+              <div className="part-card">
+                <div className="part-card-head"><h3>Disciplinas</h3></div>
+                <div className="part-card-body">
+                  <div className="part-tags">
+                    <span className="part-tag"><i className="ti ti-bike" aria-hidden="true" /> Ruta</span>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          </details>
         </aside>
 
         <div>
