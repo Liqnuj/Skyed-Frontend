@@ -39,6 +39,17 @@ const MENSAJE_BIENVENIDA =
  * prototipo elegía con pestañas ahora se detecta solo, según la
  * sección del sitio en la que estés.
  */
+/** Clave donde se recuerda si el usuario ocultó el botón de SKAI. */
+const CLAVE_OCULTO = 'skai_oculto';
+
+function leerOculto() {
+  try {
+    return localStorage.getItem(CLAVE_OCULTO) === '1';
+  } catch {
+    return false;
+  }
+}
+
 export default function SkaiWidget() {
   const location = useLocation();
 
@@ -56,6 +67,8 @@ export default function SkaiWidget() {
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  // Oculto = solo queda una pestaña pequeña en el borde para volver a mostrarlo.
+  const [oculto, setOculto] = useState(leerOculto);
 
   const nextId = useRef(1);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -91,6 +104,19 @@ export default function SkaiWidget() {
 
   function closePanel() {
     setOpen(false);
+  }
+
+  function cambiarOculto(valor: boolean) {
+    setOculto(valor);
+    if (valor) {
+      setOpen(false);
+      setTeaserVisible(false);
+    }
+    try {
+      localStorage.setItem(CLAVE_OCULTO, valor ? '1' : '0');
+    } catch {
+      // Sin almacenamiento (modo privado): solo dura mientras la página esté abierta.
+    }
   }
 
   async function sendMessage(text: string) {
@@ -132,9 +158,23 @@ export default function SkaiWidget() {
   }
 
   return (
-    <div id="skyed-assistant-root" data-skai-theme={context}>
+    <div id="skyed-assistant-root" data-skai-theme={context} className={oculto ? 'is-hidden' : ''}>
+      {/* Pestaña para volver a mostrar SKAI cuando está oculto */}
+      <button
+        type="button"
+        className="skyed-restore"
+        title="Mostrar a SKAI"
+        aria-label="Mostrar el asistente SKAI"
+        onClick={() => cambiarOculto(false)}
+      >
+        <SkaiLogo />
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M9 6l6 6-6 6" />
+        </svg>
+      </button>
+
       <div
-        className={`skyed-teaser ${teaserVisible ? 'is-visible' : ''}`}
+        className={`skyed-teaser ${teaserVisible && !oculto ? 'is-visible' : ''}`}
         onClick={openPanel}
         role="button"
         tabIndex={0}
@@ -142,15 +182,29 @@ export default function SkaiWidget() {
         ¿Necesitas ayuda para elegir tu evento?
       </div>
 
-      <button
-        className="skyed-fab"
-        title={open ? 'Cerrar SKAI' : 'SKAI - Asistente virtual de SKYED'}
-        aria-label={open ? 'Cerrar asistente Skyed' : 'Abrir asistente Skyed'}
-        onClick={() => (open ? closePanel() : openPanel())}
-      >
-        <span className={`skyed-fab-badge ${badgeVisible ? 'is-visible' : ''}`} />
-        <SkaiLogo />
-      </button>
+      <div className="skyed-dock">
+        <button
+          className="skyed-fab"
+          title={open ? 'Cerrar SKAI' : 'SKAI - Asistente virtual de SKYED'}
+          aria-label={open ? 'Cerrar asistente Skyed' : 'Abrir asistente Skyed'}
+          onClick={() => (open ? closePanel() : openPanel())}
+        >
+          <span className={`skyed-fab-badge ${badgeVisible ? 'is-visible' : ''}`} />
+          <SkaiLogo />
+        </button>
+        {/* Aparece al pasar el mouse por SKAI: lo esconde para que no tape el contenido */}
+        <button
+          type="button"
+          className="skyed-hide"
+          title="Ocultar a SKAI"
+          aria-label="Ocultar el asistente SKAI"
+          onClick={() => cambiarOculto(true)}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M15 6l-6 6 6 6" />
+          </svg>
+        </button>
+      </div>
 
       <div
         className={`skyed-panel ${open ? 'is-open' : ''}`}

@@ -119,10 +119,15 @@
   box-shadow: 0 1px 0 rgba(232, 201, 122, 0.35), 0 14px 32px -14px rgba(0, 0, 0, 0.7);
 }
 
-.social-admin .admin-header-left {
+.social-admin .admin-header-left,
+.social-admin .admin-header-right {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.social-admin .admin-header-right {
+  gap: 8px;
 }
 
 .social-admin .admin-brand {
@@ -1986,7 +1991,8 @@
    ========================================================= */
 
 @media (min-width: 901px) {
-  body:has(.social-admin) .skyed-fab {
+  body:has(.social-admin) .skyed-dock,
+  body:has(.social-admin) .skyed-restore {
     bottom: 100px;
   }
 
