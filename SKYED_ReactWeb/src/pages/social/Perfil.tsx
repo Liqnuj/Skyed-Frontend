@@ -11,11 +11,7 @@ import { useAuth } from '../../context/AuthContext';
 import { apiFetch } from '../../services/api';
 import { pqrService, reservaService } from '../../services/socialService';
 import type { Pqr, PqrSeguimiento, Reserva, TipoPqr } from '../../services/socialService';
-<<<<<<< Updated upstream
-import { FASES_VISIBLES, PqrEstadoPill, PqrStepper, indiceFaseVisible } from '../../components/social/pqr/PqrTracker';
-=======
 import { FASES_VISIBLES, PqrEstadoPill, PqrPlazoChip, PqrStepper, PqrTimeline, indiceFaseVisible } from '../../components/social/pqr/PqrTracker';
->>>>>>> Stashed changes
 import { ESTADO_COLOR, ESTADO_LABEL, TIPO_LABEL } from '../../utils/pqr';
 import { prepararImagen } from '../../utils/prepararImagen';
 import { errorContrasena } from '../../utils/validaciones';
