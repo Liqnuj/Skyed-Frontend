@@ -3342,3 +3342,171 @@
     align-items: center;
   }
 }
+
+/* =========================================
+   ASIDE DE INFORMACIÓN RESPONSIVO (SOCIAL)
+   ========================================= */
+/* Ocultar el botón por defecto en pantallas grandes */
+.mod-social .pfx-summary {
+  display: none;
+}
+
+/* En móviles, convertir el bloque en un acordeón */
+@media (max-width: 900px) {
+  .mod-social .pfx-details {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+  }
+  
+  .mod-social.dark-mode .pfx-details {
+    background: var(--plum);
+    border-color: rgba(255,255,255,.1);
+  }
+
+  /* Estilos del botón desplegable */
+  .mod-social .pfx-summary {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--text-dark);
+    cursor: pointer;
+    list-style: none; /* Quita la flechita nativa por defecto en algunos navegadores */
+    user-select: none;
+  }
+
+  .mod-social.dark-mode .pfx-summary {
+    color: rgba(255,255,255,.9);
+  }
+
+  /* Quitar la flechita nativa en webkit */
+  .mod-social .pfx-summary::-webkit-details-marker {
+    display: none;
+  }
+  
+  .mod-social .pfx-summary i:first-child {
+    color: var(--accent);
+    font-size: 1.2rem;
+  }
+  
+  .mod-social .part-info-chevron {
+    margin-left: auto;
+    transition: transform 0.3s ease;
+    color: var(--text-muted);
+  }
+
+  /* Animación del ícono cuando se abre */
+  .mod-social .pfx-details[open] .part-info-chevron {
+    transform: rotate(180deg);
+  }
+
+  /* Contenido dentro del desplegable */
+  .mod-social .pfx-details-content {
+    padding: 0 1.25rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+  
+  /* Quitar bordes internos para que se vea unificado */
+  .mod-social .pfx-details-content .pfx-card {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  
+  .mod-social .pfx-details-content .pfx-card-head {
+    padding-left: 0;
+    padding-right: 0;
+  }
+  
+  .mod-social .pfx-details-content .pfx-card-body {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
+/* =========================================
+   MEJORA RESPONSIVE: SECCIÓN PQRS (MÓVIL)
+   ========================================= */
+@media (max-width: 768px) {
+  /* Convertir la lista vertical en una cuadrícula compacta de 2 columnas */
+  .mod-social .pqr-types {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.6rem !important;
+    margin-bottom: 1.5rem !important;
+  }
+  
+  /* Centrar la última tarjeta (Felicitación) ocupando ambas columnas para equilibrar el diseño */
+  .mod-social .pqr-type-card:last-child {
+    grid-column: 1 / -1 !important;
+  }
+
+  /* Rediseñar la tarjeta para que sea un bloque pequeño, cuadrado y centrado */
+  .mod-social .pqr-type-card {
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    padding: 1rem 0.5rem !important;
+    gap: 0.5rem !important;
+  }
+
+  /* Ocultar la descripción larga para ahorrar mucho espacio de scroll */
+  .mod-social .pqr-type-desc {
+    display: none !important;
+  }
+
+  /* Reducir ligeramente el tamaño del ícono */
+  .mod-social .pqr-type-icon {
+    width: 38px !important;
+    height: 38px !important;
+    font-size: 1.1rem !important;
+  }
+
+  /* Compactar el cuadro azul de "Tiempos de respuesta" */
+  .mod-social .pqr-info-box {
+    padding: 1.25rem !important;
+  }
+  .mod-social .pqr-info-title {
+    font-size: 1rem !important;
+    margin-bottom: 0.75rem !important;
+  }
+  .mod-social .pqr-info-list li {
+    font-size: 0.8rem !important;
+    gap: 0.4rem !important;
+  }
+  
+  /* Reducir los amplios espacios (paddings) del formulario contenedor */
+  .mod-social .pqr-form-wrap {
+    padding: 1.5rem !important;
+  }
+}
+
+/* =========================================
+   RESTAURAR FLECHAS DEL CARRUSEL (SOCIAL - MÓVIL)
+   ========================================= */
+@media (max-width: 768px) {
+  .mod-social .carousel-arrow {
+    display: flex !important; 
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 1.2rem !important;
+    background: rgba(0, 0, 0, 0.4) !important;
+    z-index: 20 !important;
+  }
+  
+  .mod-social .carousel-prev {
+    left: 8px !important;
+  }
+  
+  .mod-social .carousel-next {
+    right: 8px !important;
+  }
+}

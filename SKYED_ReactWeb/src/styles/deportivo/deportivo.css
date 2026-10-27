@@ -2633,10 +2633,18 @@
     width: 100%;
   }
 
-  /* Ocultar flechas del carrusel en móvil */
+  /* Restaurar flechas del carrusel en móvil */
   .mod-deportivo .carousel-arrow {
-    display: none !important;
+    display: grid !important; 
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 1.2rem !important;
+    background: rgba(0, 0, 0, 0.4) !important;
+    z-index: 10 !important;
   }
+  
+  .mod-deportivo .carousel-arrow.prev { left: 5px !important; }
+  .mod-deportivo .carousel-arrow.next { right: 5px !important; }
 }
 
 /* =========================================
@@ -2769,5 +2777,203 @@
 
   .mod-deportivo .nav-links li:last-child a {
     border-bottom: none !important;
+  }
+}
+
+/* =========================================
+   FIX: DESBORDAMIENTO DE IMÁGENES Y NÚMEROS EN TARJETAS
+   ========================================= */
+/* Obliga al navegador móvil a cortar estrictamente lo que se salga del borde */
+.about-page .event-card,
+.mod-deportivo .event-card,
+.mod-deportivo .event-item {
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
+  mask-image: radial-gradient(white, black);
+  transform: translateZ(0);
+}
+
+@media (max-width: 768px) {
+  /* Escalar el número gigante decorativo en móviles para que no estire la pantalla */
+  .about-page .number-accent {
+    font-size: 60px !important; 
+    bottom: 10px !important;
+    right: 12px !important;
+  }
+}
+
+/* Fix extra: Había un pequeño error de tipeo en tu CSS que dejaba el circulito del número de paso transparente */
+.mod-deportivo .skyed-step__num {
+  background: var(--accent) !important;
+}
+
+/* =========================================
+   ASIDE DE INFORMACIÓN RESPONSIVO
+   ========================================= */
+/* Ocultar el resumen (botón) por defecto en pantallas grandes */
+.mod-deportivo .part-info-summary {
+  display: none;
+}
+
+/* En móviles, convertimos el bloque en un acordeón */
+@media (max-width: 900px) {
+  .mod-deportivo .part-info-details {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+  }
+  
+  .mod-deportivo.dark-mode .part-info-details {
+      background: var(--surface); /* Cambiado de --plum a --surface para el azul oscuro */
+      border-color: rgba(255,255,255,.1);
+    }
+
+  /* Estilos del botón desplegable */
+  .mod-deportivo .part-info-summary {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--text-dark);
+    cursor: pointer;
+    list-style: none; /* Quita la flechita nativa por defecto en algunos navegadores */
+    user-select: none;
+  }
+
+  .mod-deportivo.dark-mode .part-info-summary {
+    color: rgba(255,255,255,.9);
+  }
+
+  /* Quitar la flechita nativa en webkit */
+  .mod-deportivo .part-info-summary::-webkit-details-marker {
+    display: none;
+  }
+  
+  .mod-deportivo .part-info-summary i:first-child {
+    color: var(--accent);
+    font-size: 1.2rem;
+  }
+  
+  .mod-deportivo .part-info-chevron {
+    margin-left: auto;
+    transition: transform 0.3s ease;
+    color: var(--text-muted);
+  }
+
+  /* Animación del icono cuando se abre */
+  .mod-deportivo .part-info-details[open] .part-info-chevron {
+    transform: rotate(180deg);
+  }
+
+  /* Contenido dentro del desplegable */
+  .mod-deportivo .part-info-content {
+    padding: 0 1.25rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+  
+  /* Quitar márgenes/bordes extras de las cards internas para que se vean integradas */
+  .mod-deportivo .part-info-content .part-card {
+    border: none;
+    background: transparent;
+    box-shadow: none;
+  }
+  
+  .mod-deportivo .part-info-content .part-card-head {
+    padding-left: 0;
+    padding-right: 0;
+  }
+  
+  .mod-deportivo .part-info-content .part-card-body {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
+/* =========================================
+   CORRECCIONES RESPONSIVE: PÁGINA "NOSOTROS"
+   ========================================= */
+@media (max-width: 900px) {
+  /* 1. Historia: quitar paddings excesivos y apilar */
+  .about-page .about .container {
+    padding: 0 1.5rem !important;
+  }
+  .about-page .about-content {
+    grid-template-columns: 1fr !important;
+    margin-right: 0 !important;
+    gap: 1.5rem !important;
+  }
+  .about-page .about-title,
+  .about-page .about-text p {
+    padding-left: 0 !important;
+  }
+  .about-page .about-img {
+    height: 250px !important;
+    order: -1 !important; /* Coloca la imagen arriba del texto */
+  }
+
+  /* 2. Misión y Visión: 1 columna */
+  .about-page .mv-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.5rem !important;
+  }
+
+  /* 3. Línea del tiempo (Timeline): Formato vertical */
+  .about-page .tl-outer {
+    padding: 2rem 0 !important;
+  }
+  .about-page .tl-line {
+    display: none !important; /* Ocultar línea horizontal */
+  }
+  .about-page .tl-items {
+    flex-direction: column !important;
+    gap: 1.5rem !important;
+  }
+  .about-page .tl-item {
+    width: 100% !important;
+    align-items: flex-start !important;
+    background: var(--surface);
+    padding: 1.5rem !important;
+    border-radius: var(--radius);
+    border: 1px solid var(--accent);
+  }
+  .about-page .tl-card {
+    position: relative !important;
+    width: 100% !important;
+    top: auto !important;
+    bottom: auto !important;
+    padding: 0 !important;
+    border: none !important;
+    text-align: left !important;
+  }
+  .about-page .tl-card i {
+    display: inline-block !important;
+    margin-right: 8px;
+  }
+  .about-page .tl-pin {
+    display: none !important; /* Ocultar los pines para limpiar la vista móvil */
+  }
+  .about-page .tl-year {
+    position: relative !important;
+    top: auto !important;
+    bottom: auto !important;
+    font-size: 1.2rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  /* 4. Tarjetas flip (Por qué SKYED) */
+  .mod-deportivo .features-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  /* 5. Eventos destacados */
+  .about-page .cards-grid {
+    grid-template-columns: 1fr !important;
+    padding: 0 !important;
+    max-width: 100% !important;
   }
 }

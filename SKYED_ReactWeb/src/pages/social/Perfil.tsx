@@ -1260,57 +1260,66 @@ function PerfilPanel() {
   // para que la zona horaria no mueva el día).
   const sidebar = (
     <aside className="pfx-side">
-      <div className="pfx-card">
-        <div className="pfx-card-head">
-          <h3>Información</h3>
-          <button type="button" className="pfx-link" onClick={() => setTab('ajustes')}>
-            <i className="ti ti-edit" aria-hidden="true" /> Editar
-          </button>
-        </div>
-        <div className="pfx-card-body">
-          {filasInfo.map((f) => (
-            <div className="pfx-row" key={f.label}>
-              <span className="pfx-row-label">{f.label}</span>
-              {f.value ? (
-                <span className="pfx-row-value">{f.value}</span>
-              ) : f.editable ? (
-                <button type="button" className="pfx-link" onClick={() => setTab('ajustes')}>
-                  + Agregar
-                </button>
-              ) : (
-                <span className="pfx-row-value">—</span>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {perfilPct < 100 && (
-        <div className="pfx-card">
-          <div className="pfx-card-head">
-            <h3>Perfil completo</h3>
-            <span className="pfx-pct">{perfilPct} %</span>
-          </div>
-          <div className="pfx-card-body pfx-progress-body">
-            <div
-              className="pfx-bar"
-              role="progressbar"
-              aria-valuenow={perfilPct}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-label="Perfil completado"
-            >
-              <span style={{ width: `${perfilPct}%` }} />
-            </div>
-            <p className="pfx-progress-hint">Te falta agregar: {faltantes.join(', ')}.</p>
-            {faltanDatos && (
-              <button type="button" className="pfx-btn pfx-btn-primary" onClick={() => setTab('ajustes')}>
-                Completar datos
+      <details className="pfx-details">
+        <summary className="pfx-summary">
+          <i className="ti ti-info-circle" aria-hidden="true" /> Ver información del perfil
+          <i className="ti ti-chevron-down part-info-chevron" aria-hidden="true" />
+        </summary>
+        
+        <div className="pfx-details-content">
+          <div className="pfx-card">
+            <div className="pfx-card-head">
+              <h3>Información</h3>
+              <button type="button" className="pfx-link" onClick={() => setTab('ajustes')}>
+                <i className="ti ti-edit" aria-hidden="true" /> Editar
               </button>
-            )}
+            </div>
+            <div className="pfx-card-body">
+              {filasInfo.map((f) => (
+                <div className="pfx-row" key={f.label}>
+                  <span className="pfx-row-label">{f.label}</span>
+                  {f.value ? (
+                    <span className="pfx-row-value">{f.value}</span>
+                  ) : f.editable ? (
+                    <button type="button" className="pfx-link" onClick={() => setTab('ajustes')}>
+                      + Agregar
+                    </button>
+                  ) : (
+                    <span className="pfx-row-value">—</span>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
+
+          {perfilPct < 100 && (
+            <div className="pfx-card">
+              <div className="pfx-card-head">
+                <h3>Perfil completo</h3>
+                <span className="pfx-pct">{perfilPct} %</span>
+              </div>
+              <div className="pfx-card-body pfx-progress-body">
+                <div
+                  className="pfx-bar"
+                  role="progressbar"
+                  aria-valuenow={perfilPct}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-label="Perfil completado"
+                >
+                  <span style={{ width: `${perfilPct}%` }} />
+                </div>
+                <p className="pfx-progress-hint">Te falta agregar: {faltantes.join(', ')}.</p>
+                {faltanDatos && (
+                  <button type="button" className="pfx-btn pfx-btn-primary" onClick={() => setTab('ajustes')}>
+                    Completar datos
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      </details>
     </aside>
   );
 
