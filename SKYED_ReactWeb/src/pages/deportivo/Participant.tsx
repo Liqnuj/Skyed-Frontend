@@ -695,7 +695,7 @@ function AjustesTab() {
       await deleteAccount();
       navigate('/login');
     } catch (err: any) {
-      alert(err.message || 'No se pudo eliminar la cuenta. Intenta de nuevo.');
+      setMsg({ tipo: 'error', texto: err.message || 'No se pudo eliminar la cuenta. Intenta de nuevo.', id: Date.now() });
       setEliminandoCuenta(false);
       setConfirmarEliminar(false);
     }

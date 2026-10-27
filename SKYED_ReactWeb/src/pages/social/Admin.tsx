@@ -30,6 +30,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useAccessibility } from "../../context/AccessibilityContext";
 import AccessibilityWidget from "../../components/shared/AccessibilityWidget";
 import { apiFetch } from "../../services/api";
+import { useConfirmacion } from "../../components/shared/ConfirmDialog";
 import type { EstadoPqr, Pqr } from "../../services/socialService";
 import PqrGestion from "../../components/social/pqr/AdminPqrManager";
 import "../../styles/social/Admin.css";
@@ -398,6 +399,8 @@ function SectionTable({
 
 function AdminPage() {
   const { user, logout } = useAuth();
+  // Ventana de confirmación con el diseño del panel (reemplaza window.confirm).
+  const { confirmar, dialogo } = useConfirmacion();
   const {
     darkMode,
     toggleDark,
@@ -594,7 +597,7 @@ function AdminPage() {
   };
 
   const deleteAmbiente = async (id: number) => {
-    if (!window.confirm("¿Eliminar este ambiente?")) return;
+    if (!(await confirmar({ titulo: "Eliminar ambiente", mensaje: "¿Eliminar este ambiente? Esta acción no se puede deshacer.", confirmar: "Eliminar", tipo: "peligro" }))) return;
     await apiFetch(`/ambientes/${id}`, { method: "DELETE" });
     notify("Ambiente eliminado");
     await loadAll();
@@ -615,7 +618,7 @@ function AdminPage() {
   };
 
   const deleteServicio = async (id: number) => {
-    if (!window.confirm("¿Eliminar este servicio?")) return;
+    if (!(await confirmar({ titulo: "Eliminar servicio", mensaje: "¿Eliminar este servicio? Esta acción no se puede deshacer.", confirmar: "Eliminar", tipo: "peligro" }))) return;
     await apiFetch(`/servicios/${id}`, { method: "DELETE" });
     notify("Servicio eliminado");
     await loadAll();
@@ -645,7 +648,7 @@ function AdminPage() {
   };
 
   const deleteEvento = async (id: number) => {
-    if (!window.confirm("¿Eliminar este evento social?")) return;
+    if (!(await confirmar({ titulo: "Eliminar evento", mensaje: "¿Eliminar este evento social? Esta acción no se puede deshacer.", confirmar: "Eliminar", tipo: "peligro" }))) return;
     await apiFetch(`/eventos-sociales/${id}`, { method: "DELETE" });
     notify("Evento eliminado");
     await loadAll();
@@ -653,7 +656,7 @@ function AdminPage() {
 
   // Oculta la reserva solo de la vista del admin; el usuario sigue viéndola.
   const hideReserva = async (id: number) => {
-    if (!window.confirm("¿Ocultar esta reserva de tu panel? El cliente la sigue viendo.")) return;
+    if (!(await confirmar({ titulo: "Ocultar reserva", mensaje: "¿Ocultar esta reserva de tu panel? El cliente la sigue viendo.", confirmar: "Ocultar" }))) return;
     try {
       await apiFetch(`/reservas/${id}/ocultar`, {
         method: "POST",
@@ -937,6 +940,7 @@ function AdminPage() {
             search={search}
             onChanged={async () => { await loadAll(); }}
             notify={notify}
+            confirmar={confirmar}
           />
         )}
 
@@ -1004,6 +1008,7 @@ function AdminPage() {
 
 
       {toast && <div className="admin-toast"><Check size={17} />{toast}</div>}
+      {dialogo}
     </div>
   );
 }
@@ -1363,6 +1368,7 @@ function AdminPqrManager({
   search,
   onChanged,
   notify,
+  confirmar,
 }: {
   pqrs: Pqr[];
   resumen: Partial<Record<EstadoPqr, number>>;
@@ -1370,6 +1376,7 @@ function AdminPqrManager({
   search: string;
   onChanged: () => Promise<unknown>;
   notify: (message: string) => void;
+  confirmar: ReturnType<typeof useConfirmacion>["confirmar"];
 }) {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   // La lista /pqr no trae los seguimientos; el detalle sí (GET /pqr/{id}).
@@ -1413,7 +1420,7 @@ function AdminPqrManager({
   // Oculta la solicitud solo de la vista del admin; el usuario sigue viéndola.
   const ocultar = async () => {
     if (!current) return;
-    if (!window.confirm("¿Ocultar esta solicitud de tu panel? El usuario la sigue viendo.")) return;
+    if (!(await confirmar({ titulo: "Ocultar solicitud", mensaje: "¿Ocultar esta solicitud de tu panel? El usuario la sigue viendo.", confirmar: "Ocultar" }))) return;
     try {
       await apiFetch(`/pqr/${current.id_pqr}/ocultar`, {
         method: "POST",

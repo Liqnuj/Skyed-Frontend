@@ -36,6 +36,10 @@ import { useAccessibility } from "../../context/AccessibilityContext";
 import AccessibilityWidget from "../../components/shared/AccessibilityWidget";
 import { apiFetch } from "../../services/api";
 import { prepararImagen } from "../../utils/prepararImagen";
+import { EstadoPagos, InscritosPorEvento, TendenciaMensual } from "../../components/deportivo/GraficosAdmin";
+import { useConfirmacion } from "../../components/shared/ConfirmDialog";
+
+type Confirmar = ReturnType<typeof useConfirmacion>["confirmar"];
 // Base del panel: mismo diseño del panel social con la paleta deportiva
 // (aislado bajo .deportivo-admin). Los extras son lo propio de este panel.
 import "../../styles/deportivo/Admin.css";
@@ -388,6 +392,8 @@ function Kpi({ icon, label, value, compact }: { icon: React.ReactNode; label: st
 
 function AdminPage() {
   const { user, logout } = useAuth();
+  // Ventana de confirmación con el diseño del panel (reemplaza window.confirm).
+  const { confirmar, dialogo } = useConfirmacion();
   const {
     darkMode,
     toggleDark,
@@ -543,30 +549,36 @@ function AdminPage() {
       body: JSON.stringify({ estado_e }),
     }), `Evento ${human(estado_e).toLowerCase()}`, false);
 
-  const eliminarEvento = (e: Evento) => {
-    if (!window.confirm(`¿Eliminar el evento "${e.nombre}"? Esta acción no se puede deshacer.`)) return;
+  const eliminarEvento = async (e: Evento) => {
+    if (!(await confirmar({ titulo: "Eliminar evento", mensaje: `¿Eliminar "${e.nombre}"? Esta acción no se puede deshacer.`, confirmar: "Eliminar", tipo: "peligro" }))) return;
     run(() => apiFetch(`/eventos/${e.id}`, { method: "DELETE" }), "Evento eliminado", false);
   };
 
-  const cambiarEstadoPago = (p: Pago, estado_p: "confirmado" | "rechazado") => {
+  const cambiarEstadoPago = async (p: Pago, estado_p: "confirmado" | "rechazado") => {
     const quien = nombreDe(p.inscripcion?.usuario);
     const pregunta = estado_p === "confirmado"
       ? `¿Confirmar el pago de ${quien}? Su inscripción quedará confirmada y su QR activo.`
       : `¿Rechazar el pago de ${quien}? La inscripción se cancelará y el cupo vuelve a quedar libre.`;
-    if (!window.confirm(pregunta)) return;
+    const ok = await confirmar({
+      titulo: estado_p === "confirmado" ? "Confirmar pago" : "Rechazar pago",
+      mensaje: pregunta,
+      confirmar: estado_p === "confirmado" ? "Confirmar pago" : "Rechazar",
+      tipo: estado_p === "confirmado" ? "normal" : "peligro",
+    });
+    if (!ok) return;
     run(() => apiFetch(`/pagos/${p.id_pago}/estado`, {
       method: "PATCH",
       body: JSON.stringify({ estado_p }),
     }), estado_p === "confirmado" ? "Pago confirmado" : "Pago rechazado");
   };
 
-  const eliminarResultado = (r: Resultado) => {
-    if (!window.confirm(`¿Eliminar el resultado de ${nombreDe(r.inscripcion?.usuario)}?`)) return;
+  const eliminarResultado = async (r: Resultado) => {
+    if (!(await confirmar({ titulo: "Eliminar resultado", mensaje: `¿Eliminar el resultado de ${nombreDe(r.inscripcion?.usuario)}?`, confirmar: "Eliminar", tipo: "peligro" }))) return;
     run(() => apiFetch(`/resultados/${r.id_r}`, { method: "DELETE" }), "Resultado eliminado", false);
   };
 
-  const eliminarKit = (k: Kit) => {
-    if (!window.confirm(`¿Eliminar el kit "${k.nombre_k}"?`)) return;
+  const eliminarKit = async (k: Kit) => {
+    if (!(await confirmar({ titulo: "Eliminar kit", mensaje: `¿Eliminar el kit "${k.nombre_k}"? Si un evento lo usa no se podrá borrar.`, confirmar: "Eliminar", tipo: "peligro" }))) return;
     run(() => apiFetch(`/kits/${k.id_k}`, { method: "DELETE" }), "Kit eliminado", false);
   };
 
@@ -675,33 +687,7 @@ function AdminPage() {
             </div>
 
             <div className="dashboard-grid-main">
-              <section className="admin-card upcoming-card">
-                <div className="card-head">
-                  <div>
-                    <span className="card-kicker">POR REVISAR</span>
-                    <h2>Pagos por validar</h2>
-                  </div>
-                  <button className="link-button" onClick={() => { setFiltroPago("pendiente"); selectSection("inscripciones"); }}>Ver todos →</button>
-                </div>
-                <div className="reservation-list">
-                  {pagos.filter(p => p.estado_p === "pendiente").slice(0, 5).map(p => (
-                    <div className="reservation-item" key={p.id_pago}>
-                      <div className="mini-avatar">
-                        {nombreDe(p.inscripcion?.usuario).split(" ").map(x => x[0]).slice(0, 2).join("").toUpperCase()}
-                      </div>
-                      <div className="reservation-main">
-                        <strong>{nombreDe(p.inscripcion?.usuario)}</strong>
-                        <span>{p.inscripcion?.evento?.nombre_e ?? "—"} · {human(p.metodo_pago_p ?? "sin método")}</span>
-                      </div>
-                      <div className="reservation-side">
-                        <strong>{money(p.monto_p)}</strong>
-                        <Badge value={p.estado_p} />
-                      </div>
-                    </div>
-                  ))}
-                  {!stats.pendientes && <p>No hay pagos pendientes por validar. ✓</p>}
-                </div>
-              </section>
+              <TendenciaMensual pagos={pagos} />
 
               <section className="admin-card upcoming-card">
                 <div className="card-head">
@@ -724,6 +710,11 @@ function AdminPage() {
                   {!proximos.length && <p>No hay eventos activos próximos.</p>}
                 </div>
               </section>
+            </div>
+
+            <div className="dashboard-grid-charts">
+              <InscritosPorEvento pagos={pagos} />
+              <EstadoPagos pagos={pagos} onVerPendientes={() => { setFiltroPago("pendiente"); selectSection("inscripciones"); }} />
             </div>
           </section>
         )}
@@ -912,7 +903,7 @@ function AdminPage() {
       )}
 
       {modal === "categorias" && editing && (
-        <CategoriasModal evento={editing} onClose={() => { setModal(null); loadAll(); }} notify={notify} />
+        <CategoriasModal evento={editing} onClose={() => { setModal(null); loadAll(); }} notify={notify} confirmar={confirmar} />
       )}
 
       {modal === "kit" && (
@@ -952,6 +943,7 @@ function AdminPage() {
       )}
 
       {toast && <div className="admin-toast"><Check size={17} />{toast}</div>}
+      {dialogo}
     </div>
   );
 }
@@ -1087,7 +1079,7 @@ function EventoModal({ item, kits, onClose, onSave, notify }: {
   </Modal>;
 }
 
-function CategoriasModal({ evento, onClose, notify }: { evento: Evento; onClose: () => void; notify: (message: string) => void }) {
+function CategoriasModal({ evento, onClose, notify, confirmar }: { evento: Evento; onClose: () => void; notify: (message: string) => void; confirmar: Confirmar }) {
   const vacio = { nombre_cc: "", edad_minima_cc: "", edad_maxima_cc: "", genero_cc: "mixto", distancia_cc: "", descripcion_cc: "" };
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -1138,7 +1130,7 @@ function CategoriasModal({ evento, onClose, notify }: { evento: Evento; onClose:
   };
 
   const eliminar = async (c: Categoria) => {
-    if (!window.confirm(`¿Eliminar la categoría "${c.nombre}"?`)) return;
+    if (!(await confirmar({ titulo: "Eliminar categoría", mensaje: `¿Eliminar la categoría "${c.nombre}"?`, confirmar: "Eliminar", tipo: "peligro" }))) return;
     try {
       await apiFetch(`/categorias/${c.id}`, { method: "DELETE" });
       notify("Categoría eliminada");
