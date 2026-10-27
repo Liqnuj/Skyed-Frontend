@@ -117,27 +117,51 @@ function iconoEvento(ev: PqrSeguimiento) {
 }
 
 /**
+ * ¿Este paso es parte del historial de estados? (radicación y cambios de fase).
+ * Los mensajes del chat (lo que escribe el usuario o el equipo) no lo son.
+ */
+const esPasoDeEstado = (ev: PqrSeguimiento) =>
+  ev.tipo_evento === 'radicacion' ||
+  ev.tipo_evento === 'migracion' ||
+  (ev.tipo_evento !== 'respuesta_cliente' &&
+    ev.tipo_evento !== 'nota_interna' &&
+    !!ev.estado_anterior &&
+    ev.estado_anterior !== ev.estado_nuevo);
+
+/**
  * Historial de la PQR, lo más reciente arriba.
  * `admin` muestra las notas internas y el nombre de quien actuó.
+ * `soloEstados` (vista del usuario) deja únicamente la radicación y los
+ * cambios de fase; los mensajes y la respuesta oficial viven en el chat.
  */
 export function PqrTimeline({
   seguimientos,
   admin = false,
+  soloEstados = false,
 }: {
   seguimientos: PqrSeguimiento[];
   admin?: boolean;
+  soloEstados?: boolean;
 }) {
-  if (!seguimientos.length) {
+  const lista = soloEstados ? seguimientos.filter(esPasoDeEstado) : seguimientos;
+
+  if (!lista.length) {
     return <p className="pqrx-empty">Todavía no hay movimientos registrados.</p>;
   }
 
-  const eventos = [...seguimientos].reverse();
+  const eventos = [...lista].reverse();
 
   return (
     <ol className="pqrx-timeline">
       {eventos.map((ev, i) => {
         const cambioFase = ev.estado_anterior && ev.estado_anterior !== ev.estado_nuevo;
         const esNota = ev.tipo_evento === 'nota_interna';
+        // La respuesta oficial se lee en el chat: aquí solo queda el paso de fase.
+        const respuestaEnChat = soloEstados && ev.tipo_evento === 'respuesta';
+        const titulo = respuestaEnChat
+          ? `Pasó a «${ESTADO_LABEL[ev.estado_nuevo] ?? ev.estado_nuevo}»`
+          : tituloEvento(ev);
+        const muestraAntes = ev.tipo_evento === 'cambio_estado' || respuestaEnChat;
         return (
           <li
             key={ev.id_seguimiento}
@@ -149,11 +173,11 @@ export function PqrTimeline({
             </span>
             <div className="pqrx-event-body">
               <div className="pqrx-event-head">
-                <strong>{tituloEvento(ev)}</strong>
-                {cambioFase && ev.tipo_evento !== 'cambio_estado' && (
+                <strong>{titulo}</strong>
+                {cambioFase && !muestraAntes && (
                   <span className="pqrx-event-move">pasó a {ESTADO_LABEL[ev.estado_nuevo]}</span>
                 )}
-                {cambioFase && ev.tipo_evento === 'cambio_estado' && ev.estado_anterior && (
+                {cambioFase && muestraAntes && ev.estado_anterior && (
                   <span className="pqrx-event-move">
                     antes: {ESTADO_LABEL[ev.estado_anterior]}
                   </span>
@@ -164,7 +188,7 @@ export function PqrTimeline({
                 {admin && ev.autor ? ` · ${ev.autor}` : ''}
               </time>
 
-              {ev.comentario_publico && (
+              {ev.comentario_publico && !respuestaEnChat && (
                 <p className={`pqrx-bubble${ev.tipo_evento === 'respuesta' ? ' answer' : ''}`}>
                   {ev.comentario_publico}
                 </p>

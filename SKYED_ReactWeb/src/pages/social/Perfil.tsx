@@ -11,7 +11,11 @@ import { useAuth } from '../../context/AuthContext';
 import { apiFetch } from '../../services/api';
 import { pqrService, reservaService } from '../../services/socialService';
 import type { Pqr, PqrSeguimiento, Reserva, TipoPqr } from '../../services/socialService';
+<<<<<<< Updated upstream
 import { FASES_VISIBLES, PqrEstadoPill, PqrStepper, indiceFaseVisible } from '../../components/social/pqr/PqrTracker';
+=======
+import { FASES_VISIBLES, PqrEstadoPill, PqrPlazoChip, PqrStepper, PqrTimeline, indiceFaseVisible } from '../../components/social/pqr/PqrTracker';
+>>>>>>> Stashed changes
 import { ESTADO_COLOR, ESTADO_LABEL, TIPO_LABEL } from '../../utils/pqr';
 import { prepararImagen } from '../../utils/prepararImagen';
 import { errorContrasena } from '../../utils/validaciones';
@@ -363,7 +367,7 @@ type PqrConSeguimientos = Pqr;
 
 interface MensajePqr {
   key: string;
-  de: 'yo' | 'equipo' | 'sistema';
+  de: 'yo' | 'equipo' ;
   texto: string;
   fecha: string | null | undefined;
   /** Es la respuesta oficial con la que se resolvió la PQR. */
@@ -403,45 +407,34 @@ function construirConversacion(pqr: PqrConSeguimientos): MensajePqr[] {
   segs.forEach((sg, i) => {
     const key = `seg-${sg.id_seguimiento}`;
     let texto = (sg.comentario_publico ?? '').trim();
-    const cambioFase = !!sg.estado_anterior && !!sg.estado_nuevo && sg.estado_anterior !== sg.estado_nuevo;
 
     if (sg.tipo_evento === 'respuesta_cliente') {
       msgs.push({ key, de: 'yo', texto, fecha: sg.created_at });
       return;
     }
 
-    // Cada cambio de fase queda como una línea del historial.
-    if (cambioFase) {
-      msgs.push({
-        key: `${key}-fase`,
-        de: 'sistema',
-        texto: `Tu solicitud pasó a: ${pqrEstadoPill(sg.estado_nuevo as Pqr['estado_pqr']).txt}`,
-        fecha: sg.created_at,
-      });
-    }
-
+    // El chat solo lleva lo que escribe el usuario y lo que responde el equipo.
+    // La radicación y los cambios de fase van al Historial, no aquí.
     const esMensajeDelEquipo =
       sg.tipo_evento === 'respuesta' ||
       sg.tipo_evento === 'solicitud_informacion' ||
-      sg.tipo_evento === 'comentario' ||
-      (cambioFase && texto !== '');
+      sg.tipo_evento === 'comentario';
 
-    if (esMensajeDelEquipo) {
-      // Respuestas antiguas guardaban un texto genérico: la última se completa con la real.
-      if (i === ultimaRespuesta && pqr.respuesta_pqr && (texto === '' || texto === MENSAJE_GENERICO)) {
-        texto = pqr.respuesta_pqr;
-      }
-      msgs.push({
-        key,
-        de: 'equipo',
-        texto: texto || MENSAJE_GENERICO,
-        fecha: sg.created_at,
-        oficial: sg.tipo_evento === 'respuesta',
-      });
-    } else if (texto && !cambioFase) {
-      msgs.push({ key, de: 'sistema', texto, fecha: sg.created_at });
+    if (!esMensajeDelEquipo) return;
+
+    // Respuestas antiguas guardaban un texto genérico: la última se completa con la real.
+    if (i === ultimaRespuesta && pqr.respuesta_pqr && (texto === '' || texto === MENSAJE_GENERICO)) {
+      texto = pqr.respuesta_pqr;
     }
+    msgs.push({
+      key,
+      de: 'equipo',
+      texto: texto || MENSAJE_GENERICO,
+      fecha: sg.created_at,
+      oficial: sg.tipo_evento === 'respuesta',
+    });
   });
+
 
   // PQR respondidas antes de que existiera el historial.
   if (ultimaRespuesta === -1 && pqr.respuesta_pqr) {
@@ -597,36 +590,36 @@ function PqrDetalle({ pqr, onClose, onEnviar, onOcultar, oculta }: PqrDetallePro
             <PqrStepper estado={pqr.estado_pqr} />
           </section>
 
+          <h4 className="pfd-section">Historial</h4>
+
+          <div className="pqrx pfd-history">
+            <PqrTimeline seguimientos={pqr.seguimientos ?? []} soloEstados />
+          </div>
+
           <h4 className="pfd-section">Conversación</h4>
 
           <div className="pfd-thread">
-            {conversacion.map((m) =>
-              m.de === 'sistema' ? (
-                <div key={m.key} className="pfd-event">
-                  <span>{m.texto}</span>
-                  {m.fecha && <time>{fmtFechaHora(m.fecha)}</time>}
-                </div>
-              ) : (
-                <div
-                  key={m.key}
-                  className={`pfd-msg ${m.de === 'yo' ? 'mine' : 'team'}${m.oficial ? ' official' : ''}`}
-                >
-                  <span className="pfd-avatar" aria-hidden="true">{m.de === 'yo' ? 'Tú' : 'SS'}</span>
-                  <div className="pfd-bubble">
-                    <div className="pfd-who">
-                      <b>{m.de === 'yo' ? 'Tú' : 'Equipo SkyedSocial'}</b>
-                      {m.oficial && (
-                        <span className="pfd-badge">
-                          <i className="ti ti-circle-check" aria-hidden="true" /> Respuesta oficial
-                        </span>
-                      )}
-                      {m.fecha && <time>{fmtFechaHora(m.fecha)}</time>}
-                    </div>
-                    <p>{m.texto}</p>
+            {conversacion.map((m) => (
+              <div
+                key={m.key}
+                className={`pfd-msg ${m.de === 'yo' ? 'mine' : 'team'}${m.oficial ? ' official' : ''}`}
+              >
+                <span className="pfd-avatar" aria-hidden="true">{m.de === 'yo' ? 'Tú' : 'SS'}</span>
+                <div className="pfd-bubble">
+                  <div className="pfd-who">
+                    <b>{m.de === 'yo' ? 'Tú' : 'Equipo SkyedSocial'}</b>
+                    {m.oficial && (
+                      <span className="pfd-badge">
+                        <i className="ti ti-circle-check" aria-hidden="true" /> Respuesta oficial
+                      </span>
+                    )}
+                    {m.fecha && <time>{fmtFechaHora(m.fecha)}</time>}
                   </div>
+                  <p>{m.texto}</p>
                 </div>
-              ),
-            )}
+              </div>
+            ))}
+
             {!hayRespuestaEquipo && puedeResponder && (
               <div className="pfd-wait">
                 <i className="ti ti-clock" aria-hidden="true" />
