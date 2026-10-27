@@ -953,7 +953,6 @@ function AdminPage() {
             search={search}
             onChanged={async () => { await loadAll(); }}
             notify={notify}
-            confirmar={confirmar}
           />
         )}
 

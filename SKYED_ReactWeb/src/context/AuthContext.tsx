@@ -19,7 +19,7 @@ interface AuthContextValue {
   user: User | null;
   /** true mientras se confirma con el servidor que la sesión guardada es real. */
   verificando: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (identificacion: string, password: string) => Promise<boolean>;
   register: (userData: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   deleteAccount: () => Promise<void>;
@@ -107,10 +107,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     verificando,
 
-    async login(email, password) {
+    async login(identificacion, password) {
       const data = await apiFetch('/login', {
         method: 'POST',
-        body: JSON.stringify({ correo_u: email, contrasena_u: password }),
+        // 'identificacion' = correo o número de documento (así lo pide POST /login).
+        body: JSON.stringify({ identificacion, contrasena_u: password }),
       });
 
       setToken(data.token);
