@@ -17,6 +17,7 @@ import {
   Pencil,
   Plus,
   Search,
+  Settings,
   Trash2,
   EyeOff,
   Upload,
@@ -29,6 +30,7 @@ import Protected from "../../components/Protected";
 import { useAuth } from "../../context/AuthContext";
 import { useAccessibility } from "../../context/AccessibilityContext";
 import AccessibilityWidget from "../../components/shared/AccessibilityWidget";
+import AdminAjustes from "../../components/shared/AdminAjustes";
 import { apiFetch } from "../../services/api";
 import { useConfirmacion } from "../../components/shared/ConfirmDialog";
 import type { EstadoPqr, Pqr } from "../../services/socialService";
@@ -42,7 +44,8 @@ type Section =
   | "usuarios"
   | "pqr"
   | "lugares"
-  | "servicios";
+  | "servicios"
+  | "ajustes";
 
 /* ---------- Persistencia de la vista (sección + formulario abierto) ----------
    Al recargar la página se vuelve a la misma sección y al mismo formulario.
@@ -51,7 +54,7 @@ type ModalKind = "ambiente" | "servicio" | "evento" | "reserva" | "pqr";
 type SavedView = { section: Section; modal: ModalKind | null; editId: number | string | null };
 
 const VIEW_KEY = "skyed_admin_social_view";
-const SECTION_IDS: Section[] = ["inicio", "eventos", "reservas", "usuarios", "pqr", "lugares", "servicios"];
+const SECTION_IDS: Section[] = ["inicio", "eventos", "reservas", "usuarios", "pqr", "lugares", "servicios", "ajustes"];
 const MODAL_KINDS: ModalKind[] = ["ambiente", "servicio", "evento", "reserva", "pqr"];
 
 function readSavedView(): SavedView {
@@ -577,6 +580,7 @@ function AdminPage() {
     pqr: { label: "PQRS", icon: MessageSquareText },
     lugares: { label: "Lugares", icon: Building2 },
     servicios: { label: "Servicios", icon: Wrench },
+    ajustes: { label: "Ajustes", icon: Settings },
   };
 
   const accent = accentOverride ?? "#9c02ae";
@@ -712,7 +716,7 @@ function AdminPage() {
 
         <nav className="sidebar-nav">
           <p className="nav-caption">GESTIÓN</p>
-          {(Object.keys(sectionMeta) as Section[]).map(key => {
+          {(Object.keys(sectionMeta) as Section[]).filter(key => key !== "ajustes").map(key => {
             const Icon = sectionMeta[key].icon;
             return (
               <button
@@ -726,6 +730,15 @@ function AdminPage() {
               </button>
             );
           })}
+          <p className="nav-caption">CUENTA</p>
+          <button
+            className={`admin-nav-item ${section === "ajustes" ? "active" : ""}`}
+            onClick={() => selectSection("ajustes")}
+            title={sectionMeta.ajustes.label}
+          >
+            <Settings size={18} />
+            <span>{sectionMeta.ajustes.label}</span>
+          </button>
         </nav>
 
         <div className="sidebar-footer">
@@ -748,7 +761,7 @@ function AdminPage() {
             <span className="admin-eyebrow">ADMINISTRACIÓN</span>
             <h1>{sectionMeta[section].label}</h1>
           </div>
-          <label className="admin-search">
+          {section !== "ajustes" && <label className="admin-search">
             <Search size={17} />
             <input
               value={search}
@@ -760,7 +773,7 @@ function AdminPage() {
                 <X size={15} />
               </button>
             )}
-          </label>
+          </label>}
         </div>
 
         {loading && <div className="admin-card" style={{ padding: 18 }}>Cargando información…</div>}
@@ -944,6 +957,17 @@ function AdminPage() {
           />
         )}
 
+        {section === "ajustes" && (
+          <AdminAjustes
+            notify={notify}
+            avisos={[
+              { key: "reservas", title: "Nuevas reservas", desc: "Aviso cuando un cliente solicite una reserva" },
+              { key: "pqr", title: "Nuevas PQRS", desc: "Aviso cuando se radique una petición, queja o reclamo" },
+              { key: "eventos", title: "Eventos próximos", desc: "Recordatorio de eventos sociales de la semana", defecto: false },
+            ]}
+          />
+        )}
+
         {section === "usuarios" && (
           <SectionTable title="Usuarios registrados">
             <thead><tr><th>ID</th><th>Nombre</th><th>Correo</th><th>Estado</th></tr></thead>
@@ -1011,6 +1035,10 @@ function AdminPage() {
       {dialogo}
     </div>
   );
+}
+
+export default function Admin() {
+  return <Protected><AdminPage /></Protected>;
 }
 
 function Kpi({ icon, label, value, compact }: { icon: React.ReactNode; label: string; value: React.ReactNode; compact?: boolean }) {
@@ -1560,9 +1588,4 @@ function AdminPqrManager({
       </div>
     </section>
   );
-}
-
-
-export default function Admin() {
-  return <Protected><AdminPage /></Protected>;
 }

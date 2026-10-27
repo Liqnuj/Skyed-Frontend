@@ -7,7 +7,9 @@ import { useAuth } from '../context/AuthContext';
  * existía, así que terminaba en la página de inicio.
  */
 export default function AdminRedirect() {
-  const { user } = useAuth();
+  const { user, verificando } = useAuth();
+
+  if (verificando) return null;
 
   if (!user) return <Navigate to="/login" replace />;
   if (user.roles.includes('adminDeportivo')) return <Navigate to="/deportivo/admin" replace />;

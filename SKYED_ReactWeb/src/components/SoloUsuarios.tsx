@@ -8,7 +8,9 @@ import { useAuth } from '../context/AuthContext';
  * devuelve a su panel (si administra ese módulo) o al inicio del módulo.
  */
 export default function SoloUsuarios({ modulo }: { modulo: 'deportivo' | 'social' }) {
-  const { user } = useAuth();
+  const { user, verificando } = useAuth();
+
+  if (verificando) return null;
 
   const esAdminDeportivo = user?.roles.includes('adminDeportivo') ?? false;
   const esAdminSocial = user?.roles.includes('adminSocial') ?? false;

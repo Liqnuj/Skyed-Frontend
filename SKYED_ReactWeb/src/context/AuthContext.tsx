@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { User } from '../types';
-import { apiFetch, setToken } from '../services/api';
+import { apiFetch, getToken, setToken, SESION_INVALIDA } from '../services/api';
 
 export interface RegisterData {
   tipo_documento_u: string;
@@ -17,7 +17,9 @@ export interface RegisterData {
 
 interface AuthContextValue {
   user: User | null;
-  login: (identificacion: string, contrasena_u: string) => Promise<boolean>;
+  /** true mientras se confirma con el servidor que la sesión guardada es real. */
+  verificando: boolean;
+  login: (email: string, password: string) => Promise<boolean>;
   register: (userData: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   deleteAccount: () => Promise<void>;
@@ -65,29 +67,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return raw ? JSON.parse(raw) : null;
   });
 
-useEffect(() => {
-    const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === 'skyed_token' && !event.newValue) {
-        setToken(null);
-        setUser(null);
-        window.location.href = '/login'; 
-      }
-    };
+  // Lo guardado en localStorage (usuario y roles) lo puede editar cualquiera
+  // desde el inspector, así que al abrir la app se vuelve a pedir el usuario
+  // al servidor (GET /me, validado por el token) y se reemplaza lo local.
+  // Mientras tanto las rutas protegidas esperan (`verificando`).
+  const [verificando, setVerificando] = useState<boolean>(() => !!getToken() || !!localStorage.getItem(STORAGE_KEY));
 
-    window.addEventListener('storage', handleStorageChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
+  useEffect(() => {
+    let activo = true;
+    if (!getToken()) {
+      // Hay un "usuario" guardado pero ningún token: no es una sesión real.
+      setUser(null);
+      setVerificando(false);
+      return;
+    }
+    apiFetch('/me')
+      .then((data) => { if (activo && data?.user) setUser(buildUser(data.user)); })
+      .catch(() => {
+        // Un 401 ya cierra la sesión (evento SESION_INVALIDA). Otros fallos
+        // (API caída, sin red) no deben sacar al usuario.
+      })
+      .finally(() => { if (activo) setVerificando(false); });
+    return () => { activo = false; };
   }, []);
+
+  // El servidor rechazó el token: se limpia la sesión local.
+  useEffect(() => {
+    const cerrar = () => { setToken(null); setUser(null); };
+    window.addEventListener(SESION_INVALIDA, cerrar);
+    return () => window.removeEventListener(SESION_INVALIDA, cerrar);
+  }, []);
+
+  useEffect(() => {
+    if (user) localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+    else localStorage.removeItem(STORAGE_KEY);
+  }, [user]);
 
   const value = useMemo<AuthContextValue>(() => ({
     user,
+    verificando,
 
-    async login(identificacion, password) {
+    async login(email, password) {
       const data = await apiFetch('/login', {
         method: 'POST',
-        body: JSON.stringify({ identificacion, contrasena_u: password }),
+        body: JSON.stringify({ correo_u: email, contrasena_u: password }),
       });
 
       setToken(data.token);
@@ -135,7 +158,7 @@ useEffect(() => {
     updateFotoUrl(fotoUrl) {
       setUser((prev) => (prev ? { ...prev, foto_url: fotoUrl } : prev));
     },
-  }), [user]);
+  }), [user, verificando]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

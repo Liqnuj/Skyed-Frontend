@@ -21,6 +21,7 @@ import {
   QrCode,
   ScanLine,
   Search,
+  Settings,
   Tags,
   Trash2,
   Trophy,
@@ -34,6 +35,7 @@ import Protected from "../../components/Protected";
 import { useAuth } from "../../context/AuthContext";
 import { useAccessibility } from "../../context/AccessibilityContext";
 import AccessibilityWidget from "../../components/shared/AccessibilityWidget";
+import AdminAjustes from "../../components/shared/AdminAjustes";
 import { apiFetch } from "../../services/api";
 import { prepararImagen } from "../../utils/prepararImagen";
 import { EstadoPagos, InscritosPorEvento, TendenciaMensual } from "../../components/deportivo/GraficosAdmin";
@@ -52,7 +54,8 @@ type Section =
   | "acceso"
   | "resultados"
   | "kits"
-  | "usuarios";
+  | "usuarios"
+  | "ajustes";
 
 type Categoria = {
   id: number;
@@ -538,6 +541,7 @@ function AdminPage() {
     resultados: { label: "Resultados", icon: Trophy },
     kits: { label: "Kits", icon: Package },
     usuarios: { label: "Usuarios", icon: Users },
+    ajustes: { label: "Ajustes", icon: Settings },
   };
 
   const accent = accentOverride ?? "#2c9caf";
@@ -612,13 +616,16 @@ function AdminPage() {
 
       <aside className="admin-sidebar">
         <div className="sidebar-brand">
-          <strong>Skyed <em>Deportivo</em></strong>
-          <span>ADMINISTRACIÓN</span>
+          <img className="sidebar-logo" src="/assets/deportivo/logo_deportivo.png" alt="Skyed Deportivo" width={37} height={37} />
+          <div className="sidebar-brand-text">
+            <strong>Skyed <em>Deportivo</em></strong>
+            <span>ADMINISTRACIÓN</span>
+          </div>
         </div>
 
         <nav className="sidebar-nav">
           <p className="nav-caption">GESTIÓN</p>
-          {(Object.keys(sectionMeta) as Section[]).map(key => {
+          {(Object.keys(sectionMeta) as Section[]).filter(key => key !== "ajustes").map(key => {
             const Icon = sectionMeta[key].icon;
             return (
               <button
@@ -632,6 +639,15 @@ function AdminPage() {
               </button>
             );
           })}
+          <p className="nav-caption">CUENTA</p>
+          <button
+            className={`admin-nav-item ${section === "ajustes" ? "active" : ""}`}
+            onClick={() => selectSection("ajustes")}
+            title={sectionMeta.ajustes.label}
+          >
+            <Settings size={18} />
+            <span>{sectionMeta.ajustes.label}</span>
+          </button>
         </nav>
 
         <div className="sidebar-footer">
@@ -654,7 +670,7 @@ function AdminPage() {
             <span className="admin-eyebrow">ADMINISTRACIÓN</span>
             <h1>{sectionMeta[section].label}</h1>
           </div>
-          {section !== "acceso" && section !== "inicio" && (
+          {section !== "acceso" && section !== "inicio" && section !== "ajustes" && (
             <label className="admin-search">
               <Search size={17} />
               <input
@@ -849,6 +865,17 @@ function AdminPage() {
               {!visibleKits.length && <tr><td colSpan={6}>No hay kits registrados.</td></tr>}
             </tbody>
           </SectionTable>
+        )}
+
+        {section === "ajustes" && (
+          <AdminAjustes
+            notify={notify}
+            avisos={[
+              { key: "pagos", title: "Pagos por validar", desc: "Aviso cuando un participante suba un comprobante de pago" },
+              { key: "inscripciones", title: "Nuevas inscripciones", desc: "Aviso cuando alguien se inscriba a un evento" },
+              { key: "cierre", title: "Cierre de inscripciones", desc: "Recordatorio antes de que cierre un evento", defecto: false },
+            ]}
+          />
         )}
 
         {section === "usuarios" && (
