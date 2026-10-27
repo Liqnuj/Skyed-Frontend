@@ -1191,6 +1191,15 @@ function PerfilPanel() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [subiendoFoto, setSubiendoFoto] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 901px)');
+    const sync = () => setInfoOpen(mq.matches);
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, []);
   const handleFotoClick = () => fileInputRef.current?.click();
   const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const original = e.target.files?.[0];
@@ -1260,7 +1269,11 @@ function PerfilPanel() {
   // para que la zona horaria no mueva el día).
   const sidebar = (
     <aside className="pfx-side">
-      <details className="pfx-details">
+      <details
+        className="pfx-details"
+        open={infoOpen}
+        onToggle={(e) => setInfoOpen((e.currentTarget as HTMLDetailsElement).open)}
+      >
         <summary className="pfx-summary">
           <i className="ti ti-info-circle" aria-hidden="true" /> Ver información del perfil
           <i className="ti ti-chevron-down part-info-chevron" aria-hidden="true" />
