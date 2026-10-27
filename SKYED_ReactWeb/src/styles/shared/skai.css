@@ -329,15 +329,19 @@
   overflow: hidden;
   z-index: 9999;
   opacity: 0;
-  transform: translateY(16px) scale(0.98);
+  transform: translateY(24px) scale(0.9);
+  transform-origin: 28px calc(100% + 40px);
   pointer-events: none;
-  transition: opacity 0.22s ease, transform 0.22s ease;
+  /* Cierre: el mismo camino de vuelta, más rápido */
+  transition: opacity 0.16s ease-in, transform 0.18s ease-in;
 }
 
 .skyed-panel.is-open {
   opacity: 1;
   transform: translateY(0) scale(1);
   pointer-events: auto;
+  /* Apertura: con un pequeño rebote al final */
+  transition: opacity 0.24s ease-out, transform 0.42s cubic-bezier(0.2, 0.9, 0.3, 1.15);
 }
 
 .skyed-panel-header {
@@ -489,8 +493,8 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--skyed-text-muted);
-  animation: skyed-blink 1.1s infinite ease-in-out;
+  background: var(--skyed-gradient);
+  animation: skyed-ola 1.1s infinite ease-in-out;
 }
 
 .skyed-msg.is-typing span:nth-child(2) { animation-delay: 0.15s; }
@@ -699,3 +703,182 @@
 #skyed-assistant-root.is-hidden .skyed-panel {
   display: none;
 }
+
+/* =========================================================
+   ANIMACIONES DE APERTURA (despertar de SKAI) Y MENSAJES
+   ========================================================= */
+
+/* Indicador "pensando": puntos en ola con el color del módulo + texto */
+.skyed-msg.is-typing small {
+  margin-left: 6px;
+  font-size: 12px;
+  color: var(--skyed-text-muted);
+  background: linear-gradient(90deg, var(--skyed-text-muted) 0%, var(--skyed-text) 50%, var(--skyed-text-muted) 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: skyed-brillo 1.6s linear infinite;
+}
+@keyframes skyed-ola {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.45; }
+  30%           { transform: translateY(-5px); opacity: 1; }
+}
+@keyframes skyed-brillo {
+  from { background-position: 100% 0; }
+  to   { background-position: -100% 0; }
+}
+
+/* Cada mensaje entra deslizándose */
+.skyed-msg {
+  animation: skyed-msg-entra 0.3s ease-out backwards;
+}
+@keyframes skyed-msg-entra {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+}
+
+/* Pantalla de "despertar": solo la primera vez que se abre */
+.skyed-boot {
+  position: absolute;
+  inset: 64px 0 0 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  background: var(--skyed-bg);
+  color: var(--skyed-text);
+  animation: skyed-boot-sale 0.3s ease-in 1s forwards;
+}
+.skyed-boot p {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  animation: skyed-msg-entra 0.4s ease-out 0.15s backwards;
+}
+@keyframes skyed-boot-sale {
+  to { opacity: 0; transform: scale(1.03); }
+}
+
+.skyed-boot-orb {
+  position: relative;
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--skyed-gradient);
+  box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+  animation: skyed-boot-aparece 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.3) backwards,
+             skyed-boot-brilla 1.4s ease-in-out infinite;
+}
+.skyed-boot-orb .skyed-logo {
+  transform: scale(1.05);
+}
+/* Los ojos empiezan cerrados y se abren: la IA "despierta" */
+.skyed-boot-orb .skyed-logo-eyes span {
+  animation: skyed-boot-ojos 0.9s ease-in-out backwards;
+}
+@keyframes skyed-boot-aparece {
+  from { opacity: 0; transform: scale(0.4); }
+}
+@keyframes skyed-boot-brilla {
+  0%, 100% { box-shadow: 0 0 18px 2px color-mix(in srgb, var(--skyed-blue-light) 35%, transparent); }
+  50%      { box-shadow: 0 0 34px 8px color-mix(in srgb, var(--skyed-blue-light) 55%, transparent); }
+}
+@keyframes skyed-boot-ojos {
+  0%, 45% { transform: scaleY(0.1); }
+  60%     { transform: scaleY(1.15); }
+  100%    { transform: scaleY(1); }
+}
+
+.skyed-boot-ring {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid var(--skyed-blue-light);
+  opacity: 0;
+  animation: skyed-fab-ping 1.2s ease-out 0.3s infinite;
+}
+.skyed-boot-ring + .skyed-boot-ring {
+  border-color: var(--skyed-purple-light);
+  animation-delay: 0.7s;
+}
+
+.skyed-boot-dots {
+  display: inline-flex;
+  gap: 3px;
+  margin-left: 4px;
+}
+.skyed-boot-dots i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: skyed-blink 1s infinite ease-in-out;
+}
+.skyed-boot-dots i:nth-child(2) { animation-delay: 0.15s; }
+.skyed-boot-dots i:nth-child(3) { animation-delay: 0.3s; }
+
+.skyed-boot-bar {
+  width: 140px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--skyed-surface-2);
+  overflow: hidden;
+  position: relative;
+}
+.skyed-boot-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--skyed-gradient);
+  transform-origin: left;
+  animation: skyed-boot-carga 1s ease-in-out forwards;
+}
+@keyframes skyed-boot-carga {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+/* Quien prefiere menos movimiento (en Windows: "Efectos de animación" apagado):
+   nada rebota, crece ni se desliza; todo aparece con fundidos suaves. */
+@keyframes skyed-funde {
+  from { opacity: 0; }
+}
+@keyframes skyed-latido {
+  0%, 100% { opacity: 0.35; }
+  50%      { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skyed-panel,
+  .skyed-panel.is-open {
+    transform: none;
+    transition: opacity 0.25s ease;
+  }
+  .skyed-msg,
+  .skyed-boot p,
+  .skyed-boot-orb {
+    animation-name: skyed-funde;
+  }
+  .skyed-boot-orb {
+    animation: skyed-funde 0.4s ease backwards;
+  }
+  .skyed-boot-ring {
+    display: none;
+  }
+  .skyed-msg.is-typing span {
+    animation-name: skyed-latido;
+  }
+  .skyed-msg.is-typing small {
+    animation: none;
+    -webkit-text-fill-color: currentColor;
+  }
+  .skyed-boot {
+    animation-name: skyed-funde;
+    animation-direction: reverse;
+  }
+}
+
