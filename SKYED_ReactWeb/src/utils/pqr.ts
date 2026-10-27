@@ -2,10 +2,10 @@ import type { EstadoPqr, Pqr, PqrSeguimiento, TipoPqr } from '../services/social
 
 /** Fases en el orden en que avanza una PQR. */
 export const FASES: { key: EstadoPqr; label: string; corto: string }[] = [
-  { key: 'abierto', label: 'Radicada', corto: 'Radicada' },
+  { key: 'abierto', label: 'Enviado', corto: 'Enviado' },
   { key: 'en_revision', label: 'En revisión', corto: 'Revisión' },
   { key: 'en_proceso', label: 'En proceso', corto: 'Proceso' },
-  { key: 'resuelto', label: 'Resuelta', corto: 'Resuelta' },
+  { key: 'resuelto', label: 'Resuelto', corto: 'Resuelto' },
   { key: 'cerrado', label: 'Cerrada', corto: 'Cerrada' },
 ];
 

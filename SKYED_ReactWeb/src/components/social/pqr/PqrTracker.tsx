@@ -15,6 +15,7 @@ import {
   ESTADO_COLOR,
   ESTADO_LABEL,
   FASES,
+  esFinal,
   fmtFechaHora,
   hace,
   indiceFase,
@@ -74,21 +75,25 @@ export function PqrPlazoChip({ pqr }: { pqr: Pick<Pqr, 'estado_pqr' | 'fecha_lim
  * Las fases ya recorridas quedan llenas, la actual late suavemente.
  */
 export function PqrStepper({ estado }: { estado: EstadoPqr }) {
+  // "Cerrada" solo aparece como paso cuando el caso realmente se cerró.
+  const fases = estado === 'cerrado' ? FASES : FASES.filter((f) => f.key !== 'cerrado');
   const actual = indiceFase(estado);
-  const avance = (actual / (FASES.length - 1)) * 100;
+  const avance = (actual / (fases.length - 1)) * 100;
 
   return (
     <ol
       className="pqrx-stepper"
       aria-label={`Fase actual: ${ESTADO_LABEL[estado]}`}
-      style={{ '--avance': `${avance}%` } as CSSProperties}
+      style={{ '--avance': `${avance}%`, '--pasos': fases.length } as CSSProperties}
     >
-      {FASES.map((fase, i) => {
-        const clase = i < actual ? 'done' : i === actual ? 'current' : 'todo';
+      {fases.map((fase, i) => {
+        // La última fase alcanzada de un caso terminado se ve como completada.
+        const completada = i < actual || (i === actual && esFinal(estado));
+        const clase = completada ? 'done' : i === actual ? 'current' : 'todo';
         return (
           <li key={fase.key} className={`pqrx-stop ${clase}`} style={colorVar(fase.key)}>
             <span className="pqrx-stop-dot">
-              {i < actual ? <CheckCircle2 size={15} /> : ICONO_FASE[fase.key]}
+              {completada ? <CheckCircle2 size={15} /> : ICONO_FASE[fase.key]}
             </span>
             <span className="pqrx-stop-label">{fase.label}</span>
           </li>
