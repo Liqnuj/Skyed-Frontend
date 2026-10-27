@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import {
+  ArrowLeft,
   Building2,
   CalendarCheck2,
   CalendarDays,
@@ -12,6 +13,7 @@ import {
   Loader2,
   Lock,
   LogOut,
+  House,
   Menu,
   MessageSquareText,
   Pencil,
@@ -701,6 +703,16 @@ function AdminPage() {
           <Link to="/social" className="admin-brand">
             <img src="/assets/social/logo_social.png" alt="Skyed Social" />
             <span>Skyed <em>Social</em></span>
+          </Link>
+        </div>
+
+        {/* Atajos: volver a la página pública del módulo o al inicio de SKYED */}
+        <div className="admin-header-right" role="navigation" aria-label="Salir del panel">
+          <Link to="/social" className="icon-btn" title="Ir a Skyed Social" aria-label="Ir a la página de Skyed Social">
+            <ArrowLeft size={19} />
+          </Link>
+          <Link to="/" className="icon-btn" title="Volver a SKYED Principal" aria-label="Volver al inicio principal">
+            <House size={19} />
           </Link>
         </div>
       </header>

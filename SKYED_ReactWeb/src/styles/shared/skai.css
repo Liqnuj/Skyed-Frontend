@@ -164,11 +164,21 @@
   50%      { transform: translateY(-1.5px) scale(1.035); }
 }
 
-/* Botón flotante — esquina inferior IZQUIERDA */
-.skyed-fab {
+/* Botón flotante — esquina inferior IZQUIERDA.
+   .skyed-dock agrupa el botón y el de ocultar, para que el de ocultar
+   aparezca al pasar el mouse por cualquiera de los dos. */
+.skyed-dock {
   position: fixed;
   bottom: 24px;
   left: 24px;
+  z-index: 9999;
+  /* Zona de hover un poco más grande que el botón, para alcanzar el de ocultar */
+  padding: 12px;
+  margin: -12px;
+}
+
+.skyed-fab {
+  position: relative;
   width: 58px;
   height: 58px;
   border-radius: 50%;
@@ -574,11 +584,118 @@
     left: 12px;
     bottom: 84px;
   }
-  .skyed-fab {
+  .skyed-dock {
     left: 16px;
     bottom: 16px;
   }
   .skyed-teaser {
     left: 16px;
   }
+}
+
+/* =========================================================
+   OCULTAR / MOSTRAR A SKAI
+   Al pasar el mouse aparece un botón pequeño para ocultarlo; oculto,
+   solo queda una pestaña en el borde izquierdo para volver a mostrarlo.
+   ========================================================= */
+.skyed-hide {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: var(--skyed-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  transform: scale(0.7);
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease, background 0.18s ease;
+  /* Encima del botón de SKAI (z-index 9999) */
+  z-index: 10000;
+}
+
+.skyed-hide svg,
+.skyed-restore svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.skyed-dock:hover .skyed-hide,
+.skyed-dock:focus-within .skyed-hide {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+
+.skyed-hide:hover {
+  background: var(--skyed-purple-light);
+}
+
+.skyed-hide:focus-visible,
+.skyed-restore:focus-visible {
+  outline: 2px solid var(--skyed-blue-light);
+  outline-offset: 2px;
+}
+
+/* En pantallas táctiles no hay "hover": el botón se ve siempre */
+@media (hover: none) {
+  .skyed-hide {
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: auto;
+  }
+}
+
+/* Pestaña para volver a mostrarlo */
+.skyed-restore {
+  position: fixed;
+  left: 0;
+  bottom: 28px;
+  z-index: 9999;
+  display: none;
+  align-items: center;
+  gap: 2px;
+  height: 40px;
+  padding: 0 6px 0 4px;
+  border: none;
+  border-radius: 0 12px 12px 0;
+  background: var(--skyed-gradient);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  opacity: 0.75;
+  transform: translateX(-4px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.skyed-restore:hover,
+.skyed-restore:focus-visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.skyed-restore .skyed-logo {
+  transform: scale(0.42);
+  margin: 0 -9px;
+}
+
+#skyed-assistant-root.is-hidden .skyed-restore {
+  display: flex;
+}
+
+#skyed-assistant-root.is-hidden .skyed-dock,
+#skyed-assistant-root.is-hidden .skyed-teaser,
+#skyed-assistant-root.is-hidden .skyed-panel {
+  display: none;
 }

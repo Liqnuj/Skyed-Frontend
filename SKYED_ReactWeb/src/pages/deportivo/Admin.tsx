@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import jsQR from "jsqr";
 import {
+  ArrowLeft,
   Bike,
   CalendarDays,
   Camera,
@@ -14,6 +15,7 @@ import {
   ListOrdered,
   Loader2,
   LogOut,
+  House,
   Menu,
   Package,
   Pencil,
@@ -610,6 +612,16 @@ function AdminPage() {
           <Link to="/deportivo" className="admin-brand">
             <img src="/assets/deportivo/logo_deportivo.png" alt="Skyed Deportivo" />
             <span>Skyed <em>Deportivo</em></span>
+          </Link>
+        </div>
+
+        {/* Atajos: volver a la página pública del módulo o al inicio de SKYED */}
+        <div className="admin-header-right" role="navigation" aria-label="Salir del panel">
+          <Link to="/deportivo" className="icon-btn" title="Ir a Skyed Deportivo" aria-label="Ir a la página de Skyed Deportivo">
+            <ArrowLeft size={19} />
+          </Link>
+          <Link to="/" className="icon-btn" title="Volver a SKYED Principal" aria-label="Volver al inicio principal">
+            <House size={19} />
           </Link>
         </div>
       </header>
