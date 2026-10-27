@@ -1688,3 +1688,183 @@
   color: var(--accent);
 }
 
+/* ===== Detalle de reserva: modal compacto + ficha con filas (prefijo pfr-) ===== */
+
+/* Marco más compacto: así la ficha y las observaciones caben sin tanto scroll */
+.mod-social .pf-rese-modal { padding: 1.15rem 1.35rem 1.2rem; }
+.mod-social .pf-rese-modal .pf-modal-head { gap: .8rem; margin-bottom: .6rem; }
+.mod-social .pf-rese-modal .pf-item-icon { width: 40px; height: 40px; }
+.mod-social .pf-rese-modal .pf-pqr-heading h3 { margin-bottom: .1rem; }
+.mod-social .pf-rese-modal .pf-pqr-heading .pf-list-item-sub { margin: 0; }
+
+/* Fila de chips con "Cambiar nombre" a la derecha */
+.mod-social .pfr-meta { gap: .5rem; }
+.mod-social .pfr-meta .pfr-rename { margin: 0 0 0 auto; }
+
+/* Progreso en una sola línea: punto + etiqueta + conector */
+.mod-social .pf-rese-modal .pf-steps { margin: .8rem 0 0; }
+.mod-social .pf-rese-modal .pf-steps li {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  flex: 1 1 auto;
+  padding: 0;
+  text-align: left;
+  white-space: nowrap;
+  font-size: calc(.74rem * var(--fs-scale, 1));
+}
+.mod-social .pf-rese-modal .pf-steps li:last-child { flex: 0 0 auto; }
+.mod-social .pf-rese-modal .pf-steps li::before {
+  position: static;
+  transform: none;
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  font-size: .62rem;
+}
+.mod-social .pf-rese-modal .pf-steps li:not(:last-child)::after {
+  position: static;
+  flex: 1 1 12px;
+  width: auto;
+  min-width: 12px;
+  height: 2px;
+  margin: 0 .35rem;
+  border-radius: 2px;
+}
+
+/* Solo el cuerpo se desplaza; barra fina, sin flechas */
+.mod-social .pf-rese-modal .pf-rese-body {
+  margin-top: .8rem;
+  padding-right: .4rem;
+  overscroll-behavior: contain;
+}
+.mod-social .pf-rese-modal .pf-rese-body::-webkit-scrollbar { width: 6px; }
+.mod-social .pf-rese-modal .pf-rese-body::-webkit-scrollbar-track { background: transparent; }
+.mod-social .pf-rese-modal .pf-rese-body::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+.mod-social .pf-rese-modal .pf-rese-body::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.mod-social .pf-rese-modal .pf-rese-body::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--accent) 70%, transparent);
+}
+@supports (-moz-appearance: none) {
+  .mod-social .pf-rese-modal .pf-rese-body {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--accent) 45%, transparent) transparent;
+  }
+}
+
+/* Avisos más bajos */
+.mod-social .pf-rese-modal .pf-rese-note { margin-top: .5rem; padding: .6rem .85rem; border-radius: 12px; }
+.mod-social .pf-rese-modal .pf-rese-note:first-child { margin-top: 0; }
+
+/* Ficha */
+.mod-social .pfr-ficha {
+  margin: .6rem 0 0;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+  overflow: hidden;
+}
+
+.mod-social .pfr-row {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .6rem .9rem;
+}
+.mod-social .pfr-row + .pfr-row {
+  border-top: 1px solid color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.mod-social .pfr-icon {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+  font-size: calc(.95rem * var(--fs-scale, 1));
+}
+.mod-social.dark-mode .pfr-icon {
+  color: color-mix(in srgb, var(--accent) 55%, white);
+}
+
+/* Etiquetas con más contraste que --text-muted */
+.mod-social .pfr-label {
+  flex: 0 0 auto;
+  margin: 0;
+  font-size: calc(.82rem * var(--fs-scale, 1));
+  color: color-mix(in srgb, var(--plum) 68%, transparent);
+}
+.mod-social.dark-mode .pfr-label {
+  color: color-mix(in srgb, var(--white) 72%, transparent);
+}
+
+.mod-social .pfr-value {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  text-align: right;
+  font-size: calc(.95rem * var(--fs-scale, 1));
+  font-weight: 600;
+  color: var(--plum);
+  overflow-wrap: anywhere;
+}
+.mod-social.dark-mode .pfr-value { color: var(--white); }
+.mod-social .pfr-value--pending { font-weight: 500; color: var(--text-muted); }
+.mod-social.dark-mode .pfr-value--pending { color: color-mix(in srgb, var(--white) 55%, transparent); }
+
+/* "Reservada el ..." al pie de la ficha */
+.mod-social .pfr-foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: .35rem;
+  margin: .5rem .25rem 0;
+  font-size: calc(.76rem * var(--fs-scale, 1));
+  color: color-mix(in srgb, var(--plum) 60%, transparent);
+}
+.mod-social.dark-mode .pfr-foot {
+  color: color-mix(in srgb, var(--white) 60%, transparent);
+}
+
+/* Observaciones */
+.mod-social .pfr-obs {
+  margin-top: .75rem;
+  padding: .7rem .95rem;
+  border-left: 3px solid var(--gold);
+  border-radius: 4px 12px 12px 4px;
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+.mod-social .pfr-obs-label {
+  display: block;
+  margin-bottom: .2rem;
+  font-size: calc(.7rem * var(--fs-scale, 1));
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--plum) 68%, transparent);
+}
+.mod-social.dark-mode .pfr-obs-label {
+  color: color-mix(in srgb, var(--white) 72%, transparent);
+}
+.mod-social .pfr-obs p {
+  margin: 0;
+  font-size: calc(.92rem * var(--fs-scale, 1));
+  color: var(--plum);
+  overflow-wrap: anywhere;
+}
+.mod-social.dark-mode .pfr-obs p { color: var(--white); }
+
+@media (max-width: 480px) {
+  .mod-social .pf-rese-modal { padding: 1rem 1rem 1.1rem; }
+  .mod-social .pf-rese-modal .pf-steps li { font-size: calc(.68rem * var(--fs-scale, 1)); gap: .3rem; }
+  .mod-social .pf-rese-modal .pf-steps li:not(:last-child)::after { margin: 0 .2rem; }
+  .mod-social .pfr-row { flex-wrap: wrap; row-gap: .1rem; }
+  .mod-social .pfr-label { flex: 1; }
+  .mod-social .pfr-value { flex: 0 0 100%; text-align: left; padding-left: calc(32px + .75rem); }
+}
