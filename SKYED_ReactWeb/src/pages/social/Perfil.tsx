@@ -828,20 +828,22 @@ function ReservaDetalle({ reserva, onClose, onRenombrar, onOcultar, oculta }: Re
             ) : (
               <>
                 <h3 id="pf-rese-title">{nombreReserva(reserva)}</h3>
-                <p className="pf-list-item-sub">{fmtFecha(reserva.fecha_evento_rese)}</p>
-                <button type="button" className="pf-rename-btn" onClick={() => setEditando(true)}>
-                  <i className="ti ti-pencil" aria-hidden="true" />
-                  {(r.nombre_rese ?? '').trim() ? 'Cambiar nombre' : 'Ponle un nombre'}
-                </button>
+                <p className="pf-list-item-sub">{fmtFechaLarga(reserva.fecha_evento_rese)}</p>
               </>
             )}
           </div>
           <button className="pf-modal-close" onClick={onClose} aria-label="Cerrar">×</button>
         </div>
 
-        <div className="pf-pqr-meta">
+        <div className="pf-pqr-meta pfr-meta">
           <span className="pf-item-code">Reserva #{reserva.id_rese}</span>
           <span className={`pf-pill ${pill.cls}`}>{pill.txt}</span>
+          {!editando && (
+            <button type="button" className="pf-rename-btn pfr-rename" onClick={() => setEditando(true)}>
+              <i className="ti ti-pencil" aria-hidden="true" />
+              {(r.nombre_rese ?? '').trim() ? 'Cambiar nombre' : 'Ponle un nombre'}
+            </button>
+          )}
         </div>
 
         {!cancelada && (
@@ -854,46 +856,6 @@ function ReservaDetalle({ reserva, onClose, onRenombrar, onOcultar, oculta }: Re
         )}
 
         <div className="pf-rese-body">
-          <div className="pf-info-grid">
-            <div className="pf-info-card wide">
-              <span className="pf-info-label">Fecha del evento</span>
-              <span className="pf-info-value">{fmtFechaLarga(reserva.fecha_evento_rese)}</span>
-            </div>
-            {ubicacion && (
-              <div className="pf-info-card wide">
-                <span className="pf-info-label">Ubicación</span>
-                <span className="pf-info-value">{ubicacion}</span>
-              </div>
-            )}
-            <div className="pf-info-card">
-              <span className="pf-info-label">Invitados</span>
-              <span className="pf-info-value">{reserva.invitados_rese}</span>
-            </div>
-            {r.presupuesto_rese != null && (
-              <div className="pf-info-card">
-                <span className="pf-info-label">Tu presupuesto</span>
-                <span className="pf-info-value">{fmtMoney(Number(r.presupuesto_rese))}</span>
-              </div>
-            )}
-            <div className="pf-info-card">
-              <span className="pf-info-label">Total</span>
-              <span className="pf-info-value">{totalPorDefinir ? 'Por definir' : fmtMoney(reserva.total_rese)}</span>
-            </div>
-            {r.creado_en_rese && (
-              <div className="pf-info-card">
-                <span className="pf-info-label">Reservada el</span>
-                <span className="pf-info-value">{fmtFecha(r.creado_en_rese)}</span>
-              </div>
-            )}
-          </div>
-
-          {observaciones && (
-            <div className="pf-bubble mine pf-rese-obs">
-              <span className="pf-bubble-who">Tus observaciones</span>
-              <p>{observaciones}</p>
-            </div>
-          )}
-
           {cuenta && (
             <div className="pf-rese-note">
               <i className="ti ti-hourglass" aria-hidden="true" />
@@ -904,6 +866,49 @@ function ReservaDetalle({ reserva, onClose, onRenombrar, onOcultar, oculta }: Re
             <i className={`ti ${cancelada ? 'ti-circle-x' : 'ti-info-circle'}`} aria-hidden="true" />
             <span>{RESERVA_NOTA[estado] ?? ''}</span>
           </div>
+
+          <dl className="pfr-ficha">
+            {ubicacion && (
+              <div className="pfr-row">
+                <span className="pfr-icon" aria-hidden="true"><i className="ti ti-map-pin" /></span>
+                <dt className="pfr-label">Ubicación</dt>
+                <dd className="pfr-value">{ubicacion}</dd>
+              </div>
+            )}
+            <div className="pfr-row">
+              <span className="pfr-icon" aria-hidden="true"><i className="ti ti-users" /></span>
+              <dt className="pfr-label">Invitados</dt>
+              <dd className="pfr-value">{reserva.invitados_rese}</dd>
+            </div>
+            {r.presupuesto_rese != null && (
+              <div className="pfr-row">
+                <span className="pfr-icon" aria-hidden="true"><i className="ti ti-wallet" /></span>
+                <dt className="pfr-label">Tu presupuesto</dt>
+                <dd className="pfr-value">{fmtMoney(Number(r.presupuesto_rese))}</dd>
+              </div>
+            )}
+            <div className="pfr-row">
+              <span className="pfr-icon" aria-hidden="true"><i className="ti ti-receipt" /></span>
+              <dt className="pfr-label">Total</dt>
+              <dd className={`pfr-value${totalPorDefinir ? ' pfr-value--pending' : ''}`}>
+                {totalPorDefinir ? 'Por definir' : fmtMoney(reserva.total_rese)}
+              </dd>
+            </div>
+          </dl>
+
+          {r.creado_en_rese && (
+            <p className="pfr-foot">
+              <i className="ti ti-clock" aria-hidden="true" />
+              Reservada el {fmtFecha(r.creado_en_rese)}
+            </p>
+          )}
+
+          {observaciones && (
+            <div className="pfr-obs">
+              <span className="pfr-obs-label">Tus observaciones</span>
+              <p>{observaciones}</p>
+            </div>
+          )}
 
           {historial.length > 0 && (
             <div className="pf-history">
