@@ -2555,6 +2555,20 @@
   font-weight: 500;
   color: white;
 }
+
+/* En PC el bloque siempre visible, aunque el <details> no esté [open] */
+@media (min-width: 901px) {
+  .mod-deportivo .part-info-details::details-content {
+    content-visibility: visible;
+    display: block;
+  }
+  .mod-deportivo .part-info-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+}
+
 /* =========================================================
    FIX celular: la barra se salía de la pantalla (página con
    desplazamiento lateral y el menú de la cuenta fuera de vista)

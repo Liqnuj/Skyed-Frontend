@@ -3220,6 +3220,19 @@
   color: var(--white) !important;
 }
 
+/* En PC el bloque siempre visible, aunque el <details> no esté [open] */
+@media (min-width: 901px) {
+  .mod-social .pfx-details::details-content {
+    content-visibility: visible;
+    display: block;
+  }
+  .mod-social .pfx-details-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+}
+
 /* =========================================
    CORRECCIONES RESPONSIVE (MÓVIL)
    ========================================= */
@@ -3508,5 +3521,98 @@
   
   .mod-social .carousel-next {
     right: 8px !important;
+  }
+}
+
+/* =========================================
+   MEJORA RESPONSIVE: FORMULARIO DE RESERVAS (MÓVIL)
+   ========================================= */
+@media (max-width: 900px) {
+  /* Apilar las dos grandes columnas (Información y Formulario) */
+  .mod-social .booking-grid {
+    grid-template-columns: 1fr !important;
+    gap: 3rem !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Forzar que todos los campos del formulario ocupen el 100% del ancho */
+  .mod-social .form-row {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0 !important;
+  }
+  
+  /* Quitar límites de ancho que estaban cortando los inputs a la derecha */
+  .mod-social .booking-form .form-group input,
+  .mod-social .booking-form .form-group select,
+  .mod-social .booking-form .form-group textarea,
+  .mod-social .booking-form .form-row .form-group.span-two input,
+  .mod-social .booking-form .form-row .form-group.span-two select {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Reducir los amplios espacios (paddings) internos del cuadro del formulario */
+  .mod-social .booking-form {
+    padding: 1.5rem !important;
+  }
+  
+  .mod-social .form-title {
+    font-size: 1.25rem !important;
+    margin-bottom: 1.5rem !important;
+  }
+}
+
+/* =========================================
+   MEJORA RESPONSIVE: MODAL DE DETALLE DE EVENTO (MÓVIL)
+   ========================================= */
+@media (max-width: 600px) {
+  /* Apilar las métricas (invitados, horas, precio) en vertical en lugar de horizontal */
+  .mod-social .modal-meta {
+    flex-direction: column !important;
+    gap: 1rem !important;
+    padding: 1.25rem !important;
+  }
+  
+/* Asegurar que cada métrica tenga espacio suficiente y se alinee bien */
+  .mod-social .modal-meta-item {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-direction: row-reverse !important; /* Esto invierte el orden: texto a la izq, número a la der */
+    text-align: left !important;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    padding-bottom: 0.5rem;
+  }
+  .mod-social .modal-meta-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  /* Ajustar el tamaño del texto gigante del precio para que no se desborde */
+  .mod-social .modal-meta-item strong {
+    font-size: 1.15rem !important;
+  }
+
+  /* La lista de "Qué incluye" a 1 sola columna en vez de 2 */
+  .mod-social .modal-includes ul {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+  }
+
+  /* El pie del modal (precio base + botón cotizar) apilado */
+  .mod-social .modal-price-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 1.25rem !important;
+    text-align: center !important;
+  }
+
+  /* Asegurar que el botón de cotizar ocupe el 100% del ancho */
+  .mod-social .modal-cta-btn {
+    width: 100% !important;
+    justify-content: center !important;
   }
 }

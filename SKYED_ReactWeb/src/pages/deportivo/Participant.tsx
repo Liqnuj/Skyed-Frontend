@@ -390,6 +390,16 @@ function ParticipantPanel() {
   const [filtrosInsc, setFiltrosInsc] = useState<Filtros>(FILTROS_INSC);
   const [filtrosHist, setFiltrosHist] = useState<Filtros>(FILTROS_HIST);
 
+  const [infoOpen, setInfoOpen] = useState(false);
+
+useEffect(() => {
+  const mq = window.matchMedia('(min-width: 901px)');
+  const sync = () => setInfoOpen(mq.matches);
+  sync();
+  mq.addEventListener('change', sync);
+  return () => mq.removeEventListener('change', sync);
+}, []);
+
   useEffect(() => {
     apiFetch('/mis-inscripciones')
       .then((data) => setInscripciones(data.inscripciones ?? []))
@@ -629,7 +639,11 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
 
       <div className="part-body">
         <aside className="part-info-aside">
-          <details className="part-info-details">
+          <details
+            className="part-info-details"
+            open={infoOpen}
+            onToggle={(e) => setInfoOpen((e.currentTarget as HTMLDetailsElement).open)}
+          >
             <summary className="part-info-summary">
               <i className="ti ti-info-circle" aria-hidden="true" /> Ver información del perfil
               <i className="ti ti-chevron-down part-info-chevron" aria-hidden="true" />
