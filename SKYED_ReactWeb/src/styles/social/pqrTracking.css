@@ -85,7 +85,7 @@
   display: grid;
   /* --n = número de fases visibles (Radicada, En proceso, Resuelta, Cerrada) */
   --n: 3;
-  grid-template-columns: repeat(var(--n), 1fr);
+  grid-template-columns: repeat(var(--pasos, 5), 1fr);
   margin: 1.2rem 0 1.5rem;
 }
 /* línea de fondo y línea recorrida: van de la 1.ª a la última parada */
@@ -93,17 +93,16 @@
 .pqrx-stepper::after {
   content: '';
   position: absolute;
-  top: 16px;
-  left: calc(50% / var(--n));
+  left: calc(50% / var(--pasos, 5));
   height: 3px;
   border-radius: 3px;
 }
 .pqrx-stepper::before {
-  right: calc(50% / var(--n));
+  right: calc(50% / var(--pasos, 5));
   background: var(--pq-line);
 }
 .pqrx-stepper::after {
-  width: calc(var(--avance, 0%) * (var(--n) - 1) / var(--n));
+  width: calc(var(--avance, 0%) * (var(--pasos, 5) - 1) / var(--pasos, 5));
   background: var(--pq-accent);
   transition: width 0.6s cubic-bezier(0.3, 0.8, 0.3, 1);
 }

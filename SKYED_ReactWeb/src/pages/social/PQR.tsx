@@ -216,10 +216,10 @@ function PQRForm() {
                   <p className="pqr-confirm-sub">Tu solicitud fue recibida exitosamente y quedó asociada a tu cuenta.</p>
                   <div className="pqr-confirm-code" id="pqrCode">Radicado: {radicado}</div>
                   <div className="status-track">
-                    <div className="status-step"><div className="status-dot done">✓</div><div className="status-label active">Radicada</div></div>
+                    <div className="status-label active">Enviado</div>    
                     <div className="status-step"><div className="status-dot">2</div><div className="status-label">En revisión</div></div>
                     <div className="status-step"><div className="status-dot">3</div><div className="status-label">En proceso</div></div>
-                    <div className="status-step"><div className="status-dot">4</div><div className="status-label">Resuelta</div></div>
+                    <div className="status-step"><div className="status-dot">4</div><div className="status-label">Resuelto</div></div>
                   </div>
                   <a
                     className="pqr-whatsapp-btn"

@@ -135,9 +135,9 @@ const FILTROS_INICIALES: Filtros = { q: '', rango: 'todas', desde: '', hasta: ''
 
 const ESTADOS_PQR: { value: string; label: string }[] = [
   { value: 'todos', label: 'Todos' },
-  { value: 'abierto', label: 'Radicada' },
+  { value: 'abierto', label: 'Enviado' },
   { value: 'en_proceso', label: 'En proceso' },
-  { value: 'resuelto', label: 'Resuelta' },
+  { value: 'resuelto', label: 'Resuelto' },
   { value: 'ocultas', label: 'Ocultas' },
 ];
 
