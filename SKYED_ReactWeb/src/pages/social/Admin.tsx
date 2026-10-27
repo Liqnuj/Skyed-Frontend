@@ -31,6 +31,7 @@ import { useAccessibility } from "../../context/AccessibilityContext";
 import AccessibilityWidget from "../../components/shared/AccessibilityWidget";
 import { apiFetch } from "../../services/api";
 import type { EstadoPqr, Pqr } from "../../services/socialService";
+import PqrGestion from "../../components/social/pqr/AdminPqrManager";
 import "../../styles/social/Admin.css";
 
 type Section =
@@ -929,12 +930,12 @@ function AdminPage() {
         )}
 
         {section === "pqr" && (
-          <AdminPqrManager
+          <PqrGestion
             pqrs={pqrs}
             resumen={pqrResumen}
             total={pqrTotal}
             search={search}
-            onChanged={loadAll}
+            onChanged={async () => { await loadAll(); }}
             notify={notify}
           />
         )}

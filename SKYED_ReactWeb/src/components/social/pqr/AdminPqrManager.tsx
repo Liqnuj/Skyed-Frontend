@@ -1,26 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { FormEvent } from 'react';
+import type { CSSProperties, FormEvent } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronRight, Lock, Send, X } from 'lucide-react';
+import { CheckCircle2, ChevronRight, Loader2, Lock, Play, Send, X } from 'lucide-react';
 import { pqrService } from '../../../services/socialService';
-import type {
-  EstadoPqr,
-  Pqr,
-  RegistrarSeguimientoPayload,
-  TipoPqr,
-} from '../../../services/socialService';
+import type { EstadoPqr, Pqr, TipoPqr } from '../../../services/socialService';
 import {
   ESTADO_COLOR,
-  ESTADO_LABEL,
   FASES,
-  SUGERENCIA_MENSAJE,
   TIPO_LABEL,
   esFinal,
   fmtFechaHora,
   hace,
 } from '../../../utils/pqr';
 import { PqrEstadoPill, PqrPlazoChip, PqrStepper, PqrTimeline } from './PqrTracker';
-import type { CSSProperties } from 'react';
+
 
 type Filtro = EstadoPqr | 'todas' | 'vencidas';
 
@@ -205,7 +198,8 @@ export default function AdminPqrManager({ pqrs, resumen, total, search, onChange
 /*  Panel lateral de un caso                                           */
 /* ------------------------------------------------------------------ */
 
-type Eleccion = EstadoPqr | 'mantener';
+const MIN_RESPUESTA = 10;
+const MAX_RESPUESTA = 2000;
 
 function CasoPqr({
   id,
@@ -215,26 +209,35 @@ function CasoPqr({
 }: {
   id: number;
   onClose: () => void;
-  onChanged: () => Promise<void> | void;
+  onChanged: () => Promise<unknown> | void;
   notify: (mensaje: string) => void;
 }) {
   const [pqr, setPqr] = useState<Pqr | null>(null);
   const [errorCarga, setErrorCarga] = useState<string | null>(null);
 
-  const [eleccion, setEleccion] = useState<Eleccion>('mantener');
-  const [mensaje, setMensaje] = useState('');
+  const [respuesta, setRespuesta] = useState('');
   const [nota, setNota] = useState('');
-  const [enviando, setEnviando] = useState(false);
+  const [accion, setAccion] = useState<'iniciar' | 'resolver' | null>(null);
   const [errorForm, setErrorForm] = useState<string | null>(null);
 
   const cerrarRef = useRef<HTMLButtonElement>(null);
+  // Protección contra doble clic: el ref se actualiza al instante,
+  // el estado de React no.
+  const ocupadoRef = useRef(false);
 
+  // Abrir el detalle = avisarle al backend. Si la PQR estaba "Radicada",
+  // el backend la pasa a "En revisión" y guarda el cambio.
   useEffect(() => {
     let vivo = true;
     pqrService
-      .obtener(id)
-      .then((p) => vivo && setPqr(p))
-      .catch((e) => vivo && setErrorCarga(e instanceof Error ? e.message : 'No se pudo cargar la PQR.'));
+      .abrir(id)
+      .then(({ pqr: p, cambio }) => {
+        if (cambio) void onChanged();
+        if (vivo) setPqr(p);
+      })
+      .catch((e) => {
+        if (vivo) setErrorCarga(e instanceof Error ? e.message : 'No se pudo cargar la PQR.');
+      });
     return () => {
       vivo = false;
     };
@@ -249,53 +252,80 @@ function CasoPqr({
     return () => window.removeEventListener('keydown', alTeclear);
   }, [onClose]);
 
-  const cerrada = pqr?.estado_pqr === 'cerrado';
-  const resolviendo = eleccion === 'resuelto';
-  const sugerencia = eleccion !== 'mantener' ? SUGERENCIA_MENSAJE[eleccion] : undefined;
+  const estado = pqr?.estado_pqr;
+  const textoRespuesta = respuesta.trim();
+  const respuestaValida = textoRespuesta.length >= MIN_RESPUESTA;
+  const ocupado = accion !== null;
 
-  const hayAlgo = eleccion !== 'mantener' || mensaje.trim() !== '' || nota.trim() !== '';
-  const avisaAlUsuario = !cerrada && (eleccion !== 'mantener' || mensaje.trim() !== '');
+  // Quién respondió (lo registra el backend en el seguimiento).
+  const eventoRespuesta = pqr
+    ? [...(pqr.seguimientos ?? [])].reverse().find((s) => s.tipo_evento === 'respuesta')
+    : undefined;
+  const detalleRespuesta = [
+    pqr?.respondido_en_pqr ? `Respondida el ${fmtFechaHora(pqr.respondido_en_pqr)}` : '',
+    eventoRespuesta?.autor ? `Por ${eventoRespuesta.autor}` : '',
+  ]
+    .filter(Boolean)
+    .join(' · ');
 
-  const opciones = pqr
-    ? FASES.filter((f) => f.key !== 'abierto' && f.key !== pqr.estado_pqr)
-    : [];
+  /** Si otra persona ya movió la PQR, se vuelve a pedir el estado real. */
+  function resincronizar() {
+    pqrService
+      .obtener(id)
+      .then(setPqr)
+      .catch(() => {
+        // Se queda con lo que ya está en pantalla.
+      });
+  }
 
-  async function enviar(e: FormEvent) {
-    e.preventDefault();
-    if (!pqr || enviando || !hayAlgo) return;
+  async function comenzarGestion() {
+    if (!pqr || ocupadoRef.current) return;
+    ocupadoRef.current = true;
+    setAccion('iniciar');
     setErrorForm(null);
+    try {
+      const actualizada = await pqrService.iniciarGestion(pqr.id_pqr);
+      setPqr(actualizada);
+      notify('La PQR pasó a «En proceso». El usuario ya lo ve en su perfil.');
+      void onChanged();
+    } catch (err) {
+      setErrorForm(err instanceof Error ? err.message : 'No se pudo comenzar la gestión.');
+      resincronizar();
+    } finally {
+      ocupadoRef.current = false;
+      setAccion(null);
+    }
+  }
 
-    const texto = mensaje.trim();
-    if (resolviendo && !texto && !pqr.respuesta_pqr) {
-      setErrorForm('Para marcar la PQR como resuelta escribe la respuesta que recibirá el usuario.');
+  async function enviarRespuesta(e: FormEvent) {
+    e.preventDefault();
+    if (!pqr || ocupadoRef.current) return;
+
+    if (!respuestaValida) {
+      setErrorForm(`La respuesta debe tener al menos ${MIN_RESPUESTA} caracteres.`);
       return;
     }
 
-    const payload: RegistrarSeguimientoPayload = {};
-    if (eleccion !== 'mantener') payload.estado_pqr = eleccion;
-    if (texto) {
-      if (resolviendo) payload.respuesta_pqr = texto;
-      else payload.comentario_publico = texto;
-    }
-    if (nota.trim()) payload.nota_interna = nota.trim();
-
-    setEnviando(true);
+    ocupadoRef.current = true;
+    setAccion('resolver');
+    setErrorForm(null);
     try {
-      const actualizada = await pqrService.registrarSeguimiento(pqr.id_pqr, payload);
-      setPqr(actualizada);
-      setEleccion('mantener');
-      setMensaje('');
-      setNota('');
-      notify(
-        avisaAlUsuario
-          ? 'Seguimiento registrado. El usuario ya lo ve en su perfil.'
-          : 'Nota interna guardada.',
+      const actualizada = await pqrService.resolver(
+        pqr.id_pqr,
+        textoRespuesta,
+        nota.trim() || undefined,
       );
-      await onChanged();
+      setPqr(actualizada);
+      setRespuesta('');
+      setNota('');
+      notify('Respuesta enviada. La PQR quedó «Resuelta» y el usuario ya puede verla.');
+      void onChanged();
     } catch (err) {
-      setErrorForm(err instanceof Error ? err.message : 'No se pudo registrar el seguimiento.');
+      setErrorForm(err instanceof Error ? err.message : 'No se pudo enviar la respuesta.');
+      resincronizar();
     } finally {
-      setEnviando(false);
+      ocupadoRef.current = false;
+      setAccion(null);
     }
   }
 
@@ -335,133 +365,163 @@ function CasoPqr({
 
           {pqr && (
             <>
-              <div className="pqrx-person">
-                <span className="pqrx-avatar">
-                  {iniciales(pqr.usuario?.nombre_u, pqr.usuario?.apellido_u)}
-                </span>
-                <span>
-                  <b>{nombreCompleto(pqr)}</b>
-                  <small>
-                    {pqr.usuario?.correo_u}
-                    {pqr.usuario?.telefono_u ? ` · ${pqr.usuario.telefono_u}` : ''}
-                  </small>
-                </span>
-                <span className="pqrx-chips">
-                  <span className="pqrx-plazo">{TIPO_LABEL[pqr.tipo_pqr]}</span>
-                  <PqrPlazoChip pqr={pqr} />
-                </span>
-              </div>
-
-              <PqrStepper estado={pqr.estado_pqr} />
-
-              <div className="pqrx-box">
-                <span>Lo que escribió el usuario</span>
-                <p>{pqr.mensaje_pqr}</p>
-              </div>
-
-              <form className="pqrx-form" onSubmit={enviar}>
-                <h3>{cerrada ? 'Agregar nota interna' : 'Registrar avance'}</h3>
-                <p>
-                  {cerrada
-                    ? 'La PQR está cerrada: solo puedes dejar notas para el equipo.'
-                    : 'Cada avance queda en el historial y el usuario lo ve en su perfil.'}
-                </p>
-
-                {!cerrada && (
-                  <div className="pqrx-choices" role="radiogroup" aria-label="Fase">
-                    <button
-                      type="button"
-                      role="radio"
-                      aria-checked={eleccion === 'mantener'}
-                      className={`pqrx-choice${eleccion === 'mantener' ? ' on' : ''}`}
-                      style={color(pqr.estado_pqr)}
-                      onClick={() => setEleccion('mantener')}
-                    >
-                      <i />
-                      Seguir en «{ESTADO_LABEL[pqr.estado_pqr]}»
-                    </button>
-                    {opciones.map((f) => (
-                      <button
-                        key={f.key}
-                        type="button"
-                        role="radio"
-                        aria-checked={eleccion === f.key}
-                        className={`pqrx-choice${eleccion === f.key ? ' on' : ''}`}
-                        style={color(f.key)}
-                        onClick={() => setEleccion(f.key)}
-                      >
-                        <i />
-                        Pasar a «{f.label}»
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {!cerrada && (
-                  <label className="pqrx-field">
-                    <span>
-                      {resolviendo ? 'Respuesta para el usuario' : 'Mensaje para el usuario (opcional)'}
-                      {sugerencia && !mensaje.trim() && (
-                        <button type="button" onClick={() => setMensaje(sugerencia)}>
-                          Usar texto sugerido
-                        </button>
-                      )}
-                    </span>
-                    <textarea
-                      rows={resolviendo ? 6 : 4}
-                      maxLength={resolviendo ? 2000 : 1000}
-                      value={mensaje}
-                      onChange={(e) => setMensaje(e.target.value)}
-                      placeholder={
-                        resolviendo
-                          ? 'Escribe la respuesta oficial. El usuario la verá completa.'
-                          : 'Ej. Ya contactamos al área encargada y te escribimos mañana.'
-                      }
-                    />
-                    <small>
-                      {mensaje.length}/{resolviendo ? 2000 : 1000} caracteres
-                    </small>
-                  </label>
-                )}
-
-                <label className="pqrx-field internal">
-                  <span>
-                    <b style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                      <Lock size={13} aria-hidden="true" /> Nota interna (opcional)
-                    </b>
-                  </span>
-                  <textarea
-                    rows={3}
-                    maxLength={1000}
-                    value={nota}
-                    onChange={(e) => setNota(e.target.value)}
-                    placeholder="Solo la ve el equipo administrador."
-                  />
-                </label>
-
-                {errorForm && <p className="pqrx-error">{errorForm}</p>}
-
-                <div className="pqrx-form-actions">
-                  <small>
-                    {avisaAlUsuario
-                      ? 'El usuario recibirá una notificación.'
-                      : 'Las notas internas nunca se muestran al usuario.'}
-                  </small>
-                  <button className="primary-btn" disabled={!hayAlgo || enviando}>
-                    <Send size={15} />
-                    {enviando ? 'Guardando…' : cerrada ? 'Guardar nota' : 'Registrar avance'}
-                  </button>
+              {/* ---------- 1. Información del PQR ---------- */}
+              <section className="pqrx-panel" aria-labelledby="pqrx-info-title">
+                <div className="pqrx-panel-head">
+                  <h3 id="pqrx-info-title">Información de la solicitud</h3>
                 </div>
-              </form>
+                <div className="pqrx-panel-body">
+                  <div className="pqrx-person">
+                    <span className="pqrx-avatar">
+                      {iniciales(pqr.usuario?.nombre_u, pqr.usuario?.apellido_u)}
+                    </span>
+                    <span>
+                      <b>{nombreCompleto(pqr)}</b>
+                      <small>
+                        {pqr.usuario?.correo_u}
+                        {pqr.usuario?.telefono_u ? ` · ${pqr.usuario.telefono_u}` : ''}
+                      </small>
+                    </span>
+                    <span className="pqrx-chips">
+                      <PqrPlazoChip pqr={pqr} />
+                    </span>
+                  </div>
+
+                  <dl className="pqrx-info-grid">
+                    <div>
+                      <dt>Tipo</dt>
+                      <dd>{TIPO_LABEL[pqr.tipo_pqr]}</dd>
+                    </div>
+                    <div>
+                      <dt>Radicado</dt>
+                      <dd>{pqr.radicado}</dd>
+                    </div>
+                    <div>
+                      <dt>Fecha</dt>
+                      <dd>{fmtFechaHora(pqr.creado_en_pqr)}</dd>
+                    </div>
+                    <div>
+                      <dt>Estado</dt>
+                      <dd>
+                        <PqrEstadoPill estado={pqr.estado_pqr} />
+                      </dd>
+                    </div>
+                  </dl>
+
+                  <PqrStepper estado={pqr.estado_pqr} />
+
+                  <div className="pqrx-box">
+                    <span>Lo que escribió el usuario</span>
+                    <p>{pqr.mensaje_pqr}</p>
+                  </div>
+                </div>
+              </section>
+
+              {/* ---------- 2. Gestión / respuesta del administrador ---------- */}
+              <section className="pqrx-panel manage" aria-labelledby="pqrx-gestion-title">
+                <div className="pqrx-panel-head">
+                  <h3 id="pqrx-gestion-title">Gestión y respuesta</h3>
+                </div>
+                <div className="pqrx-panel-body">
+                  {estado === 'en_revision' && (
+                    <div className="pqrx-cta">
+                      <p>
+                        Esta solicitud está <b>en revisión</b>. Cuando hayas revisado el caso, comienza la
+                        gestión formal: el usuario verá en su perfil que ya la estás atendiendo.
+                      </p>
+                      <button
+                        type="button"
+                        className="primary-btn"
+                        onClick={comenzarGestion}
+                        disabled={ocupado}
+                      >
+                        {accion === 'iniciar' ? (
+                          <Loader2 size={15} className="pqrx-spin" />
+                        ) : (
+                          <Play size={15} />
+                        )}
+                        {accion === 'iniciar' ? 'Iniciando…' : 'Comenzar gestión'}
+                      </button>
+                    </div>
+                  )}
+
+                  {estado === 'en_proceso' && (
+                    <form className="pqrx-reply" onSubmit={enviarRespuesta} noValidate>
+                      <label className="pqrx-field">
+                        <span>Respuesta para el usuario</span>
+                        <textarea
+                          rows={7}
+                          maxLength={MAX_RESPUESTA}
+                          value={respuesta}
+                          onChange={(e) => setRespuesta(e.target.value)}
+                          placeholder="Escribe la respuesta oficial. El usuario la verá completa en su perfil."
+                          disabled={ocupado}
+                        />
+                        <small className={respuesta.length > 0 && !respuestaValida ? 'warn' : undefined}>
+                          {respuesta.length}/{MAX_RESPUESTA} caracteres · mínimo {MIN_RESPUESTA}
+                        </small>
+                      </label>
+
+                      <label className="pqrx-field internal">
+                        <span>
+                          <b style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <Lock size={13} aria-hidden="true" /> Nota interna (opcional)
+                          </b>
+                        </span>
+                        <textarea
+                          rows={3}
+                          maxLength={1000}
+                          value={nota}
+                          onChange={(e) => setNota(e.target.value)}
+                          placeholder="Solo la ve el equipo administrador."
+                          disabled={ocupado}
+                        />
+                      </label>
+
+                      {errorForm && (
+                        <p className="pqrx-error" role="alert">
+                          {errorForm}
+                        </p>
+                      )}
+
+                      <div className="pqrx-form-actions">
+                        <small>
+                          Al enviar, la PQR quedará «Resuelta» y el usuario recibirá una notificación. La
+                          respuesta no se puede editar después.
+                        </small>
+                        <button className="primary-btn" type="submit" disabled={ocupado || !respuestaValida}>
+                          {accion === 'resolver' ? (
+                            <Loader2 size={15} className="pqrx-spin" />
+                          ) : (
+                            <Send size={15} />
+                          )}
+                          {accion === 'resolver' ? 'Enviando…' : 'Enviar respuesta'}
+                        </button>
+                      </div>
+                    </form>
+                  )}
+
+                  {esFinal(pqr.estado_pqr) && (
+                    <div className="pqrx-done">
+                      <header>
+                        <CheckCircle2 size={17} aria-hidden="true" />
+                        {pqr.estado_pqr === 'cerrado' ? 'Caso cerrado' : 'Respuesta enviada'}
+                      </header>
+                      <p>{pqr.respuesta_pqr ?? 'Esta solicitud no tiene una respuesta registrada.'}</p>
+                      {detalleRespuesta && <small>{detalleRespuesta}</small>}
+                    </div>
+                  )}
+
+                  {errorForm && estado !== 'en_proceso' && (
+                    <p className="pqrx-error" role="alert">
+                      {errorForm}
+                    </p>
+                  )}
+                </div>
+              </section>
 
               <h3 className="pqrx-section-title">Historial</h3>
               <PqrTimeline seguimientos={pqr.seguimientos ?? []} admin />
-
-              {esFinal(pqr.estado_pqr) && pqr.estado_pqr === 'resuelto' && (
-                <p className="pqrx-closed-note">
-                  Resuelta. Cuando confirmes que el caso terminó, pásala a «Cerrada».
-                </p>
-              )}
             </>
           )}
         </div>
