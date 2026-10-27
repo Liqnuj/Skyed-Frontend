@@ -1663,3 +1663,28 @@
   outline-offset: 2px;
 } 
 
+/* Pie de la ventana de PQR: botón ocultar (prefijo pfd-) */
+.mod-social .pfd-hide-row {
+  display: flex;
+  justify-content: center;
+  padding: .75rem 1.4rem 1.1rem;
+  background: transparent;
+}
+
+.mod-social .pfd-hide-row .pf-hide-btn {
+  margin-top: 0;
+  padding: .4rem .95rem;
+  color: color-mix(in srgb, var(--accent) 55%, white);
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.mod-social .pfd-hide-row .pf-hide-btn:hover {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: #fff;
+}
+
+/* Modo claro: el acento puro ya contrasta bien sobre fondo claro */
+.mod-social:not(.dark-mode) .pfd-hide-row .pf-hide-btn {
+  color: var(--accent);
+}
+

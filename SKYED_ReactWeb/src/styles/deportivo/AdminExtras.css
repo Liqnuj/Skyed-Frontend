@@ -152,7 +152,7 @@
   padding: 3px;
   border-radius: 10px;
   background: var(--admin-surface-2);
-  border: 1px solid var(--admin-line);
+  border: 1px solid var(--admin-accent);
 }
 
 .deportivo-admin .chart-toggle button {

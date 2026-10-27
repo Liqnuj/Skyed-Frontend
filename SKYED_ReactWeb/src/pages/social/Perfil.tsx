@@ -11,7 +11,7 @@ import { useAuth } from '../../context/AuthContext';
 import { apiFetch } from '../../services/api';
 import { pqrService, reservaService } from '../../services/socialService';
 import type { Pqr, PqrSeguimiento, Reserva, TipoPqr } from '../../services/socialService';
-import { FASES_VISIBLES, PqrEstadoPill, PqrPlazoChip, PqrStepper, indiceFaseVisible } from '../../components/social/pqr/PqrTracker';
+import { FASES_VISIBLES, PqrEstadoPill, PqrStepper, indiceFaseVisible } from '../../components/social/pqr/PqrTracker';
 import { ESTADO_COLOR, ESTADO_LABEL, TIPO_LABEL } from '../../utils/pqr';
 import { prepararImagen } from '../../utils/prepararImagen';
 import { errorContrasena } from '../../utils/validaciones';
@@ -524,7 +524,13 @@ const TEXTO_ESTADO: Record<Pqr['estado_pqr'], string> = {
   cerrado: 'Este caso fue cerrado.',
 };
 
-function PqrDetalle({ pqr, onClose, onEnviar }: PqrDetalleProps) {
+function PqrDetalle({ pqr, onClose, onEnviar, onOcultar, oculta }: PqrDetalleProps) {
+  const puedeOcultar = !['en_proceso', 'en_revision'].includes(pqr.estado_pqr);
+  const [confirmando, setConfirmando] = useState(false);
+  const ocultar = () => {
+    if (oculta) { onOcultar(); return; }
+    setConfirmando(true);
+  };
   const [texto, setTexto] = useState('');
   const [enviando, setEnviando] = useState(false);
   const cuerpoRef = useRef<HTMLDivElement>(null);
@@ -586,7 +592,6 @@ function PqrDetalle({ pqr, onClose, onEnviar }: PqrDetalleProps) {
           >
             <div className="pfd-status-top">
               <PqrEstadoPill estado={pqr.estado_pqr} />
-              <PqrPlazoChip pqr={pqr} />
             </div>
             <p className="pfd-status-text">{TEXTO_ESTADO[pqr.estado_pqr]}</p>
             <PqrStepper estado={pqr.estado_pqr} />
@@ -664,6 +669,24 @@ function PqrDetalle({ pqr, onClose, onEnviar }: PqrDetalleProps) {
             <span>Esta solicitud ya fue {pqr.estado_pqr === 'cerrado' ? 'cerrada' : 'resuelta'}.</span>
             <Link to="/social/pqr">Radicar una nueva PQR →</Link>
           </div>
+        )}
+
+        {(oculta || puedeOcultar) && (
+          <div className="pfd-hide-row">
+            <button type="button" className="pf-hide-btn" onClick={ocultar}>
+              <i className={`ti ${oculta ? 'ti-eye' : 'ti-eye-off'}`} aria-hidden="true" />
+              {oculta ? ' Mostrar en mi lista' : ' Ocultar de mi lista'}
+            </button>
+          </div>
+        )}
+        {confirmando && (
+          <PfConfirmar
+            titulo="¿Ocultar esta PQR?"
+            texto="Dejará de verse en tu lista, pero el equipo conserva el registro. La encuentras en “Ocultas”."
+            confirmar="Sí, ocultar"
+            onConfirmar={() => { setConfirmando(false); onOcultar(); }}
+            onCancelar={() => setConfirmando(false)}
+          />
         )}
       </div>
     </div>
