@@ -42,6 +42,10 @@ const MENSAJE_BIENVENIDA =
 /** Clave donde se recuerda si el usuario ocultó el botón de SKAI. */
 const CLAVE_OCULTO = 'skai_oculto';
 
+/** Duración del "despertar" de SKAI la primera vez que se abre (ms).
+ *  Con "menos movimiento" se muestra igual, pero solo con fundidos (ver skai.css). */
+const DURACION_DESPERTAR = 1300;
+
 function leerOculto() {
   try {
     return localStorage.getItem(CLAVE_OCULTO) === '1';
@@ -69,6 +73,11 @@ export default function SkaiWidget() {
   const [isTyping, setIsTyping] = useState(false);
   // Oculto = solo queda una pestaña pequeña en el borde para volver a mostrarlo.
   const [oculto, setOculto] = useState(leerOculto);
+  // Animación de "despertar": solo la primera vez que se abre en la página.
+  // Es una presentación visual; no espera ninguna respuesta del servidor.
+  const [despertando, setDespertando] = useState(false);
+  const yaDesperto = useRef(false);
+  const timerDespertar = useRef<number | undefined>(undefined);
 
   const nextId = useRef(1);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -89,6 +98,8 @@ export default function SkaiWidget() {
     return () => window.clearTimeout(timer);
   }, []);
 
+  useEffect(() => () => window.clearTimeout(timerDespertar.current), []);
+
   useEffect(() => {
     if (messagesRef.current) {
       messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
@@ -99,6 +110,16 @@ export default function SkaiWidget() {
     setOpen(true);
     setTeaserVisible(false);
     setBadgeVisible(false);
+
+    if (!yaDesperto.current) {
+      yaDesperto.current = true;
+      setDespertando(true);
+      timerDespertar.current = window.setTimeout(() => {
+        setDespertando(false);
+        inputRef.current?.focus();
+      }, DURACION_DESPERTAR);
+      return;
+    }
     window.setTimeout(() => inputRef.current?.focus(), 0);
   }
 
@@ -230,17 +251,35 @@ export default function SkaiWidget() {
           </button>
         </div>
 
-        <div className="skyed-messages" ref={messagesRef}>
+        {despertando && (
+          <div className="skyed-boot" role="status" aria-live="polite">
+            <div className="skyed-boot-orb">
+              <span className="skyed-boot-ring" />
+              <span className="skyed-boot-ring" />
+              <SkaiLogo />
+            </div>
+            <p>
+              Activando a SKAI
+              <span className="skyed-boot-dots" aria-hidden="true"><i /><i /><i /></span>
+            </p>
+            <span className="skyed-boot-bar" aria-hidden="true" />
+          </div>
+        )}
+
+        {/* La key cambia al terminar el despertar para que el saludo entre animado */}
+        <div className="skyed-messages" ref={messagesRef} key={despertando ? 'despertando' : 'chat'}>
           {messages.map((m) => (
             <div key={m.id} className={`skyed-msg from-${m.from}`}>
               {m.from === 'bot' ? renderTexto(m.text) : m.text}
             </div>
           ))}
+          {/* Solo mientras se espera la respuesta real del backend */}
           {isTyping && (
-            <div className="skyed-msg from-bot is-typing">
+            <div className="skyed-msg from-bot is-typing" role="status" aria-label="SKAI está pensando">
               <span />
               <span />
               <span />
+              <small>SKAI está pensando</small>
             </div>
           )}
         </div>
@@ -280,7 +319,7 @@ export default function SkaiWidget() {
 }
 
 /** Logo "nube sonriente" de SKAI, igual al del prototipo original. */
-function SkaiLogo() {
+export function SkaiLogo() {
   return (
     <div className="skyed-logo">
       <div className="skyed-logo-shape">

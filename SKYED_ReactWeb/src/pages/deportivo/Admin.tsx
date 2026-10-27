@@ -42,6 +42,7 @@ import { apiFetch } from "../../services/api";
 import { prepararImagen } from "../../utils/prepararImagen";
 import { EstadoPagos, InscritosPorEvento, TendenciaMensual } from "../../components/deportivo/GraficosAdmin";
 import { useConfirmacion } from "../../components/shared/ConfirmDialog";
+import { CargandoPanel, NumeroAnimado } from "../../components/shared/AdminMotion";
 
 type Confirmar = ReturnType<typeof useConfirmacion>["confirmar"];
 // Base del panel: mismo diseño del panel social con la paleta deportiva
@@ -391,8 +392,10 @@ function SectionTable({
   );
 }
 
-function Kpi({ icon, label, value, compact }: { icon: React.ReactNode; label: string; value: React.ReactNode; compact?: boolean }) {
-  return <div className="kpi-card"><div className="kpi-icon">{icon}</div><span>{label}</span><strong className={compact ? "compact" : ""}>{value}</strong></div>;
+function Kpi({ icon, label, value, compact, formato }: { icon: React.ReactNode; label: string; value: React.ReactNode; compact?: boolean; formato?: (v: number) => string }) {
+  // Los números "cuentan" hasta su valor al aparecer.
+  const contenido = typeof value === "number" ? <NumeroAnimado valor={value} formato={formato} /> : value;
+  return <div className="kpi-card"><div className="kpi-icon">{icon}</div><span>{label}</span><strong className={compact ? "compact" : ""}>{contenido}</strong></div>;
 }
 
 function AdminPage() {
@@ -416,7 +419,7 @@ function AdminPage() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [toast, setToast] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // true desde el inicio: sin "flash" de tarjetas en cero
   const [panelOpen, setPanelOpen] = useState(false);
 
   const [eventos, setEventos] = useState<Evento[]>([]);
@@ -680,7 +683,7 @@ function AdminPage() {
         <div className="admin-topbar">
           <div>
             <span className="admin-eyebrow">ADMINISTRACIÓN</span>
-            <h1>{sectionMeta[section].label}</h1>
+            <h1 key={section}>{sectionMeta[section].label}</h1>
           </div>
           {section !== "acceso" && section !== "inicio" && section !== "ajustes" && (
             <label className="admin-search">
@@ -701,7 +704,7 @@ function AdminPage() {
 
         {/* Solo en la carga inicial: al recargar tras cada acción no se
             muestra, para que la pantalla no salte (p. ej. al validar QR). */}
-        {loading && !eventos.length && <div className="admin-card" style={{ padding: 18 }}>Cargando información…</div>}
+        {loading && !eventos.length && <CargandoPanel modulo="deportivo" />}
 
         {section === "inicio" && (
           <section className="dashboard-content">
@@ -709,7 +712,7 @@ function AdminPage() {
               <Kpi icon={<CalendarDays size={19} />} label="Eventos activos" value={stats.activos} />
               <Kpi icon={<ClipboardList size={19} />} label="Inscripciones" value={stats.inscripciones} />
               <Kpi icon={<Wallet size={19} />} label="Pagos por validar" value={stats.pendientes} />
-              <Kpi icon={<Check size={19} />} label="Ingresos confirmados" value={money(stats.ingresos)} compact />
+              <Kpi icon={<Check size={19} />} label="Ingresos confirmados" value={stats.ingresos} formato={money} compact />
               <Kpi icon={<Bike size={19} />} label="Cupos disponibles" value={stats.cupos} />
               <Kpi icon={<Trophy size={19} />} label="Resultados publicados" value={stats.resultados} />
             </div>

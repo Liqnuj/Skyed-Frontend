@@ -35,6 +35,7 @@ import AccessibilityWidget from "../../components/shared/AccessibilityWidget";
 import AdminAjustes from "../../components/shared/AdminAjustes";
 import { apiFetch } from "../../services/api";
 import { useConfirmacion } from "../../components/shared/ConfirmDialog";
+import { CargandoPanel, NumeroAnimado } from "../../components/shared/AdminMotion";
 import type { EstadoPqr, Pqr } from "../../services/socialService";
 import PqrGestion from "../../components/social/pqr/AdminPqrManager";
 import "../../styles/social/Admin.css";
@@ -441,7 +442,9 @@ function AdminPage() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [toast, setToast] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // true desde el inicio: sin "flash" de tarjetas en cero
+  // true después de la primera carga: las recargas no vuelven a mostrar la pantalla de carga.
+  const [cargoUnaVez, setCargoUnaVez] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
 
   const [ambientes, setAmbientes] = useState<Ambiente[]>([]);
@@ -502,6 +505,7 @@ function AdminPage() {
       setToast(error instanceof Error ? error.message : "No se pudieron cargar los datos.");
     } finally {
       setLoading(false);
+      setCargoUnaVez(true);
     }
   };
 
@@ -771,7 +775,7 @@ function AdminPage() {
         <div className="admin-topbar">
           <div>
             <span className="admin-eyebrow">ADMINISTRACIÓN</span>
-            <h1>{sectionMeta[section].label}</h1>
+            <h1 key={section}>{sectionMeta[section].label}</h1>
           </div>
           {section !== "ajustes" && <label className="admin-search">
             <Search size={17} />
@@ -788,7 +792,9 @@ function AdminPage() {
           </label>}
         </div>
 
-        {loading && <div className="admin-card" style={{ padding: 18 }}>Cargando información…</div>}
+        {/* Solo en la carga inicial; al recargar tras una acción no se muestra
+            (así la pantalla no salta). */}
+        {loading && !cargoUnaVez && <CargandoPanel modulo="social" />}
 
         {section === "inicio" && (
           <section className="dashboard-content">
@@ -798,7 +804,7 @@ function AdminPage() {
               <Kpi icon={<CalendarCheck2 size={19} />} label="Reservas" value={stats.reservations} />
               <Kpi icon={<MessageSquareText size={19} />} label="PQR pendientes" value={stats.pqrs} />
               <Kpi icon={<Check size={19} />} label="Reservas pendientes" value={stats.pending} />
-              <Kpi icon={<Wrench size={19} />} label="Ingresos confirmados" value={money(stats.income)} compact />
+              <Kpi icon={<Wrench size={19} />} label="Ingresos confirmados" value={stats.income} formato={money} compact />
             </div>
 
             <div className="dashboard-grid-main">
@@ -1052,8 +1058,10 @@ export default function Admin() {
   return <Protected><AdminPage /></Protected>;
 }
 
-function Kpi({ icon, label, value, compact }: { icon: React.ReactNode; label: string; value: React.ReactNode; compact?: boolean }) {
-  return <div className="kpi-card"><div className="kpi-icon">{icon}</div><span>{label}</span><strong className={compact ? "compact" : ""}>{value}</strong></div>;
+function Kpi({ icon, label, value, compact, formato }: { icon: React.ReactNode; label: string; value: React.ReactNode; compact?: boolean; formato?: (v: number) => string }) {
+  // Los números "cuentan" hasta su valor al aparecer.
+  const contenido = typeof value === "number" ? <NumeroAnimado valor={value} formato={formato} /> : value;
+  return <div className="kpi-card"><div className="kpi-icon">{icon}</div><span>{label}</span><strong className={compact ? "compact" : ""}>{contenido}</strong></div>;
 }
 
 function AmbienteModal({ item, onClose, onSave, notify }: { item?: Ambiente; onClose: () => void; onSave: (data: any) => Promise<void>; notify: (message: string) => void }) {
