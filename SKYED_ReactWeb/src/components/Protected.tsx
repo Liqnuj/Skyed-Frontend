@@ -14,8 +14,10 @@ interface ProtectedProps {
 }
 
 export default function Protected({ children, requireRole }: ProtectedProps) {
-  const { user } = useAuth();
+  const { user, verificando } = useAuth();
   const location = useLocation();
+
+  if (verificando) return null;
 
   if (!user) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;

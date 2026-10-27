@@ -311,6 +311,18 @@
   overflow: hidden !important;
 }
 
+.deportivo-admin .sidebar-logo {
+  flex: 0 0 37px !important;
+  width: 37px !important;
+  height: 37px !important;
+  object-fit: contain !important;
+}
+
+.deportivo-admin .sidebar-brand-text strong em {
+  color: var(--admin-accent) !important;
+  font-style: normal !important;
+}
+
 .deportivo-admin .sidebar-brand-text strong {
   display: block !important;
 
@@ -1867,6 +1879,15 @@
 
     padding-left: 18px !important;
     padding-right: 18px !important;
+  }
+
+  .deportivo-admin.is-collapsed .sidebar-brand-text {
+    display: block !important;
+  }
+
+  .deportivo-admin.is-collapsed .sidebar-brand {
+    justify-content: flex-start !important;
+    padding: 18px 17px !important;
   }
 
   .deportivo-admin .admin-role,
