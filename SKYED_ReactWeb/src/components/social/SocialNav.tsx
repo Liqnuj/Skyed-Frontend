@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import SocialUserMenu from './SocialUserMenu';
+import NotificationBell from './NotificationBell';
 
 export default function SocialNav() {
   const { user } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const esAdmin = !!user && (user.roles.includes('adminSocial') || user.roles.includes('adminDeportivo'));
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);
@@ -38,9 +40,12 @@ export default function SocialNav() {
         </div>
 
         {/* Si hay usuario, muestra el menú desplegable. Si NO hay, muestra el botón que envía al login con redirección */}
-        {user ? (
-          <SocialUserMenu />
-        ) : (
+{user ? (
+  <div className="nav-user-group">
+    <SocialUserMenu />
+    {!esAdmin && <NotificationBell />}
+  </div>
+) : (
           <Link 
             to="/login?redirect=/social/reservar" 
             className="nav-cta" 
