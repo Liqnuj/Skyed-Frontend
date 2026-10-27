@@ -8,6 +8,7 @@ import { apiFetch } from '../../services/api';
 import { prepararImagen } from '../../utils/prepararImagen';
 import { errorContrasena } from '../../utils/validaciones';
 import '../../styles/deportivo/participante.css';
+// import '../../styles/deportivo/filtros-participante.css';
 import { createPortal } from 'react-dom';
 
 
@@ -35,6 +36,7 @@ interface Pago {
 interface Qr {
   codigo: string | null;
   estado: string | null;
+  fecha_uso?: string | null;
 }
 
 interface Inscripcion {
@@ -42,6 +44,7 @@ interface Inscripcion {
   estado: string;
   fecha: string;
   precio_pagado: number | null;
+  talla_camiseta?: string | null;
   evento: EventoInscrito | null;
   pago: Pago | null;
   qr: Qr | null;
@@ -78,10 +81,278 @@ function fmtMoney(n: number | null | undefined) {
   return '$' + (Number(n) || 0).toLocaleString('es-CO');
 }
 
+/** Normaliza el tipo de documento que llega de la base ("cedula_ciudadania" -> "CC"). */
+function tipoDocumentoCodigo(tipo: string | null | undefined) {
+  const map: Record<string, string> = {
+    cedula_ciudadania: 'CC', tarjeta_identidad: 'TI', cedula_extranjeria: 'CE', pasaporte: 'PA',
+  };
+  return tipo ? (map[tipo] || tipo) : '';
+}
+
+function estadoQrLabel(estado: string | null | undefined) {
+  const map: Record<string, string> = {
+    activo: 'Válida', usado: 'Ya usada', cancelado: 'Cancelada', pendiente: 'Pendiente de pago',
+  };
+  return estado ? (map[estado] || estado) : '—';
+}
+
+function estadoPagoLabel(estado: string | null | undefined) {
+  if (!estado) return '—';
+  const map: Record<string, string> = { pendiente: 'Pendiente de verificación', cancelado: 'Cancelado' };
+  return map[estado] || estado.charAt(0).toUpperCase() + estado.slice(1);
+}
+
 function estadoPill(estado: string) {
   if (estado === 'pendiente') return { cls: 'pending', txt: 'Pago pendiente' };
   if (estado === 'cancelada') return { cls: 'warn', txt: 'Cancelada' };
   return { cls: 'ok', txt: 'Confirmada' };
+}
+
+/* ---------- Búsqueda y filtros de las listas (Inscripciones / Historial) ---------- */
+type RangoFecha = 'todas' | '7d' | '30d' | 'mes' | 'anio' | 'proximas' | 'pasadas' | 'custom';
+
+interface Filtros {
+  q: string;
+  rango: RangoFecha;
+  desde: string;
+  hasta: string;
+  orden: 'recientes' | 'antiguos';
+  estado: string; // 'todos' o el valor del estado
+}
+
+const FILTROS_INSC: Filtros = { q: '', rango: 'todas', desde: '', hasta: '', orden: 'antiguos', estado: 'todos' };
+const FILTROS_HIST: Filtros = { q: '', rango: 'todas', desde: '', hasta: '', orden: 'recientes', estado: 'todos' };
+
+const ESTADOS_INSC = [
+  { value: 'todos', label: 'Todas' },
+  { value: 'confirmada', label: 'Confirmada' },
+  { value: 'pendiente', label: 'Pago pendiente' },
+];
+
+const ESTADO_HP_LABEL: Record<string, string> = {
+  asistio: 'Asistió',
+  finalizado: 'Finalizado',
+  inscrito: 'Inscrito',
+  abandono: 'Abandonó',
+};
+
+const ESTADOS_HIST = [
+  { value: 'todos', label: 'Todos' },
+  { value: 'asistio', label: ESTADO_HP_LABEL.asistio },
+  { value: 'finalizado', label: ESTADO_HP_LABEL.finalizado },
+  { value: 'inscrito', label: ESTADO_HP_LABEL.inscrito },
+  { value: 'abandono', label: ESTADO_HP_LABEL.abandono },
+];
+
+const RANGOS_INSC: { value: RangoFecha; label: string }[] = [
+  { value: 'todas', label: 'Todas las fechas' },
+  { value: 'proximas', label: 'Próximas' },
+  { value: 'pasadas', label: 'Pasadas' },
+  { value: 'mes', label: 'Este mes' },
+  { value: 'anio', label: 'Este año' },
+  { value: 'custom', label: 'Rango personalizado' },
+];
+
+const RANGOS_HIST: { value: RangoFecha; label: string }[] = [
+  { value: 'todas', label: 'Todas las fechas' },
+  { value: '7d', label: 'Últimos 7 días' },
+  { value: '30d', label: 'Últimos 30 días' },
+  { value: 'mes', label: 'Este mes' },
+  { value: 'anio', label: 'Este año' },
+  { value: 'custom', label: 'Rango personalizado' },
+];
+
+function soloFecha(iso: string | null | undefined) {
+  return iso ? String(iso).slice(0, 10) : '';
+}
+
+/** Minúsculas y sin tildes, para que "carrera" encuentre "Cárrera". */
+function normalizar(t: string) {
+  return t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+function isoLocal(d: Date) {
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
+
+function contarPor<T>(items: T[] | null, get: (x: T) => string): Record<string, number> {
+  const out: Record<string, number> = {};
+  (items ?? []).forEach((it) => {
+    const k = get(it);
+    out[k] = (out[k] ?? 0) + 1;
+  });
+  return out;
+}
+
+/** Límites (AAAA-MM-DD) del rango elegido; '' significa "sin límite". */
+function limitesRango(f: Filtros): { desde: string; hasta: string } {
+  const hoy = new Date();
+  const hoyIso = isoLocal(hoy);
+  const atras = (n: number) => {
+    const d = new Date(hoy);
+    d.setDate(d.getDate() - n);
+    return isoLocal(d);
+  };
+  switch (f.rango) {
+    case '7d': return { desde: atras(7), hasta: hoyIso };
+    case '30d': return { desde: atras(30), hasta: hoyIso };
+    case 'mes':
+      return {
+        desde: isoLocal(new Date(hoy.getFullYear(), hoy.getMonth(), 1)),
+        hasta: isoLocal(new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0)),
+      };
+    case 'anio': return { desde: `${hoy.getFullYear()}-01-01`, hasta: `${hoy.getFullYear()}-12-31` };
+    case 'proximas': return { desde: hoyIso, hasta: '' };
+    case 'pasadas': return { desde: '', hasta: atras(1) };
+    case 'custom': return { desde: f.desde, hasta: f.hasta };
+    default: return { desde: '', hasta: '' };
+  }
+}
+
+function filtrarLista<T>(
+  items: T[],
+  f: Filtros,
+  getFecha: (x: T) => string | null | undefined,
+  getTexto: (x: T) => string,
+  getEstado: (x: T) => string,
+): T[] {
+  const q = normalizar(f.q.trim());
+  const { desde, hasta } = limitesRango(f);
+
+  const res = items.filter((it) => {
+    if (q && !normalizar(getTexto(it)).includes(q)) return false;
+    if (f.estado !== 'todos' && getEstado(it) !== f.estado) return false;
+    if (desde || hasta) {
+      const dia = soloFecha(getFecha(it));
+      if (!dia) return false;
+      if (desde && dia < desde) return false;
+      if (hasta && dia > hasta) return false;
+    }
+    return true;
+  });
+
+  const marca = (it: T) => {
+    const t = Date.parse(getFecha(it) ?? '');
+    return Number.isNaN(t) ? 0 : t;
+  };
+
+  return res
+    .map((it, i) => ({ it, t: marca(it), i }))
+    .sort((a, b) => (f.orden === 'recientes' ? b.t - a.t : a.t - b.t) || a.i - b.i)
+    .map((x) => x.it);
+}
+
+interface ListToolbarProps {
+  filtros: Filtros;
+  base: Filtros;
+  onChange: (f: Filtros) => void;
+  rangos: { value: RangoFecha; label: string }[];
+  estados: { value: string; label: string }[];
+  conteos: Record<string, number>;
+  placeholder: string;
+  ordenLabels: { recientes: string; antiguos: string };
+  total: number;
+  mostrando: number;
+  singular: string;
+  plural: string;
+}
+
+function ListToolbar({ filtros, base, onChange, rangos, estados, conteos, placeholder, ordenLabels, total, mostrando, singular, plural }: ListToolbarProps) {
+  const set = (parcial: Partial<Filtros>) => onChange({ ...filtros, ...parcial });
+  const activo = filtros.q.trim() !== '' || filtros.rango !== 'todas' || filtros.estado !== 'todos';
+  const unidad = (n: number) => (n === 1 ? singular : plural);
+
+  return (
+    <div className="part-toolbar">
+      <div className="part-toolbar-row">
+        <label className="part-search">
+          <i className="ti ti-search" aria-hidden="true" />
+          <input
+            type="search"
+            value={filtros.q}
+            onChange={(e) => set({ q: e.target.value })}
+            placeholder={placeholder}
+            aria-label="Buscar"
+          />
+        </label>
+        <select
+          className="part-tool-select"
+          value={filtros.rango}
+          onChange={(e) => set({ rango: e.target.value as RangoFecha })}
+          aria-label="Filtrar por fecha"
+        >
+          {rangos.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+        </select>
+        <select
+          className="part-tool-select"
+          value={filtros.orden}
+          onChange={(e) => set({ orden: e.target.value as Filtros['orden'] })}
+          aria-label="Ordenar"
+        >
+          <option value="recientes">{ordenLabels.recientes}</option>
+          <option value="antiguos">{ordenLabels.antiguos}</option>
+        </select>
+      </div>
+
+      <div className="part-chips" role="group" aria-label="Filtrar por estado">
+        {estados.map((e) => {
+          const n = e.value === 'todos' ? total : (conteos[e.value] ?? 0);
+          const sel = filtros.estado === e.value;
+          return (
+            <button
+              key={e.value}
+              type="button"
+              className={`part-chip${sel ? ' active' : ''}`}
+              aria-pressed={sel}
+              onClick={() => set({ estado: e.value })}
+            >
+              {e.label} <span className="part-chip-count">{n}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {filtros.rango === 'custom' && (
+        <div className="part-toolbar-row part-toolbar-dates">
+          <label>
+            Desde
+            <input
+              type="date"
+              value={filtros.desde}
+              max={filtros.hasta || undefined}
+              onChange={(e) => set({ desde: e.target.value })}
+            />
+          </label>
+          <label>
+            Hasta
+            <input
+              type="date"
+              value={filtros.hasta}
+              min={filtros.desde || undefined}
+              onChange={(e) => set({ hasta: e.target.value })}
+            />
+          </label>
+        </div>
+      )}
+
+      <div className="part-toolbar-foot">
+        <span>
+          {activo ? `Mostrando ${mostrando} de ${total}` : `${total} ${unidad(total)}`}
+        </span>
+        {activo && (
+          <button
+            type="button"
+            className="part-tool-clear"
+            onClick={() => onChange({ ...base, orden: filtros.orden })}
+          >
+            Limpiar filtros
+          </button>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export default function Participant() {
@@ -116,6 +387,8 @@ function ParticipantPanel() {
   const [cancelarInsc, setCancelarInsc] = useState<Inscripcion | null>(null);
   const [cancelando, setCancelando] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
+  const [filtrosInsc, setFiltrosInsc] = useState<Filtros>(FILTROS_INSC);
+  const [filtrosHist, setFiltrosHist] = useState<Filtros>(FILTROS_HIST);
 
   useEffect(() => {
     apiFetch('/mis-inscripciones')
@@ -164,6 +437,65 @@ function ParticipantPanel() {
     proximas.sort((a, b) => new Date(a.evento?.fecha || 0).getTime() - new Date(b.evento?.fecha || 0).getTime());
     return { proximas, pasadas };
   }, [inscripciones, hoy]);
+
+  // ----- Filtros de Inscripciones -----
+  const estadoInsc = (i: Inscripcion) => (i.estado === 'pendiente' ? 'pendiente' : 'confirmada');
+  const textoInsc = (i: Inscripcion) =>
+    `${i.evento?.nombre ?? ''} ${i.evento?.categoria ?? ''} ${i.evento?.ubicacion ?? ''} ${estadoPill(i.estado).txt}`;
+  const totalInsc = proximas.length + pasadas.length;
+  const conteosInsc = useMemo(() => contarPor([...proximas, ...pasadas], estadoInsc), [proximas, pasadas]);
+  // Próximas y pasadas se ordenan en sentido contrario: con "Más cercanas primero"
+  // las próximas van de la más cercana a la más lejana y las pasadas de la más reciente hacia atrás.
+  const proximasFiltradas = useMemo(
+    () => filtrarLista(proximas, filtrosInsc, (i) => i.evento?.fecha, textoInsc, estadoInsc),
+    [proximas, filtrosInsc],
+  );
+  const pasadasFiltradas = useMemo(
+    () =>
+      filtrarLista(
+        pasadas,
+        { ...filtrosInsc, orden: filtrosInsc.orden === 'antiguos' ? 'recientes' : 'antiguos' },
+        (i) => i.evento?.fecha,
+        textoInsc,
+        estadoInsc,
+      ),
+    [pasadas, filtrosInsc],
+  );
+  const mostrandoInsc = proximasFiltradas.length + pasadasFiltradas.length;
+
+  // ----- Filtros de Historial (registros del historial + pasadas sin registro) -----
+  type FilaHist = {
+    key: string;
+    fecha: string | null | undefined;
+    estado: string;
+    texto: string;
+    h?: HistorialItem;
+    insc?: Inscripcion;
+  };
+  const filasHist = useMemo<FilaHist[]>(() => {
+    const deHistorial: FilaHist[] = (historial ?? []).map((h) => ({
+      key: `h${h.id_hp}`,
+      fecha: h.fecha_hp,
+      estado: h.estado_hp,
+      texto: `${h.evento?.nombre ?? ''} ${h.evento?.ubicacion ?? ''} ${ESTADO_HP_LABEL[h.estado_hp] ?? h.estado_hp}`,
+      h,
+    }));
+    const deInscripciones: FilaHist[] = pasadas
+      .filter((i) => !historial?.some((h) => h.evento?.id === i.evento?.id))
+      .map((i) => ({
+        key: `i${i.id}`,
+        fecha: i.evento?.fecha,
+        estado: 'inscrito',
+        texto: `${i.evento?.nombre ?? ''} ${i.evento?.categoria ?? ''} ${i.evento?.ubicacion ?? ''} ${estadoPill(i.estado).txt}`,
+        insc: i,
+      }));
+    return [...deHistorial, ...deInscripciones];
+  }, [historial, pasadas]);
+  const conteosHist = useMemo(() => contarPor(filasHist, (f) => f.estado), [filasHist]);
+  const filasHistFiltradas = useMemo(
+    () => filtrarLista(filasHist, filtrosHist, (f) => f.fecha, (f) => f.texto, (f) => f.estado),
+    [filasHist, filtrosHist],
+  );
 
   const initials = (user?.name || 'SK').split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
 
@@ -305,6 +637,7 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
               <div className="part-info-row"><span className="part-info-label">Teléfono</span><span className="part-info-value">{user?.telefono || '—'}</span></div>
               <div className="part-info-row"><span className="part-info-label">Ciudad</span><span className="part-info-value">{user?.ciudad || '—'}</span></div>
               <div className="part-info-row"><span className="part-info-label">Documento</span><span className="part-info-value">{user?.documento ? `${tipoDocumentoLabel(user.tipo_documento)} ${user.documento}` : '—'}</span></div>
+              <div className="part-info-row"><span className="part-info-label">RH</span><span className="part-info-value">{user?.rh && user.rh !== 'N/A' ? user.rh : '—'}</span></div>
               <div className="part-info-row"><span className="part-info-label">Nacimiento</span><span className="part-info-value">{fmtFechaLarga(user?.fecha_nacimiento)}</span></div>
             </div>
           </div>
@@ -322,10 +655,10 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
           {tab === 'resumen' && (
             <>
               <div className="part-stats-strip">
-                <div className="part-strip-stat"><span className="part-num">{pasadas.length}</span><span className="part-lbl">Eventos completados</span></div>
+                <div className="part-strip-stat"><span className="part-num">{pasadas.filter((i) => i.estado !== 'pendiente').length}</span><span className="part-lbl">Eventos completados</span></div>
                 <div className="part-strip-stat accent"><span className="part-num">{proximas.length}</span><span className="part-lbl">Próximos eventos</span></div>
                 <div className="part-strip-stat"><span className="part-num">{inscripciones?.filter((i) => i.estado !== 'cancelada').length ?? 0}</span><span className="part-lbl">Inscripciones totales</span></div>
-                <div className="part-strip-stat accent"><span className="part-num">{fmtMoney(inscripciones?.filter((i) => i.estado !== 'cancelada').reduce((s, i) => s + (Number(i.precio_pagado) || 0), 0))}</span><span className="part-lbl">Total invertido</span></div>
+                <div className="part-strip-stat accent"><span className="part-num">{fmtMoney(inscripciones?.filter((i) => i.estado !== 'cancelada' && i.estado !== 'pendiente').reduce((s, i) => s + (Number(i.precio_pagado) || 0), 0))}</span><span className="part-lbl">Total invertido</span></div>
               </div>
 
               <p className="part-section-label">
@@ -344,48 +677,97 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
 
           {tab === 'historial' && (
             <>
-              <p className="part-section-label">Todos los resultados</p>
+              <p className="part-section-label">Mi historial</p>
               {!historial && <div className="part-empty-row">Cargando historial…</div>}
-              {historial && historial.length === 0 && pasadas.length === 0 && (
+              {historial && filasHist.length === 0 && (
                 <div className="part-empty-row">Sin historial todavía.</div>
               )}
-              {historial?.map((h) => (
-                <div className="part-event-row" key={h.id_hp}>
-                  <div className="part-event-row-img">{(h.evento?.nombre || '?')[0].toUpperCase()}</div>
-                  <div className="part-event-row-info">
-                    <h4>{h.evento?.nombre || 'Evento'}</h4>
-                    <div className="part-event-meta">
-                      <span>{fmtFechaLarga(h.fecha_hp)}</span>
-                      {h.evento?.ubicacion && <span>{h.evento.ubicacion}</span>}
-                    </div>
-                  </div>
-                  <span className={`part-status-pill ${h.estado_hp === 'abandono' ? 'warn' : h.estado_hp === 'inscrito' ? 'pending' : 'ok'}`}>
-                    {h.estado_hp}
-                  </span>
+              {filasHist.length > 0 && (
+                <ListToolbar
+                  filtros={filtrosHist}
+                  base={FILTROS_HIST}
+                  onChange={setFiltrosHist}
+                  rangos={RANGOS_HIST}
+                  estados={ESTADOS_HIST}
+                  conteos={conteosHist}
+                  placeholder="Buscar por evento, lugar o estado"
+                  ordenLabels={{ recientes: 'Más recientes primero', antiguos: 'Más antiguos primero' }}
+                  total={filasHist.length}
+                  mostrando={filasHistFiltradas.length}
+                  singular="resultado"
+                  plural="resultados"
+                />
+              )}
+              {filasHist.length > 0 && filasHistFiltradas.length === 0 && (
+                <div className="part-empty-row">
+                  No encontramos resultados. Prueba con otra palabra, otro estado u otro rango de fechas.{' '}
+                  <button type="button" className="part-tool-clear" onClick={() => setFiltrosHist({ ...FILTROS_HIST, orden: filtrosHist.orden })}>
+                    Limpiar filtros
+                  </button>
                 </div>
-              ))}
-              {pasadas
-                .filter((i) => !historial?.some((h) => h.evento?.id === i.evento?.id))
-                .map((i) => (
-                  <EventRow key={i.id} insc={i} onVerDetalle={() => abrirDetalle(i)} />
-                ))}
+              )}
+              {filasHistFiltradas.map((f) =>
+                f.h ? (
+                  <div className="part-event-row" key={f.key}>
+                    <div className="part-event-row-img">{(f.h.evento?.nombre || '?')[0].toUpperCase()}</div>
+                    <div className="part-event-row-info">
+                      <h4>{f.h.evento?.nombre || 'Evento'}</h4>
+                      <div className="part-event-meta">
+                        <span>{fmtFechaLarga(f.h.fecha_hp)}</span>
+                        {f.h.evento?.ubicacion && <span>{f.h.evento.ubicacion}</span>}
+                      </div>
+                    </div>
+                    <span className={`part-status-pill ${f.h.estado_hp === 'abandono' ? 'warn' : f.h.estado_hp === 'inscrito' ? 'pending' : 'ok'}`}>
+                      {ESTADO_HP_LABEL[f.h.estado_hp] ?? f.h.estado_hp}
+                    </span>
+                  </div>
+                ) : (
+                  <EventRow key={f.key} insc={f.insc!} onVerDetalle={() => abrirDetalle(f.insc!)} />
+                ),
+              )}
             </>
           )}
 
           {tab === 'inscripciones' && !detalle && (
             <>
-              <p className="part-section-label">Eventos confirmados</p>
               {loadError && <div className="part-empty-row">{loadError}</div>}
+              {!loadError && totalInsc > 0 && (
+                <ListToolbar
+                  filtros={filtrosInsc}
+                  base={FILTROS_INSC}
+                  onChange={setFiltrosInsc}
+                  rangos={RANGOS_INSC}
+                  estados={ESTADOS_INSC}
+                  conteos={conteosInsc}
+                  placeholder="Buscar por evento, lugar o categoría"
+                  ordenLabels={{ recientes: 'Más lejanas primero', antiguos: 'Más cercanas primero' }}
+                  total={totalInsc}
+                  mostrando={mostrandoInsc}
+                  singular="inscripción"
+                  plural="inscripciones"
+                />
+              )}
+              {!loadError && totalInsc > 0 && mostrandoInsc === 0 && (
+                <div className="part-empty-row">
+                  No encontramos resultados. Prueba con otra palabra, otro estado u otro rango de fechas.{' '}
+                  <button type="button" className="part-tool-clear" onClick={() => setFiltrosInsc({ ...FILTROS_INSC, orden: filtrosInsc.orden })}>
+                    Limpiar filtros
+                  </button>
+                </div>
+              )}
+              {(proximasFiltradas.length > 0 || proximas.length === 0) && (
+                <p className="part-section-label">Eventos confirmados</p>
+              )}
               {!loadError && proximas.length === 0 && (
                 <div className="part-empty-row">No tienes inscripciones activas.</div>
               )}
-              {proximas.map((i) => (
+              {proximasFiltradas.map((i) => (
                 <EventRow key={i.id} insc={i} onVerDetalle={() => abrirDetalle(i)} onCancelar={() => pedirCancelacion(i)} />
               ))}
-              {pasadas.length > 0 && (
+              {pasadasFiltradas.length > 0 && (
                 <>
                   <p className="part-section-label">Eventos pasados</p>
-                  {pasadas.map((i) => (
+                  {pasadasFiltradas.map((i) => (
                     <EventRow key={i.id} insc={i} onVerDetalle={() => abrirDetalle(i)} />
                   ))}
                 </>
@@ -583,6 +965,32 @@ function DetalleInscripcion({
               <strong>{insc.pago?.fecha ? fmtFechaLarga(insc.pago.fecha) : '—'}</strong>
             </div>
           </div>
+          <div className="part-detail-info-item">
+            <span className="part-detail-icon"><i className="ti ti-shield-check" aria-hidden="true" /></span>
+            <div>
+              <span className="part-label">Estado del pago</span>
+              <strong>{estadoPagoLabel(insc.pago?.estado)}</strong>
+            </div>
+          </div>
+          <div className="part-detail-info-item">
+            <span className="part-detail-icon"><i className="ti ti-ticket" aria-hidden="true" /></span>
+            <div>
+              <span className="part-label">Entrada (QR)</span>
+              <strong>{estadoQrLabel(insc.qr?.estado)}</strong>
+              {insc.qr?.estado === 'usado' && insc.qr.fecha_uso && (
+                <span className="part-label"> {fmtFechaLarga(insc.qr.fecha_uso)}</span>
+              )}
+            </div>
+          </div>
+          {insc.talla_camiseta && (
+            <div className="part-detail-info-item">
+              <span className="part-detail-icon"><i className="ti ti-shirt" aria-hidden="true" /></span>
+              <div>
+                <span className="part-label">Talla</span>
+                <strong>{insc.talla_camiseta}</strong>
+              </div>
+            </div>
+          )}
         </div>
         {((insc.qr?.codigo && !verQr) || onCancelar) && (
           <div
@@ -645,7 +1053,11 @@ function DetalleInscripcion({
                 />
               </div>
               <div className="part-qr-code-text">{insc.qr.codigo}</div>
-              <p className="part-qr-hint">Muestra este código en el punto de control el día del evento.</p>
+              <p className="part-qr-hint">
+                {insc.qr.estado === 'usado'
+                  ? 'Este QR ya fue escaneado y no sirve para volver a ingresar.'
+                  : 'Muestra este código en el punto de control el día del evento.'}
+              </p>
             </div>
           </div>,
           document.body,
@@ -679,10 +1091,10 @@ function AjustesTab() {
   const [correo, setCorreo] = useState(user?.email || '');
   const [telefono, setTelefono] = useState(user?.telefono || '');
   const [ciudad, setCiudad] = useState(user?.ciudad || '');
-  const [tipoDocumento, setTipoDocumento] = useState(user?.tipo_documento || '');
+  const [tipoDocumento, setTipoDocumento] = useState(tipoDocumentoCodigo(user?.tipo_documento));
   const [documento, setDocumento] = useState(user?.documento || '');
   const [fechaNacimiento, setFechaNacimiento] = useState(user?.fecha_nacimiento || '');
-  const [rh, setRh] = useState(user?.rh || '');
+  const [rh, setRh] = useState(user?.rh && user.rh !== 'N/A' ? user.rh : '');
   useEffect(() => {
     if (!msg) return;
     const t = setTimeout(() => setMsg(null), 4000);
