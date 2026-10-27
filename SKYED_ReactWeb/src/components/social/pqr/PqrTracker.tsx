@@ -17,6 +17,7 @@ import {
   FASES,
   fmtFechaHora,
   hace,
+  indiceFase,
   plazoInfo,
   tituloEvento,
 } from '../../../utils/pqr';
@@ -73,8 +74,8 @@ export function PqrPlazoChip({ pqr }: { pqr: Pick<Pqr, 'estado_pqr' | 'fecha_lim
  * Las fases ya recorridas quedan llenas, la actual late suavemente.
  */
 export function PqrStepper({ estado }: { estado: EstadoPqr }) {
-  const actual = indiceFaseVisible(estado);
-  const avance = (actual / (FASES_VISIBLES.length - 1)) * 100;
+  const actual = indiceFase(estado);
+  const avance = (actual / (FASES.length - 1)) * 100;
 
   return (
     <ol
@@ -82,7 +83,7 @@ export function PqrStepper({ estado }: { estado: EstadoPqr }) {
       aria-label={`Fase actual: ${ESTADO_LABEL[estado]}`}
       style={{ '--avance': `${avance}%` } as CSSProperties}
     >
-      {FASES_VISIBLES.map((fase, i) => {
+      {FASES.map((fase, i) => {
         const clase = i < actual ? 'done' : i === actual ? 'current' : 'todo';
         return (
           <li key={fase.key} className={`pqrx-stop ${clase}`} style={colorVar(fase.key)}>

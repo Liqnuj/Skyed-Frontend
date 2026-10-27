@@ -642,6 +642,134 @@
   .pqrx-stepper::after { transition: none; }
 }
 
+
+
+
+/* =========================================================
+   Detalle del caso: bloques "Información" y "Gestión"
+   ========================================================= */
+
+.pqrx-panel {
+  margin-top: 1.25rem;
+  border: 1px solid var(--admin-line);
+  border-radius: 16px;
+  background: var(--admin-surface);
+  overflow: hidden;
+}
+.pqrx-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.8rem 1.1rem;
+  border-bottom: 1px solid var(--admin-line);
+  background: var(--admin-surface-2);
+}
+.pqrx-panel-head h3 {
+  margin: 0;
+  font-size: 0.76rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--admin-muted);
+}
+.pqrx-panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.1rem;
+}
+.pqrx-panel-body .pqrx-person { margin-bottom: 0; }
+.pqrx-panel-body .pqrx-box { margin: 0; }
+
+.pqrx-panel.manage {
+  border-color: color-mix(in srgb, var(--admin-accent) 35%, var(--admin-line));
+}
+.pqrx-panel.manage .pqrx-panel-head {
+  background: color-mix(in srgb, var(--admin-accent) 7%, var(--admin-surface));
+}
+
+.pqrx-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.7rem;
+  margin: 0;
+}
+.pqrx-info-grid > div {
+  padding: 0.6rem 0.8rem;
+  border-radius: 10px;
+  background: var(--admin-surface-2);
+}
+.pqrx-info-grid dt {
+  font-size: 0.7rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--admin-muted);
+}
+.pqrx-info-grid dd {
+  margin: 0.2rem 0 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--admin-text);
+}
+
+.pqrx-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.8rem;
+}
+.pqrx-cta p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--admin-muted);
+}
+
+.pqrx-reply {
+  display: flex;
+  flex-direction: column;
+  gap: 0.95rem;
+}
+.pqrx-field small.warn {
+  color: color-mix(in srgb, #dc2626 85%, var(--admin-text));
+}
+
+.pqrx-done {
+  padding: 0.95rem 1.05rem;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, #16a34a 35%, var(--admin-line));
+  background: color-mix(in srgb, #16a34a 9%, var(--admin-surface));
+}
+.pqrx-done header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: color-mix(in srgb, #16a34a 80%, var(--admin-text));
+}
+.pqrx-done p {
+  margin: 0.65rem 0 0;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--admin-text);
+}
+.pqrx-done small {
+  display: block;
+  margin-top: 0.65rem;
+  font-size: 0.78rem;
+  color: var(--admin-muted);
+}
+
+.pqrx-spin { animation: pqrx-spin 0.8s linear infinite; }
+@keyframes pqrx-spin { to { transform: rotate(360deg); } }
+
+
+
+
 /* separa el historial de mensajes de la línea del tiempo */
 .pqrx + .pf-thread {
   margin-top: 1.5rem;

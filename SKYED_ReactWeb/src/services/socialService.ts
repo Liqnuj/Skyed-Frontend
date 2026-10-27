@@ -296,6 +296,39 @@ export const pqrService = {
     return data.seguimiento;
   },
 
+
+
+  /**
+   * Solo adminSocial: el administrador abrió el detalle. Si la PQR estaba
+   * "abierto", el backend la pasa a "en_revision" (cambio = true).
+   */
+  async abrir(id: number): Promise<{ pqr: Pqr; cambio: boolean }> {
+    const data = await apiFetch(`/pqr/${id}/abrir`, { method: 'POST' });
+    return { pqr: data.pqr, cambio: Boolean(data.cambio) };
+  },
+
+  /** Solo adminSocial: "en_revision" → "en_proceso". */
+  async iniciarGestion(id: number): Promise<Pqr> {
+    const data = await apiFetch(`/pqr/${id}/iniciar-gestion`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+    return data.pqr;
+  },
+
+  /** Solo adminSocial: guarda la respuesta y pasa "en_proceso" → "resuelto". */
+  async resolver(id: number, respuesta: string, notaInterna?: string): Promise<Pqr> {
+    const data = await apiFetch(`/pqr/${id}/resolver`, {
+      method: 'POST',
+      body: JSON.stringify({
+        respuesta,
+        ...(notaInterna ? { nota_interna: notaInterna } : {}),
+      }),
+    });
+    return data.pqr;
+  },
+
+
   /** Solo adminSocial: cambia de fase y/o escribe al usuario. */
   async registrarSeguimiento(id: number, payload: RegistrarSeguimientoPayload): Promise<Pqr> {
     const data = await apiFetch(`/pqr/${id}/seguimiento`, {
