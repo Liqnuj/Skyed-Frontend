@@ -11,11 +11,12 @@ import { useAuth } from '../../context/AuthContext';
 import { apiFetch } from '../../services/api';
 import { pqrService, reservaService } from '../../services/socialService';
 import type { Pqr, PqrSeguimiento, Reserva, TipoPqr } from '../../services/socialService';
-import { FASES_VISIBLES, PqrEstadoPill, PqrStepper, indiceFaseVisible } from '../../components/social/pqr/PqrTracker';
+import { FASES_VISIBLES, PqrEstadoPill, PqrPlazoChip, PqrStepper, indiceFaseVisible } from '../../components/social/pqr/PqrTracker';
 import { ESTADO_COLOR, ESTADO_LABEL, TIPO_LABEL } from '../../utils/pqr';
 import { prepararImagen } from '../../utils/prepararImagen';
 import { errorContrasena } from '../../utils/validaciones';
 import '../../styles/social/perfil.css';
+import '../../styles/social/pqrDetalle.css';
 
 type TabId = 'resumen' | 'pqr' | 'reservas' | 'ajustes';
 const TABS: TabId[] = ['resumen', 'pqr', 'reservas', 'ajustes'];
@@ -365,6 +366,8 @@ interface MensajePqr {
   de: 'yo' | 'equipo' | 'sistema';
   texto: string;
   fecha: string | null | undefined;
+  /** Es la respuesta oficial con la que se resolvió la PQR. */
+  oficial?: boolean;
 }
 
 const MENSAJE_GENERICO = 'Se ha publicado una respuesta a tu solicitud.';
@@ -428,7 +431,13 @@ function construirConversacion(pqr: PqrConSeguimientos): MensajePqr[] {
       if (i === ultimaRespuesta && pqr.respuesta_pqr && (texto === '' || texto === MENSAJE_GENERICO)) {
         texto = pqr.respuesta_pqr;
       }
-      msgs.push({ key, de: 'equipo', texto: texto || MENSAJE_GENERICO, fecha: sg.created_at });
+      msgs.push({
+        key,
+        de: 'equipo',
+        texto: texto || MENSAJE_GENERICO,
+        fecha: sg.created_at,
+        oficial: sg.tipo_evento === 'respuesta',
+      });
     } else if (texto && !cambioFase) {
       msgs.push({ key, de: 'sistema', texto, fecha: sg.created_at });
     }
@@ -436,7 +445,13 @@ function construirConversacion(pqr: PqrConSeguimientos): MensajePqr[] {
 
   // PQR respondidas antes de que existiera el historial.
   if (ultimaRespuesta === -1 && pqr.respuesta_pqr) {
-    msgs.push({ key: 'respuesta-antigua', de: 'equipo', texto: pqr.respuesta_pqr, fecha: pqr.respondido_en_pqr });
+    msgs.push({
+      key: 'respuesta-antigua',
+      de: 'equipo',
+      texto: pqr.respuesta_pqr,
+      fecha: pqr.respondido_en_pqr,
+      oficial: true,
+    });
   }
 
   return msgs;
@@ -500,16 +515,20 @@ interface PqrDetalleProps {
   oculta: boolean;
 }
 
-function PqrDetalle({ pqr, onClose, onEnviar, onOcultar, oculta }: PqrDetalleProps) {
-  const puedeOcultar = !['en_proceso', 'en_revision'].includes(pqr.estado_pqr);
-  const [confirmando, setConfirmando] = useState(false);
-  const ocultar = () => {
-    if (oculta) { onOcultar(); return; }
-    setConfirmando(true);
-  };
+/** Mensaje corto que explica en qué punto va la solicitud. */
+const TEXTO_ESTADO: Record<Pqr['estado_pqr'], string> = {
+  abierto: 'Recibimos tu solicitud. En breve alguien del equipo la revisará.',
+  en_revision: 'Un integrante del equipo ya está revisando tu solicitud.',
+  en_proceso: 'Ya estamos gestionando tu solicitud. Pronto tendrás una respuesta.',
+  resuelto: 'Tu solicitud fue resuelta. Abajo encuentras la respuesta del equipo.',
+  cerrado: 'Este caso fue cerrado.',
+};
+
+function PqrDetalle({ pqr, onClose, onEnviar }: PqrDetalleProps) {
   const [texto, setTexto] = useState('');
   const [enviando, setEnviando] = useState(false);
-  const hiloRef = useRef<HTMLDivElement>(null);
+  const cuerpoRef = useRef<HTMLDivElement>(null);
+  const bajarRef = useRef(false);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -522,10 +541,12 @@ function PqrDetalle({ pqr, onClose, onEnviar, onOcultar, oculta }: PqrDetallePro
   const conversacion = useMemo(() => construirConversacion(pqr), [pqr]);
   const hayRespuestaEquipo = conversacion.some((m) => m.de === 'equipo');
 
-  // Al abrir o llegar un mensaje nuevo, baja al final de la conversación.
+  // Al abrir se ve el estado arriba. Solo cuando el usuario envía un
+  // mensaje se baja al final de la conversación.
   useEffect(() => {
-    const el = hiloRef.current;
-    if (el) el.scrollTo({ top: el.scrollHeight });
+    if (!bajarRef.current) return;
+    bajarRef.current = false;
+    cuerpoRef.current?.scrollTo({ top: cuerpoRef.current.scrollHeight, behavior: 'smooth' });
   }, [conversacion.length]);
 
   const enviar = async (e?: FormEvent) => {
@@ -533,101 +554,116 @@ function PqrDetalle({ pqr, onClose, onEnviar, onOcultar, oculta }: PqrDetallePro
     const mensaje = texto.trim();
     if (!mensaje || enviando) return;
     setEnviando(true);
+    bajarRef.current = true;
     const ok = await onEnviar(mensaje);
+    if (!ok) bajarRef.current = false;
     setEnviando(false);
     if (ok) setTexto('');
   };
 
   return (
     <div className="pf-modal-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="pf-modal pf-pqr-modal" role="dialog" aria-modal="true" aria-labelledby="pf-pqr-title">
-        <div className="pf-modal-head">
-          <span className="pf-item-icon" aria-hidden="true">
+      <div className="pf-modal pfd-modal" role="dialog" aria-modal="true" aria-labelledby="pf-pqr-title">
+        <header className="pfd-head">
+          <span className="pfd-icon" aria-hidden="true">
             <i className={`ti ${pqrTipoIcon[pqr.tipo_pqr] ?? 'ti-message-report'}`} />
           </span>
-          <div className="pf-pqr-heading">
+          <div className="pfd-title">
+            <p className="pfd-kicker">{pqr.radicado ?? `SS-PQR-${pqr.id_pqr}`} · {pqrTipoLabel[pqr.tipo_pqr]}</p>
             <h3 id="pf-pqr-title">{pqr.asunto_pqr}</h3>
-            <p className="pf-list-item-sub">{pqrTipoLabel[pqr.tipo_pqr]} · {fmtFecha(pqr.creado_en_pqr)}</p>
+            <p className="pfd-date">Enviada el {fmtFecha(pqr.creado_en_pqr)}</p>
           </div>
-          <button className="pf-modal-close" onClick={onClose} aria-label="Cerrar">×</button>
-        </div>
+          <button type="button" className="pfd-close" onClick={onClose} aria-label="Cerrar">
+            <i className="ti ti-x" aria-hidden="true" />
+          </button>
+        </header>
 
-        <div className="pqrx">
-          <div className="pf-pqr-meta">
-            <span className="pf-item-code">{pqr.radicado ?? `SS-PQR-${pqr.id_pqr}`}</span>
-            <PqrEstadoPill estado={pqr.estado_pqr} />
-          </div>
-
-          <PqrStepper estado={pqr.estado_pqr} />
-        </div>
-
-        <div className="pf-thread" ref={hiloRef}>
-          {conversacion.map((m) =>
-            m.de === 'sistema' ? (
-              <div key={m.key} className="pf-thread-event">
-                <i className="ti ti-point-filled" aria-hidden="true" />
-                <span>{m.texto}</span>
-                {m.fecha && <small>{fmtFechaHora(m.fecha)}</small>}
-              </div>
-            ) : (
-              <div key={m.key} className={`pf-bubble ${m.de === 'yo' ? 'mine' : 'team'}`}>
-                <span className="pf-bubble-who">
-                  {m.de === 'yo' ? 'Tú' : 'Equipo SkyedSocial'}
-                  {m.fecha ? ` · ${fmtFechaHora(m.fecha)}` : ''}
-                </span>
-                <p>{m.texto}</p>
-              </div>
-            ),
-          )}
-          {!hayRespuestaEquipo && (
-            <div className="pf-thread-wait">
-              <i className="ti ti-clock" aria-hidden="true" />
-              <span>Aún sin respuesta. Te avisaremos aquí y por notificación cuando la tengamos.</span>
+        <div className="pfd-scroll" ref={cuerpoRef}>
+          <section
+            className="pfd-status pqrx"
+            style={{ '--fase': ESTADO_COLOR[pqr.estado_pqr] } as CSSProperties}
+            aria-label="Estado de tu solicitud"
+          >
+            <div className="pfd-status-top">
+              <PqrEstadoPill estado={pqr.estado_pqr} />
+              <PqrPlazoChip pqr={pqr} />
             </div>
-          )}
+            <p className="pfd-status-text">{TEXTO_ESTADO[pqr.estado_pqr]}</p>
+            <PqrStepper estado={pqr.estado_pqr} />
+          </section>
+
+          <h4 className="pfd-section">Conversación</h4>
+
+          <div className="pfd-thread">
+            {conversacion.map((m) =>
+              m.de === 'sistema' ? (
+                <div key={m.key} className="pfd-event">
+                  <span>{m.texto}</span>
+                  {m.fecha && <time>{fmtFechaHora(m.fecha)}</time>}
+                </div>
+              ) : (
+                <div
+                  key={m.key}
+                  className={`pfd-msg ${m.de === 'yo' ? 'mine' : 'team'}${m.oficial ? ' official' : ''}`}
+                >
+                  <span className="pfd-avatar" aria-hidden="true">{m.de === 'yo' ? 'Tú' : 'SS'}</span>
+                  <div className="pfd-bubble">
+                    <div className="pfd-who">
+                      <b>{m.de === 'yo' ? 'Tú' : 'Equipo SkyedSocial'}</b>
+                      {m.oficial && (
+                        <span className="pfd-badge">
+                          <i className="ti ti-circle-check" aria-hidden="true" /> Respuesta oficial
+                        </span>
+                      )}
+                      {m.fecha && <time>{fmtFechaHora(m.fecha)}</time>}
+                    </div>
+                    <p>{m.texto}</p>
+                  </div>
+                </div>
+              ),
+            )}
+            {!hayRespuestaEquipo && puedeResponder && (
+              <div className="pfd-wait">
+                <i className="ti ti-clock" aria-hidden="true" />
+                <span>Aún sin respuesta del equipo. Te avisaremos aquí y por notificación cuando la tengamos.</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {puedeResponder ? (
-          <form className="pf-reply" onSubmit={enviar}>
-            <textarea
-              value={texto}
-              onChange={(e) => setTexto(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) enviar(); }}
-              placeholder="Escribe tu respuesta…"
-              maxLength={2000}
-              rows={2}
-              aria-label="Tu respuesta"
-              disabled={enviando}
-            />
-            <div className="pf-reply-foot">
-              <span>{texto.length}/2000 · Ctrl + Enter para enviar</span>
-              <button type="submit" className="pf-reply-btn" disabled={enviando || texto.trim() === ''}>
-                <i className="ti ti-send" aria-hidden="true" />
-                {enviando ? 'Enviando…' : 'Enviar'}
+          <form className="pfd-composer" onSubmit={enviar}>
+            <div className="pfd-composer-box">
+              <textarea
+                value={texto}
+                onChange={(e) => setTexto(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) enviar(); }}
+                placeholder="Escribe un mensaje…"
+                maxLength={2000}
+                rows={1}
+                aria-label="Tu mensaje"
+                disabled={enviando}
+              />
+              <button
+                type="submit"
+                className="pfd-send"
+                disabled={enviando || texto.trim() === ''}
+                aria-label={enviando ? 'Enviando' : 'Enviar mensaje'}
+              >
+                <i className={`ti ${enviando ? 'ti-loader-2 pfd-spin' : 'ti-send'}`} aria-hidden="true" />
               </button>
+            </div>
+            <div className="pfd-composer-hint">
+              <span>Ctrl + Enter para enviar</span>
+              <span>{texto.length}/2000</span>
             </div>
           </form>
         ) : (
-          <div className="pf-thread-wait pf-reply-closed">
-            <i className="ti ti-lock" aria-hidden="true" />
-            <span>Esta solicitud ya fue {pqr.estado_pqr === 'cerrado' ? 'cerrada' : 'resuelta'}. Si necesitas algo más, radica una nueva PQR.</span>
+          <div className="pfd-closed">
+            <i className="ti ti-circle-check" aria-hidden="true" />
+            <span>Esta solicitud ya fue {pqr.estado_pqr === 'cerrado' ? 'cerrada' : 'resuelta'}.</span>
+            <Link to="/social/pqr">Radicar una nueva PQR →</Link>
           </div>
-        )}
-
-        {(oculta || puedeOcultar) && (
-          <button type="button" className="pf-hide-btn" onClick={ocultar}>
-            <i className={`ti ${oculta ? 'ti-eye' : 'ti-eye-off'}`} aria-hidden="true" />
-            {oculta ? ' Mostrar en mi lista' : ' Ocultar de mi lista'}
-          </button>
-        )}
-        {confirmando && (
-          <PfConfirmar
-            titulo="¿Ocultar esta PQR?"
-            texto="Dejará de verse en tu lista, pero el equipo conserva el registro. La encuentras en “Ocultas”."
-            confirmar="Sí, ocultar"
-            onConfirmar={() => { setConfirmando(false); onOcultar(); }}
-            onCancelar={() => setConfirmando(false)}
-          />
         )}
       </div>
     </div>
