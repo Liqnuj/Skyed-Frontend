@@ -115,3 +115,326 @@
 @media (max-width: 900px) {
   .deportivo-admin .qr-check { grid-template-columns: 1fr; }
 }
+
+/* ---------- Gráficas del inicio (components/deportivo/GraficosAdmin.tsx) ----------
+   Colores validados (contraste y daltonismo) contra el fondo de cada modo. */
+.deportivo-admin {
+  --chart-serie: #0891b2;
+  --chart-ok: #16a34a;
+  --chart-pend: #2563eb;
+  --chart-bad: #dc2626;
+  --chart-grid: #edf0f5;
+}
+
+.deportivo-admin.dark {
+  --chart-serie: #0aa6c0;
+  --chart-ok: #25a35c;
+  --chart-pend: #5b8def;
+  --chart-bad: #f05a5a;
+  --chart-grid: #222d3e;
+}
+
+.deportivo-admin .chart-card {
+  padding: 18px;
+  min-width: 0;
+}
+
+.deportivo-admin .dashboard-grid-charts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 18px;
+}
+
+/* Selector Ingresos / Inscripciones */
+.deportivo-admin .chart-toggle {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--admin-surface-2);
+  border: 1px solid var(--admin-line);
+}
+
+.deportivo-admin .chart-toggle button {
+  border: 0;
+  background: transparent;
+  color: var(--admin-muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.deportivo-admin .chart-toggle button.is-active {
+  background: var(--admin-surface);
+  color: var(--admin-text);
+  box-shadow: 0 1px 4px rgba(24, 34, 54, .1);
+}
+
+.deportivo-admin .chart-toggle button:focus-visible {
+  outline: 2px solid var(--admin-accent);
+  outline-offset: 1px;
+}
+
+/* Número principal */
+.deportivo-admin .chart-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  margin: 14px 0 6px;
+}
+
+.deportivo-admin .chart-hero strong {
+  display: block;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+  color: var(--admin-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.deportivo-admin .chart-hero span {
+  color: var(--admin-muted);
+  font-size: 13px;
+}
+
+.deportivo-admin .chart-hero-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.deportivo-admin .chart-delta {
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+.deportivo-admin .chart-hero .chart-delta.is-up { color: #15803d; background: rgba(22, 163, 74, .1); }
+.deportivo-admin .chart-hero .chart-delta.is-down { color: #b91c1c; background: rgba(220, 38, 38, .1); }
+.deportivo-admin.dark .chart-hero .chart-delta.is-up { color: #86efac; background: rgba(37, 163, 92, .16); }
+.deportivo-admin.dark .chart-hero .chart-delta.is-down { color: #fca5a5; background: rgba(240, 90, 90, .16); }
+
+.deportivo-admin .chart-total b { color: var(--admin-text); }
+
+/* Gráfica de barras (SVG) */
+.deportivo-admin .chart-plot {
+  position: relative;
+}
+
+.deportivo-admin .chart-plot svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.deportivo-admin .chart-grid { stroke: var(--chart-grid); stroke-width: 1; }
+.deportivo-admin .chart-baseline { stroke: var(--admin-line); stroke-width: 1.5; }
+
+.deportivo-admin .chart-axis {
+  fill: var(--admin-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.deportivo-admin .chart-axis.is-current {
+  fill: var(--admin-text);
+  font-weight: 700;
+}
+
+.deportivo-admin .chart-bar {
+  fill: var(--chart-serie);
+  transition: opacity .15s ease;
+}
+
+.deportivo-admin .chart-bar.is-dim { opacity: .35; }
+
+.deportivo-admin .chart-value {
+  fill: var(--admin-text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.deportivo-admin .chart-hit {
+  fill: transparent;
+  cursor: pointer;
+  outline: none;
+}
+
+.deportivo-admin .chart-hit:focus-visible {
+  stroke: var(--admin-accent);
+  stroke-width: 2;
+}
+
+.deportivo-admin .chart-tooltip {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  min-width: 140px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-line);
+  box-shadow: 0 10px 28px rgba(9, 14, 28, .16);
+  pointer-events: none;
+  text-align: center;
+  z-index: 2;
+}
+
+.deportivo-admin .chart-tooltip span { display: block; color: var(--admin-muted); font-size: 12px; }
+.deportivo-admin .chart-tooltip strong { display: block; color: var(--admin-text); font-size: 16px; font-variant-numeric: tabular-nums; }
+.deportivo-admin .chart-tooltip small { display: block; color: var(--admin-muted); font-size: 11px; }
+
+.deportivo-admin .chart-empty {
+  margin: 10px 0 0;
+  color: var(--admin-muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* Inscritos por evento (barras horizontales) */
+.deportivo-admin .hbar-list {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.deportivo-admin .hbar-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+
+.deportivo-admin .hbar-name {
+  color: var(--admin-text);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deportivo-admin .hbar-value {
+  color: var(--admin-text);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.deportivo-admin .hbar-track {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--admin-surface-2);
+  border: 1px solid var(--admin-line);
+  overflow: hidden;
+}
+
+.deportivo-admin .hbar-fill {
+  display: block;
+  height: 100%;
+  min-width: 6px;
+  border-radius: 999px;
+  background: var(--chart-serie);
+}
+
+.deportivo-admin .hbar-list small {
+  display: block;
+  margin-top: 3px;
+  color: var(--admin-muted);
+  font-size: 12px;
+}
+
+/* Estado de los pagos (barra apilada) */
+.deportivo-admin .stack-bar {
+  display: flex;
+  gap: 2px;
+  height: 16px;
+  margin: 16px 0 14px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--admin-surface-2);
+}
+
+.deportivo-admin .stack-seg { min-width: 6px; }
+.deportivo-admin .stack-seg.is-ok, .deportivo-admin .stack-dot.is-ok { background: var(--chart-ok); }
+.deportivo-admin .stack-seg.is-pend, .deportivo-admin .stack-dot.is-pend { background: var(--chart-pend); }
+.deportivo-admin .stack-seg.is-bad, .deportivo-admin .stack-dot.is-bad { background: var(--chart-bad); }
+
+.deportivo-admin .stack-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.deportivo-admin .stack-legend li {
+  display: grid;
+  grid-template-columns: 24px 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--admin-surface-2);
+  font-size: 14px;
+}
+
+.deportivo-admin .stack-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.deportivo-admin .stack-label { color: var(--admin-text); font-weight: 600; }
+.deportivo-admin .stack-count { color: var(--admin-text); font-weight: 800; font-variant-numeric: tabular-nums; }
+.deportivo-admin .stack-money { color: var(--admin-muted); font-size: 13px; font-variant-numeric: tabular-nums; min-width: 90px; text-align: right; }
+
+.deportivo-admin .stack-note {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: var(--admin-muted);
+}
+
+.deportivo-admin .stack-note.has-pending {
+  color: var(--admin-text);
+  font-weight: 600;
+}
+
+/* Tabla oculta para lectores de pantalla */
+.deportivo-admin .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 900px) {
+  .deportivo-admin .dashboard-grid-charts { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 520px) {
+  .deportivo-admin .chart-hero-side { align-items: flex-start; }
+  /* El SVG se encoge con la tarjeta: textos más grandes para que sigan legibles */
+  .deportivo-admin .chart-axis,
+  .deportivo-admin .chart-value { font-size: 19px; }
+  .deportivo-admin .stack-legend li { grid-template-columns: 24px 1fr auto; }
+  .deportivo-admin .stack-money { grid-column: 2 / -1; text-align: left; min-width: 0; }
+}
