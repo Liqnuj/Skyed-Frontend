@@ -1,0 +1,104 @@
+/* Campana de notificaciones (NotificationBell.tsx) */
+/* Grupo: nombre del usuario + campana, siempre juntos a la derecha */
+.mod-social .nav-user-group {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+@media (max-width: 768px) {
+  .mod-social .nav-user-group { gap: .5rem; }
+}
+
+.mod-social .nb-wrap { position: relative; flex-shrink: 0;  }
+
+.mod-social .nb-btn {
+  position: relative;
+  width: 40px; height: 40px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  border: 1px solid rgba(201, 168, 76, .55);
+  background: var(--plum);
+  color: var(--gold-light);
+  font-size: calc(1.15rem * var(--fs-scale, 1));
+  cursor: pointer;
+  transition: transform .2s ease, background .2s ease;
+}
+.mod-social .nb-btn:hover { background: var(--plum-light); transform: translateY(-1px); }
+
+.mod-social .nb-badge {
+  position: absolute; top: -4px; right: -4px;
+  min-width: 18px; height: 18px; padding: 0 5px;
+  border-radius: 9px;
+  background: #e5484d; color: #fff;
+  font-size: .68rem; font-weight: 700; line-height: 18px; text-align: center;
+  box-shadow: 0 0 0 2px var(--white);
+}
+
+.mod-social .nb-panel {
+  position: absolute; top: calc(100% + 14px); right: 0;
+  width: 340px; max-width: calc(100vw - 24px);
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  box-shadow: 0 24px 60px rgba(26, 10, 46, .18), 0 2px 8px rgba(26, 10, 46, .06);
+  z-index: 1100;
+  opacity: 0; visibility: hidden; pointer-events: none;
+  transform: translateY(-8px) scale(.98); transform-origin: top right;
+  transition: opacity .2s ease, transform .2s ease, visibility .2s;
+}
+.mod-social .nb-wrap.is-open .nb-panel {
+  opacity: 1; visibility: visible; pointer-events: auto; transform: none;
+}
+
+.mod-social .nb-head {
+  display: flex; align-items: center; justify-content: space-between; gap: .75rem;
+  padding: .9rem 1.1rem;
+  border-radius: 19px 19px 0 0;
+  background: linear-gradient(135deg, var(--plum), var(--plum-light));
+  color: #fff;
+}
+.mod-social .nb-link {
+  background: none; border: 0; padding: 0; cursor: pointer;
+  color: var(--gold-light); font: inherit; font-size: .78rem; text-decoration: underline;
+}
+
+.mod-social .nb-list { max-height: 380px; overflow-y: auto; padding: .35rem; }
+.mod-social .nb-empty { margin: 0; padding: 1.4rem 1rem; text-align: center; font-size: .88rem; color: var(--text-muted); }
+
+.mod-social .nb-item {
+  width: 100%; display: flex; align-items: flex-start; gap: .7rem;
+  padding: .7rem .75rem; border: 0; border-radius: 14px;
+  background: transparent; color: var(--text-dark);
+  text-align: left; cursor: pointer; font: inherit;
+}
+.mod-social .nb-item:hover,
+.mod-social .nb-item:focus-visible { background: var(--blush); }
+.mod-social .nb-item.unread { background: rgba(201, 168, 76, .12); }
+
+.mod-social .nb-icon {
+  width: 34px; height: 34px; flex-shrink: 0; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--plum); color: var(--gold-light);
+}
+.mod-social .nb-text { display: flex; flex-direction: column; gap: .15rem; min-width: 0; font-size: .84rem; line-height: 1.35; }
+.mod-social .nb-text strong { font-size: .88rem; }
+.mod-social .nb-text small { color: var(--text-muted); }
+
+/* Modo oscuro */
+.mod-social.dark-mode .nb-panel { background: #221830; border-color: rgba(255, 255, 255, .1); box-shadow: 0 24px 60px rgba(0, 0, 0, .45); }
+.mod-social.dark-mode .nb-badge { box-shadow: 0 0 0 2px #221830; }
+.mod-social.dark-mode .nb-item { color: rgba(255, 255, 255, .88); }
+.mod-social.dark-mode .nb-item:hover,
+.mod-social.dark-mode .nb-item:focus-visible { background: rgba(255, 255, 255, .06); }
+.mod-social.dark-mode .nb-item.unread { background: rgba(201, 168, 76, .14); }
+.mod-social.dark-mode .nb-text small,
+.mod-social.dark-mode .nb-empty { color: rgba(255, 255, 255, .5); }
+
+/* Celular: el panel ocupa el ancho de la pantalla */
+@media (max-width: 768px) {
+  .mod-social .nb-panel { position: fixed; top: 72px; left: 12px; right: 12px; width: auto; max-width: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mod-social .nb-panel, .mod-social .nb-btn { transition: none; }
+}
