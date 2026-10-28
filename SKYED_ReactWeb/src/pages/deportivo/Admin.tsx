@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { Link, Navigate, useSearchParams } from "react-router-dom";
 import jsQR from "jsqr";
 import {
   ArrowLeft,
@@ -60,6 +60,8 @@ type Section =
   | "kits"
   | "usuarios"
   | "ajustes";
+
+const SECCIONES: Section[] = ["inicio", "eventos", "inscripciones", "acceso", "resultados", "kits", "usuarios", "ajustes"];
 
 type Categoria = {
   id: number;
@@ -516,6 +518,17 @@ function AdminPage() {
     setFiltroEstadoUsuario("");
     setMobileOpen(false);
   };
+
+  // Un enlace (p. ej. un botón de SKAI) puede abrir una sección directo:
+  // ?seccion=kits. Luego se limpia la URL para que recargar no la fuerce.
+  const [params, setParams] = useSearchParams();
+  useEffect(() => {
+    const pedida = params.get("seccion") as Section | null;
+    if (pedida && SECCIONES.includes(pedida)) {
+      selectSection(pedida);
+      setParams({}, { replace: true });
+    }
+  }, [params]);
 
   const filtered = (text: string) =>
     text.toLowerCase().includes(search.toLowerCase());
