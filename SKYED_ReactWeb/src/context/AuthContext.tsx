@@ -1,6 +1,19 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { User } from '../types';
 import { apiFetch, getToken, setToken, SESION_INVALIDA } from '../services/api';
+import TransicionSesion, { moduloActual, type EstadoTransicion } from '../components/shared/TransicionSesion';
+
+/* Tiempos de la animación de inicio / cierre de sesión (ms). La fase "cargando"
+   dura lo que tarde el servidor, con un mínimo para que no parpadee. */
+const MINIMO_CARGANDO = 700;
+const DURACION_LISTO = 750;
+const DURACION_SALIDA = 450;
+
+const esperar = (ms: number) => new Promise<void>((r) => window.setTimeout(r, ms));
+const primerNombre = (nombre?: string) => nombre?.trim().split(/\s+/)[0] || undefined;
+/** Lo que muestra la animación de la persona: primer nombre, iniciales y foto. */
+const datosPersona = (u?: User | null) =>
+  u ? { nombre: primerNombre(u.name), nombreCompleto: u.name, foto: u.foto_url } : {};
 
 export interface RegisterData {
   tipo_documento_u: string;
@@ -62,6 +75,34 @@ function buildUser(apiUser: any): User {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  // Animación de pantalla completa al iniciar o cerrar sesión.
+  const [transicion, setTransicion] = useState<EstadoTransicion | null>(null);
+  const timersTransicion = useRef<number[]>([]);
+
+  const limpiarTimers = () => {
+    timersTransicion.current.forEach((t) => window.clearTimeout(t));
+    timersTransicion.current = [];
+  };
+
+  /** Muestra el saludo final y después desvanece la pantalla. */
+  const terminarTransicion = (persona?: User | null) => {
+    limpiarTimers();
+    setTransicion((t) => (t ? { ...t, fase: 'listo', ...datosPersona(persona) } : t));
+    timersTransicion.current.push(
+      window.setTimeout(() => setTransicion((t) => (t ? { ...t, fase: 'saliendo' } : t)), DURACION_LISTO),
+      window.setTimeout(() => setTransicion(null), DURACION_LISTO + DURACION_SALIDA),
+    );
+  };
+
+  /** Si algo falla (p. ej. contraseña incorrecta) se desvanece sin el ✓. */
+  const cancelarTransicion = () => {
+    limpiarTimers();
+    setTransicion((t) => (t ? { ...t, fase: 'saliendo' } : t));
+    timersTransicion.current.push(window.setTimeout(() => setTransicion(null), DURACION_SALIDA));
+  };
+
+  useEffect(() => limpiarTimers, []);
+
   const [user, setUser] = useState<User | null>(() => {
     const raw = localStorage.getItem(STORAGE_KEY);
     return raw ? JSON.parse(raw) : null;
@@ -108,14 +149,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     verificando,
 
     async login(identificacion, password) {
-      const data = await apiFetch('/login', {
-        method: 'POST',
-        // 'identificacion' = correo o número de documento (así lo pide POST /login).
-        body: JSON.stringify({ identificacion, contrasena_u: password }),
-      });
+      limpiarTimers();
+      setTransicion({ tipo: 'login', fase: 'cargando', modulo: moduloActual() });
+      const minimo = esperar(MINIMO_CARGANDO);
+
+      let data;
+      try {
+        data = await apiFetch('/login', {
+          method: 'POST',
+          // 'identificacion' = correo o número de documento (así lo pide POST /login).
+          body: JSON.stringify({ identificacion, contrasena_u: password }),
+        });
+        await minimo;
+      } catch (err) {
+        await minimo;
+        cancelarTransicion();
+        throw err;
+      }
 
       setToken(data.token);
-      setUser(buildUser(data.user));
+      const nuevo = buildUser(data.user);
+      setUser(nuevo);
+      terminarTransicion(nuevo);
 
       return true;
     },
@@ -133,13 +188,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
 
     async logout() {
-      try {
-        await apiFetch('/logout', { method: 'POST' });
-      } catch {
-        // si el token ya venció o falla la petición, igual limpiamos la sesión local
-      }
+      const persona = user;
+      limpiarTimers();
+      // Al cerrar sesión ya se sabe quién es: el avatar y el nombre salen desde el inicio.
+      setTransicion({ tipo: 'logout', fase: 'cargando', modulo: moduloActual(), ...datosPersona(persona) });
+
+      await Promise.all([
+        apiFetch('/logout', { method: 'POST' }).catch(() => {
+          // si el token ya venció o falla la petición, igual limpiamos la sesión local
+        }),
+        esperar(MINIMO_CARGANDO),
+      ]);
       setToken(null);
       setUser(null);
+      terminarTransicion(persona);
     },
 
       async deleteAccount() {
@@ -161,7 +223,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   }), [user, verificando]);
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+      {transicion && <TransicionSesion estado={transicion} />}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {

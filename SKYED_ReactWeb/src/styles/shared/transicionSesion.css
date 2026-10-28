@@ -1,0 +1,336 @@
+/* =========================================================
+   Transición al iniciar / cerrar sesión (components/shared/TransicionSesion.tsx)
+   Estilo de la página de login: fondo claro en degradado pastel, luces
+   suaves de color, el avatar de la persona con ondas y el saludo con su
+   nombre letra por letra (tipografía de los títulos del sitio).
+   Todo entra y sale con fundidos: sin saltos bruscos.
+   ========================================================= */
+
+.ts-overlay {
+  /* Colores por módulo (Principal por defecto) */
+  --ts-c1: #8827f0;
+  --ts-c2: #4dd1e8;
+  --ts-c3: #f2c46d;
+  --ts-fondo-1: #f6f0ff;
+  --ts-fondo-2: #eaf7fb;
+  --ts-tinta: #1c1633;
+  --ts-suave: #6b6585;
+  --ts-medio: #ffffff;
+  --ts-luz-opacidad: 0.35;
+
+  position: fixed;
+  inset: 0;
+  /* Encima de todo: menús, SKAI, modales y confirmaciones */
+  z-index: 100000;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--ts-fondo-1) 0%, var(--ts-medio) 50%, var(--ts-fondo-2) 100%);
+  color: var(--ts-tinta);
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  animation: ts-aparece 0.4s ease-out both;
+  transition: opacity 0.5s ease;
+}
+
+.ts-overlay.ts-social {
+  --ts-c1: #9c02ae;
+  --ts-c2: #d24fe0;
+  --ts-c3: #c9a84c;
+  --ts-fondo-1: #fbf1fd;
+  --ts-fondo-2: #fdf7ea;
+  --ts-tinta: #2a0f33;
+  --ts-suave: #7a6283;
+}
+
+.ts-overlay.ts-deportivo {
+  --ts-c1: #0749a7;
+  --ts-c2: #2c9caf;
+  --ts-c3: #7fd3e0;
+  --ts-fondo-1: #eef4fc;
+  --ts-fondo-2: #e9f8fa;
+  --ts-tinta: #0d1e36;
+  --ts-suave: #5f7189;
+}
+
+/* ---------- Modo oscuro (el del widget de accesibilidad) ----------
+   Mismo diseño con fondos profundos teñidos del color del módulo, texto
+   claro y acentos más luminosos para que se lean bien sobre lo oscuro. */
+.ts-overlay.is-oscuro {
+  --ts-c1: #b07cff;
+  --ts-c2: #4dd1e8;
+  --ts-c3: #f2c46d;
+  --ts-fondo-1: #1d1236;
+  --ts-medio: #100d1e;
+  --ts-fondo-2: #0b2230;
+  --ts-tinta: #f4f1fb;
+  --ts-suave: #a9a3c2;
+  --ts-luz-opacidad: 0.28;
+}
+
+.ts-overlay.is-oscuro.ts-social {
+  --ts-c1: #e27af0;
+  --ts-c2: #c03fd4;
+  --ts-c3: #e8c97a;
+  --ts-fondo-1: #2a0a33;
+  --ts-medio: #150a1d;
+  --ts-fondo-2: #2a1f0a;
+  --ts-tinta: #fbf2fd;
+  --ts-suave: #c4a9ca;
+}
+
+.ts-overlay.is-oscuro.ts-deportivo {
+  --ts-c1: #6aa8ff;
+  --ts-c2: #2cc3d6;
+  --ts-c3: #7fd3e0;
+  --ts-fondo-1: #0a1f3d;
+  --ts-medio: #070f1d;
+  --ts-fondo-2: #062a31;
+  --ts-tinta: #eef5fb;
+  --ts-suave: #94a8c0;
+}
+
+.ts-overlay.is-oscuro .ts-avatar {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--ts-c1) 35%, transparent),
+    0 18px 44px -12px color-mix(in srgb, var(--ts-c1) 55%, transparent);
+}
+
+/* Salida: se desvanece mostrando la página que quedó debajo */
+.ts-overlay.is-saliendo {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ---------- Luces de color de fondo (como los "blobs" del login) ---------- */
+.ts-luz {
+  position: absolute;
+  width: 38vmax;
+  height: 38vmax;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: var(--ts-luz-opacidad);
+  pointer-events: none;
+}
+
+.ts-luz-1 { top: -12vmax; left: -8vmax; background: var(--ts-c1); animation: ts-deriva 12s ease-in-out infinite alternate; }
+.ts-luz-2 { bottom: -14vmax; right: -10vmax; background: var(--ts-c2); animation: ts-deriva 14s ease-in-out -4s infinite alternate-reverse; }
+.ts-luz-3 { top: 55%; left: 8%; width: 18vmax; height: 18vmax; background: var(--ts-c3); opacity: 0.25; animation: ts-deriva 10s ease-in-out -2s infinite alternate; }
+
+/* ---------- Centro ---------- */
+.ts-centro {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px;
+  text-align: center;
+  transition: transform 0.5s ease, opacity 0.5s ease;
+}
+
+.ts-overlay.is-saliendo .ts-centro {
+  transform: translateY(-8px);
+  opacity: 0;
+}
+
+/* Avatar con ondas suaves, como gotas en el agua */
+.ts-avatar-zona {
+  position: relative;
+  width: 112px;
+  height: 112px;
+  margin-bottom: 26px;
+  display: grid;
+  place-items: center;
+}
+
+.ts-onda {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid color-mix(in srgb, var(--ts-c1) 45%, transparent);
+  opacity: 0;
+  animation: ts-onda 3s ease-out infinite;
+}
+
+.ts-onda:nth-child(2) { animation-delay: 1s; border-color: color-mix(in srgb, var(--ts-c2) 55%, transparent); }
+.ts-onda:nth-child(3) { animation-delay: 2s; }
+
+.ts-avatar {
+  position: relative;
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: var(--ts-medio);
+  border: 4px solid var(--ts-medio);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--ts-c1) 18%, transparent),
+    0 18px 40px -14px color-mix(in srgb, var(--ts-c1) 55%, transparent);
+  animation: ts-avatar-entra 0.6s cubic-bezier(0.22, 0.9, 0.3, 1.1) both;
+}
+
+.ts-avatar.is-persona {
+  background: linear-gradient(135deg, var(--ts-c1), var(--ts-c2));
+}
+
+.ts-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ts-avatar .ts-avatar-logo {
+  width: 62%;
+  height: 62%;
+  object-fit: contain;
+}
+
+.ts-avatar b {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 38px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.02em;
+}
+
+/* Saludo letra por letra */
+.ts-saludo {
+  margin: 0;
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: clamp(30px, 6vw, 46px);
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--ts-tinta);
+}
+
+.ts-letras > span {
+  display: inline-block;
+  animation: ts-letra 0.5s cubic-bezier(0.22, 0.8, 0.3, 1) both;
+  animation-delay: calc(var(--i) * 35ms + 0.1s);
+}
+
+/* El nombre, con el color del módulo */
+.ts-letras > .is-nombre {
+  color: var(--ts-c1);
+}
+
+.ts-detalle {
+  margin: 12px 0 0;
+  font-size: 15px;
+  color: var(--ts-suave);
+  animation: ts-sube 0.45s ease-out 0.25s both;
+}
+
+.ts-puntos {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.ts-puntos i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--ts-c1);
+  animation: ts-punto 1.2s ease-in-out infinite;
+}
+
+.ts-puntos i:nth-child(2) { animation-delay: 0.15s; background: color-mix(in srgb, var(--ts-c1) 50%, var(--ts-c2)); }
+.ts-puntos i:nth-child(3) { animation-delay: 0.3s; background: var(--ts-c2); }
+
+/* Marca abajo */
+.ts-marca {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ts-suave);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  animation: ts-aparece 0.6s ease-out 0.3s both;
+}
+
+.ts-marca img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.ts-marca em {
+  font-style: normal;
+  color: var(--ts-c1);
+}
+
+/* ---------- Animaciones ---------- */
+@keyframes ts-aparece {
+  from { opacity: 0; }
+}
+
+@keyframes ts-sube {
+  from { opacity: 0; transform: translateY(8px); }
+}
+
+@keyframes ts-letra {
+  from { opacity: 0; transform: translateY(0.35em); filter: blur(4px); }
+}
+
+@keyframes ts-avatar-entra {
+  from { opacity: 0; transform: scale(0.82); }
+}
+
+@keyframes ts-onda {
+  0%   { transform: scale(1); opacity: 0.7; }
+  100% { transform: scale(1.75); opacity: 0; }
+}
+
+@keyframes ts-punto {
+  0%, 100% { opacity: 0.3; transform: translateY(0); }
+  40%      { opacity: 1; transform: translateY(-3px); }
+}
+
+@keyframes ts-deriva {
+  to { transform: translate(6vmax, 4vmax) scale(1.08); }
+}
+
+@keyframes ts-latido {
+  0%, 100% { opacity: 0.25; }
+  50%      { opacity: 0.7; }
+}
+
+/* ---------- Menos movimiento (p. ej. Windows con "Efectos de animación" apagado):
+   nada se desplaza ni crece; las letras, el avatar y el texto aparecen con
+   fundidos y las ondas solo laten. */
+@media (prefers-reduced-motion: reduce) {
+  .ts-luz {
+    animation: none;
+  }
+
+  .ts-letras > span,
+  .ts-avatar,
+  .ts-detalle {
+    animation-name: ts-aparece;
+  }
+
+  .ts-onda {
+    transform: scale(1.25);
+    animation: ts-latido 2.4s ease-in-out infinite;
+  }
+
+  .ts-onda:nth-child(n+2) {
+    display: none;
+  }
+
+  .ts-puntos i {
+    animation-name: ts-latido;
+  }
+
+  .ts-overlay.is-saliendo .ts-centro {
+    transform: none;
+  }
+}

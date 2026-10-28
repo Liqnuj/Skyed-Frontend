@@ -68,9 +68,11 @@ export default function LoginPage() {
       const redirectUrl = queryParams.get('redirect');
       const finalDestination = redirectUrl ? redirectUrl : from;
 
+      // Redirige mientras la animación muestra "¡Hola, …!"; al desvanecerse
+      // ya se ve la página de destino (ver TransicionSesion).
       setTimeout(() => {
         navigate(finalDestination, { replace: true });
-      }, 2000);
+      }, 550);
 
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : 'Error al iniciar sesión';
