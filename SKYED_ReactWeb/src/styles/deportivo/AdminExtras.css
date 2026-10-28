@@ -40,6 +40,23 @@
   margin-bottom: 12px;
 }
 
+.deportivo-admin .filter-row { align-items: center; }
+
+.deportivo-admin .filter-row .filter-clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 12px;
+  font-size: 11px;
+}
+
+.deportivo-admin .filter-count {
+  margin-left: auto;
+  font-size: 11px;
+  opacity: .7;
+  white-space: nowrap;
+}
+
 /* ---------- Control de acceso (QR) ---------- */
 .deportivo-admin .qr-check {
   display: grid;
