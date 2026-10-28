@@ -410,6 +410,8 @@ function AdminPage() {
     setFontSize,
     dyslexia,
     setDyslexia,
+    accentOverride,
+    setAccent,
     reset,
   } = useAccessibility();
 
@@ -429,6 +431,17 @@ function AdminPage() {
 
   const [filtroPago, setFiltroPago] = useState<"todos" | Pago["estado_p"]>("pendiente");
   const [filtroEvento, setFiltroEvento] = useState("");
+  // Filtros por sección (cadena vacía = "todos")
+  const [filtroCategoriaEvento, setFiltroCategoriaEvento] = useState("");
+  const [filtroEstadoEvento, setFiltroEstadoEvento] = useState("");
+  const [filtroFechaEvento, setFiltroFechaEvento] = useState(""); // proximos | pasados
+  const [filtroCuposEvento, setFiltroCuposEvento] = useState(""); // con | agotado
+  const [filtroMetodoPago, setFiltroMetodoPago] = useState("");
+  const [filtroEstadoResultado, setFiltroEstadoResultado] = useState("");
+  const [filtroStockKit, setFiltroStockKit] = useState(""); // con | bajo | agotado
+  const [filtroLugarKit, setFiltroLugarKit] = useState("");
+  const [filtroRolUsuario, setFiltroRolUsuario] = useState("");
+  const [filtroEstadoUsuario, setFiltroEstadoUsuario] = useState("");
 
   const [modal, setModal] = useState<
     "evento" | "categorias" | "kit" | "pago" | "resultado" | null
@@ -490,28 +503,76 @@ function AdminPage() {
   const selectSection = (next: Section) => {
     setSection(next);
     setSearch("");
+    setFiltroEvento("");
+    setFiltroCategoriaEvento("");
+    setFiltroEstadoEvento("");
+    setFiltroFechaEvento("");
+    setFiltroCuposEvento("");
+    setFiltroMetodoPago("");
+    setFiltroEstadoResultado("");
+    setFiltroStockKit("");
+    setFiltroLugarKit("");
+    setFiltroRolUsuario("");
+    setFiltroEstadoUsuario("");
     setMobileOpen(false);
   };
 
   const filtered = (text: string) =>
     text.toLowerCase().includes(search.toLowerCase());
 
-  const visibleEventos = eventos.filter((e) =>
-    filtered(`${e.nombre} ${e.categoria} ${e.ubicacion} ${e.estado}`)
-  );
+  const STOCK_BAJO = 10; // kits con este stock o menos se consideran "stock bajo"
+
+  const visibleEventos = eventos
+    .filter((e) => !filtroCategoriaEvento || e.categoria === filtroCategoriaEvento)
+    .filter((e) => !filtroEstadoEvento || e.estado === filtroEstadoEvento)
+    .filter((e) => {
+      if (!filtroFechaEvento) return true;
+      const fecha = (e.fecha ?? "").slice(0, 10);
+      return filtroFechaEvento === "proximos" ? fecha >= hoy() : fecha < hoy();
+    })
+    .filter((e) => {
+      if (!filtroCuposEvento) return true;
+      return filtroCuposEvento === "con"
+        ? Number(e.cupos_disponibles) > 0
+        : Number(e.cupos_disponibles) <= 0;
+    })
+    .filter((e) =>
+      filtered(`${e.nombre} ${e.categoria} ${e.ubicacion} ${e.estado}`)
+    );
   const visiblePagos = pagos
     .filter((p) => filtroPago === "todos" || p.estado_p === filtroPago)
     .filter((p) => !filtroEvento || String(p.inscripcion?.evento?.id_e) === filtroEvento)
+    .filter((p) => !filtroMetodoPago || p.metodo_pago_p === filtroMetodoPago)
     .filter((p) =>
       filtered(`${nombreDe(p.inscripcion?.usuario)} ${p.inscripcion?.usuario?.correo_u ?? ""} ${p.inscripcion?.evento?.nombre_e ?? ""} ${p.referencia_p ?? ""}`)
     );
   const visibleResultados = resultados
     .filter((r) => !filtroEvento || String(r.inscripcion?.evento?.id_e) === filtroEvento)
+    .filter((r) => !filtroEstadoResultado || r.estado_r === filtroEstadoResultado)
     .filter((r) => filtered(`${nombreDe(r.inscripcion?.usuario)} ${r.inscripcion?.evento?.nombre_e ?? ""} ${r.estado_r}`))
     .sort((a, b) =>
       (a.inscripcion?.evento?.nombre_e ?? "").localeCompare(b.inscripcion?.evento?.nombre_e ?? "")
       || (a.posicion_general_r ?? 9999) - (b.posicion_general_r ?? 9999));
-  const visibleKits = kits.filter((k) => filtered(`${k.nombre_k} ${k.lugar_entrega_k ?? ""} ${k.contenido_k ?? ""}`));
+  const visibleKits = kits
+    .filter((k) => {
+      if (!filtroStockKit) return true;
+      const stock = Number(k.stock_k);
+      if (filtroStockKit === "agotado") return stock <= 0;
+      if (filtroStockKit === "bajo") return stock > 0 && stock <= STOCK_BAJO;
+      return stock > 0; // "con"
+    })
+    .filter((k) => !filtroLugarKit || (k.lugar_entrega_k ?? "") === filtroLugarKit)
+    .filter((k) => filtered(`${k.nombre_k} ${k.lugar_entrega_k ?? ""} ${k.contenido_k ?? ""}`));
+
+  const visibleUsers = users
+    .filter((u) => !filtroRolUsuario || (u.roles ?? []).some((r) => r.nombre_rol === filtroRolUsuario))
+    .filter((u) => !filtroEstadoUsuario || (u.estado_u ?? "activo") === filtroEstadoUsuario)
+    .filter((u) => filtered(`${u.nombre_u} ${u.apellido_u ?? ""} ${u.correo_u}`));
+
+  // Opciones que salen de los propios datos
+  const metodosPago = Array.from(new Set(pagos.map((p) => p.metodo_pago_p).filter(Boolean) as string[])).sort();
+  const lugaresKit = Array.from(new Set(kits.map((k) => k.lugar_entrega_k).filter(Boolean) as string[])).sort();
+  const rolesUsuario = Array.from(new Set(users.flatMap((u) => (u.roles ?? []).map((r) => r.nombre_rol)))).sort();
 
   const stats = useMemo(() => {
     const activos = eventos.filter((e) => e.estado === "activo");
@@ -548,7 +609,7 @@ function AdminPage() {
     ajustes: { label: "Ajustes", icon: Settings },
   };
 
-  const accent = "#2c9caf"; // color de marca del panel
+  const accent = accentOverride ?? "#2c9caf";
   const scale = parseInt(fontSize, 10) / 16;
 
   const cambiarEstadoEvento = (e: Evento, estado_e: Evento["estado"]) =>
@@ -589,6 +650,32 @@ function AdminPage() {
     if (!(await confirmar({ titulo: "Eliminar kit", mensaje: `¿Eliminar el kit "${k.nombre_k}"? Si un evento lo usa no se podrá borrar.`, confirmar: "Eliminar", tipo: "peligro" }))) return;
     run(() => apiFetch(`/kits/${k.id_k}`, { method: "DELETE" }), "Kit eliminado", false);
   };
+
+  /** Un <select> de filtro con el estilo del panel. */
+  const filtroSelect = (
+    value: string,
+    onChange: (v: string) => void,
+    label: string,
+    todos: string,
+    opciones: Array<{ value: string; label: string }>,
+  ) => (
+    <select className="admin-select" value={value} onChange={e => onChange(e.target.value)} aria-label={label}>
+      <option value="">{todos}</option>
+      {opciones.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+    </select>
+  );
+
+  /** Botón "Limpiar filtros" + contador "Mostrando X de Y". */
+  const filtroPie = (activo: boolean, limpiar: () => void, mostrando: number, total: number) => (
+    <>
+      {activo && (
+        <button type="button" className="secondary-btn filter-clear" onClick={limpiar}>
+          <X size={14} /> Limpiar filtros
+        </button>
+      )}
+      <span className="filter-count">Mostrando {mostrando} de {total}</span>
+    </>
+  );
 
   const filtroEventoSelect = (
     <select className="admin-select" value={filtroEvento} onChange={e => setFiltroEvento(e.target.value)} aria-label="Filtrar por evento">
@@ -750,7 +837,32 @@ function AdminPage() {
         )}
 
         {section === "eventos" && (
-          <SectionTable title="Gestión de eventos deportivos" action="Nuevo evento" onAction={() => { setEditing(null); setModal("evento"); }}>
+          <SectionTable
+            title="Gestión de eventos deportivos"
+            action="Nuevo evento"
+            onAction={() => { setEditing(null); setModal("evento"); }}
+            toolbar={<>
+              {filtroSelect(filtroCategoriaEvento, setFiltroCategoriaEvento, "Filtrar por categoría", "Todas las categorías", CATEGORIAS_EVENTO)}
+              {filtroSelect(filtroEstadoEvento, setFiltroEstadoEvento, "Filtrar por estado", "Todos los estados", [
+                { value: "activo", label: "Activo" },
+                { value: "inactivo", label: "Inactivo" },
+                { value: "inhabilitado", label: "Inhabilitado" },
+              ])}
+              {filtroSelect(filtroFechaEvento, setFiltroFechaEvento, "Filtrar por fecha", "Todas las fechas", [
+                { value: "proximos", label: "Próximos" },
+                { value: "pasados", label: "Ya realizados" },
+              ])}
+              {filtroSelect(filtroCuposEvento, setFiltroCuposEvento, "Filtrar por cupos", "Todos los cupos", [
+                { value: "con", label: "Con cupos" },
+                { value: "agotado", label: "Sin cupos" },
+              ])}
+              {filtroPie(
+                !!(filtroCategoriaEvento || filtroEstadoEvento || filtroFechaEvento || filtroCuposEvento),
+                () => { setFiltroCategoriaEvento(""); setFiltroEstadoEvento(""); setFiltroFechaEvento(""); setFiltroCuposEvento(""); },
+                visibleEventos.length, eventos.length,
+              )}
+            </>}
+          >
             <thead><tr><th>Foto</th><th>Nombre</th><th>Categoría</th><th>Fecha</th><th>Precio</th><th>Cupos</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody>
               {visibleEventos.map(e => (
@@ -784,7 +896,7 @@ function AdminPage() {
                   </div></td>
                 </tr>
               ))}
-              {!visibleEventos.length && <tr><td colSpan={8}>No hay eventos deportivos.</td></tr>}
+              {!visibleEventos.length && <tr><td colSpan={8}>{eventos.length ? "No hay eventos con estos filtros." : "No hay eventos deportivos."}</td></tr>}
             </tbody>
           </SectionTable>
         )}
@@ -801,6 +913,13 @@ function AdminPage() {
                 <option value="todos">Todos</option>
               </select>
               {filtroEventoSelect}
+              {filtroSelect(filtroMetodoPago, setFiltroMetodoPago, "Filtrar por método de pago", "Todos los métodos",
+                metodosPago.map(m => ({ value: m, label: human(m) })))}
+              {filtroPie(
+                !!(filtroPago !== "todos" || filtroEvento || filtroMetodoPago),
+                () => { setFiltroPago("todos"); setFiltroEvento(""); setFiltroMetodoPago(""); },
+                visiblePagos.length, pagos.length,
+              )}
             </>}
           >
             <thead><tr><th>Participante</th><th>Evento</th><th>Inscripción</th><th>Monto</th><th>Método</th><th>Pago</th><th>Acciones</th></tr></thead>
@@ -837,7 +956,19 @@ function AdminPage() {
             title="Resultados oficiales"
             action="Registrar resultado"
             onAction={() => { setEditing(null); setModal("resultado"); }}
-            toolbar={filtroEventoSelect}
+            toolbar={<>
+              {filtroEventoSelect}
+              {filtroSelect(filtroEstadoResultado, setFiltroEstadoResultado, "Filtrar por estado del resultado", "Todos los estados", [
+                { value: "oficial", label: "Oficial" },
+                { value: "en revision", label: "En revisión" },
+                { value: "descalificado", label: "Descalificado" },
+              ])}
+              {filtroPie(
+                !!(filtroEvento || filtroEstadoResultado),
+                () => { setFiltroEvento(""); setFiltroEstadoResultado(""); },
+                visibleResultados.length, resultados.length,
+              )}
+            </>}
           >
             <thead><tr><th>Pos.</th><th>Participante</th><th>Evento</th><th>Tiempo</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody>
@@ -854,13 +985,31 @@ function AdminPage() {
                   </div></td>
                 </tr>
               ))}
-              {!visibleResultados.length && <tr><td colSpan={6}>No hay resultados registrados.</td></tr>}
+              {!visibleResultados.length && <tr><td colSpan={6}>{resultados.length ? "No hay resultados con estos filtros." : "No hay resultados registrados."}</td></tr>}
             </tbody>
           </SectionTable>
         )}
 
         {section === "kits" && (
-          <SectionTable title="Kits del participante" action="Nuevo kit" onAction={() => { setEditing(null); setModal("kit"); }}>
+          <SectionTable
+            title="Kits del participante"
+            action="Nuevo kit"
+            onAction={() => { setEditing(null); setModal("kit"); }}
+            toolbar={<>
+              {filtroSelect(filtroStockKit, setFiltroStockKit, "Filtrar por stock", "Todo el stock", [
+                { value: "con", label: "Con stock" },
+                { value: "bajo", label: `Stock bajo (${STOCK_BAJO} o menos)` },
+                { value: "agotado", label: "Agotado" },
+              ])}
+              {filtroSelect(filtroLugarKit, setFiltroLugarKit, "Filtrar por lugar de entrega", "Todos los lugares",
+                lugaresKit.map(l => ({ value: l, label: l })))}
+              {filtroPie(
+                !!(filtroStockKit || filtroLugarKit),
+                () => { setFiltroStockKit(""); setFiltroLugarKit(""); },
+                visibleKits.length, kits.length,
+              )}
+            </>}
+          >
             <thead><tr><th>Nombre</th><th>Stock</th><th>Entrega</th><th>Lugar</th><th>Contenido</th><th>Acciones</th></tr></thead>
             <tbody>
               {visibleKits.map(k => (
@@ -876,7 +1025,7 @@ function AdminPage() {
                   </div></td>
                 </tr>
               ))}
-              {!visibleKits.length && <tr><td colSpan={6}>No hay kits registrados.</td></tr>}
+              {!visibleKits.length && <tr><td colSpan={6}>{kits.length ? "No hay kits con estos filtros." : "No hay kits registrados."}</td></tr>}
             </tbody>
           </SectionTable>
         )}
@@ -895,18 +1044,31 @@ function AdminPage() {
         {section === "usuarios" && (
           <SectionTable
             title="Usuarios registrados"
-            toolbar={<Link className="secondary-btn" to="/admin/usuarios">Gestionar roles →</Link>}
+            toolbar={<>
+              <Link className="secondary-btn" to="/admin/usuarios">Gestionar roles →</Link>
+              {filtroSelect(filtroRolUsuario, setFiltroRolUsuario, "Filtrar por rol", "Todos los roles",
+                rolesUsuario.map(r => ({ value: r, label: r })))}
+              {filtroSelect(filtroEstadoUsuario, setFiltroEstadoUsuario, "Filtrar por estado", "Todos los estados", [
+                { value: "activo", label: "Activo" },
+                { value: "inactivo", label: "Inactivo" },
+              ])}
+              {filtroPie(
+                !!(filtroRolUsuario || filtroEstadoUsuario),
+                () => { setFiltroRolUsuario(""); setFiltroEstadoUsuario(""); },
+                visibleUsers.length, users.length,
+              )}
+            </>}
           >
             <thead><tr><th>ID</th><th>Nombre</th><th>Correo</th><th>Roles</th><th>Estado</th></tr></thead>
             <tbody>
-              {users.filter(u => filtered(`${u.nombre_u} ${u.apellido_u ?? ""} ${u.correo_u}`)).map(u => (
+              {visibleUsers.map(u => (
                 <tr key={u.id_u}>
                   <td>#{u.id_u}</td><td>{u.nombre_u} {u.apellido_u ?? ""}</td><td>{u.correo_u}</td>
                   <td>{u.roles?.map(r => r.nombre_rol).join(", ") || "—"}</td>
                   <td><Badge value={u.estado_u ?? "activo"} /></td>
                 </tr>
               ))}
-              {!users.length && <tr><td colSpan={5}>La API de usuarios no devolvió registros.</td></tr>}
+              {!users.length && <tr><td colSpan={5}>{users.length ? "No hay usuarios con estos filtros." : "La API de usuarios no devolvió registros."}</td></tr>}
             </tbody>
           </SectionTable>
         )}
@@ -921,6 +1083,8 @@ function AdminPage() {
         onFontSize={setFontSize}
         dyslexia={dyslexia}
         onDyslexia={setDyslexia}
+        accent={accent}
+        onAccent={setAccent}
         darkMode={darkMode}
         onToggleDark={toggleDark}
         onReset={reset}
