@@ -1654,8 +1654,10 @@ function PerfilPanel() {
                 </div>
               </div>
               <AjustesForm user={user} updateProfile={updateProfile} />
-              <CambiarContrasena />
-              <CuentaCard rol={esAdmin ? 'Administrador' : 'Cliente'} deleteAccount={deleteAccount} />
+              <div className="pfx-pair">
+                <CambiarContrasena />
+                <CuentaCard rol={esAdmin ? 'Administrador' : 'Cliente'} deleteAccount={deleteAccount} />
+              </div>
             </div>
           </div>
         )}
@@ -1797,27 +1799,12 @@ function CambiarContrasena() {
   const [nueva, setNueva] = useState('');
   const [confirmar, setConfirmar] = useState('');
   const [ver, setVer] = useState(false);
-  
-  // Estados para controlar el modal y las cargas
   const [verModal, setVerModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [verificando, setVerificando] = useState(false);
   const [msg, setMsg] = useState<ToastMsg | null>(null);
 
-  // EFECTO NUEVO: Bloquear el scroll de la página cuando el modal se abre
-  useEffect(() => {
-    if (verModal) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    // Limpieza en caso de que el componente se desmonte
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [verModal]);
-
-  // Acción 1: Validar la contraseña actual
+  // Paso 1: Validar que la contraseña actual sea correcta antes de abrir el modal
   const verificarActual = async (e: FormEvent) => {
     e.preventDefault();
     setMsg(null);
@@ -1825,11 +1812,12 @@ function CambiarContrasena() {
     setVerificando(true);
     
     try {
+      // Necesitarás crear este endpoint en Laravel
       await apiFetch('/verificar-contrasena', {
         method: 'POST',
         body: JSON.stringify({ contrasena_actual: actual }),
       });
-      setVerModal(true); 
+      setVerModal(true); // Se abre el modal si es correcta
     } catch (err) {
       setMsg({ tipo: 'error', texto: 'La contraseña actual es incorrecta.', id: Date.now() });
     } finally {
@@ -1837,7 +1825,7 @@ function CambiarContrasena() {
     }
   };
 
-  // Acción 2: Guardar la nueva contraseña
+  // Paso 2: Enviar la nueva contraseña
   const submitCambio = async (e: FormEvent) => {
     e.preventDefault();
     setMsg(null);
@@ -1871,9 +1859,9 @@ function CambiarContrasena() {
       setActual('');
       setNueva('');
       setConfirmar('');
-      setVer(false);
     } catch (err) {
-      setMsg({ tipo: 'error', texto: err instanceof Error ? err.message : 'No se pudo cambiar la contraseña. Asegúrate de no usar una contraseña reciente.', id: Date.now() });
+      // El backend devolverá error si la contraseña ya está en el historial
+      setMsg({ tipo: 'error', texto: err instanceof Error ? err.message : 'No se pudo cambiar la contraseña. Revisa que no sea una que ya hayas usado.', id: Date.now() });
     } finally {
       setSaving(false);
     }
@@ -1909,23 +1897,11 @@ function CambiarContrasena() {
         </form>
       </div>
 
-      {/* Modal para la nueva contraseña */}
       {verModal && (
-        <div className="pf-modal-backdrop" style={{ zIndex: 9999 }} onMouseDown={(e) => { if (e.target === e.currentTarget) setVerModal(false); }}>
-          <div 
-            className="pf-modal" 
-            style={{ 
-              maxWidth: '420px', 
-              padding: '0', 
-              backgroundColor: 'var(--plum)', /* Se fuerza el fondo estático y sólido */
-              border: '1px solid rgba(255,255,255,0.1)',
-              position: 'relative'
-            }} 
-            role="dialog" 
-            aria-modal="true"
-          >
-            <div className="pf-modal-head" style={{ padding: '1.25rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-              <h3 style={{ fontSize: '1.2rem', color: '#fff', margin: 0 }}>Nueva contraseña</h3>
+        <div className="pf-modal-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) setVerModal(false); }}>
+          <div className="pf-modal" style={{ maxWidth: '420px', padding: '0' }} role="dialog" aria-modal="true">
+            <div className="pf-modal-head" style={{ padding: '1.25rem', borderBottom: '1px solid var(--border)' }}>
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--plum)' }}>Nueva contraseña</h3>
               <button type="button" className="pf-modal-close" onClick={() => setVerModal(false)} aria-label="Cerrar">×</button>
             </div>
             
@@ -1939,11 +1915,6 @@ function CambiarContrasena() {
               <label className="pfx-field" style={{ marginTop: '1rem' }}>
                 <span>Confirmar nueva contraseña</span>
                 <input type={tipo} value={confirmar} onChange={(e) => setConfirmar(e.target.value)} required autoComplete="new-password" maxLength={72} />
-              </label>
-              
-              <label className="pf-check" style={{ marginTop: '1rem' }}>
-                <input type="checkbox" checked={ver} onChange={(e) => setVer(e.target.checked)} />
-                Mostrar contraseñas
               </label>
               
               <div className="pfx-modal-actions" style={{ marginTop: '1.75rem', display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>

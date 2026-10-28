@@ -124,7 +124,7 @@ export default function LoginPage() {
             <form onSubmit={submit} noValidate>
               
               <div className="form-group">
-                <label className="form-label" htmlFor="identificacion">Correo o Documento<span className="req">*</span></label>
+                <label className="form-label" htmlFor="identificacion">Correo electrónico o Documento<span className="req">*</span></label>
                 <div className="input-wrap">
                   <input
                     type="text" id="identificacion" className="form-input" placeholder="tucorreo@ejemplo.com o 10000000"
