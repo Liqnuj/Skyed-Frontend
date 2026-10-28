@@ -1096,14 +1096,22 @@ function AjustesTab() {
   const [eliminandoCuenta, setEliminandoCuenta] = useState(false);
   const [confirmarEliminar, setConfirmarEliminar] = useState(false);
   const initials = (user?.name || 'SK').split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
+  
+  // Estados de contraseñas
   const [actual, setActual] = useState('');
   const [nueva, setNueva] = useState('');
   const [confirmar, setConfirmar] = useState('');
   const [msg, setMsg] = useState<{ tipo: 'ok' | 'error'; texto: string; id: number } | null>(null);
+  
+  // Estados para el flujo de dos pasos
+  const [verModal, setVerModal] = useState(false);
+  const [verificando, setVerificando] = useState(false);
   const [enviando, setEnviando] = useState(false);
+  
   const [verActual, setVerActual] = useState(false);
   const [verNueva, setVerNueva] = useState(false);
   const [verConfirmar, setVerConfirmar] = useState(false);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [fotoUrl, setFotoUrl] = useState<string | null>((user as any)?.foto_url ?? null);
   const [subiendoFoto, setSubiendoFoto] = useState(false);
@@ -1117,11 +1125,26 @@ function AjustesTab() {
   const [documento, setDocumento] = useState(user?.documento || '');
   const [fechaNacimiento, setFechaNacimiento] = useState(user?.fecha_nacimiento || '');
   const [rh, setRh] = useState(user?.rh && user.rh !== 'N/A' ? user.rh : '');
+
+  // Efecto para borrar mensajes
   useEffect(() => {
     if (!msg) return;
     const t = setTimeout(() => setMsg(null), 4000);
     return () => clearTimeout(t);
   }, [msg]);
+
+  // EFECTO: Bloquear el scroll de la página cuando el modal se abre
+  useEffect(() => {
+    if (verModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+      // Ocultar las contraseñas al cerrar el modal
+      setVerNueva(false);
+      setVerConfirmar(false);
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [verModal]);
 
   const confirmarEliminarCuenta = async () => {
     setEliminandoCuenta(true);
@@ -1146,14 +1169,11 @@ function AjustesTab() {
       setDatosMsg({ tipo: 'error', texto: 'El archivo debe ser una imagen.', id: Date.now() });
       return;
     }
-    // Se reduce antes de subir: PHP acepta solo 2 MB por defecto.
     const file = await prepararImagen(original);
     if (file.size > 3 * 1024 * 1024) {
       setDatosMsg({ tipo: 'error', texto: 'La imagen no debe superar 3MB.', id: Date.now() });
       return;
     }
-
-
 
     const preview = URL.createObjectURL(file);
     setFotoUrl(preview);
@@ -1185,7 +1205,7 @@ function AjustesTab() {
     return () => clearTimeout(t);
   }, [datosMsg]);
 
-    const submitDatosPersonales = async (e: React.FormEvent) => {
+  const submitDatosPersonales = async (e: React.FormEvent) => {
     e.preventDefault();
     setDatosMsg(null);
     setGuardandoDatos(true);
@@ -1227,11 +1247,31 @@ function AjustesTab() {
     localStorage.setItem('skyed_notif_prefs', JSON.stringify(next));
   };
 
-   const submitPassword = async (e: React.FormEvent) => {
+  // Acción 1: Validar contraseña actual
+  const verificarActual = async (e: React.FormEvent) => {
     e.preventDefault();
     setMsg(null);
-    // Misma regla que el registro y el backend (antes solo pedía 8
-    // caracteres y la API rechazaba después una contraseña débil).
+    if (!actual) return;
+    setVerificando(true);
+    
+    try {
+      await apiFetch('/verificar-contrasena', {
+        method: 'POST',
+        body: JSON.stringify({ contrasena_actual: actual }),
+      });
+      setVerModal(true); 
+    } catch (err) {
+      setMsg({ tipo: 'error', texto: 'La contraseña actual es incorrecta.', id: Date.now() });
+    } finally {
+      setVerificando(false);
+    }
+  };
+
+  // Acción 2: Guardar nueva contraseña (Modal)
+  const submitCambio = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMsg(null);
+    
     const motivo = errorContrasena(nueva);
     if (motivo) {
       setMsg({ tipo: 'error', texto: motivo, id: Date.now() });
@@ -1245,6 +1285,7 @@ function AjustesTab() {
       setMsg({ tipo: 'error', texto: 'Las contraseñas no coinciden.', id: Date.now() });
       return;
     }
+    
     setEnviando(true);
     try {
       await apiFetch('/cambiar-contrasena', {
@@ -1256,9 +1297,11 @@ function AjustesTab() {
         }),
       });
       setMsg({ tipo: 'ok', texto: 'Contraseña actualizada correctamente.', id: Date.now() });
+      setVerModal(false);
       setActual('');
       setNueva('');
       setConfirmar('');
+      setVerActual(false);
     } catch (err: any) {
       setMsg({ tipo: 'error', texto: err.message || 'No se pudo actualizar la contraseña.', id: Date.now() });
     } finally {
@@ -1266,246 +1309,313 @@ function AjustesTab() {
     }
   };
 
-    return (
+  return (
     <>
-    <div className="part-settings-grid">
-      <div className="part-card part-profile-card">
-        <div className="part-profile-main">
-          <div className="part-profile-avatar-wrap">
-            {fotoUrl ? (
-              <img src={fotoUrl} alt="Foto de perfil" className="part-profile-avatar part-profile-avatar-img" />
-            ) : (
-              <div className="part-profile-avatar">{initials}</div>
-            )}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleFotoChange}
-              style={{ display: 'none' }}
-            />
-            <button
-              type="button"
-              className="part-profile-avatar-edit"
-              onClick={handleFotoClick}
-              disabled={subiendoFoto}
-              aria-label="Cambiar foto de perfil"
-              title="Cambiar foto de perfil"
-            >
-              <i className={`ti ${subiendoFoto ? 'ti-loader-2' : 'ti-camera'}`} aria-hidden="true" />
-            </button>
-          </div>
-          <div className="part-profile-info">
-            <p className="part-profile-name">{user?.name || 'Ciclista'}</p>
-            <span className="part-profile-role-pill">
-              <i className="ti ti-medal" aria-hidden="true" />
-              {user?.role === 'admin' ? 'Administrador' : 'Participante'}
-            </span>
-          </div>
-        </div>
-
-        
-      </div>
-
-
-      <div className="part-settings-main">
-        <div className="part-card">
-          <div className="part-card-head">
-            <span className="part-card-head-icon"><i className="ti ti-id-badge-2" aria-hidden="true" /></span>
-            <h3>Datos personales</h3>
-          </div>
-          <div className="part-card-body">
-            <form onSubmit={submitDatosPersonales}>
-              <div className="part-form-group">
-                <label htmlFor="d-nombre">Nombre</label>
-                <input id="d-nombre" type="text" value={nombre} onChange={(e) => setNombre(e.target.value)} required />
-              </div>
-              <div className="part-form-group">
-                <label htmlFor="d-apellido">Apellido</label>
-                <input id="d-apellido" type="text" value={apellido} onChange={(e) => setApellido(e.target.value)} required />
-              </div>
-              <div className="part-form-group">
-                <label htmlFor="d-tipo-doc">Tipo de documento</label>
-                <select id="d-tipo-doc" value={tipoDocumento} onChange={(e) => setTipoDocumento(e.target.value)}>
-                  <option value="">Seleccionar...</option>
-                  <option value="CC">Cédula de ciudadanía</option>
-                  <option value="TI">Tarjeta de identidad</option>
-                  <option value="CE">Cédula de extranjería</option>
-                  <option value="PA">Pasaporte</option>
-                </select>
-              </div>
-              <div className="part-form-group">
-                <label htmlFor="d-documento">Número de documento</label>
-                <input id="d-documento" type="text" inputMode="numeric" value={documento} onChange={(e) => setDocumento(e.target.value.replace(/\D/g, ''))} />
-              </div>
-              <div className="part-form-group">
-                <label htmlFor="d-rh">Tipo de sangre (RH)</label>
-                <select id="d-rh" value={rh} onChange={(e) => setRh(e.target.value)}>
-                  <option value="">Seleccionar...</option>
-                  <option value="O+">O+</option>
-                  <option value="O-">O-</option>
-                  <option value="A+">A+</option>
-                  <option value="A-">A-</option>
-                  <option value="B+">B+</option>
-                  <option value="B-">B-</option>
-                  <option value="AB+">AB+</option>
-                  <option value="AB-">AB-</option>
-                </select>
-              </div>
-              <div className="part-form-group">
-                <label htmlFor="d-telefono">Teléfono</label>
-                <input id="d-telefono" type="tel" value={telefono} onChange={(e) => setTelefono(e.target.value)} placeholder="Ej: 3001234567" />
-              </div>
-              <div className="part-form-group">
-                <label htmlFor="d-fecha-nac">Fecha de nacimiento</label>
-                <input id="d-fecha-nac" type="date" value={fechaNacimiento} onChange={(e) => setFechaNacimiento(e.target.value)} />
-              </div>
-              <div className="part-form-group">
-                <label htmlFor="d-ciudad">Ciudad</label>
-                <input id="d-ciudad" type="text" value={ciudad} onChange={(e) => setCiudad(e.target.value)} placeholder="Ej: Sogamoso" />
-              </div>
-              {datosMsg && (
-                <div className={`part-form-alert ${datosMsg.tipo}`} key={datosMsg.id}>
-                  <span className="part-alert-icon">{datosMsg.tipo === 'ok' ? '✅' : '⚠️'}</span>
-                  {datosMsg.texto}
-                  <div className="part-alert-timer" />
-                </div>
+      <div className="part-settings-grid">
+        <div className="part-card part-profile-card">
+          <div className="part-profile-main">
+            <div className="part-profile-avatar-wrap">
+              {fotoUrl ? (
+                <img src={fotoUrl} alt="Foto de perfil" className="part-profile-avatar part-profile-avatar-img" />
+              ) : (
+                <div className="part-profile-avatar">{initials}</div>
               )}
-              <button type="submit" className="btn btn-primary" disabled={guardandoDatos}>
-                {guardandoDatos ? 'Guardando…' : 'Guardar cambios'}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFotoChange}
+                style={{ display: 'none' }}
+              />
+              <button
+                type="button"
+                className="part-profile-avatar-edit"
+                onClick={handleFotoClick}
+                disabled={subiendoFoto}
+                aria-label="Cambiar foto de perfil"
+                title="Cambiar foto de perfil"
+              >
+                <i className={`ti ${subiendoFoto ? 'ti-loader-2' : 'ti-camera'}`} aria-hidden="true" />
               </button>
-            </form>
+            </div>
+            <div className="part-profile-info">
+              <p className="part-profile-name">{user?.name || 'Ciclista'}</p>
+              <span className="part-profile-role-pill">
+                <i className="ti ti-medal" aria-hidden="true" />
+                {user?.role === 'admin' ? 'Administrador' : 'Participante'}
+              </span>
+            </div>
           </div>
         </div>
 
-        <div className="part-card">
-          <div className="part-card-head">
-            <span className="part-card-head-icon"><i className="ti ti-bell" aria-hidden="true" /></span>
-            <h3>Notificaciones</h3>
+        <div className="part-settings-main">
+          <div className="part-card">
+            <div className="part-card-head">
+              <span className="part-card-head-icon"><i className="ti ti-id-badge-2" aria-hidden="true" /></span>
+              <h3>Datos personales</h3>
+            </div>
+            <div className="part-card-body">
+              <form onSubmit={submitDatosPersonales}>
+                <div className="part-form-group">
+                  <label htmlFor="d-nombre">Nombre</label>
+                  <input id="d-nombre" type="text" value={nombre} onChange={(e) => setNombre(e.target.value)} required />
+                </div>
+                <div className="part-form-group">
+                  <label htmlFor="d-apellido">Apellido</label>
+                  <input id="d-apellido" type="text" value={apellido} onChange={(e) => setApellido(e.target.value)} required />
+                </div>
+                <div className="part-form-group">
+                  <label htmlFor="d-tipo-doc">Tipo de documento</label>
+                  <select id="d-tipo-doc" value={tipoDocumento} onChange={(e) => setTipoDocumento(e.target.value)}>
+                    <option value="">Seleccionar...</option>
+                    <option value="CC">Cédula de ciudadanía</option>
+                    <option value="TI">Tarjeta de identidad</option>
+                    <option value="CE">Cédula de extranjería</option>
+                    <option value="PA">Pasaporte</option>
+                  </select>
+                </div>
+                <div className="part-form-group">
+                  <label htmlFor="d-documento">Número de documento</label>
+                  <input id="d-documento" type="text" inputMode="numeric" value={documento} onChange={(e) => setDocumento(e.target.value.replace(/\D/g, ''))} />
+                </div>
+                <div className="part-form-group">
+                  <label htmlFor="d-rh">Tipo de sangre (RH)</label>
+                  <select id="d-rh" value={rh} onChange={(e) => setRh(e.target.value)}>
+                    <option value="">Seleccionar...</option>
+                    <option value="O+">O+</option>
+                    <option value="O-">O-</option>
+                    <option value="A+">A+</option>
+                    <option value="A-">A-</option>
+                    <option value="B+">B+</option>
+                    <option value="B-">B-</option>
+                    <option value="AB+">AB+</option>
+                    <option value="AB-">AB-</option>
+                  </select>
+                </div>
+                <div className="part-form-group">
+                  <label htmlFor="d-telefono">Teléfono</label>
+                  <input id="d-telefono" type="tel" value={telefono} onChange={(e) => setTelefono(e.target.value)} placeholder="Ej: 3001234567" />
+                </div>
+                <div className="part-form-group">
+                  <label htmlFor="d-fecha-nac">Fecha de nacimiento</label>
+                  <input id="d-fecha-nac" type="date" value={fechaNacimiento} onChange={(e) => setFechaNacimiento(e.target.value)} />
+                </div>
+                <div className="part-form-group">
+                  <label htmlFor="d-ciudad">Ciudad</label>
+                  <input id="d-ciudad" type="text" value={ciudad} onChange={(e) => setCiudad(e.target.value)} placeholder="Ej: Sogamoso" />
+                </div>
+                {datosMsg && (
+                  <div className={`part-form-alert ${datosMsg.tipo}`} key={datosMsg.id}>
+                    <span className="part-alert-icon">{datosMsg.tipo === 'ok' ? '✅' : '⚠️'}</span>
+                    {datosMsg.texto}
+                    <div className="part-alert-timer" />
+                  </div>
+                )}
+                <button type="submit" className="btn btn-primary" disabled={guardandoDatos}>
+                  {guardandoDatos ? 'Guardando…' : 'Guardar cambios'}
+                </button>
+              </form>
+            </div>
           </div>
-          <div className="part-card-body">
-            {notifDefs.map((n) => (
-              <div className="part-toggle-row" key={n.key}>
-                <div className="part-toggle-label">{n.title}<small>{n.desc}</small></div>
-                <div
-                  className={`part-toggle${notifPrefs[n.key] ? ' on' : ''}`}
-                  role="switch"
-                  aria-checked={notifPrefs[n.key]}
-                  tabIndex={0}
-                  onClick={() => toggleNotif(n.key)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleNotif(n.key); }}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
 
-        <div className="part-card">
-          <div className="part-card-head">
-            <span className="part-card-head-icon"><i className="ti ti-lock" aria-hidden="true" /></span>
-            <h3>Seguridad</h3>
+          <div className="part-card">
+            <div className="part-card-head">
+              <span className="part-card-head-icon"><i className="ti ti-bell" aria-hidden="true" /></span>
+              <h3>Notificaciones</h3>
+            </div>
+            <div className="part-card-body">
+              {notifDefs.map((n) => (
+                <div className="part-toggle-row" key={n.key}>
+                  <div className="part-toggle-label">{n.title}<small>{n.desc}</small></div>
+                  <div
+                    className={`part-toggle${notifPrefs[n.key] ? ' on' : ''}`}
+                    role="switch"
+                    aria-checked={notifPrefs[n.key]}
+                    tabIndex={0}
+                    onClick={() => toggleNotif(n.key)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleNotif(n.key); }}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="part-card-body">
-            <form onSubmit={submitPassword}>
-              <div className="part-form-group">
-                <label htmlFor="p-actual">Contraseña actual</label>
-                <div className="part-pass-field">
-                  <input
-                    id="p-actual"
-                    type={verActual ? 'text' : 'password'}
-                    value={actual}
-                    onChange={(e) => setActual(e.target.value)}
-                    required
-                  />
-                  <button
-                    type="button"
-                    className="part-pass-toggle"
-                    onClick={() => setVerActual((v) => !v)}
-                    aria-label={verActual ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                    tabIndex={-1}
-                  >
-                    <i className={`ti ${verActual ? 'ti-eye-off' : 'ti-eye'}`} aria-hidden="true" />
-                  </button>
-                </div>
-              </div>
-              <div className="part-form-group">
-                <label htmlFor="p-nueva">Nueva contraseña</label>
-                <div className="part-pass-field">
-                  <input
-                    id="p-nueva"
-                    type={verNueva ? 'text' : 'password'}
-                    value={nueva}
-                    onChange={(e) => setNueva(e.target.value)}
-                    required
-                    minLength={8}
-                  />
-                  <button
-                    type="button"
-                    className="part-pass-toggle"
-                    onClick={() => setVerNueva((v) => !v)}
-                    aria-label={verNueva ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                    tabIndex={-1}
-                  >
-                    <i className={`ti ${verNueva ? 'ti-eye-off' : 'ti-eye'}`} aria-hidden="true" />
-                  </button>
-                </div>
-              </div>
-              <div className="part-form-group">
-                <label htmlFor="p-confirm">Confirmar nueva contraseña</label>
-                <div className="part-pass-field">
-                  <input
-                    id="p-confirm"
-                    type={verConfirmar ? 'text' : 'password'}
-                    value={confirmar}
-                    onChange={(e) => setConfirmar(e.target.value)}
-                    required
-                  />
-                  <button
-                    type="button"
-                    className="part-pass-toggle"
-                    onClick={() => setVerConfirmar((v) => !v)}
-                    aria-label={verConfirmar ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                    tabIndex={-1}
-                  >
-                    <i className={`ti ${verConfirmar ? 'ti-eye-off' : 'ti-eye'}`} aria-hidden="true" />
-                  </button>
-                </div>
-              </div>
-              {msg && (
-                <div className={`part-form-alert ${msg.tipo}`} key={msg.id}>
-                  <span className="part-alert-icon">{msg.tipo === 'ok' ? '✅' : '⚠️'}</span>
-                  {msg.texto}
-                  <div className="part-alert-timer" />
-                </div>
-              )}
-              <button type="submit" className="btn btn-outline" disabled={enviando}>
-                {enviando ? 'Actualizando…' : 'Actualizar contraseña'}
-              </button>
-            </form>
-          </div>
-        </div>
 
-        <div className="part-card part-card-danger">
-          <div className="part-card-head">
-            <span className="part-card-head-icon"><i className="ti ti-alert-triangle" aria-hidden="true" /></span>
-            <h3>Cuenta</h3>
-          </div>
-          <div className="part-card-body">
-            <div className="part-stat-row"><span className="part-label">Rol</span><span>{user?.role === 'admin' ? 'Administrador' : 'Participante'}</span></div>
-            <button
-              type="button"
-              className="btn btn-outline"
-              style={{ marginTop: '1rem', color: '#dc2626' }}
-              onClick={() => setConfirmarEliminar(true)}
-              disabled={eliminandoCuenta}
-            >
-              {eliminandoCuenta ? 'Eliminando…' : 'Eliminar cuenta'}
-            </button>
+          <div className="part-settings-pair">
+            <div className="part-card">
+              <div className="part-card-head">
+                <span className="part-card-head-icon"><i className="ti ti-lock" aria-hidden="true" /></span>
+                <h3>Seguridad</h3>
+              </div>
+              <div className="part-card-body">
+                <form onSubmit={verificarActual}>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--page-muted)', marginBottom: '1rem' }}>
+                    Digita tu contraseña actual para poder actualizarla.
+                  </p>
+                  <div className="part-form-group">
+                    <label htmlFor="p-actual">Contraseña actual</label>
+                    <div className="part-pass-field">
+                      <input
+                        id="p-actual"
+                        type={verActual ? 'text' : 'password'}
+                        value={actual}
+                        onChange={(e) => setActual(e.target.value)}
+                        required
+                      />
+                      <button
+                        type="button"
+                        className="part-pass-toggle"
+                        onClick={() => setVerActual((v) => !v)}
+                        aria-label={verActual ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                        tabIndex={-1}
+                      >
+                        <i className={`ti ${verActual ? 'ti-eye-off' : 'ti-eye'}`} aria-hidden="true" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Mostrar error/éxito si el modal NO está abierto */}
+                  {msg && !verModal && (
+                    <div className={`part-form-alert ${msg.tipo}`} key={msg.id} style={{ marginTop: '1rem' }}>
+                      <span className="part-alert-icon">{msg.tipo === 'ok' ? '✅' : '⚠️'}</span>
+                      {msg.texto}
+                      <div className="part-alert-timer" />
+                    </div>
+                  )}
+
+                  <button type="submit" className="btn btn-outline" disabled={verificando || !actual}>
+                    {verificando ? 'Validando…' : 'Validar y cambiar'}
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            <div className="part-card part-card-danger">
+              <div className="part-card-head">
+                <span className="part-card-head-icon"><i className="ti ti-alert-triangle" aria-hidden="true" /></span>
+                <h3>Cuenta</h3>
+              </div>
+              <div className="part-card-body">
+                <div className="part-stat-row"><span className="part-label">Rol</span><span>{user?.role === 'admin' ? 'Administrador' : 'Participante'}</span></div>
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  style={{ marginTop: '1rem', color: '#dc2626' }}
+                  onClick={() => setConfirmarEliminar(true)}
+                  disabled={eliminandoCuenta}
+                >
+                  {eliminandoCuenta ? 'Eliminando…' : 'Eliminar cuenta'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
+      {/* Modal para la nueva contraseña */}
+      {verModal && createPortal(
+        <div 
+          className={`mod-deportivo part-qr-overlay${darkMode ? ' dark-mode' : ''}`} 
+          style={{ zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }} 
+          onClick={() => setVerModal(false)}
+        >
+          <div 
+            className="part-qr-modal part-card" 
+            onClick={(e) => e.stopPropagation()}
+            style={{
+               width: '100%',
+               maxWidth: '420px', 
+               padding: '0', 
+               backgroundColor: 'var(--surface)', /* CORRECCIÓN: Esta es la variable correcta */
+               border: '1px solid var(--border)',
+               textAlign: 'left'
+            }}
+          >
+            <div className="part-card-head" style={{ padding: '1.25rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, color: 'var(--text)' }}>Nueva contraseña</h3>
+              <button
+                type="button"
+                className="part-qr-close"
+                onClick={() => setVerModal(false)}
+                aria-label="Cerrar"
+                style={{ position: 'static', transform: 'none', background: 'transparent' }}
+              >
+                <i className="ti ti-x" aria-hidden="true" style={{ color: 'var(--text)' }} />
+              </button>
+            </div>
+            
+            <div className="part-card-body" style={{ padding: '1.5rem' }}>
+              <form onSubmit={submitCambio}>
+                <div className="part-form-group">
+                  <label htmlFor="p-nueva">Nueva contraseña</label>
+                  <div className="part-pass-field">
+                    <input
+                      id="p-nueva"
+                      type={verNueva ? 'text' : 'password'}
+                      value={nueva}
+                      onChange={(e) => setNueva(e.target.value)}
+                      required
+                      minLength={8}
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      className="part-pass-toggle"
+                      onClick={() => setVerNueva((v) => !v)}
+                      tabIndex={-1}
+                    >
+                      <i className={`ti ${verNueva ? 'ti-eye-off' : 'ti-eye'}`} aria-hidden="true" />
+                    </button>
+                  </div>
+                  <small style={{ color: 'var(--muted)', display: 'block', marginTop: '0.4rem', fontSize: '0.75rem' }}>
+                    Mínimo 8 caracteres, con mayúscula, minúscula y número.
+                  </small>
+                </div>
+
+                <div className="part-form-group" style={{ marginTop: '1.2rem' }}>
+                  <label htmlFor="p-confirm">Confirmar nueva contraseña</label>
+                  <div className="part-pass-field">
+                    <input
+                      id="p-confirm"
+                      type={verConfirmar ? 'text' : 'password'}
+                      value={confirmar}
+                      onChange={(e) => setConfirmar(e.target.value)}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="part-pass-toggle"
+                      onClick={() => setVerConfirmar((v) => !v)}
+                      tabIndex={-1}
+                    >
+                      <i className={`ti ${verConfirmar ? 'ti-eye-off' : 'ti-eye'}`} aria-hidden="true" />
+                    </button>
+                  </div>
+                </div>
+
+                {msg && verModal && (
+                  <div className={`part-form-alert ${msg.tipo}`} key={msg.id} style={{ marginTop: '1rem' }}>
+                    <span className="part-alert-icon">{msg.tipo === 'ok' ? '✅' : '⚠️'}</span>
+                    {msg.texto}
+                    <div className="part-alert-timer" />
+                  </div>
+                )}
+
+                <div style={{ marginTop: '1.75rem', display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                  <button type="button" className="btn btn-outline" onClick={() => setVerModal(false)} disabled={enviando}>
+                    Cancelar
+                  </button>
+                  <button type="submit" className="btn btn-primary" disabled={enviando || !nueva || !confirmar}>
+                    {enviando ? 'Guardando…' : 'Guardar contraseña'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Modal Eliminar Cuenta (ya existía) */}
       {confirmarEliminar && createPortal(
         <div className={`mod-deportivo part-qr-overlay${darkMode ? ' dark-mode' : ''}`} onClick={() => !eliminandoCuenta && setConfirmarEliminar(false)}>
           <div className="part-qr-modal" onClick={(e) => e.stopPropagation()}>

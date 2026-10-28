@@ -763,6 +763,20 @@
 
 .mod-social .pfx-stack { display: flex; flex-direction: column; gap: 1.5rem; }
 
+/* Seguridad y Cuenta, una al lado de la otra (misma altura) */
+.mod-social .pfx-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+  align-items: stretch;
+}
+.mod-social .pfx-pair > .pfx-card { display: flex; flex-direction: column; }
+.mod-social .pfx-pair > .pfx-card > .pfx-form { flex: 1; }
+.mod-social .pfx-pair .pfx-form-actions { margin-top: auto; }
+@media (max-width: 640px) {
+  .mod-social .pfx-pair { grid-template-columns: 1fr; }
+}
+
 /* Cabecera de tarjeta con ícono */
 .mod-social .pfx-card-head.pfx-head-icon { justify-content: flex-start; gap: .7rem; }
 .mod-social .pfx-chip-sm { width: 32px; height: 32px; border-radius: 9px; font-size: 1rem; }
