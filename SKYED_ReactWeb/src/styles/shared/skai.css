@@ -882,3 +882,51 @@
   }
 }
 
+
+/* =========================================================
+   BOTONES EN LAS RESPUESTAS DE SKAI ([[Texto|/ruta]])
+   Llevan directo a la página de la que habla la respuesta.
+   ========================================================= */
+.skyed-msg.from-bot {
+  max-width: 88%;
+}
+
+.skyed-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 6px 0 0;
+  padding: 7px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--skyed-gradient);
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.skyed-link-btn svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.skyed-link-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+}
+
+.skyed-link-btn:focus-visible {
+  outline: 2px solid var(--skyed-blue-light);
+  outline-offset: 2px;
+}

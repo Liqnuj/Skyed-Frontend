@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { Fragment, useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { preguntarSkai, type SkaiContext, type SkaiTurn } from '../../services/skai';
 import '../../styles/shared/skai.css';
 
@@ -11,19 +11,35 @@ interface ChatMessage {
   isError?: boolean;
 }
 
-/**
- * Muestra **negritas** como <strong> sin usar dangerouslySetInnerHTML
- * (el texto viene de la IA, así que nunca se interpreta como HTML).
- * El prompt ya le pide texto plano; esto es por si igual las manda.
- */
-function renderTexto(text: string) {
+/** Muestra **negritas** como <strong> (sin HTML: el texto viene de la IA). */
+function conNegritas(text: string, clave: string) {
   return text.split(/\*\*(.+?)\*\*/g).map((parte, i) =>
-    i % 2 === 1 ? <strong key={i}>{parte}</strong> : parte,
+    i % 2 === 1 ? <strong key={`${clave}-${i}`}>{parte}</strong> : parte,
   );
 }
 
+/**
+ * Texto de SKAI con sus botones: [[Texto|/ruta]] se vuelve un botón que lleva
+ * a esa página. El backend ya dejó solo rutas que existen y a las que la
+ * persona puede entrar; aquí además se exige que sea una ruta interna ("/...").
+ */
+function renderTexto(text: string, irA: (ruta: string) => void) {
+  return text.split(/(\[\[[^[\]|]+\|\/[^[\]\s]*\]\])/g).map((parte, i) => {
+    const boton = parte.match(/^\[\[([^[\]|]+)\|(\/[^[\]\s]*)\]\]$/);
+    if (boton) {
+      return (
+        <button key={i} type="button" className="skyed-link-btn" onClick={() => irA(boton[2])}>
+          {boton[1].trim()}
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+        </button>
+      );
+    }
+    return <Fragment key={i}>{conNegritas(parte, String(i))}</Fragment>;
+  });
+}
+
 const MENSAJE_BIENVENIDA =
-  '¡Hola! Soy SKAI, el asistente virtual de Skyed. Cuéntame qué buscas y te oriento.';
+  '¡Hola! Soy SKAI. Te explico paso a paso cómo inscribirte, reservar o usar tu panel, y te llevo directo a donde lo necesites. ¿En qué te ayudo?';
 
 /**
  * Asistente virtual SKAI, migrado del prototipo original en
@@ -56,6 +72,7 @@ function leerOculto() {
 
 export default function SkaiWidget() {
   const location = useLocation();
+  const navigate = useNavigate();
 
   const context: SkaiContext = location.pathname.startsWith('/social')
     ? 'social'
@@ -127,6 +144,13 @@ export default function SkaiWidget() {
     setOpen(false);
   }
 
+  /** Botón de una respuesta de SKAI: lleva a la página. En celular cierra el
+   *  chat para que se vea la página; en computador queda abierto. */
+  function irA(ruta: string) {
+    navigate(ruta);
+    if (window.innerWidth <= 480) closePanel();
+  }
+
   function cambiarOculto(valor: boolean) {
     setOculto(valor);
     if (valor) {
@@ -162,7 +186,7 @@ export default function SkaiWidget() {
     setIsTyping(true);
 
     try {
-      const reply = await preguntarSkai(trimmed, context, historyParaEnviar);
+      const reply = await preguntarSkai(trimmed, context, historyParaEnviar, location.pathname + location.search);
       setMessages((prev) => [...prev, { id: nextId.current++, from: 'bot', text: reply }]);
     } catch (err) {
       // preguntarSkai ya convierte cada fallo en un mensaje entendible
@@ -270,7 +294,7 @@ export default function SkaiWidget() {
         <div className="skyed-messages" ref={messagesRef} key={despertando ? 'despertando' : 'chat'}>
           {messages.map((m) => (
             <div key={m.id} className={`skyed-msg from-${m.from}`}>
-              {m.from === 'bot' ? renderTexto(m.text) : m.text}
+              {m.from === 'bot' ? renderTexto(m.text, irA) : m.text}
             </div>
           ))}
           {/* Solo mientras se espera la respuesta real del backend */}

@@ -20,6 +20,8 @@ export async function preguntarSkai(
   message: string,
   context: SkaiContext,
   history: SkaiTurn[],
+  /** Página en la que está la persona: SKAI adapta los pasos a ella. */
+  ruta?: string,
 ): Promise<string> {
   const token = getToken();
 
@@ -44,6 +46,7 @@ export async function preguntarSkai(
         // Enviamos solo el historial previo a este mensaje; el backend
         // además limita cuántos turnos usa.
         history: history.slice(0, -1),
+        ruta,
       }),
     });
   } catch {
