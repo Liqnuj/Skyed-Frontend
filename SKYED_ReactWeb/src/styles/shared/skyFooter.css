@@ -1,0 +1,293 @@
+/* =========================================================
+   Pie de página público (components/shared/SkyFooter.tsx)
+   Fondo neutro oscuro, texto claro y un único color de acento por
+   módulo, usado solo en detalles (iconos, hover, subrayado).
+   ========================================================= */
+
+/* "body footer.sf" gana a reglas globales como ".dark-mode footer" de principal.css,
+   que oscurecían el fondo de todos los footers en modo oscuro. */
+body footer.sf {
+  --sf-fondo: #0f0d10;
+  --sf-texto: #ece9f1;
+  --sf-suave: #a29cac;
+  --sf-linea: rgba(255, 255, 255, 0.08);
+  --sf-acento: #d16ae3;
+
+  position: relative;
+  background: var(--sf-fondo);
+  color: var(--sf-texto);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+body footer.sf-deportivo {
+  --sf-fondo: #0b0f15;
+  --sf-texto: #e8eef5;
+  --sf-suave: #93a3b8;
+  --sf-acento: #4cc3d4;
+}
+
+/* Línea superior fina con el acento, desvanecida en los extremos */
+footer.sf::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--sf-acento) 60%, transparent), transparent);
+}
+
+.sf-inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 56px 32px 0;
+}
+
+.sf-grid {
+  display: grid;
+  /* Contacto lleva más ancho: el correo no debe partirse */
+  grid-template-columns: minmax(220px, 1.35fr) minmax(110px, 0.75fr) minmax(240px, 1.3fr) minmax(150px, 1fr);
+  gap: 40px;
+}
+
+/* ---------- Marca ---------- */
+footer.sf a.sf-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--sf-texto);
+  text-decoration: none;
+}
+
+footer.sf .sf-logo img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+
+footer.sf .sf-logo span {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+footer.sf .sf-logo em {
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--sf-acento);
+}
+
+footer.sf p.sf-descripcion {
+  max-width: 300px;
+  margin: 14px 0 20px;
+  color: var(--sf-suave);
+}
+
+.sf-redes {
+  display: flex;
+  gap: 10px;
+}
+
+footer.sf .sf-redes a {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  border: 1px solid var(--sf-linea);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--sf-suave);
+  font-size: 18px;
+  text-decoration: none;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+
+footer.sf .sf-redes a:hover,
+footer.sf .sf-redes a:focus-visible {
+  color: var(--sf-texto);
+  border-color: color-mix(in srgb, var(--sf-acento) 60%, transparent);
+  background: color-mix(in srgb, var(--sf-acento) 14%, transparent);
+  transform: translateY(-2px);
+}
+
+/* ---------- Columnas de enlaces ---------- */
+footer.sf .sf-col h3 {
+  margin: 4px 0 16px;
+  color: var(--sf-texto);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+footer.sf .sf-col ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+footer.sf .sf-col a,
+footer.sf .sf-col button,
+footer.sf .sf-dato {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--sf-suave);
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+footer.sf .sf-dato {
+  cursor: default;
+}
+
+/* Subrayado fino que crece al pasar el mouse */
+footer.sf .sf-col a > span,
+footer.sf .sf-col ul:not(.sf-contacto) a,
+footer.sf .sf-col button {
+  background-image: linear-gradient(var(--sf-acento), var(--sf-acento));
+  background-size: 0 1px;
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  transition: color 0.2s ease, background-size 0.25s ease;
+}
+
+footer.sf .sf-col a:hover,
+footer.sf .sf-col a:focus-visible,
+footer.sf .sf-col button:hover,
+footer.sf .sf-col button:focus-visible {
+  color: var(--sf-texto);
+}
+
+footer.sf .sf-col a:hover > span,
+footer.sf .sf-col ul:not(.sf-contacto) a:hover,
+footer.sf .sf-col button:hover {
+  background-size: 100% 1px;
+}
+
+footer.sf .sf-contacto i {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--sf-acento);
+  font-size: 16px;
+}
+
+footer.sf .sf-contacto a,
+footer.sf .sf-contacto .sf-dato {
+  white-space: nowrap;
+}
+
+/* ---------- Barra inferior ---------- */
+.sf-base {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  flex-wrap: wrap;
+  margin-top: 48px;
+  /* En las esquinas flotan SKAI (izquierda) y accesibilidad (derecha): si la
+     pantalla es angosta y caerían encima del texto, se deja margen; en
+     pantallas anchas el contenido ya queda lejos de ellas. */
+  padding: 20px 0 24px;
+  padding-inline: clamp(0px, calc(64px - (100vw - 1180px) / 2), 64px);
+  border-top: 1px solid var(--sf-linea);
+}
+
+footer.sf .sf-base p {
+  margin: 0;
+  color: var(--sf-suave);
+  font-size: 13px;
+}
+
+footer.sf .sf-arriba {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--sf-linea);
+  background: transparent;
+  color: var(--sf-suave);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+footer.sf .sf-arriba:hover,
+footer.sf .sf-arriba:focus-visible {
+  color: var(--sf-texto);
+  border-color: color-mix(in srgb, var(--sf-acento) 60%, transparent);
+}
+
+footer.sf :is(a, button):focus-visible {
+  outline: 2px solid var(--sf-acento);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* ---------- Pantallas medianas y celular ---------- */
+@media (max-width: 960px) {
+  .sf-grid {
+    grid-template-columns: 0.8fr 1.4fr 1fr;
+  }
+
+  .sf-marca {
+    grid-column: 1 / -1;
+  }
+
+  footer.sf p.sf-descripcion {
+    max-width: 460px;
+  }
+}
+
+@media (max-width: 600px) {
+  .sf-inner {
+    padding: 44px 20px 0;
+  }
+
+  .sf-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 32px 20px;
+  }
+
+  /* Contacto ocupa todo el ancho: los datos son largos */
+  .sf-grid > .sf-col:nth-child(3) {
+    grid-column: 1 / -1;
+    order: 3;
+  }
+
+  footer.sf .sf-contacto a,
+  footer.sf .sf-contacto .sf-dato {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .sf-base {
+    flex-direction: column;
+    align-items: flex-start;
+    padding-inline: 0;
+    padding-bottom: 96px; /* los botones flotantes quedan debajo del texto */
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  footer.sf .sf-redes a:hover {
+    transform: none;
+  }
+}

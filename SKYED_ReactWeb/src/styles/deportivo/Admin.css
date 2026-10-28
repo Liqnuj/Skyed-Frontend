@@ -335,11 +335,11 @@
 .deportivo-admin .sidebar-brand-text span {
   display: block !important;
 
-  margin-top: 3px !important;
+  margin-top: 0 !important;
 
-  color: #8e7da5 !important;
+  color: #8fd3df !important;
 
-  font-size: 9px !important;
+  font-size: 11px !important;
   font-weight: 800 !important;
 
   letter-spacing: .12em !important;
@@ -1796,29 +1796,6 @@
 }
 
 /* =========================================================
-   FOOTER
-   ========================================================= */
-
-.deportivo-admin .admin-footer-note {
-  position: fixed !important;
-
-  right: 24px !important;
-  bottom: 13px !important;
-
-  color: var(--admin-muted) !important;
-
-  font-size: 9px !important;
-
-  pointer-events: none !important;
-
-  z-index: 100 !important;
-}
-
-.deportivo-admin .admin-footer-note span {
-  color: var(--admin-accent) !important;
-}
-
-/* =========================================================
    TOAST
    ========================================================= */
 
@@ -1998,9 +1975,6 @@
     padding: 15px !important;
   }
 
-  .deportivo-admin .admin-footer-note {
-    display: none !important;
-  }
 }
 
 /* =========================================================
