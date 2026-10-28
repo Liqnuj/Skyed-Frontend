@@ -43,6 +43,7 @@ import { prepararImagen } from "../../utils/prepararImagen";
 import { EstadoPagos, InscritosPorEvento, TendenciaMensual } from "../../components/deportivo/GraficosAdmin";
 import { useConfirmacion } from "../../components/shared/ConfirmDialog";
 import { CargandoPanel, NumeroAnimado } from "../../components/shared/AdminMotion";
+import AdminFooter from "../../components/shared/AdminFooter";
 
 type Confirmar = ReturnType<typeof useConfirmacion>["confirmar"];
 // Base del panel: mismo diseño del panel social con la paleta deportiva
@@ -632,8 +633,8 @@ function AdminPage() {
       <aside className="admin-sidebar">
         <div className="sidebar-brand">
           <img className="sidebar-logo" src="/assets/deportivo/logo_deportivo.png" alt="Skyed Deportivo" width={37} height={37} />
+          {/* El nombre del módulo ya está en el encabezado; aquí solo "Administración" */}
           <div className="sidebar-brand-text">
-            <strong>Skyed <em>Deportivo</em></strong>
             <span>ADMINISTRACIÓN</span>
           </div>
         </div>
@@ -911,9 +912,9 @@ function AdminPage() {
             </tbody>
           </SectionTable>
         )}
-      </main>
 
-      <div className="admin-footer-note">SKYED DEPORTIVO · Panel administrativo <span>•</span> Gestión interna</div>
+        <AdminFooter modulo="deportivo" />
+      </main>
 
       <AccessibilityWidget
         open={panelOpen}

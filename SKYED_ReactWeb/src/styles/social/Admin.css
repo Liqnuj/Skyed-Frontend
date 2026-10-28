@@ -259,7 +259,7 @@
 }
 
 .social-admin .sidebar-brand-text span {
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.24em;
   color: var(--sk-gold);
@@ -1785,23 +1785,6 @@
 
 .social-admin .admin-toast svg {
   color: var(--sk-gold-light);
-}
-
-.social-admin .admin-footer-note {
-  margin-top: 34px;
-  padding-top: 16px;
-  border-top: 1px dashed var(--admin-line);
-  color: var(--admin-muted);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-align: center;
-  text-transform: uppercase;
-}
-
-.social-admin .admin-footer-note span {
-  margin: 0 6px;
-  color: var(--sk-gold);
 }
 
 /* =========================================================

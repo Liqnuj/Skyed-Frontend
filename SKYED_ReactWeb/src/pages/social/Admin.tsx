@@ -36,6 +36,7 @@ import AdminAjustes from "../../components/shared/AdminAjustes";
 import { apiFetch } from "../../services/api";
 import { useConfirmacion } from "../../components/shared/ConfirmDialog";
 import { CargandoPanel, NumeroAnimado } from "../../components/shared/AdminMotion";
+import AdminFooter from "../../components/shared/AdminFooter";
 import type { EstadoPqr, Pqr } from "../../services/socialService";
 import PqrGestion from "../../components/social/pqr/AdminPqrManager";
 import "../../styles/social/Admin.css";
@@ -724,8 +725,8 @@ function AdminPage() {
       <aside className="admin-sidebar">
         <div className="sidebar-brand">
           <img className="sidebar-logo" src="/assets/social/logo_social.png" alt="Skyed Social" width={37} height={37} style={{ width: 37, height: 37, maxWidth: 37, flex: "0 0 37px" }} />
+          {/* El nombre del módulo ya está en el encabezado; aquí solo "Administración" */}
           <div className="sidebar-brand-text">
-            <strong>Skyed <em>Social</em></strong>
             <span>ADMINISTRACIÓN</span>
           </div>
         </div>
@@ -999,9 +1000,9 @@ function AdminPage() {
             </tbody>
           </SectionTable>
         )}
-      </main>
 
-      <div className="admin-footer-note">SKYED SOCIAL · Panel administrativo <span>•</span> Gestión interna</div>
+        <AdminFooter modulo="social" />
+      </main>
 
       <AccessibilityWidget
         open={panelOpen}

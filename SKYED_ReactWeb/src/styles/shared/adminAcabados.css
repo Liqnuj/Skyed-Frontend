@@ -1,0 +1,216 @@
+/* =========================================================
+   Acabados de los paneles de administración (Social y Deportivo)
+   1. Pie de página (components/shared/AdminFooter.tsx)
+   2. Barras de scroll con los colores de cada panel
+   ========================================================= */
+
+/* Colores propios del pie y del scroll en cada panel */
+.deportivo-admin {
+  --acab-1: #0749a7;
+  --acab-2: #2c9caf;
+}
+
+.social-admin {
+  --acab-1: #9c02ae;
+  --acab-2: #c9a84c;
+}
+
+/* ---------- 1. Pie de página ----------
+   Va dentro de <main>, anclado al final. <main> reserva abajo el espacio
+   del pie, así nunca se monta sobre la información. */
+:is(.deportivo-admin, .social-admin) main.admin-main {
+  padding-bottom: 112px !important;
+}
+
+:is(.deportivo-admin, .social-admin) .admin-footer {
+  position: absolute;
+  left: 28px;
+  right: 28px;
+  bottom: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  flex-wrap: wrap;
+  /* A la derecha queda el botón flotante de accesibilidad */
+  padding: 16px 76px 0 0;
+  color: var(--admin-muted);
+  font-size: 12px;
+}
+
+/* Línea superior fina con el degradado del panel, que se desvanece en los extremos */
+:is(.deportivo-admin, .social-admin) .admin-footer::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--acab-1) 55%, transparent) 25%,
+    color-mix(in srgb, var(--acab-2) 70%, transparent) 60%,
+    transparent
+  );
+}
+
+:is(.deportivo-admin, .social-admin) .admin-footer-marca {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+:is(.deportivo-admin, .social-admin) .admin-footer-marca img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+:is(.deportivo-admin, .social-admin) .admin-footer-marca small {
+  padding-left: 10px;
+  margin-left: 1px;
+  border-left: 1px solid var(--admin-line);
+  color: var(--admin-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+:is(.deportivo-admin, .social-admin) .admin-footer-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+:is(.deportivo-admin, .social-admin) .admin-footer-meta i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--acab-1), var(--acab-2));
+}
+
+/* Celular: centrado y en dos líneas */
+@media (max-width: 650px) {
+  :is(.deportivo-admin, .social-admin) main.admin-main {
+    padding-bottom: 150px !important;
+  }
+
+  :is(.deportivo-admin, .social-admin) .admin-footer {
+    left: 16px;
+    right: 16px;
+    padding-right: 0;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+    gap: 8px;
+    bottom: 76px; /* por encima de los botones flotantes */
+  }
+}
+
+/* Mientras carga el panel el pie sigue visible (la pantalla de carga solo
+   oculta el contenido de la sección). */
+:is(.deportivo-admin, .social-admin) .admin-main > .admin-loader ~ .admin-footer {
+  display: flex !important;
+}
+
+/* ---------- 2. Barras de scroll ----------
+   Delgadas, tipo píldora, con el degradado del panel y sin flechas.
+   Chrome, Edge, Brave y Safari usan ::-webkit-scrollbar; Firefox, scrollbar-color. */
+
+/* Página completa */
+html:has(.deportivo-admin)::-webkit-scrollbar,
+html:has(.social-admin)::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+html:has(.deportivo-admin)::-webkit-scrollbar-track { background: #f4f6fa; }
+html:has(.deportivo-admin.dark)::-webkit-scrollbar-track { background: #0e1420; }
+html:has(.social-admin)::-webkit-scrollbar-track { background: #f9f5fb; }
+html:has(.social-admin.dark)::-webkit-scrollbar-track { background: #150a27; }
+
+html:has(.deportivo-admin)::-webkit-scrollbar-thumb,
+html:has(.social-admin)::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+
+html:has(.deportivo-admin)::-webkit-scrollbar-thumb {
+  background-image: linear-gradient(180deg, rgba(7, 73, 167, 0.55), rgba(44, 156, 175, 0.65));
+}
+
+html:has(.social-admin)::-webkit-scrollbar-thumb {
+  background-image: linear-gradient(180deg, rgba(156, 2, 174, 0.5), rgba(201, 168, 76, 0.6));
+}
+
+html:has(.deportivo-admin)::-webkit-scrollbar-thumb:hover {
+  background-image: linear-gradient(180deg, #0749a7, #2c9caf);
+}
+
+html:has(.social-admin)::-webkit-scrollbar-thumb:hover {
+  background-image: linear-gradient(180deg, #9c02ae, #c9a84c);
+}
+
+html:has(.deportivo-admin)::-webkit-scrollbar-button,
+html:has(.social-admin)::-webkit-scrollbar-button,
+html:has(.deportivo-admin)::-webkit-scrollbar-corner,
+html:has(.social-admin)::-webkit-scrollbar-corner {
+  display: none;
+  background: transparent;
+}
+
+/* Zonas con scroll propio dentro del panel (menú lateral, tablas, ventanas) */
+:is(.deportivo-admin, .social-admin) ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+:is(.deportivo-admin, .social-admin) ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+:is(.deportivo-admin, .social-admin) ::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+  background-color: color-mix(in srgb, var(--acab-2) 45%, transparent);
+}
+
+:is(.deportivo-admin, .social-admin) ::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in srgb, var(--acab-2) 80%, transparent);
+}
+
+:is(.deportivo-admin, .social-admin) ::-webkit-scrollbar-button,
+:is(.deportivo-admin, .social-admin) ::-webkit-scrollbar-corner {
+  display: none;
+  background: transparent;
+}
+
+/* En el menú lateral (siempre oscuro) el scroll va más claro */
+:is(.deportivo-admin, .social-admin) .admin-sidebar ::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.16);
+}
+
+:is(.deportivo-admin, .social-admin) .admin-sidebar ::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in srgb, var(--acab-2) 70%, transparent);
+}
+
+/* Firefox */
+@supports (-moz-appearance: none) {
+  html:has(.deportivo-admin) { scrollbar-color: #2c9caf #f4f6fa; scrollbar-width: thin; }
+  html:has(.deportivo-admin.dark) { scrollbar-color: #2c9caf #0e1420; }
+  html:has(.social-admin) { scrollbar-color: #b04fc0 #f9f5fb; scrollbar-width: thin; }
+  html:has(.social-admin.dark) { scrollbar-color: #c9a84c #150a27; }
+
+  :is(.deportivo-admin, .social-admin) * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--acab-2) 50%, transparent) transparent;
+  }
+}

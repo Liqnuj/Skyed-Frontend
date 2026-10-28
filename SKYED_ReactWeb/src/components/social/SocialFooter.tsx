@@ -1,59 +1,27 @@
-import { useState } from 'react';
-import TermsModal from '../shared/TermsModal';
+import SkyFooter, { type DatosFooter } from '../shared/SkyFooter';
+
+const DATOS: DatosFooter = {
+  modulo: 'social',
+  logo: '/assets/social/logo_social.png',
+  descripcion: 'La plataforma profesional para eventos sociales en Boyacá.',
+  enlaces: [
+    { texto: 'Inicio', a: '/social' },
+    { texto: 'Eventos', a: '/social/eventos' },
+    { texto: 'Lugares', a: '/social/lugares' },
+    { texto: 'Nosotros', a: '/social/nosotros' },
+  ],
+  ayuda: [{ texto: 'Enviar una PQRS', a: '/social/pqr' }],
+  correo: 'skyedsocial@gmail.com',
+  telefono: '+57 317 703 7517',
+  ubicacion: 'Sogamoso, Boyacá',
+  redes: [
+    { nombre: 'Facebook', icono: 'ti-brand-facebook', url: 'https://www.facebook.com/?locale=es_LA' },
+    { nombre: 'Instagram', icono: 'ti-brand-instagram', url: 'https://www.instagram.com/?hl=es' },
+    { nombre: 'X', icono: 'ti-brand-x', url: 'https://twitter.com/?lang=es' },
+    { nombre: 'WhatsApp', icono: 'ti-brand-whatsapp', url: 'https://api.whatsapp.com/send?phone=573177037517' },
+  ],
+};
 
 export default function SocialFooter() {
-  const [termsOpen, setTermsOpen] = useState(false);
-
-  return (
-    <footer className="sky-footer" id="contacto">
-      <div className="sky-accent-bar"></div>
-      <div className="sky-footer-top">
-        <div className="sky-footer-col">
-          <div className="sky-logo-row">
-            <img src="/assets/social/logo_social.png" alt="SKYED" className="sky-logo-icon" />
-            <div className="sky-logo-text">SKY<span>ED</span></div>
-          </div>
-          <p className="sky-tagline">La plataforma profesional para eventos sociales en Boyacá.</p>
-          <div className="sky-social-row">
-            <a className="sky-social-btn" href="https://www.facebook.com/?locale=es_LA" target="_blank" rel="noopener noreferrer" aria-label="Facebook">F</a>
-            <a className="sky-social-btn" href="https://www.instagram.com/?hl=es" target="_blank" rel="noopener noreferrer" aria-label="Instagram">IG</a>
-            <a className="sky-social-btn" href="https://twitter.com/?lang=es" target="_blank" rel="noopener noreferrer" aria-label="X / Twitter">X</a>
-            <a className="sky-social-btn" href="https://www.whatsapp.com/" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">WA</a>
-          </div>
-        </div>
-
-        <div className="sky-footer-col">
-          <p className="sky-col-title">Contacto</p>
-          <ul className="sky-contact-list">
-            <li className="sky-contact-item">
-              <div className="sky-contact-icon"><i className="ti ti-mail" /></div>
-              <div className="sky-contact-text"><strong>Email</strong>skyedsocial@gmail.com</div>
-            </li>
-            <li className="sky-contact-item">
-              <div className="sky-contact-icon"><i className="ti ti-phone" /></div>
-              <div className="sky-contact-text"><strong>Teléfono</strong>+57 317 703 7517</div>
-            </li>
-            <li className="sky-contact-item">
-              <div className="sky-contact-icon"><i className="ti ti-map-pin" /></div>
-              <div className="sky-contact-text"><strong>Ubicación</strong>Sogamoso, Boyacá</div>
-            </li>
-          </ul>
-        </div>
-      </div>
-
-      <div className="sky-footer-bottom">
-        <p className="sky-copy">© 2026 <span>SKYED</span>. Todos los derechos reservados.</p>
-        <div className="sky-bottom-links">
-          <button type="button" className="sky-bottom-link-btn" onClick={() => setTermsOpen(true)}>Términos de uso</button>
-          <button type="button" className="sky-bottom-link-btn" onClick={() => setTermsOpen(true)}>Privacidad</button>
-        </div>
-      </div>
-
-      <TermsModal
-        isOpen={termsOpen}
-        onClose={() => setTermsOpen(false)}
-        variant="social"
-      />
-    </footer>
-  );
+  return <SkyFooter datos={DATOS} />;
 }
