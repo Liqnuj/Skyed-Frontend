@@ -1,3 +1,5 @@
+import { enlaceCorreo, enlaceWhatsApp } from '../../utils/contacto';
+
 type Variant = 'social' | 'deportivo';
 
 /** Misma información que se muestra en el footer de cada sitio. */
@@ -24,7 +26,7 @@ const CONTACT: Record<Variant, {
       { label: 'Facebook', short: 'F', href: 'https://www.facebook.com/?locale=es_LA' },
       { label: 'Instagram', short: 'IG', href: 'https://www.instagram.com/?hl=es' },
       { label: 'X / Twitter', short: 'X', href: 'https://twitter.com/?lang=es' },
-      { label: 'WhatsApp', short: 'WA', href: 'https://www.whatsapp.com/' },
+      { label: 'WhatsApp', short: 'WA', href: 'https://api.whatsapp.com/send?phone=573177037517' },
     ],
   },
   deportivo: {
@@ -47,8 +49,10 @@ const CONTACT: Record<Variant, {
 export default function ContactSection({ variant }: { variant: Variant }) {
   const c = CONTACT[variant];
   const items = [
-    { icon: 'ti-mail', label: 'Email', value: c.email, href: `mailto:${c.email}` },
-    { icon: 'ti-phone', label: 'Teléfono', value: c.phone, href: `tel:+${c.whatsapp}` },
+    // Gmail y WhatsApp en el navegador: mailto:/tel: no hacen nada en un
+    // computador sin programa de correo o de llamadas (ver utils/contacto.ts).
+    { icon: 'ti-mail', label: 'Email', value: c.email, href: enlaceCorreo(c.email), title: 'Escribir por Gmail' },
+    { icon: 'ti-phone', label: 'Teléfono', value: c.phone, href: enlaceWhatsApp(c.whatsapp), title: 'Escribir por WhatsApp' },
     { icon: 'ti-map-pin', label: 'Ubicación', value: c.place },
     { icon: 'ti-clock', label: 'Horario', value: c.hours },
   ];
@@ -95,7 +99,9 @@ export default function ContactSection({ variant }: { variant: Variant }) {
               );
               return (
                 <li key={it.label}>
-                  {it.href ? <a className="ctu-row ctu-row--link" href={it.href}>{inner}</a> : <div className="ctu-row">{inner}</div>}
+                  {it.href
+                    ? <a className="ctu-row ctu-row--link" href={it.href} target="_blank" rel="noopener noreferrer" title={it.title}>{inner}</a>
+                    : <div className="ctu-row">{inner}</div>}
                 </li>
               );
             })}

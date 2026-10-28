@@ -19,13 +19,13 @@ export default function SocialWrapper({ children }: { children: ReactNode }) {
     darkMode, toggleDark,
     fontSize, setFontSize,
     dyslexia, setDyslexia,
-    accentOverride, setAccent,
     reset,
   } = useAccessibility();
   const rootRef = useRef<HTMLDivElement>(null);
   useRevealObserver(rootRef);
 
-  const accent = accentOverride ?? DEFAULT_ACCENT;
+  // Color de marca del módulo (el selector de color se quitó del panel de accesibilidad).
+  const accent = DEFAULT_ACCENT;
 
   // fontSize sigue siendo '14px' | '16px' | '19px' | '22px' — lo convertimos
   // a un factor de escala relativo a 16px base
@@ -51,8 +51,6 @@ export default function SocialWrapper({ children }: { children: ReactNode }) {
         onFontSize={setFontSize}
         dyslexia={dyslexia}
         onDyslexia={setDyslexia}
-        accent={accent}
-        onAccent={setAccent}
         darkMode={darkMode}
         onToggleDark={toggleDark}
         onReset={reset}
