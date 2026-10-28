@@ -150,24 +150,6 @@ export default function About() {
           </div>
         </section>
 
-        {/* CTA FINAL */}
-        <section className="conocenos-section">
-          <div className="container">
-            <div className="conocenos-box">
-              <span className="section-label">¿Listo para empezar?</span>
-              <h2 className="section-title">
-                Hagamos realidad <em>tu próximo evento</em>
-              </h2>
-              <p className="section-sub">
-                Cuéntanos tu idea y te ayudamos a convertirla en una experiencia inolvidable.
-              </p>
-              <a href="#contactanos" className="btn-primary">
-                Hablar con un asesor →
-              </a>
-            </div>
-          </div>
-        </section>
-
         {/* CONTÁCTANOS */}
         <ContactSection variant="social" />
 

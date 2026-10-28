@@ -415,8 +415,6 @@ function AdminPage() {
     setFontSize,
     dyslexia,
     setDyslexia,
-    accentOverride,
-    setAccent,
     reset,
   } = useAccessibility();
 
@@ -590,7 +588,7 @@ function AdminPage() {
     ajustes: { label: "Ajustes", icon: Settings },
   };
 
-  const accent = accentOverride ?? "#9c02ae";
+  const accent = "#9c02ae"; // color de marca del panel
   const scale = parseInt(fontSize, 10) / 16;
 
   const createAmbiente = async (data: any) => {
@@ -1011,8 +1009,6 @@ function AdminPage() {
         onFontSize={setFontSize}
         dyslexia={dyslexia}
         onDyslexia={setDyslexia}
-        accent={accent}
-        onAccent={setAccent}
         darkMode={darkMode}
         onToggleDark={toggleDark}
         onReset={reset}
@@ -1298,10 +1294,9 @@ function EventoModal({ item, ambientes, tipos, onClose, onSave, notify }: { item
             <option value="">Seleccionar…</option>
             {tipos.map(t => <option key={t.id_tipo_eves} value={t.id_tipo_eves}>{t.nombre_tipo_eves}</option>)}
           </select>
-          <small className="field-hint">Solo se muestran clasificaciones de Social (las de Deportivo, como Ciclomontañismo, no aparecen aquí).</small>
           {!tipos.length && (
             <small className="field-hint field-hint-warn">
-              Aún no hay tipos de evento de Social en el catálogo. Pídele al admin de Deportivo que cree uno y lo marque como "social".
+              No se pudieron cargar los tipos de evento. Recarga la página e intenta de nuevo.
             </small>
           )}
         </Field>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import TermsModal from "./TermsModal";
+import { enlaceCorreo, enlaceWhatsApp } from "../../utils/contacto";
 import "../../styles/shared/skyFooter.css";
 
 type Enlace = { texto: string; a: string };
@@ -18,11 +19,9 @@ export type DatosFooter = {
   redes: { nombre: string; icono: string; url: string }[];
 };
 
-const soloDigitos = (telefono: string) => telefono.replace(/\D/g, "");
-
 /**
  * Pie de página público de Skyed Social y Skyed Deportivo: marca, enlaces
- * del módulo, contacto (con correo y teléfono que se pueden tocar) y ayuda.
+ * del módulo, contacto (el correo abre Gmail y el teléfono WhatsApp) y ayuda.
  * Colores neutros con un único acento del módulo.
  * (Las columnas de enlaces son <div role="navigation"> y no <nav>: global.css
  * fija toda etiqueta <nav> arriba de la página.)
@@ -73,13 +72,13 @@ export default function SkyFooter({ datos }: { datos: DatosFooter }) {
             <h3>Contacto</h3>
             <ul className="sf-contacto">
               <li>
-                <a href={`mailto:${correo}`}>
+                <a href={enlaceCorreo(correo)} target="_blank" rel="noopener noreferrer" title="Escribir por Gmail">
                   <i className="ti ti-mail" aria-hidden="true" />
                   <span>{correo}</span>
                 </a>
               </li>
               <li>
-                <a href={`tel:+${soloDigitos(telefono)}`}>
+                <a href={enlaceWhatsApp(telefono)} target="_blank" rel="noopener noreferrer" title="Escribir por WhatsApp">
                   <i className="ti ti-phone" aria-hidden="true" />
                   <span>{telefono}</span>
                 </a>

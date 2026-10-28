@@ -410,8 +410,6 @@ function AdminPage() {
     setFontSize,
     dyslexia,
     setDyslexia,
-    accentOverride,
-    setAccent,
     reset,
   } = useAccessibility();
 
@@ -550,7 +548,7 @@ function AdminPage() {
     ajustes: { label: "Ajustes", icon: Settings },
   };
 
-  const accent = accentOverride ?? "#2c9caf";
+  const accent = "#2c9caf"; // color de marca del panel
   const scale = parseInt(fontSize, 10) / 16;
 
   const cambiarEstadoEvento = (e: Evento, estado_e: Evento["estado"]) =>
@@ -923,8 +921,6 @@ function AdminPage() {
         onFontSize={setFontSize}
         dyslexia={dyslexia}
         onDyslexia={setDyslexia}
-        accent={accent}
-        onAccent={setAccent}
         darkMode={darkMode}
         onToggleDark={toggleDark}
         onReset={reset}

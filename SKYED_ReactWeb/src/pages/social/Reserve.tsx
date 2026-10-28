@@ -83,7 +83,8 @@ export default function Reserve() {
   useEffect(() => {
       const fetchTiposEvento = async () => {
         try {
-          const data = await apiFetch('/tipos-evento');
+          // Solo los tipos de Social (bodas, cumpleaños, ...).
+          const data = await apiFetch('/tipos-evento?modulo=social');
           console.log("Lo que responde Laravel:", data); // Para revisar en consola
           
           if (Array.isArray(data)) {
