@@ -2012,7 +2012,7 @@
 @media (max-width: 1180px) {
   .social-admin .admin-hero,
   .social-admin .dashboard-grid-main {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -2381,3 +2381,102 @@
   cursor: pointer;
 }
 .social-admin .apqr-hide-btn:hover { color: var(--admin-text); border-color: var(--admin-accent); }
+
+/* ---------- Dashboard: evitar que el grid se desborde ---------- */
+.social-admin .dashboard-grid-main > *,
+.social-admin .admin-card {
+  min-width: 0;
+}
+
+/* ---------- Últimas reservas ---------- */
+.social-admin .reservation-side {
+  flex: none;
+}
+
+.social-admin .reservation-side .admin-badge {
+  white-space: nowrap;
+}
+
+/* ---------- Catálogo · Resumen ---------- */
+.social-admin .resource-list {
+  display: flex;
+  flex-direction: column;
+  margin-top: 12px;
+}
+
+.social-admin .resource-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 8px;
+  border-bottom: 1px solid var(--admin-line);
+  border-radius: 14px;
+  transition: background 0.15s ease;
+}
+
+.social-admin .resource-item:last-child {
+  border-bottom: 0;
+}
+
+.social-admin .resource-item:hover {
+  background: var(--admin-surface-2);
+}
+
+.social-admin .resource-icon {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: linear-gradient(135deg, var(--sk-blush), color-mix(in srgb, var(--sk-gold-light) 55%, #fff));
+  color: var(--sk-plum-mid);
+}
+
+.social-admin.dark .resource-icon {
+  background: linear-gradient(135deg, #3a1d63, #5a2a86);
+  color: var(--sk-gold-light);
+}
+
+.social-admin .resource-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.social-admin .resource-main strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.social-admin .resource-main span {
+  display: block;
+  margin-top: 3px;
+  color: var(--admin-muted);
+  font-size: 12.5px;
+}
+
+/* ---------- Móvil ---------- */
+@media (max-width: 650px) {
+  .social-admin .reservation-item {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  .social-admin .reservation-main {
+    flex: 1 1 calc(100% - 52px);   /* avatar 40px + gap 12px */
+  }
+
+  .social-admin .reservation-side {
+    flex: 1 1 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-left: 52px;            /* alineado con el texto */
+    text-align: left;
+  }
+
+  .social-admin .reservation-side strong {
+    margin-bottom: 0;
+  }
+}
