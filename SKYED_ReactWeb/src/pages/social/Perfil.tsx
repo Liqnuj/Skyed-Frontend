@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Protected from '../../components/Protected';
 import SocialWrapper from '../../components/social/SocialWrapper';
+import HeroParticles from '../../components/social/HeroParticles';
 import Toast from '../../components/social/Toast';
 import type { ToastMsg } from '../../components/social/Toast';
 import { useAuth } from '../../context/AuthContext';
@@ -1378,6 +1379,7 @@ function PerfilPanel() {
   return (
     <>
       <div className="pf-header">
+        <HeroParticles />
         <div className="pf-header-inner">
           <div className="pf-avatar-wrap">
             {user?.foto_url ? (
