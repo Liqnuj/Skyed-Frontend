@@ -15,6 +15,7 @@ interface Kit {
   nombre?: string | null;
   precio?: number;
   imagen_url?: string | null;
+  tallas?: { talla: string; cantidad: number }[];
   contenido?: string | null;
   fecha_entrega?: string | null;
   lugar_entrega?: string | null;
@@ -82,6 +83,123 @@ function soloNumeros(s: string) {
 }
 
 const DRAFT_KEY_PREFIX = 'skyed_inscripcion_draft_';
+
+/** Animaciones y estilos de las opciones del kit (Sí/No y tallas). Se pinta una sola vez en la tarjeta del kit. */
+const ESTILOS_KIT = `
+@keyframes kitFadeUp { from { opacity: 0; transform: translateY(12px) scale(.94); } to { opacity: 1; transform: none; } }
+@keyframes kitPop { 0% { transform: scale(1); } 35% { transform: scale(1.1); } 70% { transform: scale(.97); } 100% { transform: scale(1); } }
+@keyframes kitCheck { from { opacity: 0; transform: scale(0) rotate(-120deg); } to { opacity: 1; transform: scale(1) rotate(0); } }
+@keyframes kitShine { from { transform: translateX(-130%); } to { transform: translateX(130%); } }
+@keyframes kitPulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
+@keyframes kitSlideIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+
+.kit-sino { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; max-width: 360px; margin-top: .6rem; }
+.kit-sino button {
+  display: flex; align-items: center; justify-content: center; gap: .45rem;
+  padding: .75rem 1rem; border-radius: 12px; cursor: pointer; font: inherit; font-weight: 700; color: inherit;
+  border: 1.5px solid color-mix(in srgb, currentColor 25%, transparent); background: transparent;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease, color .18s ease;
+}
+.kit-sino button:hover { transform: translateY(-2px); border-color: var(--accent); box-shadow: 0 8px 16px -10px var(--accent); }
+.kit-sino button:active { transform: scale(.95); }
+.kit-sino button[aria-checked="true"] {
+  background: var(--accent); border-color: var(--accent); color: #fff;
+  box-shadow: 0 8px 18px -8px var(--accent); animation: kitPop .35s ease;
+}
+.kit-sino button[aria-checked="true"] i { animation: kitCheck .4s cubic-bezier(.34, 1.56, .64, 1) both; }
+
+.kit-rejilla {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: .6rem; margin-top: .7rem; max-width: 560px;
+  animation: kitSlideIn .3s ease both;
+}
+.kit-talla {
+  position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .15rem;
+  min-height: 74px; padding: .6rem .4rem; border-radius: 14px; font: inherit; color: inherit; cursor: pointer;
+  border: 1.5px solid color-mix(in srgb, currentColor 25%, transparent); background: transparent;
+  animation: kitFadeUp .45s cubic-bezier(.22, 1, .36, 1) both; animation-delay: calc(var(--i, 0) * 70ms);
+  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease, background .2s ease;
+}
+.kit-talla:not(:disabled):hover {
+  transform: translateY(-4px); border-color: var(--accent);
+  box-shadow: 0 12px 20px -12px var(--accent);
+}
+.kit-talla:not(:disabled):active { transform: scale(.93); }
+.kit-talla[data-activa="true"] {
+  border-color: var(--accent); background: color-mix(in srgb, var(--accent) 18%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 24%, transparent);
+  animation: kitFadeUp .45s cubic-bezier(.22, 1, .36, 1) both, kitPop .4s ease;
+  animation-delay: calc(var(--i, 0) * 70ms), 0ms;
+}
+.kit-talla[data-activa="true"]::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, .35) 50%, transparent 70%);
+  animation: kitShine .8s ease .05s both;
+}
+.kit-talla .kit-check {
+  position: absolute; top: 6px; right: 6px; font-size: 1rem; color: var(--accent);
+  animation: kitCheck .4s cubic-bezier(.34, 1.56, .64, 1) both;
+}
+.kit-talla strong { font-size: 1.25rem; line-height: 1.1; transition: transform .2s ease; }
+.kit-talla:not(:disabled):hover strong { transform: scale(1.12); }
+.kit-talla small { font-size: .7rem; font-weight: 600; opacity: .7; }
+.kit-talla small[data-nivel="poca"] { color: #f59e0b; opacity: 1; }
+.kit-talla small[data-nivel="ultima"] { color: #f59e0b; opacity: 1; animation: kitPulse 1.1s ease-in-out infinite; }
+.kit-talla:disabled { opacity: .5; cursor: not-allowed; filter: grayscale(.5); }
+.kit-talla:disabled strong { text-decoration: line-through; }
+.kit-talla:disabled small { color: #ef4444; opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .kit-sino button, .kit-sino button i, .kit-rejilla, .kit-talla, .kit-talla .kit-check, .kit-talla strong, .kit-talla small {
+    animation: none !important; transition: none !important;
+  }
+  .kit-talla::after { display: none; }
+}
+`;
+
+/** Sí / No en dos botones iguales, con animación al elegir. */
+function OpcionSiNo({ valor, onSi, onNo }: { valor: boolean | null; onSi: () => void; onNo: () => void }) {
+  return (
+    <div className="kit-sino" role="radiogroup">
+      <button type="button" role="radio" aria-checked={valor === true} onClick={onSi}>
+        <i className="ti ti-check" aria-hidden="true" /> Sí
+      </button>
+      <button type="button" role="radio" aria-checked={valor === false} onClick={onNo}>
+        <i className="ti ti-x" aria-hidden="true" /> No
+      </button>
+    </div>
+  );
+}
+
+/** Talla del kit como tarjeta animada: la talla grande y debajo cuántas quedan. */
+function TallaOpcion({ talla, quedan, controlado, activa, indice, onClick }: {
+  talla: string;
+  quedan: number;
+  controlado: boolean; // false en kits antiguos sin inventario por talla
+  activa: boolean;
+  indice: number; // para que las tarjetas entren una tras otra
+  onClick: () => void;
+}) {
+  const agotada = controlado && quedan <= 0;
+  const nivel = !controlado ? undefined : quedan === 1 ? 'ultima' : quedan <= 3 ? 'poca' : undefined;
+  const aviso = !controlado ? null : agotada ? 'Agotada' : quedan === 1 ? '¡Última!' : `Quedan ${quedan}`;
+
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={activa}
+      disabled={agotada}
+      data-activa={activa}
+      className="kit-talla"
+      style={{ '--i': indice } as React.CSSProperties}
+      onClick={onClick}
+    >
+      {activa && <i className="ti ti-circle-check-filled kit-check" aria-hidden="true" />}
+      <strong>{talla}</strong>
+      {aviso && <small data-nivel={nivel}>{aviso}</small>}
+    </button>
+  );
+}
 
 function InscriptionWizard() {
   const { id } = useParams();
@@ -455,6 +573,21 @@ function InscriptionWizard() {
   const precioInvitado = mostrarInvitado ? precioEvento : 0;
   const precioKitInvitado = mostrarInvitado && invDeseaKit ? precioKitUnitario : 0;
   const total = precioEvento + precioKit + precioInvitado + precioKitInvitado;
+
+  // Tallas del kit con su inventario. Si el kit es antiguo y no tiene tallas
+  // configuradas, se usa la lista fija de siempre sin control de cantidad.
+  const tallasKit = evento?.kit?.tallas ?? [];
+  const kitConTallas = tallasKit.length > 0;
+  const opcionesTalla = kitConTallas ? tallasKit.map(t => t.talla) : ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+  // Unidades que quedan de una talla para esta persona, descontando la que ya eligió la otra
+  // (titular e invitado pueden pedir la misma talla, pero solo si alcanza para los dos).
+  const quedan = (t: string, quien: 'titular' | 'invitado') => {
+    const hay = tallasKit.find(x => x.talla === t)?.cantidad ?? 0;
+    const otra = quien === 'titular'
+      ? (mostrarInvitado && invDeseaKit && invTallaKit === t ? 1 : 0)
+      : (deseaJersey === true && tallaKit === t ? 1 : 0);
+    return hay - otra;
+  };
   const referenciaPago = evento ? `SKYED-${String(evento.id).padStart(4, '0')}` : '';
 
   function irAPago(e: FormEvent) {
@@ -874,52 +1007,52 @@ function InscriptionWizard() {
                     <h3>Kit y dorsal</h3>
                   </div>
                   <div className="part-card-body">
-                    <div style={{ border: '1px dashed var(--border, #e5e7eb)', borderRadius: 10, padding: '.9rem 1rem', marginBottom: '1rem' }}>
-                      {evento.kit.imagen_url && (
-                        <img
-                          src={evento.kit.imagen_url}
-                          alt={evento.kit.nombre || 'Kit del evento'}
-                          style={{ display: 'block', width: '100%', maxHeight: 260, objectFit: 'cover', borderRadius: 8, marginBottom: '.8rem' }}
-                          onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                        />
-                      )}
-                      <div className="part-review-row"><span>Kit</span><strong>{evento.kit.nombre || 'Kit del evento'}</strong></div>
-                      {evento.kit.contenido && (
-                        <div className="part-review-row"><span>Incluye</span><strong>{evento.kit.contenido}</strong></div>
-                      )}
-                      {evento.kit.lugar_entrega && (
-                        <div className="part-review-row"><span>Recogida</span><strong>{evento.kit.lugar_entrega}</strong></div>
-                      )}
-                      {evento.kit.fecha_entrega && (
-                        <div className="part-review-row"><span>Fecha de entrega</span><strong>{fmtFechaKit(evento.kit.fecha_entrega)}</strong></div>
-                      )}
-                      <div className="part-review-row"><span>Precio</span><strong>{fmtMoney(evento.kit.precio)}</strong></div>
-                    </div>
+                    <style>{ESTILOS_KIT}</style>
+                    {evento.kit && (
+                      <div style={{ border: '1px dashed var(--border, #e5e7eb)', borderRadius: 10, padding: '.9rem 1rem', marginBottom: '1rem' }}>
+                        {evento.kit.imagen_url && (
+                          <img
+                            src={evento.kit.imagen_url}
+                            alt={evento.kit.nombre || 'Kit del evento'}
+                            style={{ display: 'block', width: '100%', maxWidth: 320, aspectRatio: '1 / 1', objectFit: 'cover', objectPosition: 'center', borderRadius: 12, margin: '0 auto .9rem' }}
+                            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                          />
+                        )}
+                        <div className="part-review-row"><span>Kit</span><strong>{evento.kit.nombre || 'Kit del evento'}</strong></div>
+                        {evento.kit.contenido && (
+                          <div className="part-review-row"><span>Incluye</span><strong>{evento.kit.contenido}</strong></div>
+                        )}
+                        {evento.kit.lugar_entrega && (
+                          <div className="part-review-row"><span>Recogida</span><strong>{evento.kit.lugar_entrega}</strong></div>
+                        )}
+                        {evento.kit.fecha_entrega && (
+                          <div className="part-review-row"><span>Fecha de entrega</span><strong>{fmtFechaKit(evento.kit.fecha_entrega)}</strong></div>
+                        )}
+                        <div className="part-review-row"><span>Precio</span><strong>{fmtMoney(evento.kit.precio)}</strong></div>
+                      </div>
+                    )}
                     <div className="part-form-group">
                       <label>¿Desea adquirir el kit? *</label>
                       <p className="part-form-hint" style={{ marginTop: '0rem' }}>
                         El kit incluye jersey, pantaloneta y medias. Al adquirirlo se sumarán {fmtMoney(evento.kit.precio)} al valor de la inscripción.
                       </p>
-                      <div style={{ display: 'flex', gap: '.6rem', marginTop: '.6rem' }}>
-                        <button title="Sí, quiero el kit" type="button" className={`btn ${deseaJersey === true ? 'btn-primary' : 'btn-outline'}`} onClick={() => setDeseaJersey(true)}>Sí</button>
-                        <button title="No quiero el kit" type="button" className={`btn ${deseaJersey === false ? 'btn-primary' : 'btn-outline'}`} onClick={() => setDeseaJersey(false)}>No</button>
-                      </div>
+                      <OpcionSiNo valor={deseaJersey} onSi={() => setDeseaJersey(true)} onNo={() => setDeseaJersey(false)} />
                     </div>
                     {deseaJersey === true && (
                       <>
                         <div className="part-form-group">
-                          <label>Talla del kit (jersey, pantaloneta y medias) *</label>
-                          <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', marginTop: '.6rem' }}>
-                            {['XS', 'S', 'M', 'L', 'XL', 'XXL'].map((t) => (
-                              <button
-                                title={`Elegir la talla ${t}`}
+                          <label>Talla del kit *</label>
+                          <div role="radiogroup" aria-label="Talla del kit" className="kit-rejilla">
+                            {opcionesTalla.map((t, idx) => (
+                              <TallaOpcion
                                 key={t}
-                                type="button"
-                                className={`btn ${tallaKit === t ? 'btn-primary' : 'btn-outline'}`}
+                                indice={idx}
+                                talla={t}
+                                quedan={quedan(t, 'titular')}
+                                controlado={kitConTallas}
+                                activa={tallaKit === t}
                                 onClick={() => setTallaKit(t)}
-                              >
-                                {t}
-                              </button>
+                              />
                             ))}
                           </div>
                         </div>
@@ -1073,22 +1206,19 @@ function InscriptionWizard() {
                           <p className="part-form-hint" style={{ marginTop: 0 }}>
                             Si lo pide, se suman {fmtMoney(evento.kit.precio)} al total.
                           </p>
-                          <div style={{ display: 'flex', gap: '.6rem', marginTop: '.6rem' }}>
-                            <button title="Sí, el invitado quiere el kit" type="button" className={`btn ${invDeseaKit ? 'btn-primary' : 'btn-outline'}`} onClick={() => setInvDeseaKit(true)}>Sí</button>
-                            <button title="No, el invitado no quiere el kit" type="button" className={`btn ${!invDeseaKit ? 'btn-primary' : 'btn-outline'}`} onClick={() => { setInvDeseaKit(false); setInvTallaKit(''); }}>No</button>
-                          </div>
+                          <OpcionSiNo valor={invDeseaKit} onSi={() => setInvDeseaKit(true)} onNo={() => { setInvDeseaKit(false); setInvTallaKit(''); }} />
                           {invDeseaKit && (
-                            <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', marginTop: '.75rem' }}>
-                              {['XS', 'S', 'M', 'L', 'XL', 'XXL'].map((t) => (
-                                <button
-                                  title={`Elegir la talla ${t} para el invitado`}
+                            <div role="radiogroup" aria-label="Talla del kit del invitado" className="kit-rejilla">
+                              {opcionesTalla.map((t, idx) => (
+                                <TallaOpcion
                                   key={t}
-                                  type="button"
-                                  className={`btn ${invTallaKit === t ? 'btn-primary' : 'btn-outline'}`}
+                                  indice={idx}
+                                  talla={t}
+                                  quedan={quedan(t, 'invitado')}
+                                  controlado={kitConTallas}
+                                  activa={invTallaKit === t}
                                   onClick={() => setInvTallaKit(t)}
-                                >
-                                  {t}
-                                </button>
+                                />
                               ))}
                             </div>
                           )}

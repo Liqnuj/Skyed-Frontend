@@ -99,6 +99,7 @@ type Kit = {
   precio_k?: number | string | null;
   imagen_k?: string | null;
   imagen_url?: string | null;
+  tallas?: { talla_kt: string; cantidad_kt: number }[];
   eventos?: { id_e: number; nombre_e: string }[];
   fecha_entrega_k?: string | null;
   lugar_entrega_k?: string | null;
@@ -902,7 +903,14 @@ function AdminPage() {
                       : <span>—</span>}
                   </td>
                   <td><strong>{k.nombre_k}</strong></td>
-                  <td>{k.stock_k}</td>
+                  <td>
+                    <strong>{k.stock_k}</strong>
+                    {!!k.tallas?.length && (
+                      <small style={{ display: "block", opacity: .75 }}>
+                        {k.tallas.map(t => `${t.talla_kt}: ${t.cantidad_kt}`).join(" · ")}
+                      </small>
+                    )}
+                  </td>
                   <td>{moneda(k.precio_k)}</td>
                   <td>{formatDate(k.fecha_entrega_k)}</td>
                   <td>{k.lugar_entrega_k ?? "—"}</td>
@@ -1651,6 +1659,112 @@ function ResultadoModal({ item, eventos, onClose, onSave, notify }: {
    KITS
 ================================================================ */
 
+const TALLAS_RAPIDAS = ["XS", "S", "M", "L", "XL", "XXL"];
+type FilaTalla = { talla: string; cantidad: string };
+
+/**
+ * Inventario del kit por talla: una fila por talla con su cantidad.
+ * El stock total del kit es la suma de las cantidades.
+ */
+function TallasTabla({ filas, onChange, obligatorio, legacy, existentes }: {
+  filas: FilaTalla[];
+  onChange: (filas: FilaTalla[]) => void;
+  obligatorio: boolean;
+  legacy: boolean;
+  /** Tallas que ya estaban guardadas en el kit: solo ellas pueden quedar en 0 (agotadas). */
+  existentes: string[];
+}) {
+  const usadas = new Set(filas.map(f => f.talla.trim().toUpperCase()));
+  const total = filas.reduce((suma, f) => suma + (Number(f.cantidad) || 0), 0);
+
+  const agregar = (talla = "") => onChange([...filas, { talla, cantidad: "" }]);
+  const cambiar = (i: number, campo: keyof FilaTalla, valor: string) =>
+    onChange(filas.map((f, j) => (j === i ? { ...f, [campo]: valor } : f)));
+  const quitar = (i: number) => onChange(filas.filter((_, j) => j !== i));
+
+  const celda: React.CSSProperties = { padding: ".35rem .5rem", textAlign: "left" };
+  const borde = "1px solid color-mix(in srgb, currentColor 18%, transparent)";
+
+  return (
+    <div className="admin-field">
+      <span>{obligatorio ? "Tallas y cantidades (obligatorio)" : "Tallas y cantidades"}</span>
+
+      <div style={{ display: "flex", gap: ".4rem", flexWrap: "wrap", alignItems: "center" }}>
+        {TALLAS_RAPIDAS.filter(t => !usadas.has(t)).map(t => (
+          <button key={t} type="button" className="secondary-btn" onClick={() => agregar(t)}>
+            <Plus size={13} /> {t}
+          </button>
+        ))}
+        <button type="button" className="secondary-btn" onClick={() => agregar("")}>
+          <Plus size={13} /> Otra talla
+        </button>
+      </div>
+
+      {filas.length > 0 ? (
+        <div style={{ overflowX: "auto", marginTop: 8, border: borde, borderRadius: 12 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ borderBottom: borde, opacity: .8 }}>
+                <th style={celda}>Talla</th>
+                <th style={celda}>Cantidad disponible</th>
+                <th style={{ ...celda, width: 48 }} />
+              </tr>
+            </thead>
+            <tbody>
+              {filas.map((f, i) => (
+                <tr key={i} style={{ borderBottom: i < filas.length - 1 ? borde : "none" }}>
+                  <td style={celda}>
+                    <input
+                      value={f.talla}
+                      maxLength={10}
+                      aria-label="Talla"
+                      placeholder="Ej. M"
+                      onChange={e => cambiar(i, "talla", sanitizeText(e.target.value, 10).toUpperCase())}
+                    />
+                  </td>
+                  <td style={celda}>
+                    <input
+                      type="number"
+                      min={existentes.includes(f.talla.trim().toUpperCase()) ? 0 : 1}
+                      inputMode="numeric"
+                      aria-label={`Cantidad de la talla ${f.talla || i + 1}`}
+                      placeholder="Ej. 10"
+                      value={f.cantidad}
+                      onChange={e => cambiar(i, "cantidad", sanitizeInteger(e.target.value, 5))}
+                    />
+                  </td>
+                  <td style={celda}>
+                    <button type="button" className="table-action danger" title="Quitar talla" onClick={() => quitar(i)}>
+                      <Trash2 size={15} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr style={{ borderTop: borde }}>
+                <td style={celda}><strong>Total de kits</strong></td>
+                <td style={celda}><strong>{total}</strong></td>
+                <td />
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      ) : (
+        <p style={{ margin: ".6rem 0 0", opacity: .75, fontSize: ".85rem" }}>
+          {legacy
+            ? "Este kit aún no tiene tallas con cantidad. Agrégalas para llevar el inventario por talla."
+            : "Agrega las tallas del kit con las unidades que hay de cada una."}
+        </p>
+      )}
+
+      <small className="field-hint">
+        Las unidades se descuentan al inscribirse y vuelven si la inscripción se cancela.
+      </small>
+    </div>
+  );
+}
+
 /** Normaliza para buscar sin tildes ni mayúsculas. */
 const normalizarBusqueda = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 
@@ -1743,14 +1857,17 @@ function KitModal({ item, eventos, onClose, onSave, notify }: { item?: Kit | nul
   const [form, setForm] = useState({
     id_e: item?.eventos?.[0]?.id_e ? String(item.eventos[0].id_e) : "",
     nombre_k: item?.nombre_k ?? "",
-    stock_k: item ? String(item.stock_k) : "",
     precio_k: item?.precio_k != null ? String(Math.round(Number(item.precio_k))) : "",
     fecha_entrega_k: item?.fecha_entrega_k?.slice(0, 10) ?? "",
     lugar_entrega_k: item?.lugar_entrega_k ?? "",
     contenido_k: item?.contenido_k ?? "",
-    talla_camiseta_k: item?.talla_camiseta_k ?? "",
     imagen_k: item?.imagen_k ?? "",
   });
+  // Al editar, una talla que ya existía puede quedar en 0 (agotada); una talla nueva siempre debe tener al menos 1.
+  const tallasGuardadas = item?.tallas?.map(t => t.talla_kt.toUpperCase()) ?? [];
+  const [tallas, setTallas] = useState<FilaTalla[]>(
+    item?.tallas?.map(t => ({ talla: t.talla_kt, cantidad: String(t.cantidad_kt) })) ?? []
+  );
   const [preview, setPreview] = useState(item?.imagen_url ?? "");
   const [saving, setSaving] = useState(false);
   const set = (campo: keyof typeof form, valor: string) => setForm(f => ({ ...f, [campo]: valor }));
@@ -1763,23 +1880,38 @@ function KitModal({ item, eventos, onClose, onSave, notify }: { item?: Kit | nul
     if (esNuevo) {
       if (!form.id_e) { notify("Selecciona el evento al que pertenece el kit."); return; }
       if (!form.imagen_k) { notify("Sube la imagen del kit."); return; }
-      if (![form.nombre_k, form.lugar_entrega_k, form.talla_camiseta_k, form.contenido_k].every(v => v.trim())) {
+      if (![form.nombre_k, form.lugar_entrega_k, form.contenido_k].every(v => v.trim())) {
         notify("Completa todos los datos del kit.");
         return;
       }
+      if (!tallas.length) { notify("Agrega al menos una talla con su cantidad."); return; }
+    }
+
+    // Las filas de tallas que existan deben estar completas y sin repetirse.
+    if (tallas.some(f => !f.talla.trim() || f.cantidad === "")) {
+      notify("Completa la talla y la cantidad de cada fila.");
+      return;
+    }
+    if (tallas.some(f => Number(f.cantidad) < 1 && !tallasGuardadas.includes(f.talla.trim().toUpperCase()))) {
+      notify("La cantidad de cada talla nueva debe ser de al menos 1.");
+      return;
+    }
+    const nombresTalla = tallas.map(f => f.talla.trim().toUpperCase());
+    if (new Set(nombresTalla).size !== nombresTalla.length) {
+      notify("No repitas la misma talla.");
+      return;
     }
 
     // Al editar solo se envían los campos que tienen valor; los vacíos se dejan como estaban.
     const datos: Record<string, unknown> = {
       nombre_k: form.nombre_k.trim(),
-      stock_k: form.stock_k === "" ? "" : Number(form.stock_k),
       precio_k: form.precio_k === "" ? "" : Number(form.precio_k),
       id_e: form.id_e ? Number(form.id_e) : "",
       fecha_entrega_k: form.fecha_entrega_k,
       lugar_entrega_k: form.lugar_entrega_k.trim(),
       contenido_k: form.contenido_k.trim(),
-      talla_camiseta_k: form.talla_camiseta_k.trim(),
       imagen_k: form.imagen_k,
+      tallas: tallas.length ? tallas.map(f => ({ talla: f.talla.trim().toUpperCase(), cantidad: Number(f.cantidad) })) : "",
     };
     const payload = esNuevo
       ? datos
@@ -1796,9 +1928,6 @@ function KitModal({ item, eventos, onClose, onSave, notify }: { item?: Kit | nul
         <Field label="Nombre">
           <input required={esNuevo} maxLength={45} value={form.nombre_k} onChange={e => set("nombre_k", sanitizeText(e.target.value, 45))} placeholder="Ej. Kit Gran Fondo 2026" />
         </Field>
-        <Field label="Unidades disponibles">
-          <input required={esNuevo} type="number" min="0" inputMode="numeric" value={form.stock_k} onChange={e => set("stock_k", sanitizeInteger(e.target.value, 6))} />
-        </Field>
         <Field label="Precio del kit (COP)">
           <input required={esNuevo} type="number" min="0" inputMode="numeric" value={form.precio_k} onChange={e => set("precio_k", sanitizeInteger(e.target.value, 8))} placeholder="Ej. 45000" />
           <small className="field-hint">Se suma al total que paga el participante si pide el kit.</small>
@@ -1809,10 +1938,8 @@ function KitModal({ item, eventos, onClose, onSave, notify }: { item?: Kit | nul
         <Field label="Lugar de entrega">
           <input required={esNuevo} maxLength={45} value={form.lugar_entrega_k} onChange={e => set("lugar_entrega_k", sanitizeText(e.target.value, 45))} />
         </Field>
-        <Field label="Tallas">
-          <input required={esNuevo} maxLength={10} value={form.talla_camiseta_k} onChange={e => set("talla_camiseta_k", sanitizeText(e.target.value, 10))} placeholder="Ej. S-XL" />
-        </Field>
       </div>
+      <TallasTabla filas={tallas} onChange={setTallas} obligatorio={esNuevo} legacy={!esNuevo} existentes={tallasGuardadas} />
       <EventoPicker eventos={eventosDisponibles} value={form.id_e} onChange={id => set("id_e", id)} obligatorio={esNuevo} />
       <Field label={esNuevo ? "Imagen del kit (obligatoria)" : "Imagen del kit"}>
         <ImageUploadField
@@ -1821,7 +1948,7 @@ function KitModal({ item, eventos, onClose, onSave, notify }: { item?: Kit | nul
           onChange={(path, url) => { set("imagen_k", path); setPreview(url); }}
           onError={notify}
         />
-        <small className="field-hint">Una foto de cómo se ve el kit. La verán los participantes al inscribirse.</small>
+        <small className="field-hint">Una foto de cómo se ve el kit. Se muestra cuadrada a los participantes, así que usa una foto cuadrada o con el kit al centro para que no se recorte.</small>
       </Field>
       <Field label="Contenido">
         <textarea required={esNuevo} rows={3} maxLength={255} value={form.contenido_k} onChange={e => set("contenido_k", e.target.value.slice(0, 255))} placeholder="Ej. Jersey, número, chip de cronometraje, hidratación." />
