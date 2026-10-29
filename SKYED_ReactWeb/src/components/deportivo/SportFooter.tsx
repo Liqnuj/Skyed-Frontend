@@ -9,6 +9,9 @@ const DATOS: DatosFooter = {
     { texto: 'Eventos', a: '/deportivo/eventos' },
     { texto: 'Nosotros', a: '/deportivo/nosotros' },
   ],
+  ayuda: [
+    { texto: 'Centro de ayuda', a: '/deportivo/ayuda' },
+  ],
   correo: 'skyeddeportivo@gmail.com',
   telefono: '+57 313 201 3573',
   ubicacion: 'Sogamoso, Boyacá',

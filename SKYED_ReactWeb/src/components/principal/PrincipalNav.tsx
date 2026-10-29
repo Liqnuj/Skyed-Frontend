@@ -106,6 +106,11 @@ export default function PrincipalNav() {
           : []),
       ],
     },
+    {
+      opciones: [
+        { to: '/ayuda', icono: 'ti-help-circle', titulo: 'Centro de ayuda', detalle: 'Guías y preguntas frecuentes' },
+      ],
+    },
   ];
 
   const rol = esAdmin ? 'Administrador' : 'Miembro SKYED';
