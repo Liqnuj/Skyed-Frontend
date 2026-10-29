@@ -107,19 +107,19 @@ export default function SportHome() {
             <div key={src} className={`slide ${i === slide ? 'active' : ''}`} style={{ backgroundImage: `url('${src}')` }} />
           ))}
         </div>
-        <button className="carousel-arrow prev" aria-label="Slide anterior" onClick={() => setSlide((s) => (s - 1 + sportHeroSlides.length) % sportHeroSlides.length)}>‹</button>
-        <button className="carousel-arrow next" aria-label="Slide siguiente" onClick={() => setSlide((s) => (s + 1) % sportHeroSlides.length)}>›</button>
+        <button title="Ver la diapositiva anterior" className="carousel-arrow prev" aria-label="Slide anterior" onClick={() => setSlide((s) => (s - 1 + sportHeroSlides.length) % sportHeroSlides.length)}>‹</button>
+        <button title="Ver la diapositiva siguiente" className="carousel-arrow next" aria-label="Slide siguiente" onClick={() => setSlide((s) => (s + 1) % sportHeroSlides.length)}>›</button>
         <div className="hero-content">
           <span className="eyebrow">Temporada 2026 abierta</span>
           <h1>Vive el <em>ciclismo</em> como nunca antes</h1>
           <p>Inscríbete en los mejores eventos de ruta, MTB, gravel, pista y BMX. Una plataforma, miles de pedaladas.</p>
           <div className="hero-actions">
-            <Link to="/deportivo/eventos" className="btn btn-primary">Ver eventos</Link>
+            <Link to="/deportivo/eventos" title="Ver los eventos disponibles" className="btn btn-primary">Ver eventos</Link>
           </div>
         </div>
         <div className="carousel-dots" role="tablist" aria-label="Navegación del carrusel">
           {sportHeroSlides.map((src, i) => (
-            <button key={src} className={i === slide ? 'active' : ''} onClick={() => setSlide(i)} aria-label={`Ir a la diapositiva ${i + 1}`} />
+            <button key={src} title={`Ir a la diapositiva ${i + 1}`} className={i === slide ? 'active' : ''} onClick={() => setSlide(i)} aria-label={`Ir a la diapositiva ${i + 1}`} />
           ))}
         </div>
       </section>
@@ -196,7 +196,7 @@ export default function SportHome() {
             )}
           </div>
           <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-            <Link to="/deportivo/eventos" className="btn btn-primary">Ver todos los eventos →</Link>
+            <Link to="/deportivo/eventos" title="Ver todos los eventos" className="btn btn-primary">Ver todos los eventos →</Link>
           </div>
         </div>
       </section>

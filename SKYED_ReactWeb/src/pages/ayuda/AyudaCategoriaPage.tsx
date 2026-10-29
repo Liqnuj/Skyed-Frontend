@@ -54,11 +54,11 @@ export default function AyudaCategoriaPage({ modulo }: { modulo: ModuloAyuda }) 
             >
               <div className="ay-acciones">
                 {estado.error.status !== 404 && (
-                  <button type="button" className="ay-btn ay-btn--primario" onClick={estado.reintentar}>
+                  <button type="button" title="Reintentar la carga" className="ay-btn ay-btn--primario" onClick={estado.reintentar}>
                     Reintentar
                   </button>
                 )}
-                <Link className="ay-btn ay-btn--suave" to={base}>
+                <Link className="ay-btn ay-btn--suave" to={base} title="Ir al Centro de Ayuda">
                   Volver al Centro de Ayuda
                 </Link>
               </div>

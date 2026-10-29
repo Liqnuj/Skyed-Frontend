@@ -80,11 +80,11 @@ export default function AyudaBuscador({
           maxLength={100}
         />
         {texto && (
-          <button type="button" className="ay-limpiar" onClick={limpiar} aria-label="Limpiar búsqueda">
+          <button type="button" title="Limpiar la búsqueda" className="ay-limpiar" onClick={limpiar} aria-label="Limpiar búsqueda">
             <i className="ti ti-x" aria-hidden="true" />
           </button>
         )}
-        <button type="submit" className="ay-buscar-btn">
+        <button type="submit" title="Buscar en el Centro de Ayuda" className="ay-buscar-btn">
           Buscar
         </button>
       </div>
