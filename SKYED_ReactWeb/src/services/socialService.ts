@@ -187,6 +187,17 @@ export const reservaService = {
     });
     return data.reserva;
   },
+
+
+    /** El cliente cancela su propia reserva (pendiente o confirmada). Motivo opcional. */
+  async cancelar(id: number, motivo?: string): Promise<Reserva> {
+    const data = await apiFetch(`/reservas/${id}/cancelar`, {
+      method: 'POST',
+      body: JSON.stringify({ motivo: motivo || null }),
+    });
+    return data.reserva;
+  },
+  
 };
 
 /* ---------------------------------------------------------------- */
