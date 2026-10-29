@@ -8,6 +8,7 @@ import { apiFetch } from '../../services/api';
 import { prepararImagen } from '../../utils/prepararImagen';
 import { errorContrasena } from '../../utils/validaciones';
 import '../../styles/deportivo/participante.css';
+import '../../styles/shared/nosotrosMotion.css';
 // import '../../styles/deportivo/filtros-participante.css';
 import { createPortal } from 'react-dom';
 

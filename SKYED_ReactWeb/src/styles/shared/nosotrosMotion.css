@@ -339,3 +339,21 @@
     background: none;
   }
 }
+
+/* Perfil (deportivo): las mismas ruedas girando del encabezado de "Sobre nosotros" */
+.mod-deportivo .part-header { position: relative; overflow: hidden; }
+.mod-deportivo .part-header::before,
+.mod-deportivo .part-header::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200' fill='none' stroke='%2361ccd6' stroke-width='1.4' stroke-linecap='round'%3E%3Ccircle cx='100' cy='100' r='96'/%3E%3Ccircle cx='100' cy='100' r='90' stroke-dasharray='1.5 4.5'/%3E%3Ccircle cx='100' cy='100' r='11'/%3E%3Ccircle cx='100' cy='100' r='4' fill='%2361ccd6'/%3E%3Cpath d='M112.0 100.0L188.0 100.0M111.1 104.6L181.3 133.7M108.5 108.5L162.2 162.2M104.6 111.1L133.7 181.3M100.0 112.0L100.0 188.0M95.4 111.1L66.3 181.3M91.5 108.5L37.8 162.2M88.9 104.6L18.7 133.7M88.0 100.0L12.0 100.0M88.9 95.4L18.7 66.3M91.5 91.5L37.8 37.8M95.4 88.9L66.3 18.7M100.0 88.0L100.0 12.0M104.6 88.9L133.7 18.7M108.5 91.5L162.2 37.8M111.1 95.4L181.3 66.3'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.mod-deportivo .part-header::before { width: 360px; height: 360px; right: -90px; top: -110px; opacity: .16; animation: nos-spin 38s linear infinite; }
+.mod-deportivo .part-header::after  { width: 230px; height: 230px; left: -60px; bottom: -110px; opacity: .13; animation: nos-spin-rev 28s linear infinite; }
+.mod-deportivo .part-header > * { position: relative; z-index: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mod-deportivo .part-header::before,
+  .mod-deportivo .part-header::after { animation: none !important; }
+}
