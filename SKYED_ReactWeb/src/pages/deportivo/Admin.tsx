@@ -202,6 +202,53 @@ const sanitizeText = (value: string, maxLength: number) =>
 const sanitizeInteger = (value: string, maxLength = 7) =>
   value.replace(/\D/g, "").slice(0, maxLength);
 
+/** Primera letra en mayúscula (solo para campos de texto libre). */
+const capitalizeFirst = (value: string) =>
+  value.length ? value.charAt(0).toUpperCase() + value.slice(1) : value;
+
+/* ================================================================
+   PERSISTENCIA (recargar la página no debe borrar lo que se escribe)
+================================================================ */
+
+const DRAFT_PREFIX = "admin_draft:";
+
+/** Igual que useState, pero guarda el valor en sessionStorage bajo `key`. */
+function usePersistentState<T>(key: string, initial: T) {
+  const [value, setValue] = useState<T>(() => {
+    try {
+      const saved = sessionStorage.getItem(key);
+      return saved !== null ? (JSON.parse(saved) as T) : initial;
+    } catch {
+      return initial;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(key, JSON.stringify(value));
+    } catch {
+      // Sin almacenamiento disponible: el formulario sigue funcionando, solo no se recupera.
+    }
+  }, [key, value]);
+
+  return [value, setValue] as const;
+}
+
+/** Borra todos los borradores de formularios (al guardar o cancelar). */
+const clearDrafts = () => {
+  try {
+    Object.keys(sessionStorage)
+      .filter(k => k.startsWith(DRAFT_PREFIX))
+      .forEach(k => sessionStorage.removeItem(k));
+  } catch {
+    // nada que limpiar
+  }
+};
+
+const SECTION_KEY = "admin_section";
+const SECTIONS_VALIDAS = ["inicio", "eventos", "inscripciones", "acceso", "resultados", "kits", "usuarios", "ajustes"];
+type ModalKind = "evento" | "categorias" | "kit" | "pago" | "resultado" | null;
+
 /** "1:05" → "01:05:00"; acepta HH:MM o HH:MM:SS del input type="time". */
 const normalizarTiempo = (value: string) => {
   const partes = value.split(":").map((p) => p.padStart(2, "0"));
@@ -217,16 +264,19 @@ function Modal({
   title,
   subtitle,
   onClose,
+  closeOnBackdrop = true,
   children,
 }: {
   title: string;
   subtitle?: string;
   onClose: () => void;
+  /** En formularios va en false: un clic fuera no debe descartar lo escrito. */
+  closeOnBackdrop?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <div className="admin-modal-backdrop" onMouseDown={(e) => {
-      if (e.target === e.currentTarget) onClose();
+      if (closeOnBackdrop && e.target === e.currentTarget) onClose();
     }}>
       <div className="admin-modal" role="dialog" aria-modal="true">
         <div className="admin-modal-head">
@@ -419,7 +469,17 @@ function AdminPage() {
     reset,
   } = useAccessibility();
 
-  const [section, setSection] = useState<Section>("inicio");
+  const [section, setSection] = useState<Section>(() => {
+    try {
+      const saved = localStorage.getItem(SECTION_KEY);
+      return saved && SECTIONS_VALIDAS.includes(saved) ? (saved as Section) : "inicio";
+    } catch {
+      return "inicio";
+    }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(SECTION_KEY, section); } catch { /* sin almacenamiento */ }
+  }, [section]);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -436,10 +496,14 @@ function AdminPage() {
   const [filtroPago, setFiltroPago] = useState<"todos" | Pago["estado_p"]>("pendiente");
   const [filtroEvento, setFiltroEvento] = useState("");
 
-  const [modal, setModal] = useState<
-    "evento" | "categorias" | "kit" | "pago" | "resultado" | null
-  >(null);
-  const [editing, setEditing] = useState<any>(null);
+  const [modal, setModal] = usePersistentState<ModalKind>("admin_modal", null);
+  const [editing, setEditing] = usePersistentState<any>("admin_editing", null);
+
+  /** Cierra el modal y descarta el borrador: solo al guardar o al pulsar Cancelar/X. */
+  const closeModal = () => {
+    clearDrafts();
+    setModal(null);
+  };
 
   const notify = (message: string) => {
     setToast(message);
@@ -484,7 +548,7 @@ function AdminPage() {
     try {
       await accion();
       notify(okMessage);
-      if (cerrarModal) setModal(null);
+      if (cerrarModal) closeModal();
       await loadAll();
       return true;
     } catch (err) {
@@ -976,7 +1040,7 @@ function AdminPage() {
         <EventoModal
           item={editing}
           kits={kits}
-          onClose={() => setModal(null)}
+          onClose={closeModal}
           notify={notify}
           onSave={data => run(
             () => editing
@@ -988,7 +1052,7 @@ function AdminPage() {
       )}
 
       {modal === "categorias" && editing && (
-        <CategoriasModal evento={editing} onClose={() => { setModal(null); loadAll(); }} notify={notify} confirmar={confirmar} />
+        <CategoriasModal evento={editing} onClose={() => { closeModal(); loadAll(); }} notify={notify} confirmar={confirmar} />
       )}
 
       {modal === "kit" && (
@@ -996,7 +1060,7 @@ function AdminPage() {
           item={editing}
           eventos={eventos}
           notify={notify}
-          onClose={() => setModal(null)}
+          onClose={closeModal}
           onSave={data => run(
             () => editing
               ? apiFetch(`/kits/${editing.id_k}`, { method: "PUT", body: JSON.stringify(data) })
@@ -1009,7 +1073,7 @@ function AdminPage() {
       {modal === "pago" && editing && (
         <PagoModal
           item={editing}
-          onClose={() => setModal(null)}
+          onClose={closeModal}
           onCambiar={estado => cambiarEstadoPago(editing, estado)}
         />
       )}
@@ -1018,7 +1082,7 @@ function AdminPage() {
         <ResultadoModal
           item={editing}
           eventos={eventos}
-          onClose={() => setModal(null)}
+          onClose={closeModal}
           notify={notify}
           onSave={data => run(
             () => editing
@@ -1046,7 +1110,7 @@ function EventoModal({ item, kits, onClose, onSave, notify }: {
   onSave: (data: any) => Promise<boolean>;
   notify: (message: string) => void;
 }) {
-  const [form, setForm] = useState({
+  const [form, setForm] = usePersistentState(`${DRAFT_PREFIX}evento:${item?.id ?? "nuevo"}`, {
     nombre_e: item?.nombre ?? "",
     categoria_e: item?.categoria ?? "ruta",
     precio_e: item ? String(Math.round(item.precio)) : "",
@@ -1061,7 +1125,7 @@ function EventoModal({ item, kits, onClose, onSave, notify }: {
     id_k: item?.kit?.id ? String(item.kit.id) : "",
     imagen_e: item?.imagen ?? "",
   });
-  const [preview, setPreview] = useState(item?.imagen_url ?? "");
+  const [preview, setPreview] = usePersistentState(`${DRAFT_PREFIX}evento-img:${item?.id ?? "nuevo"}`, item?.imagen_url ?? "");
   const [saving, setSaving] = useState(false);
   const set = (campo: keyof typeof form, valor: string) => setForm(f => ({ ...f, [campo]: valor }));
 
@@ -1088,11 +1152,11 @@ function EventoModal({ item, kits, onClose, onSave, notify }: {
     setSaving(false);
   };
 
-  return <Modal title={item ? "Editar evento" : "Nuevo evento deportivo"} subtitle="Se publica en SKYED Deportivo apenas quede activo." onClose={onClose}>
+  return <Modal title={item ? "Editar evento" : "Nuevo evento deportivo"} subtitle="Se publica en SKYED Deportivo apenas quede activo." onClose={onClose} closeOnBackdrop={false}>
     <form className="modal-form" onSubmit={submit}>
       <div className="form-grid">
         <Field label="Nombre">
-          <input required maxLength={120} value={form.nombre_e} onChange={e => set("nombre_e", sanitizeText(e.target.value, 120))} placeholder="Ej. Vuelta al Lago de Tota" />
+          <input required maxLength={120} value={form.nombre_e} onChange={e => set("nombre_e", capitalizeFirst(sanitizeText(e.target.value, 120)))} placeholder="Ej. Vuelta al Lago de Tota" />
           <small className="field-hint">{form.nombre_e.length}/120 caracteres</small>
         </Field>
 
@@ -1128,7 +1192,7 @@ function EventoModal({ item, kits, onClose, onSave, notify }: {
         </Field>
 
         <Field label="Lugar de salida">
-          <input required maxLength={120} value={form.ubicacion_e} onChange={e => set("ubicacion_e", sanitizeText(e.target.value, 120))} placeholder="Ej. Aquitania, Boyacá" />
+          <input required maxLength={120} value={form.ubicacion_e} onChange={e => set("ubicacion_e", capitalizeFirst(sanitizeText(e.target.value, 120)))} placeholder="Ej. Aquitania, Boyacá" />
         </Field>
 
         <Field label="Kit (opcional)">
@@ -1143,12 +1207,12 @@ function EventoModal({ item, kits, onClose, onSave, notify }: {
       </div>
 
       <Field label="Descripción">
-        <textarea required rows={3} maxLength={255} value={form.descripcion_e} onChange={e => set("descripcion_e", e.target.value.slice(0, 255))} />
+        <textarea required rows={3} maxLength={255} value={form.descripcion_e} onChange={e => set("descripcion_e", capitalizeFirst(e.target.value.slice(0, 255)))} />
         <small className="field-hint">{form.descripcion_e.length}/255 caracteres</small>
       </Field>
 
       <Field label="Requisitos">
-        <textarea required rows={2} maxLength={255} value={form.requisitos_e} onChange={e => set("requisitos_e", e.target.value.slice(0, 255))} placeholder="Ej. Casco obligatorio, bicicleta en buen estado." />
+        <textarea required rows={2} maxLength={255} value={form.requisitos_e} onChange={e => set("requisitos_e", capitalizeFirst(e.target.value.slice(0, 255)))} placeholder="Ej. Casco obligatorio, bicicleta en buen estado." />
         <small className="field-hint">{form.requisitos_e.length}/255 caracteres</small>
       </Field>
 
@@ -1173,7 +1237,7 @@ function CategoriasModal({ evento, onClose, notify, confirmar }: { evento: Event
   const vacio = { nombre_cc: "", edad_minima_cc: "", edad_maxima_cc: "", genero_cc: "mixto", distancia_cc: "", descripcion_cc: "" };
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [cargando, setCargando] = useState(true);
-  const [form, setForm] = useState(vacio);
+  const [form, setForm] = usePersistentState(`${DRAFT_PREFIX}categoria:${evento.id}`, vacio);
   const [saving, setSaving] = useState(false);
   const set = (campo: keyof typeof form, valor: string) => setForm(f => ({ ...f, [campo]: valor }));
 
@@ -1237,7 +1301,7 @@ function CategoriasModal({ evento, onClose, notify, confirmar }: { evento: Event
     return "todas las edades";
   };
 
-  return <Modal title={`Categorías · ${evento.nombre}`} subtitle="El participante debe elegir una al inscribirse: un evento sin categorías no recibe inscripciones." onClose={onClose}>
+  return <Modal title={`Categorías · ${evento.nombre}`} subtitle="El participante debe elegir una al inscribirse: un evento sin categorías no recibe inscripciones." onClose={onClose} closeOnBackdrop={false}>
     <div className="cat-list">
       {cargando && <p>Cargando…</p>}
       {!cargando && !categorias.length && <p className="field-hint field-hint-warn">Este evento todavía no tiene categorías.</p>}
@@ -1255,7 +1319,7 @@ function CategoriasModal({ evento, onClose, notify, confirmar }: { evento: Event
     <form className="modal-form" onSubmit={agregar}>
       <div className="form-grid">
         <Field label="Nombre de la categoría">
-          <input required maxLength={50} value={form.nombre_cc} onChange={e => set("nombre_cc", sanitizeText(e.target.value, 50))} placeholder="Ej. Élite, Master A, Juvenil" />
+          <input required maxLength={50} value={form.nombre_cc} onChange={e => set("nombre_cc", capitalizeFirst(sanitizeText(e.target.value, 50)))} placeholder="Ej. Élite, Master A, Juvenil" />
         </Field>
         <Field label="Género">
           <select value={form.genero_cc} onChange={e => set("genero_cc", e.target.value)}>
@@ -1274,7 +1338,7 @@ function CategoriasModal({ evento, onClose, notify, confirmar }: { evento: Event
           <input maxLength={45} value={form.distancia_cc} onChange={e => set("distancia_cc", sanitizeText(e.target.value, 45))} placeholder="Ej. 60 km" />
         </Field>
         <Field label="Descripción (opcional)">
-          <input maxLength={255} value={form.descripcion_cc} onChange={e => set("descripcion_cc", e.target.value.slice(0, 255))} />
+          <input maxLength={255} value={form.descripcion_cc} onChange={e => set("descripcion_cc", capitalizeFirst(e.target.value.slice(0, 255)))} />
         </Field>
       </div>
       <div className="modal-actions">
@@ -1545,10 +1609,10 @@ function ResultadoModal({ item, eventos, onClose, onSave, notify }: {
   onSave: (data: any) => Promise<boolean>;
   notify: (message: string) => void;
 }) {
-  const [eventoId, setEventoId] = useState(item?.inscripcion?.evento?.id_e ? String(item.inscripcion.evento.id_e) : "");
+  const [eventoId, setEventoId] = usePersistentState(`${DRAFT_PREFIX}resultado-evento:${item?.id_r ?? "nuevo"}`, item?.inscripcion?.evento?.id_e ? String(item.inscripcion.evento.id_e) : "");
   const [inscripciones, setInscripciones] = useState<InscripcionOpcion[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
-  const [form, setForm] = useState({
+  const [form, setForm] = usePersistentState(`${DRAFT_PREFIX}resultado:${item?.id_r ?? "nuevo"}`, {
     id_i: item ? String(item.id_i) : "",
     tiempo_final_r: item?.tiempo_final_r ?? "",
     posicion_general_r: item?.posicion_general_r ? String(item.posicion_general_r) : "",
@@ -1596,6 +1660,7 @@ function ResultadoModal({ item, eventos, onClose, onSave, notify }: {
   };
 
   return <Modal
+    closeOnBackdrop={false}
     title={item ? "Editar resultado" : "Registrar resultado"}
     subtitle={item ? `${nombreDe(item.inscripcion?.usuario)} · ${item.inscripcion?.evento?.nombre_e ?? ""}` : "Solo aparecen participantes con el pago confirmado."}
     onClose={onClose}
@@ -1854,7 +1919,7 @@ function EventoPicker({ eventos, value, onChange, obligatorio }: {
 function KitModal({ item, eventos, onClose, onSave, notify }: { item?: Kit | null; eventos: Evento[]; onClose: () => void; onSave: (data: any) => Promise<boolean>; notify: (m: string) => void }) {
   // Eventos que pueden recibir este kit: los que no tienen kit, o el que ya lo tiene asignado.
   const eventosDisponibles = eventos.filter(e => !e.kit || e.kit.id === item?.id_k);
-  const [form, setForm] = useState({
+  const [form, setForm] = usePersistentState(`${DRAFT_PREFIX}kit:${item?.id_k ?? "nuevo"}`, {
     id_e: item?.eventos?.[0]?.id_e ? String(item.eventos[0].id_e) : "",
     nombre_k: item?.nombre_k ?? "",
     precio_k: item?.precio_k != null ? String(Math.round(Number(item.precio_k))) : "",
@@ -1865,10 +1930,10 @@ function KitModal({ item, eventos, onClose, onSave, notify }: { item?: Kit | nul
   });
   // Al editar, una talla que ya existía puede quedar en 0 (agotada); una talla nueva siempre debe tener al menos 1.
   const tallasGuardadas = item?.tallas?.map(t => t.talla_kt.toUpperCase()) ?? [];
-  const [tallas, setTallas] = useState<FilaTalla[]>(
+  const [tallas, setTallas] = usePersistentState<FilaTalla[]>(`${DRAFT_PREFIX}kit-tallas:${item?.id_k ?? "nuevo"}`,
     item?.tallas?.map(t => ({ talla: t.talla_kt, cantidad: String(t.cantidad_kt) })) ?? []
   );
-  const [preview, setPreview] = useState(item?.imagen_url ?? "");
+  const [preview, setPreview] = usePersistentState(`${DRAFT_PREFIX}kit-img:${item?.id_k ?? "nuevo"}`, item?.imagen_url ?? "");
   const [saving, setSaving] = useState(false);
   const set = (campo: keyof typeof form, valor: string) => setForm(f => ({ ...f, [campo]: valor }));
   // Al crear un kit todos los datos son obligatorios; al editar solo se cambia lo que se quiera.
@@ -1922,11 +1987,11 @@ function KitModal({ item, eventos, onClose, onSave, notify }: { item?: Kit | nul
     setSaving(false);
   };
 
-  return <Modal title={item ? "Editar kit" : "Nuevo kit"} subtitle="Cada kit es individual: se asigna a un solo evento." onClose={onClose}>
+  return <Modal title={item ? "Editar kit" : "Nuevo kit"} subtitle="Cada kit es individual: se asigna a un solo evento." onClose={onClose} closeOnBackdrop={false}>
     <form className="modal-form" onSubmit={submit}>
       <div className="form-grid">
         <Field label="Nombre">
-          <input required={esNuevo} maxLength={45} value={form.nombre_k} onChange={e => set("nombre_k", sanitizeText(e.target.value, 45))} placeholder="Ej. Kit Gran Fondo 2026" />
+          <input required={esNuevo} maxLength={45} value={form.nombre_k} onChange={e => set("nombre_k", capitalizeFirst(sanitizeText(e.target.value, 45)))} placeholder="Ej. Kit Gran Fondo 2026" />
         </Field>
         <Field label="Precio del kit (COP)">
           <input required={esNuevo} type="number" min="0" inputMode="numeric" value={form.precio_k} onChange={e => set("precio_k", sanitizeInteger(e.target.value, 8))} placeholder="Ej. 45000" />
@@ -1936,7 +2001,7 @@ function KitModal({ item, eventos, onClose, onSave, notify }: { item?: Kit | nul
           <input required={esNuevo} type="date" value={form.fecha_entrega_k} onChange={e => set("fecha_entrega_k", e.target.value)} />
         </Field>
         <Field label="Lugar de entrega">
-          <input required={esNuevo} maxLength={45} value={form.lugar_entrega_k} onChange={e => set("lugar_entrega_k", sanitizeText(e.target.value, 45))} />
+          <input required={esNuevo} maxLength={45} value={form.lugar_entrega_k} onChange={e => set("lugar_entrega_k", capitalizeFirst(sanitizeText(e.target.value, 45)))} />
         </Field>
       </div>
       <TallasTabla filas={tallas} onChange={setTallas} obligatorio={esNuevo} legacy={!esNuevo} existentes={tallasGuardadas} />
@@ -1951,7 +2016,7 @@ function KitModal({ item, eventos, onClose, onSave, notify }: { item?: Kit | nul
         <small className="field-hint">Una foto de cómo se ve el kit. Se muestra cuadrada a los participantes, así que usa una foto cuadrada o con el kit al centro para que no se recorte.</small>
       </Field>
       <Field label="Contenido">
-        <textarea required={esNuevo} rows={3} maxLength={255} value={form.contenido_k} onChange={e => set("contenido_k", e.target.value.slice(0, 255))} placeholder="Ej. Jersey, número, chip de cronometraje, hidratación." />
+        <textarea required={esNuevo} rows={3} maxLength={255} value={form.contenido_k} onChange={e => set("contenido_k", capitalizeFirst(e.target.value.slice(0, 255)))} placeholder="Ej. Jersey, número, chip de cronometraje, hidratación." />
         <small className="field-hint">{form.contenido_k.length}/255 caracteres</small>
       </Field>
       <div className="modal-actions">
