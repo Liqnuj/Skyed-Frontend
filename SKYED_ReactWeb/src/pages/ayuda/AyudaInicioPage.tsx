@@ -85,7 +85,7 @@ function Resultados({
       <div className="ay-seccion ay-fin">
         <AyudaEstado alerta icono="ti-wifi-off" titulo="No pudimos buscar" texto={estado.error.message}>
           <div className="ay-acciones">
-            <button type="button" className="ay-btn ay-btn--primario" onClick={estado.reintentar}>
+            <button type="button" title="Reintentar la carga" className="ay-btn ay-btn--primario" onClick={estado.reintentar}>
               Reintentar
             </button>
           </div>
@@ -113,7 +113,7 @@ function Resultados({
             <li>Contactar soporte.</li>
           </ul>
           <div className="ay-acciones">
-            <Link className="ay-btn ay-btn--suave" to={base}>
+            <Link className="ay-btn ay-btn--suave" to={base} title="Ir al Centro de Ayuda">
               Ver categorías
             </Link>
           </div>
@@ -158,7 +158,7 @@ function Portada({
           texto={estado.error?.message ?? 'Inténtalo de nuevo en un momento.'}
         >
           <div className="ay-acciones">
-            <button type="button" className="ay-btn ay-btn--primario" onClick={estado.reintentar}>
+            <button type="button" title="Reintentar la carga" className="ay-btn ay-btn--primario" onClick={estado.reintentar}>
               Reintentar
             </button>
           </div>
