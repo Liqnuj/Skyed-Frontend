@@ -10,7 +10,10 @@ const DATOS: DatosFooter = {
     { texto: 'Lugares', a: '/social/lugares' },
     { texto: 'Nosotros', a: '/social/nosotros' },
   ],
-  ayuda: [{ texto: 'Enviar una PQRS', a: '/social/pqr' }],
+  ayuda: [
+    { texto: 'Centro de ayuda', a: '/social/ayuda' },
+    { texto: 'Enviar una PQRS', a: '/social/pqr' },
+  ],
   correo: 'skyedsocial@gmail.com',
   telefono: '+57 317 703 7517',
   ubicacion: 'Sogamoso, Boyacá',

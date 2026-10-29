@@ -29,6 +29,11 @@ const { user } = useAuth();
         { to: '/deportivo/perfil', icono: 'ti-layout-dashboard', titulo: 'Mi perfil', detalle: 'Resumen y estadísticas' },
       ],
     },
+    {
+      opciones: [
+        { to: '/deportivo/ayuda', icono: 'ti-help-circle', titulo: 'Centro de ayuda', detalle: 'Guías y preguntas frecuentes' },
+      ],
+    },
   ];
 
   return (

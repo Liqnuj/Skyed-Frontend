@@ -184,7 +184,7 @@ export default function LoginPage() {
         <div className="footer-links">
           <button title="Leer los términos y condiciones" type="button" onClick={() => setTermsOpen(true)}>Términos</button>
           <button title="Leer la política de privacidad" type="button" onClick={() => setTermsOpen(true)}>Privacidad</button>
-          <a title="Contactar con soporte" href="#">Soporte</a>
+          <Link to="/ayuda">Centro de ayuda</Link>
         </div>
       </footer>
 

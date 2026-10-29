@@ -38,6 +38,10 @@ import UsersRoles from './pages/admin/UsersRoles';
 import SkaiWidget from './components/shared/SkaiWidget';
 import AdminProtectedRoute from './components/AdminProtectedRoute';
 import SoloUsuarios from './components/SoloUsuarios';
+import AyudaRedirect from './pages/ayuda/AyudaRedirect';
+import AyudaInicioPage from './pages/ayuda/AyudaInicioPage';
+import AyudaCategoriaPage from './pages/ayuda/AyudaCategoriaPage';
+import AyudaArticuloPage from './pages/ayuda/AyudaArticuloPage';
 
 function App(){
   return (
@@ -89,6 +93,18 @@ function App(){
             <Route element={<AdminProtectedRoute />}>
               <Route path="/admin/usuarios" element={<UsersRoles/>}/>
             </Route>
+
+
+                        {/* Centro de Ayuda: público (visitantes, usuarios y administradores) */}
+            <Route path="/ayuda/*" element={<AyudaRedirect/>}/>
+            <Route path="/social/ayuda" element={<AyudaInicioPage modulo="social"/>}/>
+            <Route path="/social/ayuda/categoria/:slug" element={<AyudaCategoriaPage modulo="social"/>}/>
+            <Route path="/social/ayuda/articulo/:slug" element={<AyudaArticuloPage modulo="social"/>}/>
+            <Route path="/deportivo/ayuda" element={<AyudaInicioPage modulo="deportivo"/>}/>
+            <Route path="/deportivo/ayuda/categoria/:slug" element={<AyudaCategoriaPage modulo="deportivo"/>}/>
+            <Route path="/deportivo/ayuda/articulo/:slug" element={<AyudaArticuloPage modulo="deportivo"/>}/>
+
+            
 
             <Route path="*" element={<HomePage/>}/>
           </Routes>

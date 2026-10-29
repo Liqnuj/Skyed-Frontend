@@ -69,6 +69,7 @@ export default function SocialUserMenu() {
     { to: '/social/perfil', icono: 'ti-layout-dashboard', titulo: 'Mi perfil', detalle: 'Resumen de tu cuenta' },
     { to: '/social/reservar', icono: 'ti-calendar-event', titulo: 'Cotizar reserva', detalle: 'Estimación de costos y disponibilidad' },
   ];
+  opciones.push({ to: '/social/ayuda', icono: 'ti-help-circle', titulo: 'Centro de ayuda', detalle: 'Guías y preguntas frecuentes' });
 
   const cerrarSesion = async () => {
     setAbierto(false);
