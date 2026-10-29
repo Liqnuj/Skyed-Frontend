@@ -1,13 +1,20 @@
+import { useRef } from 'react';
 import '../../styles/deportivo/deportivo.css';
 import SportWrapper from '../../components/deportivo/SportWrapper';
 import ContactSection from '../../components/shared/ContactSection';
+import { anim, useInViewAnimations } from '../../hooks/useInViewAnimations';
 import '../../styles/shared/contactSection.css';
+import '../../styles/shared/nosotrosMotion.css';
 
 export default function About() {
+  const mainRef = useRef<HTMLElement>(null);
+  useInViewAnimations(mainRef);
+
   return (
     <SportWrapper>
       <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
-      <main id="main" className="about-page">
+      <main id="main" className="about-page" ref={mainRef}>
+        <div className="nos-progress" aria-hidden="true" />
         <section className="page-header">
           <h1>Sobre nosotros</h1>
           <p>
@@ -20,7 +27,7 @@ export default function About() {
         <section className="section about" id="nosotros">
           <div className="container">
             <div className="about-content">
-              <div className="about-text">
+              <div className="about-text" {...anim('fade-left')}>
                 <h2 className="about-title">Historia</h2>
                 <p>
                   Fundada en 2020, SKYED nació de la visión de crear una plataforma
@@ -37,8 +44,9 @@ export default function About() {
                 </p>
               </div>
               <div
+                {...anim('wipe', 1)}
                 className="about-img"
-                style={{ backgroundImage: "url('/assets/deportivo/imagen_nosotros.png')" }}
+                style={{ ...anim('wipe', 1).style, backgroundImage: "url('/assets/deportivo/imagen_nosotros.png')" }}
                 role="img"
                 aria-label="Ciclistas disfrutando de un evento organizado por SKYED"
               ></div>
@@ -49,7 +57,7 @@ export default function About() {
         <section className="section mv-section">
           <div className="container">
             <div className="mv-grid">
-              <div className="mv-card">
+              <div className="mv-card" {...anim('fade-left')}>
                 <div className="mv-icon">🎯</div>
                 <h3>Nuestra misión</h3>
                 <p>
@@ -62,7 +70,7 @@ export default function About() {
                 </p>
               </div>
 
-              <div className="mv-card mv-card--vision">
+              <div className="mv-card mv-card--vision" {...anim('fade-right', 1)}>
                 <div className="mv-icon">🔭</div>
                 <h3>Nuestra visión</h3>
                 <p>
@@ -79,15 +87,15 @@ export default function About() {
 
         <section className="section tl-section">
           <div className="container">
-            <h2 className="section-title">Linea del tiempo SKYED</h2>
-            <p className="section-sub">
+            <h2 className="section-title" {...anim('fade-up')}>Linea del tiempo SKYED</h2>
+            <p className="section-sub" {...anim('fade-up', 1)}>
               Los momentos que nos han hecho crecer como comunidad ciclista.
             </p>
 
             <div className="tl-outer">
-              <div className="tl-line"></div>
+              <div className="tl-line" {...anim('draw-x')}></div>
               <div className="tl-items">
-                <div className="tl-item">
+                <div className="tl-item" {...anim('fade-up', 0, 0.3)}>
                   <div className="tl-card tl-card--top">
                     <i className="ti ti-rocket" aria-hidden="true"></i>
                     <h4>Fundación</h4>
@@ -97,7 +105,7 @@ export default function About() {
                   <div className="tl-year tl-year--bottom">2020</div>
                 </div>
 
-                <div className="tl-item">
+                <div className="tl-item" {...anim('fade-up', 1, 0.3)}>
                   <div className="tl-year tl-year--top">2021</div>
                   <div className="tl-pin"></div>
                   <div className="tl-card tl-card--bottom">
@@ -107,7 +115,7 @@ export default function About() {
                   </div>
                 </div>
 
-                <div className="tl-item">
+                <div className="tl-item" {...anim('fade-up', 2, 0.3)}>
                   <div className="tl-card tl-card--top">
                     <i className="ti ti-mountain" aria-hidden="true"></i>
                     <h4>MTB y Gravel</h4>
@@ -117,7 +125,7 @@ export default function About() {
                   <div className="tl-year tl-year--bottom">2022</div>
                 </div>
 
-                <div className="tl-item">
+                <div className="tl-item" {...anim('fade-up', 3, 0.3)}>
                   <div className="tl-year tl-year--top">2023</div>
                   <div className="tl-pin"></div>
                   <div className="tl-card tl-card--bottom">
@@ -127,7 +135,7 @@ export default function About() {
                   </div>
                 </div>
 
-                <div className="tl-item tl-item--active">
+                <div className="tl-item tl-item--active" {...anim('fade-up', 4, 0.3)}>
                   <div className="tl-card tl-card--top">
                     <i className="ti ti-medal" aria-hidden="true"></i>
                     <h4>Temporada récord</h4>
@@ -143,12 +151,12 @@ export default function About() {
 
         <section className="section">
           <div className="container">
-            <h2 className="section-title">¿Por qué SKYED?</h2>
-            <p className="section-sub">
+            <h2 className="section-title" {...anim('fade-up')}>¿Por qué SKYED?</h2>
+            <p className="section-sub" {...anim('fade-up', 1)}>
               Una experiencia completa para descubrir, inscribirte y vivir cada evento.
             </p>
             <div className="features-grid">
-              <div className="flip-card">
+              <div className="flip-card" {...anim('fade-up', 0)}>
                 <div className="flip-card-inner">
                   <div className="flip-card-front">
                     <div className="feature-icon" aria-hidden="true">🚴</div>
@@ -161,7 +169,7 @@ export default function About() {
                 </div>
               </div>
 
-              <div className="flip-card">
+              <div className="flip-card" {...anim('fade-up', 1)}>
                 <div className="flip-card-inner">
                   <div className="flip-card-front">
                     <div className="feature-icon" aria-hidden="true">🏆</div>
@@ -174,7 +182,7 @@ export default function About() {
                 </div>
               </div>
 
-              <div className="flip-card">
+              <div className="flip-card" {...anim('fade-up', 2)}>
                 <div className="flip-card-inner">
                   <div className="flip-card-front">
                     <div className="feature-icon" aria-hidden="true">🔒</div>
@@ -192,12 +200,12 @@ export default function About() {
 
         <section className="section ev-section">
           <div className="container">
-            <h2 className="section-title">Nuestros eventos mas destacados</h2>
-            <p className="section-sub">Los eventos que han marcado la historia de SKYED.</p>
+            <h2 className="section-title" {...anim('fade-up')}>Nuestros eventos mas destacados</h2>
+            <p className="section-sub" {...anim('fade-up', 1)}>Los eventos que han marcado la historia de SKYED.</p>
           </div>
           <div>
             <div className="cards-grid">
-              <div className="event-card">
+              <div className="event-card" {...anim('zoom-in', 0)}>
                 <img className="card-bg-img" src="/assets/deportivo/img_even1.png" alt="Primer Gran Fondo" />
                 <div className="card-overlay"></div>
                 <div className="card-border-glow"></div>
@@ -221,7 +229,7 @@ export default function About() {
                 </div>
               </div>
 
-              <div className="event-card">
+              <div className="event-card" {...anim('zoom-in', 1)}>
                 <img className="card-bg-img" src="/assets/deportivo/img_event2.png" alt="Debut MTB Boyacá" />
                 <div className="card-overlay"></div>
                 <div className="card-border-glow"></div>
@@ -245,7 +253,7 @@ export default function About() {
                 </div>
               </div>
 
-              <div className="event-card">
+              <div className="event-card" {...anim('zoom-in', 2)}>
                 <img className="card-bg-img" src="/assets/deportivo/img_event3.png" alt="Gran Tour Andino" />
                 <div className="card-overlay"></div>
                 <div className="card-border-glow"></div>
@@ -275,7 +283,7 @@ export default function About() {
         <ContactSection variant="deportivo" />
 
         <div className="skyed-map-wrap">
-          <div className="top-bar">
+          <div className="top-bar" {...anim('fade-up')}>
             <div className="top-left">
               <div className="eyebrow">Nuestra ubicación</div>
               <h2>Encuéntranos en Sogamoso</h2>
@@ -286,7 +294,7 @@ export default function About() {
             </div>
           </div>
 
-          <div className="map-shell">
+          <div className="map-shell" {...anim('zoom-in', 1)}>
             <iframe
               className="map-frame"
               title="Ubicación SKYED en Sogamoso"

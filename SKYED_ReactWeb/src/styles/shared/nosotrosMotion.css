@@ -1,0 +1,329 @@
+/* =========================================================
+   NOSOTROS · ANIMACIONES (Social y Deportivo)
+
+   Cómo funciona:
+   - Los elementos con data-anim="..." (ver hooks/useInViewAnimations.ts)
+     quedan ocultos y se animan UNA vez al entrar en pantalla.
+   - Se usa `animation` con fill-mode "backwards": al terminar, el elemento
+     vuelve a sus estilos normales, así los :hover de cada tarjeta siguen
+     funcionando sin pelearse con la animación.
+   - Si el visitante pide "reducir movimiento", no se anima nada.
+   ========================================================= */
+
+/* ---------- 1. Entrada al hacer scroll ---------- */
+
+.anim-ready [data-anim]:not([data-anim^="draw"]):not(.is-inview) {
+  opacity: 0;
+}
+
+.anim-ready [data-anim].is-inview {
+  animation: nos-fade-up .85s cubic-bezier(.22, 1, .36, 1) var(--anim-delay, 0s) backwards;
+}
+
+.anim-ready [data-anim="fade-left"].is-inview  { animation-name: nos-fade-left; }
+.anim-ready [data-anim="fade-right"].is-inview { animation-name: nos-fade-right; }
+.anim-ready [data-anim="zoom-in"].is-inview    { animation-name: nos-zoom-in; }
+.anim-ready [data-anim="wipe"].is-inview       { animation-name: nos-wipe; animation-duration: 1.25s; }
+.anim-ready [data-anim^="draw"].is-inview      { animation: none; }
+
+@keyframes nos-fade-up    { from { opacity: 0; transform: translateY(34px); } to { opacity: 1; transform: none; } }
+@keyframes nos-fade-left  { from { opacity: 0; transform: translateX(-48px); } to { opacity: 1; transform: none; } }
+@keyframes nos-fade-right { from { opacity: 0; transform: translateX(48px); }  to { opacity: 1; transform: none; } }
+@keyframes nos-zoom-in    { from { opacity: 0; transform: scale(.86) translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes nos-wipe {
+  from { opacity: 0; clip-path: inset(0 100% 0 0 round 18px); transform: scale(1.04); }
+  to   { opacity: 1; clip-path: inset(0 0 0 0 round 18px);    transform: none; }
+}
+
+/* ---------- 2. Piezas sueltas (se usan en ambas páginas) ---------- */
+
+@keyframes nos-pop {
+  0%   { opacity: 0; transform: scale(.7); }
+  70%  { transform: scale(1.06); }
+  100% { opacity: 1; transform: none; }
+}
+
+@keyframes nos-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-4px); }
+}
+
+@keyframes nos-wiggle {
+  0%   { transform: rotate(0) scale(1); }
+  25%  { transform: rotate(-10deg) scale(1.12); }
+  55%  { transform: rotate(8deg) scale(1.12); }
+  100% { transform: rotate(0) scale(1); }
+}
+
+@keyframes nos-shimmer {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: -220% 50%; }
+}
+
+@keyframes nos-ping {
+  0%   { transform: scale(.6); opacity: .8; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+
+/* Onda que sale de un punto. --nos-base conserva el anillo fijo que el punto ya tenía. */
+@keyframes nos-dot-ring {
+  0%   { box-shadow: var(--nos-base, 0 0 0 0 transparent), 0 0 0 0 var(--nos-ring, rgba(156, 2, 174, .55)); }
+  100% { box-shadow: var(--nos-base, 0 0 0 0 transparent), 0 0 0 12px transparent; }
+}
+
+@keyframes nos-glow {
+  0%, 100% { box-shadow: 0 0 0 0 var(--nos-ring, rgba(156, 2, 174, .45)); }
+  50%      { box-shadow: 0 0 0 10px transparent; }
+}
+
+@keyframes nos-spin     { to { transform: rotate(360deg); } }
+@keyframes nos-spin-rev { to { transform: rotate(-360deg); } }
+
+@keyframes nos-draw-y { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes nos-draw-x { from { transform: translateY(-50%) scaleX(0); } to { transform: translateY(-50%) scaleX(1); } }
+
+@keyframes nos-pan {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ---------- 3. Barra de progreso de lectura (si el navegador la soporta) ---------- */
+
+.nos-progress { display: none; }
+
+@supports (animation-timeline: scroll()) {
+  .nos-progress {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    z-index: 3000;
+    pointer-events: none;
+    transform: scaleX(0);
+    transform-origin: 0 50%;
+    background: linear-gradient(90deg, var(--accent, #9c02ae), color-mix(in srgb, var(--accent, #9c02ae) 45%, #ffffff));
+    animation: nos-progress linear both;
+    animation-timeline: scroll(root block);
+  }
+}
+
+@keyframes nos-progress { to { transform: scaleX(1); } }
+
+/* Sección "Contáctanos" (compartida): los círculos decorativos derivan suavemente */
+.ctu-orb--a { animation: nos-drift-a 11s ease-in-out infinite; }
+.ctu-orb--b { animation: nos-drift-b 13s ease-in-out infinite; }
+
+@keyframes nos-drift-a { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-22px, 18px) scale(1.12); } }
+@keyframes nos-drift-b { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(20px, -16px) scale(1.08); } }
+
+/* =========================================================
+   SOCIAL
+   ========================================================= */
+
+/* Encabezado: entrada escalonada al cargar */
+.mod-social .ns-hero .section-label { animation: nos-pop .8s cubic-bezier(.22, 1, .36, 1) .05s both; }
+.mod-social .ns-hero h1             { animation: nos-fade-up 1s cubic-bezier(.22, 1, .36, 1) .2s both; }
+.mod-social .ns-hero p              { animation: nos-fade-up 1s cubic-bezier(.22, 1, .36, 1) .4s both; }
+
+/* El texto destacado brilla con un barrido de luz */
+.mod-social .ns-hero h1 em {
+  background-image: linear-gradient(
+    100deg,
+    var(--accent) 0%,
+    var(--accent) 35%,
+    color-mix(in srgb, var(--accent) 35%, #ffffff) 50%,
+    var(--accent) 65%,
+    var(--accent) 100%
+  );
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: nos-shimmer 6s linear 1.2s infinite;
+}
+
+/* Línea de tiempo: la línea se dibuja y el último punto late */
+.mod-social .ns-timeline::after {
+  content: "";
+  position: absolute;
+  left: -2px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(var(--accent), color-mix(in srgb, var(--accent) 25%, transparent));
+  transform-origin: top;
+}
+
+.anim-ready .ns-timeline[data-anim="draw"]:not(.is-inview)::after { transform: scaleY(0); }
+.anim-ready .ns-timeline[data-anim="draw"].is-inview::after {
+  animation: nos-draw-y 1.8s cubic-bezier(.65, 0, .35, 1) .1s backwards;
+}
+
+.mod-social .ns-timeline-item:last-child::before {
+  --nos-base: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent);
+  --nos-ring: color-mix(in srgb, var(--accent) 60%, transparent);
+  animation: nos-dot-ring 2s ease-out infinite;
+}
+
+.mod-social .ns-timeline-item { transition: transform .3s ease; }
+.mod-social .ns-timeline-item:hover { transform: translateX(6px); }
+
+/* Misión y visión: brillo que cruza la tarjeta al pasar el mouse */
+.mod-social .ns-mission-card {
+  position: relative;
+  overflow: hidden;
+  transition: transform .35s ease, box-shadow .35s ease, border-color .35s ease;
+}
+
+.mod-social .ns-mission-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -60%;
+  width: 45%;
+  background: linear-gradient(100deg, transparent, color-mix(in srgb, var(--accent) 18%, #ffffff) 50%, transparent);
+  opacity: .55;
+  transform: skewX(-18deg);
+  transition: left .9s ease;
+  pointer-events: none;
+}
+
+.mod-social .ns-mission-card:hover {
+  transform: translateY(-6px);
+  border-color: var(--accent);
+  box-shadow: 0 18px 38px -18px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+.mod-social .ns-mission-card:hover::before { left: 120%; }
+
+/* Valores: los íconos flotan y dan un saltito al pasar el mouse */
+.mod-social .ns-value-icon { animation: nos-float 4.5s ease-in-out infinite; }
+.mod-social .ns-value-card:nth-child(2) .ns-value-icon { animation-delay: -1.1s; }
+.mod-social .ns-value-card:nth-child(3) .ns-value-icon { animation-delay: -2.2s; }
+.mod-social .ns-value-card:nth-child(4) .ns-value-icon { animation-delay: -3.3s; }
+.mod-social .ns-value-card:hover .ns-value-icon { animation: nos-wiggle .6s ease; }
+
+/* Mapa: el punto de "Encuéntranos aquí" emite ondas */
+.mod-social .ns-map-dot {
+  --nos-base: 0 0 0 4px var(--accent);
+  --nos-ring: color-mix(in srgb, var(--accent) 60%, transparent);
+  animation: nos-dot-ring 1.8s ease-out infinite;
+}
+
+/* =========================================================
+   DEPORTIVO
+   ========================================================= */
+
+/* Encabezado: degradado que se mueve + dos ruedas de bicicleta girando */
+.mod-deportivo .about-page .page-header {
+  position: relative;
+  overflow: hidden;
+  background-size: 220% 220%;
+  animation: nos-pan 16s ease-in-out infinite;
+}
+
+.mod-deportivo .about-page .page-header::before,
+.mod-deportivo .about-page .page-header::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200' fill='none' stroke='white' stroke-width='1.4' stroke-linecap='round'%3E%3Ccircle cx='100' cy='100' r='96'/%3E%3Ccircle cx='100' cy='100' r='90' stroke-dasharray='1.5 4.5'/%3E%3Ccircle cx='100' cy='100' r='11'/%3E%3Ccircle cx='100' cy='100' r='4' fill='white'/%3E%3Cpath d='M112.0 100.0L188.0 100.0M111.1 104.6L181.3 133.7M108.5 108.5L162.2 162.2M104.6 111.1L133.7 181.3M100.0 112.0L100.0 188.0M95.4 111.1L66.3 181.3M91.5 108.5L37.8 162.2M88.9 104.6L18.7 133.7M88.0 100.0L12.0 100.0M88.9 95.4L18.7 66.3M91.5 91.5L37.8 37.8M95.4 88.9L66.3 18.7M100.0 88.0L100.0 12.0M104.6 88.9L133.7 18.7M108.5 91.5L162.2 37.8M111.1 95.4L181.3 66.3'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.mod-deportivo .about-page .page-header::before {
+  width: 360px;
+  height: 360px;
+  right: -90px;
+  top: -70px;
+  opacity: .13;
+  animation: nos-spin 38s linear infinite;
+}
+
+.mod-deportivo .about-page .page-header::after {
+  width: 230px;
+  height: 230px;
+  left: -60px;
+  bottom: -90px;
+  opacity: .1;
+  animation: nos-spin-rev 28s linear infinite;
+}
+
+.mod-deportivo .about-page .page-header > * { position: relative; z-index: 1; }
+
+.mod-deportivo .about-page .page-header h1 { animation: nos-fade-up 1s cubic-bezier(.22, 1, .36, 1) .1s both; }
+.mod-deportivo .about-page .page-header p  { animation: nos-fade-up 1s cubic-bezier(.22, 1, .36, 1) .3s both; }
+
+/* Misión y visión: el emoji flota y se mueve al pasar el mouse */
+.mod-deportivo .mv-icon {
+  display: inline-block;
+  animation: nos-float 4.5s ease-in-out infinite;
+}
+.mod-deportivo .mv-card--vision .mv-icon { animation-delay: -2s; }
+.mod-deportivo .mv-card:hover .mv-icon { animation: nos-wiggle .6s ease; }
+
+/* Línea del tiempo: la línea se dibuja y la etapa actual late */
+.anim-ready .tl-line[data-anim="draw-x"] { transform-origin: left center; }
+.anim-ready .tl-line[data-anim="draw-x"]:not(.is-inview) { transform: translateY(-50%) scaleX(0); }
+.anim-ready .tl-line[data-anim="draw-x"].is-inview {
+  animation: nos-draw-x 1.8s cubic-bezier(.65, 0, .35, 1) .1s backwards;
+}
+
+.mod-deportivo .tl-item--active .tl-pin::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  animation: nos-ping 2s ease-out infinite;
+}
+
+/* ¿Por qué SKYED?: los íconos flotan */
+.mod-deportivo .feature-icon { animation: nos-float 4.8s ease-in-out infinite; }
+.mod-deportivo .flip-card:nth-child(2) .feature-icon { animation-delay: -1.6s; }
+.mod-deportivo .flip-card:nth-child(3) .feature-icon { animation-delay: -3.2s; }
+
+/* Mapa: el punto "Encuéntranos aquí" emite ondas */
+.mod-deportivo .skyed-map-wrap .dot {
+  --nos-ring: rgba(97, 204, 214, .7);
+  animation: nos-dot-ring 1.8s ease-out infinite;
+}
+
+/* =========================================================
+   Sin animaciones si el visitante pidió reducir el movimiento
+   ========================================================= */
+@media (prefers-reduced-motion: reduce) {
+  .nos-progress { display: none !important; }
+
+  .ctu-orb--a,
+  .ctu-orb--b { animation: none !important; }
+
+  .mod-social .ns-hero .section-label,
+  .mod-social .ns-hero h1,
+  .mod-social .ns-hero p,
+  .mod-social .ns-hero h1 em,
+  .mod-social .ns-timeline-item:last-child::before,
+  .mod-social .ns-value-icon,
+  .mod-social .ns-map-dot,
+  .mod-deportivo .about-page .page-header,
+  .mod-deportivo .about-page .page-header::before,
+  .mod-deportivo .about-page .page-header::after,
+  .mod-deportivo .about-page .page-header h1,
+  .mod-deportivo .about-page .page-header p,
+  .mod-deportivo .mv-icon,
+  .mod-deportivo .tl-item--active .tl-pin::after,
+  .mod-deportivo .feature-icon,
+  .mod-deportivo .skyed-map-wrap .dot {
+    animation: none !important;
+  }
+
+  .mod-social .ns-hero h1 em {
+    -webkit-text-fill-color: currentColor;
+    color: var(--accent);
+    background: none;
+  }
+}

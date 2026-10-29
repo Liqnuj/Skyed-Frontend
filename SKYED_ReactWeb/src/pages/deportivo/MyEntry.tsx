@@ -98,7 +98,7 @@ function MyEntryContent() {
         <div className="part-card">
           <div className="part-card-body">
             <div className="part-empty-row">
-              Todavía no tienes una inscripción activa. <Link to="/deportivo/eventos">Ver eventos</Link>
+              Todavía no tienes una inscripción activa. <Link title="Ver los eventos disponibles" to="/deportivo/eventos">Ver eventos</Link>
             </div>
           </div>
         </div>

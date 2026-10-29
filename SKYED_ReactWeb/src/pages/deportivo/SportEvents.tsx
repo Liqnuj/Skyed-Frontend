@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import SportWrapper from '../../components/deportivo/SportWrapper';
+import { useRevealObserver } from '../../hooks/useRevealObserver';
 import { useAuth } from '../../context/AuthContext';
 import { eventoDeportivoService, type EventoDeportivo } from '../../services/deportivoService';
 
@@ -35,6 +36,9 @@ export default function SportEvents() {
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('all');
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error'; show: boolean }>({ msg: '', type: 'success', show: false });
+  const listRef = useRef<HTMLElement>(null);
+  // Las tarjetas suben desde abajo al entrar en pantalla (igual que en Social)
+  useRevealObserver(listRef);
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -84,7 +88,7 @@ export default function SportEvents() {
       <div className="filters" role="tablist" aria-label="Filtrar eventos">
         <div className="filters-inner">
           {EVENT_FILTERS.map((f) => (
-            <button
+            <button title={`Filtrar eventos: ${f.label}`}
               key={f.value}
               className={`filter-btn ${filter === f.value ? 'active' : ''}`}
               onClick={() => setFilter(f.value)}
@@ -95,7 +99,7 @@ export default function SportEvents() {
         </div>
       </div>
 
-      <section className="events-section">
+      <section className="events-section" ref={listRef}>
         {loading && <p className="container">Cargando eventos...</p>}
         {error && <p className="container form-error error">{error}</p>}
 
@@ -105,7 +109,7 @@ export default function SportEvents() {
               <div className="empty-state">No hay eventos en esta categoría.</div>
             ) : (
               filtered.map((e) => (
-                <article key={e.id} className="event-item">
+                <article key={e.id} className="event-item reveal">
                   <div
                     className="img"
                     style={{ backgroundImage: `url('${e.imagen_url ?? ''}')` }}
@@ -128,7 +132,7 @@ export default function SportEvents() {
                     </div>
                     <div className="actions">
                       <span className="price-tag">${fmt(e.precio)} <small>COP</small></span>
-                      <button className="btn btn-primary" onClick={() => handleInscribirme(e.id)}>Inscribirme</button>
+                      <button title="Inscribirme a este evento" className="btn btn-primary" onClick={() => handleInscribirme(e.id)}>Inscribirme</button>
                     </div>
                   </div>
                 </article>
@@ -144,4 +148,4 @@ export default function SportEvents() {
       </div>
     </SportWrapper>
   );
-}
+}

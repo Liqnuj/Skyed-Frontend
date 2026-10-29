@@ -799,9 +799,9 @@ function InscriptionWizard() {
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: '1.5rem' }}>
       {/* Breadcrumb */}
       <div className="part-form-hint" style={{ margin: '0 0 1rem' }}>
-        <Link to="/deportivo" style={{ color: 'var(--muted, #6b7280)' }}>Inicio</Link>
+        <Link title="Ir al inicio" to="/deportivo" style={{ color: 'var(--muted, #6b7280)' }}>Inicio</Link>
         {' / '}
-        <Link to="/deportivo/eventos" style={{ color: 'var(--muted, #6b7280)' }}>Eventos</Link>
+        <Link title="Ver todos los eventos" to="/deportivo/eventos" style={{ color: 'var(--muted, #6b7280)' }}>Eventos</Link>
         {' / '}
         <span>{evento.nombre}</span>
         {' / '}
@@ -852,7 +852,7 @@ function InscriptionWizard() {
                       <div style={{ fontWeight: 700, fontSize: '.9rem' }}>{user?.name}</div>
                       <div className="part-form-hint" style={{ margin: 0 }}>{user?.email}</div>
                     </div>
-                    <button type="button" className="part-btn-link-detail" style={{ marginLeft: 'auto' }} onClick={() => nav('/login')}>
+                    <button title="Iniciar sesión con otra cuenta" type="button" className="part-btn-link-detail" style={{ marginLeft: 'auto' }} onClick={() => nav('/login')}>
                       ¿No eres tú? Cambiar cuenta
                     </button>
                   </div>
@@ -999,7 +999,7 @@ function InscriptionWizard() {
                 </div>
               </div>
 
-              {/* Tarjeta 4: kit / jersey / dorsal (solo si el evento tiene kit) */}
+              {/* Tarjeta 4: kit / jersey / dorsal */}
               {evento.kit && (
                 <div className="part-card">
                   <div className="part-card-head">
@@ -1034,11 +1034,10 @@ function InscriptionWizard() {
                     <div className="part-form-group">
                       <label>¿Desea adquirir el kit? *</label>
                       <p className="part-form-hint" style={{ marginTop: '0rem' }}>
-                        Si lo pides, se suman {fmtMoney(evento.kit?.precio)} al valor de la inscripción. El kit es individual: cada persona (titular e invitado) elige el suyo.
+                        El kit incluye jersey, pantaloneta y medias. Al adquirirlo se sumarán {fmtMoney(evento.kit.precio)} al valor de la inscripción.
                       </p>
                       <OpcionSiNo valor={deseaJersey} onSi={() => setDeseaJersey(true)} onNo={() => setDeseaJersey(false)} />
                     </div>
-
                     {deseaJersey === true && (
                       <>
                         <div className="part-form-group">
@@ -1057,7 +1056,6 @@ function InscriptionWizard() {
                             ))}
                           </div>
                         </div>
-
                         <div className="part-form-group" style={{ marginBottom: 0 }}>
                           <label htmlFor="dorsal">Número de dorsal preferido (opcional, sujeto a disponibilidad)</label>
                           <input id="dorsal" placeholder="Ej: 42" inputMode="numeric" value={dorsalPreferido} onChange={(e) => setDorsalPreferido(e.target.value.replace(/\D/g, ''))} />
@@ -1099,7 +1097,7 @@ function InscriptionWizard() {
               {/* Tarjeta 6: acompañante opcional */}
               <div className="part-card">
                 <div className="part-card-body">
-                  <button
+                  <button title={mostrarInvitado ? 'Quitar el invitado' : 'Agregar un invitado'}
                     type="button"
                     className="btn btn-outline"
                     style={{ width: '100%' }}
@@ -1239,7 +1237,7 @@ function InscriptionWizard() {
                 </div>
               )}
 
-              <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={yaInscrito || perfilIncompleto}>
+              <button title="Continuar al paso del pago" type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={yaInscrito || perfilIncompleto}>
                 Continuar al pago <i className="ti ti-arrow-right" aria-hidden="true" />
               </button>
             </form>
@@ -1255,13 +1253,13 @@ function InscriptionWizard() {
                 <p className="part-form-hint" style={{ margin: '0 0 .9rem' }}>Elige cómo quieres pagar tu inscripción. Todos los métodos son seguros.</p>
 
                 <div className="part-pay-tabs">
-                  <button type="button" className={`part-pay-tab${metodoPago === 'transferencia' ? ' active' : ''}`} onClick={() => setMetodoPago('transferencia')}>
+                  <button title="Pagar por transferencia bancaria" type="button" className={`part-pay-tab${metodoPago === 'transferencia' ? ' active' : ''}`} onClick={() => setMetodoPago('transferencia')}>
                     <i className="ti ti-building-bank" aria-hidden="true" /> Transferencia
                   </button>
-                  <button type="button" className={`part-pay-tab${metodoPago === 'nequi' ? ' active' : ''}`} onClick={() => setMetodoPago('nequi')}>
+                  <button title="Pagar con Nequi o Daviplata" type="button" className={`part-pay-tab${metodoPago === 'nequi' ? ' active' : ''}`} onClick={() => setMetodoPago('nequi')}>
                     <i className="ti ti-device-mobile" aria-hidden="true" /> Nequi / Daviplata
                   </button>
-                  <button type="button" className={`part-pay-tab${metodoPago === 'efectivo' ? ' active' : ''}`} onClick={() => setMetodoPago('efectivo')}>
+                  <button title="Pagar en efectivo" type="button" className={`part-pay-tab${metodoPago === 'efectivo' ? ' active' : ''}`} onClick={() => setMetodoPago('efectivo')}>
                     <i className="ti ti-cash" aria-hidden="true" /> Efectivo
                   </button>
                 </div>
@@ -1273,12 +1271,12 @@ function InscriptionWizard() {
                     <div className="part-pay-bank-row"><span>Tipo de cuenta</span><strong>Cuenta de ahorros</strong></div>
                     <div className="part-pay-bank-row">
                       <span>N.º de cuenta</span>
-                      <strong>123-456789-12 <button type="button" className="part-pay-copy" onClick={() => navigator.clipboard.writeText('123456789-12')}>Copiar</button></strong>
+                      <strong>123-456789-12 <button title="Copiar el número de cuenta" type="button" className="part-pay-copy" onClick={() => navigator.clipboard.writeText('123456789-12')}>Copiar</button></strong>
                     </div>
                     <div className="part-pay-bank-row"><span>Titular</span><strong>SKYED Eventos SAS</strong></div>
                     <div className="part-pay-bank-row">
                       <span>NIT</span>
-                      <strong>900.123.456-7 <button type="button" className="part-pay-copy" onClick={() => navigator.clipboard.writeText('900123456-7')}>Copiar</button></strong>
+                      <strong>900.123.456-7 <button title="Copiar el NIT" type="button" className="part-pay-copy" onClick={() => navigator.clipboard.writeText('900123456-7')}>Copiar</button></strong>
                     </div>
                     <div className="part-pay-bank-row"><span>Referencia (poner en descripción)</span><strong className="part-pay-ref">{referenciaPago}</strong></div>
                   </div>
@@ -1289,7 +1287,7 @@ function InscriptionWizard() {
                     <div className="part-pay-bank-title"><i className="ti ti-device-mobile" aria-hidden="true" /> Datos para Nequi / Daviplata</div>
                     <div className="part-pay-bank-row">
                       <span>Número</span>
-                      <strong>300 123 4567 <button type="button" className="part-pay-copy" onClick={() => navigator.clipboard.writeText('3001234567')}>Copiar</button></strong>
+                      <strong>300 123 4567 <button title="Copiar el número de Nequi o Daviplata" type="button" className="part-pay-copy" onClick={() => navigator.clipboard.writeText('3001234567')}>Copiar</button></strong>
                     </div>
                     <div className="part-pay-bank-row"><span>Titular</span><strong>SKYED Eventos SAS</strong></div>
                     <div className="part-pay-bank-row"><span>Referencia (poner en el mensaje)</span><strong className="part-pay-ref">{referenciaPago}</strong></div>
@@ -1362,8 +1360,8 @@ function InscriptionWizard() {
                 )}
 
                 <div style={{ display: 'flex', gap: '.6rem' }}>
-                  <button type="button" className="btn btn-outline" onClick={() => setStep(1)}>Volver</button>
-                  <button type="button" className="btn btn-primary" disabled={validandoComprobante} onClick={irARevision}>
+                  <button title="Volver al paso anterior" type="button" className="btn btn-outline" onClick={() => setStep(1)}>Volver</button>
+                  <button title="Revisar los datos de tu inscripción" type="button" className="btn btn-primary" disabled={validandoComprobante} onClick={irARevision}>
                     Revisar inscripción <i className="ti ti-arrow-right" aria-hidden="true" />
                   </button>
                 </div>
@@ -1433,11 +1431,11 @@ function InscriptionWizard() {
                   <input type="checkbox" checked={aceptaTerminos} onChange={(e) => setAceptaTerminos(e.target.checked)} />
                   <span>
                     Acepto los{' '}
-                    <button type="button" className="part-link-terminos" onClick={() => setTermsOpen(true)}>
+                    <button title="Leer los términos y condiciones" type="button" className="part-link-terminos" onClick={() => setTermsOpen(true)}>
                       términos y condiciones
                     </button>
                     {' '}y la{' '}
-                    <button type="button" className="part-link-terminos" onClick={() => setTermsOpen(true)}>
+                    <button title="Leer la política de privacidad" type="button" className="part-link-terminos" onClick={() => setTermsOpen(true)}>
                       política de privacidad
                     </button>
                     {' '}*
@@ -1460,10 +1458,10 @@ function InscriptionWizard() {
                 )}
 
                 <div style={{ display: 'flex', gap: '.6rem' }}>
-                  <button type="button" className="btn btn-outline" onClick={() => setStep(2)}>
+                  <button title="Volver al paso del pago" type="button" className="btn btn-outline" onClick={() => setStep(2)}>
                     <i className="ti ti-arrow-left" aria-hidden="true" /> Volver al pago
                   </button>
-                  <button
+                  <button title={enviando ? 'Enviando…' : 'Confirmar tu inscripción'}
                     type="button"
                     className="btn btn-primary"
                     disabled={enviando || !aceptaTerminos || !aceptaCondicionFisica}
@@ -1488,7 +1486,7 @@ function InscriptionWizard() {
                 <p className="part-form-hint" style={{ margin: '0 0 1.5rem' }}>
                   Te enviamos un correo con tu código QR de entrada. También puedes verlo cuando quieras desde tu perfil.
                 </p>
-                <button type="button" className="btn btn-primary" onClick={() => nav(`/deportivo/perfil?entrada=${evento.id}`)}>
+                <button title="Ver mi entrada con el código QR" type="button" className="btn btn-primary" onClick={() => nav(`/deportivo/perfil?entrada=${evento.id}`)}>
                   Ver mi entrada <i className="ti ti-arrow-right" aria-hidden="true" />
                 </button>
               </div>

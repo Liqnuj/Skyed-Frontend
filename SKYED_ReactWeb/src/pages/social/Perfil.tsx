@@ -303,7 +303,7 @@ function ListToolbar({ filtros, onChange, rangos, estados, conteos, placeholder,
           const n = e.value === 'todos' ? total : (conteos[e.value] ?? 0);
           const sel = filtros.estado === e.value;
           return (
-            <button
+            <button title={`Filtrar por estado: ${e.label}`}
               key={e.value}
               type="button"
               className={`pf-chip${sel ? ' active' : ''}`}
@@ -344,7 +344,7 @@ function ListToolbar({ filtros, onChange, rangos, estados, conteos, placeholder,
           {activo ? `Mostrando ${mostrando} de ${total}` : `${total} ${unidad(total)}`}
         </span>
         {activo && (
-          <button
+          <button title="Quitar todos los filtros"
             type="button"
             className="pf-tool-clear"
             onClick={() => onChange({ ...FILTROS_INICIALES, orden: filtros.orden })}
@@ -493,8 +493,8 @@ function PfConfirmar({ titulo, texto, confirmar, onConfirmar, onCancelar, icono 
         <p id="pfc-texto" className="pfc-text">{texto}</p>
         {children}
         <div className="pfc-actions">
-          <button ref={cancelarRef} type="button" className="pfc-btn pfc-btn--ghost" onClick={onCancelar}>Cancelar</button>
-          <button type="button" className="pfc-btn pfc-btn--main" onClick={onConfirmar}>{confirmar}</button>
+          <button title="Cancelar y cerrar esta ventana" ref={cancelarRef} type="button" className="pfc-btn pfc-btn--ghost" onClick={onCancelar}>Cancelar</button>
+          <button title={confirmar} type="button" className="pfc-btn pfc-btn--main" onClick={onConfirmar}>{confirmar}</button>
         </div>
       </div>
     </div>,
@@ -571,7 +571,7 @@ function PqrDetalle({ pqr, onClose, onEnviar }: PqrDetalleProps) {
             <h3 id="pf-pqr-title">{pqr.asunto_pqr}</h3>
             <p className="pfd-date">Enviada el {fmtFecha(pqr.creado_en_pqr)}</p>
           </div>
-          <button type="button" className="pfd-close" onClick={onClose} aria-label="Cerrar">
+          <button title="Cerrar" type="button" className="pfd-close" onClick={onClose} aria-label="Cerrar">
             <i className="ti ti-x" aria-hidden="true" />
           </button>
         </header>
@@ -642,7 +642,7 @@ function PqrDetalle({ pqr, onClose, onEnviar }: PqrDetalleProps) {
                 aria-label="Tu mensaje"
                 disabled={enviando}
               />
-              <button
+              <button title={enviando ? 'Enviando…' : 'Enviar mensaje'}
                 type="submit"
                 className="pfd-send"
                 disabled={enviando || texto.trim() === ''}
@@ -660,7 +660,7 @@ function PqrDetalle({ pqr, onClose, onEnviar }: PqrDetalleProps) {
           <div className="pfd-closed">
             <i className="ti ti-circle-check" aria-hidden="true" />
             <span>Esta solicitud ya fue {pqr.estado_pqr === 'cerrado' ? 'cerrada' : 'resuelta'}.</span>
-            <Link to="/social/pqr">Radicar una nueva PQR →</Link>
+            <Link title="Radicar una nueva PQR" to="/social/pqr">Radicar una nueva PQR →</Link>
           </div>
         )}
       </div>
@@ -814,10 +814,10 @@ function ReservaDetalle({ reserva, onClose, onRenombrar, onOcultar, oculta, onCa
                   disabled={guardando}
                 />
                 <div className="pf-rename-actions">
-                  <button type="submit" className="pf-reply-btn" disabled={guardando}>
+                  <button title={guardando ? 'Guardando…' : 'Guardar el nombre'} type="submit" className="pf-reply-btn" disabled={guardando}>
                     {guardando ? 'Guardando…' : 'Guardar'}
                   </button>
-                  <button
+                  <button title="Cancelar la edición del nombre"
                     type="button"
                     className="pf-tool-clear"
                     onClick={() => { setEditando(false); setNombre(r.nombre_rese ?? ''); }}
@@ -830,14 +830,14 @@ function ReservaDetalle({ reserva, onClose, onRenombrar, onOcultar, oculta, onCa
               <>
                 <h3 id="pf-rese-title">{nombreReserva(reserva)}</h3>
                 <p className="pf-list-item-sub">{fmtFecha(reserva.fecha_evento_rese)}</p>
-                <button type="button" className="pf-rename-btn" onClick={() => setEditando(true)}>
+                <button title="Ponerle o cambiarle el nombre a la reserva" type="button" className="pf-rename-btn" onClick={() => setEditando(true)}>
                   <i className="ti ti-pencil" aria-hidden="true" />
                   {(r.nombre_rese ?? '').trim() ? 'Cambiar nombre' : 'Ponle un nombre'}
                 </button>
               </>
             )}
           </div>
-          <button className="pf-modal-close" onClick={onClose} aria-label="Cerrar">×</button>
+          <button title="Cerrar" className="pf-modal-close" onClick={onClose} aria-label="Cerrar">×</button>
         </div>
 
         <div className="pf-pqr-meta">
@@ -921,14 +921,14 @@ function ReservaDetalle({ reserva, onClose, onRenombrar, onOcultar, oculta, onCa
           )}
 
           {(oculta || puedeOcultar) && (
-            <button type="button" className="pf-hide-btn" onClick={ocultar}>
+            <button title={oculta ? 'Volver a mostrar la reserva en tu lista' : 'Ocultar la reserva de tu lista'} type="button" className="pf-hide-btn" onClick={ocultar}>
               <i className={`ti ${oculta ? 'ti-eye' : 'ti-eye-off'}`} aria-hidden="true" />
               {oculta ? ' Mostrar en mi lista' : ' Ocultar de mi lista'}
             </button>
           )}
 
           {puedeCancelar && (
-            <button type="button" className="pf-cancel-btn" onClick={() => setConfirmandoCancelar(true)}>
+            <button title="Cancelar esta reserva" type="button" className="pf-cancel-btn" onClick={() => setConfirmandoCancelar(true)}>
               <i className="ti ti-circle-x" aria-hidden="true" /> Cancelar reserva
             </button>
           )}
@@ -1308,7 +1308,7 @@ function PerfilPanel() {
       <div className="pfx-card">
         <div className="pfx-card-head">
           <h3>Información</h3>
-          <button type="button" className="pfx-link" onClick={() => setTab('ajustes')}>
+          <button title="Editar tus datos" type="button" className="pfx-link" onClick={() => setTab('ajustes')}>
             <i className="ti ti-edit" aria-hidden="true" /> Editar
           </button>
         </div>
@@ -1319,7 +1319,7 @@ function PerfilPanel() {
               {f.value ? (
                 <span className="pfx-row-value">{f.value}</span>
               ) : f.editable ? (
-                <button type="button" className="pfx-link" onClick={() => setTab('ajustes')}>
+                <button title="Agregar este dato" type="button" className="pfx-link" onClick={() => setTab('ajustes')}>
                   + Agregar
                 </button>
               ) : (
@@ -1349,7 +1349,7 @@ function PerfilPanel() {
             </div>
             <p className="pfx-progress-hint">Te falta agregar: {faltantes.join(', ')}.</p>
             {faltanDatos && (
-              <button type="button" className="pfx-btn pfx-btn-primary" onClick={() => setTab('ajustes')}>
+              <button title="Completar tus datos de perfil" type="button" className="pfx-btn pfx-btn-primary" onClick={() => setTab('ajustes')}>
                 Completar datos
               </button>
             )}
@@ -1385,7 +1385,7 @@ function PerfilPanel() {
             ) : (
               <div className="pf-avatar">{initials}</div>
             )}
-            <button
+            <button title="Cambiar tu foto de perfil"
               type="button"
               className="pf-avatar-edit"
               onClick={handleFotoClick}
@@ -1408,26 +1408,26 @@ function PerfilPanel() {
 
           <div className="pf-actions">
             {esAdmin && (
-              <Link to="/social/admin" className="btn-sm-outline pf-admin-link">
+              <Link title="Ir al panel de administración social" to="/social/admin" className="btn-sm-outline pf-admin-link">
                 <i className="ti ti-shield-check" aria-hidden="true" /> Panel de administración
               </Link>
             )}
-            <Link to="/social/pqr" className="btn-sm-outline pfx-primary">
+            <Link title="Radicar una nueva PQR" to="/social/pqr" className="btn-sm-outline pfx-primary">
               <i className="ti ti-plus" aria-hidden="true" /> Nueva PQR
             </Link>
-            <Link to="/social/eventos" className="btn-sm-outline">Ver eventos</Link>
+            <Link title="Ver los eventos" to="/social/eventos" className="btn-sm-outline">Ver eventos</Link>
           </div>
         </div>
 
         <div className="pf-tabs" role="tablist">
-          <button className={tab === 'resumen' ? 'active' : ''} onClick={() => setTab('resumen')}>Resumen</button>
-          <button className={tab === 'pqr' ? 'active' : ''} onClick={() => setTab('pqr')}>
+          <button title="Ver el resumen de tu cuenta" className={tab === 'resumen' ? 'active' : ''} onClick={() => setTab('resumen')}>Resumen</button>
+          <button title="Ver mis PQR" className={tab === 'pqr' ? 'active' : ''} onClick={() => setTab('pqr')}>
             Mis PQR{pendientesPqr > 0 && <span className="pf-tab-count">{pendientesPqr}</span>}
           </button>
-          <button className={tab === 'reservas' ? 'active' : ''} onClick={() => setTab('reservas')}>
+          <button title="Ver mis reservas" className={tab === 'reservas' ? 'active' : ''} onClick={() => setTab('reservas')}>
             Mis reservas{reservasActivas > 0 && <span className="pf-tab-count">{reservasActivas}</span>}
           </button>
-          <button className={tab === 'ajustes' ? 'active' : ''} onClick={() => setTab('ajustes')}>Ajustes</button>
+          <button title="Ver los ajustes de tu cuenta" className={tab === 'ajustes' ? 'active' : ''} onClick={() => setTab('ajustes')}>Ajustes</button>
         </div>
       </div>
 
@@ -1460,11 +1460,11 @@ function PerfilPanel() {
 
               <div className="pfx-section-head">
                 <h3>Próximas reservas</h3>
-                <button type="button" className="pfx-link" onClick={() => setTab('reservas')}>Ver todo →</button>
+                <button title="Ver todas mis reservas" type="button" className="pfx-link" onClick={() => setTab('reservas')}>Ver todo →</button>
               </div>
               {reservasProximas.length === 0 ? (
                 <div className="pfx-empty-line">
-                  Sin reservas próximas. <Link to="/social/reservar">reserva tu evento →</Link>
+                  Sin reservas próximas. <Link title="Reservar tu evento" to="/social/reservar">reserva tu evento →</Link>
                 </div>
               ) : (
                 <div className="pfx-list">
@@ -1488,11 +1488,11 @@ function PerfilPanel() {
 
               <div className="pfx-section-head">
                 <h3>PQR en curso</h3>
-                <button type="button" className="pfx-link" onClick={() => setTab('pqr')}>Ver todo →</button>
+                <button title="Ver todas mis PQR" type="button" className="pfx-link" onClick={() => setTab('pqr')}>Ver todo →</button>
               </div>
               {pqrEnCurso.length === 0 ? (
                 <div className="pfx-empty-line">
-                  Sin PQR en curso. <Link to="/social/pqr">radicar una PQR →</Link>
+                  Sin PQR en curso. <Link title="Radicar una PQR" to="/social/pqr">radicar una PQR →</Link>
                 </div>
               ) : (
                 <div className="pfx-list">
@@ -1520,7 +1520,7 @@ function PerfilPanel() {
                 <span className="pfq-empty-icon" aria-hidden="true"><i className="ti ti-message-report" /></span>
                 <h3 className="pfq-empty-title">Aún no has radicado ninguna PQR</h3>
                 <p className="pfq-empty-text">Preguntas, quejas o reclamos: te respondemos por este mismo perfil.</p>
-                <Link to="/social/pqr" className="pfx-btn pfx-btn-primary">
+                <Link title="Radicar una PQR" to="/social/pqr" className="pfx-btn pfx-btn-primary">
                   <i className="ti ti-plus" aria-hidden="true" /> Radicar una PQR
                 </Link>
               </div>
@@ -1550,7 +1550,7 @@ function PerfilPanel() {
                 <span className="pfq-empty-icon" aria-hidden="true"><i className="ti ti-search-off" /></span>
                 <h3 className="pfq-empty-title">{filtrosPqr.estado === 'ocultas' ? 'No tienes nada oculto' : 'No encontramos resultados'}</h3>
                 <p className="pfq-empty-text">{filtrosPqr.estado === 'ocultas' ? 'Lo que ocultes desde el detalle aparecerá aquí para que puedas volver a mostrarlo.' : 'Prueba con otra palabra, otro estado o cambia el rango de fechas.'}</p>
-                <button type="button" className="pfx-btn pfx-btn-primary" onClick={() => setFiltrosPqr(FILTROS_INICIALES)}>
+                <button title="Quitar todos los filtros" type="button" className="pfx-btn pfx-btn-primary" onClick={() => setFiltrosPqr(FILTROS_INICIALES)}>
                   Limpiar filtros
                 </button>
               </div>
@@ -1558,7 +1558,7 @@ function PerfilPanel() {
             {pqrsFiltradas?.map((p) => {
               const actual = indiceFaseVisible(p.estado_pqr);
               return (
-                <button key={p.id_pqr} className="pf-list-item" onClick={() => abrirPqr(p)}>
+                <button title="Ver el detalle de esta PQR" key={p.id_pqr} className="pf-list-item" onClick={() => abrirPqr(p)}>
                   <span className="pf-item-icon" aria-hidden="true"><i className={`ti ${pqrTipoIcon[p.tipo_pqr] ?? 'ti-message-report'}`} /></span>
                   <div className="pf-list-item-main">
                     <span className="pf-list-item-title">
@@ -1589,7 +1589,7 @@ function PerfilPanel() {
                 <span className="pfq-empty-icon" aria-hidden="true"><i className="ti ti-calendar-event" /></span>
                 <h3 className="pfq-empty-title">Aún no tienes reservas</h3>
                 <p className="pfq-empty-text">Explora los eventos disponibles y reserva el tuyo en pocos pasos.</p>
-                <Link to="/social/eventos" className="pfx-btn pfx-btn-primary">
+                <Link title="Ver los eventos disponibles" to="/social/eventos" className="pfx-btn pfx-btn-primary">
                   <i className="ti ti-search" aria-hidden="true" /> Ver eventos
                 </Link>
               </div>
@@ -1601,7 +1601,7 @@ function PerfilPanel() {
                     <h2>Mis reservas</h2>
                     <p>Aquí ves el estado de cada una de tus reservas.</p>
                   </div>
-                  <Link to="/social/reservar" className="btn-sm-outline pfx-primary">
+                  <Link title="Hacer una nueva reserva" to="/social/reservar" className="btn-sm-outline pfx-primary">
                     <i className="ti ti-plus" aria-hidden="true" /> Nueva reserva
                   </Link>
                 </div>
@@ -1624,7 +1624,7 @@ function PerfilPanel() {
                 <span className="pfq-empty-icon" aria-hidden="true"><i className="ti ti-search-off" /></span>
                 <h3 className="pfq-empty-title">{filtrosReservas.estado === 'ocultas' ? 'No tienes nada oculto' : 'No encontramos resultados'}</h3>
                 <p className="pfq-empty-text">{filtrosReservas.estado === 'ocultas' ? 'Lo que ocultes desde el detalle aparecerá aquí para que puedas volver a mostrarlo.' : 'Prueba con otra palabra, otro estado o cambia el rango de fechas.'}</p>
-                <button type="button" className="pfx-btn pfx-btn-primary" onClick={() => setFiltrosReservas(FILTROS_INICIALES)}>
+                <button title="Quitar todos los filtros" type="button" className="pfx-btn pfx-btn-primary" onClick={() => setFiltrosReservas(FILTROS_INICIALES)}>
                   Limpiar filtros
                 </button>
               </div>
@@ -1632,7 +1632,7 @@ function PerfilPanel() {
             {reservasFiltradas?.map((r) => {
               const pill = reservaEstadoPill(r.estado_rese);
               return (
-                <button key={r.id_rese} className="pf-list-item" onClick={() => setDetalleReserva(r)}>
+                <button title="Ver el detalle de esta reserva" key={r.id_rese} className="pf-list-item" onClick={() => setDetalleReserva(r)}>
                   <span className="pf-item-icon" aria-hidden="true"><i className="ti ti-calendar-event" /></span>
                   <div className="pf-list-item-main">
                     <span className="pf-list-item-title">{nombreReserva(r)}</span>
@@ -1658,7 +1658,7 @@ function PerfilPanel() {
                   ) : (
                     <div className="pfx-me-avatar">{initials}</div>
                   )}
-                  <button
+                  <button title="Cambiar tu foto de perfil"
                     type="button"
                     className="pfx-me-cam"
                     onClick={handleFotoClick}
@@ -1809,7 +1809,7 @@ function AjustesForm({
           <input type="date" value={fechaNacimiento} max={new Date().toLocaleDateString('en-CA')} onChange={(e) => setFechaNacimiento(e.target.value)} />
         </label>
         <div className="pfx-form-actions">
-          <button className="pfx-btn pfx-btn-primary" disabled={saving}>{saving ? 'Guardando…' : 'Guardar cambios'}</button>
+          <button title={saving ? 'Guardando…' : 'Guardar los cambios de tu perfil'} className="pfx-btn pfx-btn-primary" disabled={saving}>{saving ? 'Guardando…' : 'Guardar cambios'}</button>
         </div>
       </form>
     </div>
@@ -1890,7 +1890,7 @@ function CambiarContrasena() {
           Mostrar contraseñas
         </label>
         <div className="pfx-form-actions">
-          <button className="pfx-btn pfx-btn-primary" disabled={saving}>{saving ? 'Guardando…' : 'Actualizar contraseña'}</button>
+          <button title={saving ? 'Guardando…' : 'Actualizar tu contraseña'} className="pfx-btn pfx-btn-primary" disabled={saving}>{saving ? 'Guardando…' : 'Actualizar contraseña'}</button>
         </div>
       </form>
     </div>
@@ -1941,7 +1941,7 @@ function CuentaCard({
             <span className="pfx-row-value">{rol}</span>
           </div>
           <div className="pfx-form-actions">
-            <button type="button" className="pfx-btn pfx-btn-danger" onClick={() => setConfirmar(true)} disabled={eliminando}>
+            <button title={eliminando ? 'Eliminando…' : 'Eliminar tu cuenta'} type="button" className="pfx-btn pfx-btn-danger" onClick={() => setConfirmar(true)} disabled={eliminando}>
               {eliminando ? 'Eliminando…' : 'Eliminar cuenta'}
             </button>
           </div>
@@ -1955,15 +1955,15 @@ function CuentaCard({
               <h3 className="pfx-danger-title">
                 <i className="ti ti-alert-triangle" aria-hidden="true" /> Desactivar cuenta
               </h3>
-              <button className="pf-modal-close" onClick={cerrar} disabled={eliminando} aria-label="Cerrar">×</button>
+              <button title="Cerrar" className="pf-modal-close" onClick={cerrar} disabled={eliminando} aria-label="Cerrar">×</button>
             </div>
             <p className="pfx-danger-text">
               Vas a desactivar tu cuenta. Se cerrará tu sesión y no podrás iniciar sesión de nuevo hasta que un administrador la reactive.
             </p>
             <Toast msg={error} onClose={() => setError(null)} />
             <div className="pfx-modal-actions">
-              <button type="button" className="pfx-btn pfx-btn-outline" onClick={cerrar} disabled={eliminando}>Cancelar</button>
-              <button type="button" className="pfx-btn pfx-btn-danger pfx-btn-solid" onClick={eliminar} disabled={eliminando}>
+              <button title="Cancelar y conservar tu cuenta" type="button" className="pfx-btn pfx-btn-outline" onClick={cerrar} disabled={eliminando}>Cancelar</button>
+              <button title={eliminando ? 'Eliminando…' : 'Confirmar y eliminar tu cuenta'} type="button" className="pfx-btn pfx-btn-danger pfx-btn-solid" onClick={eliminar} disabled={eliminando}>
                 {eliminando ? 'Eliminando…' : 'Sí, eliminar cuenta'}
               </button>
             </div>

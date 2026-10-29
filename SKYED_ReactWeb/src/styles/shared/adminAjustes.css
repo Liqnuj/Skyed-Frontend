@@ -104,3 +104,5 @@
   .aj-card { padding: 16px; }
   .aj-profile { flex-direction: column; align-items: flex-start; }
 }
+
+.aj-hint{display:block;margin-top:.3rem;font-size:.75rem;opacity:.7}

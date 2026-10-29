@@ -106,7 +106,7 @@ export default function NotificationBell() {
 
   return (
     <div className={`nb-wrap${abierto ? ' is-open' : ''}`} ref={ref}>
-      <button
+      <button title={noLeidas ? `Notificaciones: ${noLeidas} sin leer` : 'Notificaciones'}
         type="button"
         className="nb-btn"
         aria-haspopup="true"
@@ -122,7 +122,7 @@ export default function NotificationBell() {
         <div className="nb-head">
           <strong>Notificaciones</strong>
           {noLeidas > 0 && (
-            <button type="button" className="nb-link" onClick={marcarTodas}>
+            <button title="Marcar todas las notificaciones como leídas" type="button" className="nb-link" onClick={marcarTodas}>
               Marcar todas como leídas
             </button>
           )}
@@ -134,7 +134,7 @@ export default function NotificationBell() {
           {!cargando && error && items.length === 0 && (
             <p className="nb-empty">
               No se pudieron cargar.{' '}
-              <button type="button" className="nb-link" onClick={() => void cargar()}>
+              <button title="Volver a cargar las notificaciones" type="button" className="nb-link" onClick={() => void cargar()}>
                 Reintentar
               </button>
             </p>
@@ -145,7 +145,7 @@ export default function NotificationBell() {
           )}
 
           {items.map((n) => (
-            <button
+            <button title="Abrir esta notificación"
               key={n.id}
               type="button"
               className={`nb-item${n.leida ? '' : ' unread'}`}

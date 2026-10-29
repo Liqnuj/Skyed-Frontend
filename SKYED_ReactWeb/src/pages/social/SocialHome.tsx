@@ -78,16 +78,16 @@ export default function SocialHome() {
           <h1 className="hero-title">Tu evento,<br /><em>nuestra</em> obra maestra</h1>
           <p className="hero-sub">Bodas de ensueño, quinceañeras que emocionan, cumpleaños que sorprenden y corporativos que inspiran. Cada detalle, perfectamente orquestado.</p>
           <div className="hero-actions">
-            <Link to="/social/eventos" className="btn-primary">✦ Explorar eventos</Link>
-            <a href="#contacto" className="btn-outline">Solicitar cotización</a>
+            <Link title="Explorar los eventos" to="/social/eventos" className="btn-primary">✦ Explorar eventos</Link>
+            <a title="Solicitar una cotización" href="#contacto" className="btn-outline">Solicitar cotización</a>
           </div>
         </div>
 
-        <button className="carousel-arrow carousel-prev" onClick={() => setSlide((s) => (s - 1 + heroSlides.length) % heroSlides.length)} aria-label="Anterior">←</button>
-        <button className="carousel-arrow carousel-next" onClick={() => setSlide((s) => (s + 1) % heroSlides.length)} aria-label="Siguiente">→</button>
+        <button title="Ver la diapositiva anterior" className="carousel-arrow carousel-prev" onClick={() => setSlide((s) => (s - 1 + heroSlides.length) % heroSlides.length)} aria-label="Anterior">←</button>
+        <button title="Ver la diapositiva siguiente" className="carousel-arrow carousel-next" onClick={() => setSlide((s) => (s + 1) % heroSlides.length)} aria-label="Siguiente">→</button>
         <div className="carousel-dots">
           {heroSlides.map((s, i) => (
-            <button key={s.image} className={`carousel-dot ${i === slide ? 'active' : ''}`} onClick={() => setSlide(i)} />
+            <button title={`Ir a la diapositiva ${i + 1}`} key={s.image} className={`carousel-dot ${i === slide ? 'active' : ''}`} onClick={() => setSlide(i)} />
           ))}
         </div>
 
@@ -130,8 +130,8 @@ export default function SocialHome() {
                 <li>Tecnología de vanguardia: iluminación, sonido y efectos especiales de nivel premium</li>
               </ul>
               <div className="about-cta">
-                <Link to="/social/eventos" className="btn-primary">Ver nuestros eventos</Link>
-                <a href="#contacto" className="btn-asc">Hablar con un asesor</a>
+                <Link title="Ver nuestros eventos" to="/social/eventos" className="btn-primary">Ver nuestros eventos</Link>
+                <a title="Hablar con un asesor" href="#contacto" className="btn-asc">Hablar con un asesor</a>
               </div>
             </div>
           </div>
@@ -164,15 +164,15 @@ export default function SocialHome() {
                   </div>
                   <p className="event-card-desc">{e.desc}</p>
                   <div className="event-card-footer">
-                    <button className="btn-sm-primary" onClick={() => setModalEvent(e.id)}>Ver detalles</button>
-                    <Link to="/social/reservar" className="btn-sm-outline">Cotizar</Link>
+                    <button title="Ver los detalles de este evento" className="btn-sm-primary" onClick={() => setModalEvent(e.id)}>Ver detalles</button>
+                    <Link title="Cotizar este evento" to="/social/reservar" className="btn-sm-outline">Cotizar</Link>
                   </div>
                 </div>
               </div>
             ))}
           </div>
           <div className="events-load">
-            <Link to="/social/eventos" className="btn-primary">Ver todos los eventos →</Link>
+            <Link title="Ver todos los eventos" to="/social/eventos" className="btn-primary">Ver todos los eventos →</Link>
           </div>
         </div>
       </section>
@@ -283,7 +283,7 @@ export default function SocialHome() {
                 <img src={ev.image} alt={ev.title} className="media-fill-img" />
               </div>
             </div>
-            <button className="modal-close" onClick={() => setModalEvent(null)} aria-label="Cerrar">✕</button>
+            <button title="Cerrar" className="modal-close" onClick={() => setModalEvent(null)} aria-label="Cerrar">✕</button>
             <div className="modal-body">
               <span className="modal-tag">{ev.tag}</span>
               <div className="modal-title">{ev.title}</div>
@@ -302,7 +302,7 @@ export default function SocialHome() {
                   <div className="modal-price">{ev.price}</div>
                   <div className="modal-price-note">Precio base · Personalizable</div>
                 </div>
-                <Link to="/social/reservar" className="btn-primary modal-cta-btn" onClick={() => setModalEvent(null)}>Cotizar ahora →</Link>
+                <Link title="Cotizar este evento ahora" to="/social/reservar" className="btn-primary modal-cta-btn" onClick={() => setModalEvent(null)}>Cotizar ahora →</Link>
               </div>
             </div>
           </div>

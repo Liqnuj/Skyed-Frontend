@@ -96,7 +96,7 @@ function UsersRolesContent() {
                         <span className="eyebrow social">
                           {r.nombre_rol} ({r.pivot.contexto})
                         </span>{' '}
-                        <button
+                        <button title="Quitar este rol al usuario"
                           className="button social-btn small"
                           disabled={busyUserId === u.id_u}
                           onClick={() => quitar(u.id_u, r.id_rol, r.pivot.contexto)}
@@ -131,7 +131,7 @@ function UsersRolesContent() {
                         </option>
                       ))}
                     </select>
-                    <button
+                    <button title="Asignar el rol seleccionado al usuario"
                       className="button social-btn small"
                       disabled={busyUserId === u.id_u}
                       onClick={() => asignar(u.id_u)}

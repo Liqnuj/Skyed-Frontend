@@ -82,7 +82,7 @@ export default function AdminPqrManager({ pqrs, resumen, total, search, onChange
 
       <div className="pqrx-summary" role="group" aria-label="Filtrar por fase">
         {tarjetas.map((t) => (
-          <button
+          <button title={`Filtrar PQR: ${t.label}`}
             key={t.key}
             type="button"
             className={`pqrx-filter${filtro === t.key ? ' active' : ''}${t.alerta ? ' alert' : ''}`}
@@ -347,7 +347,7 @@ function CasoPqr({
             <h2>{pqr?.asunto_pqr ?? 'Cargando…'}</h2>
             {pqr && <p>Radicada el {fmtFechaHora(pqr.creado_en_pqr)}</p>}
           </div>
-          <button ref={cerrarRef} className="icon-btn" onClick={onClose} aria-label="Cerrar">
+          <button title="Cerrar" ref={cerrarRef} className="icon-btn" onClick={onClose} aria-label="Cerrar">
             <X size={19} />
           </button>
         </header>
@@ -429,7 +429,7 @@ function CasoPqr({
                         Esta solicitud está <b>en revisión</b>. Cuando hayas revisado el caso, comienza la
                         gestión formal: el usuario verá en su perfil que ya la estás atendiendo.
                       </p>
-                      <button
+                      <button title="Comenzar a gestionar esta PQR"
                         type="button"
                         className="primary-btn"
                         onClick={comenzarGestion}
@@ -489,7 +489,7 @@ function CasoPqr({
                           Al enviar, la PQR quedará «Resuelta» y el usuario recibirá una notificación. La
                           respuesta no se puede editar después.
                         </small>
-                        <button className="primary-btn" type="submit" disabled={ocupado || !respuestaValida}>
+                        <button title={accion === 'resolver' ? 'Enviando…' : 'Enviar la respuesta y resolver la PQR'} className="primary-btn" type="submit" disabled={ocupado || !respuestaValida}>
                           {accion === 'resolver' ? (
                             <Loader2 size={15} className="pqrx-spin" />
                           ) : (

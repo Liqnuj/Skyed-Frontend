@@ -49,7 +49,7 @@ export default function PanelesAdmin() {
     const panel = paneles[0];
     return (
       <div className="pa-wrap">
-        <Link to={panel.to} className={`pa-trigger pa-trigger--${panel.modulo}`}>
+        <Link title={`Abrir el panel ${panel.modulo === 'deportivo' ? 'deportivo' : 'social'}`} to={panel.to} className={`pa-trigger pa-trigger--${panel.modulo}`}>
           <i className="ti ti-shield-check" aria-hidden="true" />
           Panel {panel.modulo === 'deportivo' ? 'Deportivo' : 'Social'}
         </Link>
@@ -59,7 +59,7 @@ export default function PanelesAdmin() {
 
   return (
     <div className={`pa-wrap${abierto ? ' is-open' : ''}`} ref={contenedorRef}>
-      <button
+      <button title="Ver los paneles de administración"
         ref={botonRef}
         type="button"
         className="pa-trigger"
@@ -81,7 +81,7 @@ export default function PanelesAdmin() {
 
         <div className="pa-grid">
           {paneles.map((panel) => (
-            <Link key={panel.to} to={panel.to} className={`pa-card pa-card--${panel.modulo}`}>
+            <Link title={`Abrir el panel ${panel.modulo === 'deportivo' ? 'deportivo' : 'social'}`} key={panel.to} to={panel.to} className={`pa-card pa-card--${panel.modulo}`}>
               <span className="pa-card-banner">
                 <span className="pa-card-logo"><img src={panel.logo} alt="" /></span>
               </span>

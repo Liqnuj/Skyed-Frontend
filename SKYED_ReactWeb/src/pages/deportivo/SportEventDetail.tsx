@@ -49,8 +49,8 @@ export default function SportEventDetail() {
                 <li><strong>Inscripción</strong><br />${event.precio.toLocaleString('es-CO')}</li>
               </ul>
               <div style={{ marginTop: 20, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                <Link className="button" to={`/deportivo/inscripcion/${event.id}`}>Inscribirme</Link>
-                <Link className="button outline" to="/deportivo/eventos">Volver a eventos</Link>
+                <Link title="Inscribirme a este evento" className="button" to={`/deportivo/inscripcion/${event.id}`}>Inscribirme</Link>
+                <Link title="Volver a la lista de eventos" className="button outline" to="/deportivo/eventos">Volver a eventos</Link>
               </div>
             </div>
           </div>

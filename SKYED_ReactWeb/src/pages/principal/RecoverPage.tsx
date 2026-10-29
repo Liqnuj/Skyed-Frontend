@@ -353,12 +353,12 @@ export default function RecoverPage() {
                   </div>
                 )}
 
-                <button type="submit" className="form-submit" disabled={loading} style={{ width: '100%', marginTop: '10px' }}>
+                <button title={loading ? 'Enviando código…' : 'Enviar el código de verificación a tu correo'} type="submit" className="form-submit" disabled={loading} style={{ width: '100%', marginTop: '10px' }}>
                   {loading ? 'Enviando código...' : 'Enviar código'}
                 </button>
 
                 <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-                  <Link to="/login" className="link-accent">← Volver a iniciar sesión</Link>
+                  <Link title="Volver a iniciar sesión" to="/login" className="link-accent">← Volver a iniciar sesión</Link>
                 </div>
               </form>
             )}
@@ -402,12 +402,12 @@ export default function RecoverPage() {
                 </div>
 
 
-                <button type="submit" className="form-submit" disabled={loading} style={{ width: '100%', marginTop: '10px' }}>
+                <button title={loading ? 'Verificando…' : 'Verificar el código ingresado'} type="submit" className="form-submit" disabled={loading} style={{ width: '100%', marginTop: '10px' }}>
                   {loading ? 'Verificando...' : 'Verificar código'}
                 </button>
                 
                 <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-                  <button type="button" onClick={() => setStep(1)} className="link-accent" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.95rem' }}>
+                  <button title="Volver al paso anterior" type="button" onClick={() => setStep(1)} className="link-accent" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.95rem' }}>
                     ← Volver a intentar
                   </button>
                 </div>
@@ -446,7 +446,7 @@ export default function RecoverPage() {
                         paddingRight: '45px' // Espacio para que el texto no pise el ojito
                       }}
                     />
-                    <button
+                    <button title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       style={{ 
@@ -508,7 +508,7 @@ export default function RecoverPage() {
                         paddingRight: '45px' // Espacio para que el texto no pise el ojito
                       }}
                     />
-                    <button
+                    <button title={showConfirmPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                       style={{ 
@@ -539,12 +539,12 @@ export default function RecoverPage() {
                   )}
                 </div>
 
-                <button type="submit" className="form-submit" disabled={loading} style={{ width: '100%', marginTop: '15px' }}>
+                <button title={loading ? 'Guardando…' : 'Guardar la nueva contraseña'} type="submit" className="form-submit" disabled={loading} style={{ width: '100%', marginTop: '15px' }}>
                   {loading ? 'Guardando...' : 'Guardar nueva contraseña'}
                 </button>
                 
                 <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-                  <Link 
+                  <Link title="Volver a iniciar sesión" 
                     to="/login" 
                     className="link-accent" 
                     onClick={() => {

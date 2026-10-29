@@ -21,7 +21,7 @@ export default function SocialNav() {
   return (
     <nav id="navbar" className={`${scrolled ? 'scrolled' : ''} ${open ? 'menu-open' : ''}`}>
       <div className="nav-inner">
-        <Link className="brand" to="/social" aria-label="Inicio SKYED">
+        <Link title="Ir al inicio de SKYED Social" className="brand" to="/social" aria-label="Inicio SKYED">
           <img src="/assets/social/logo_social.png" alt="logo social" />
           <span>SKYED<em>SOCIAL</em></span>
         </Link>
@@ -31,12 +31,12 @@ export default function SocialNav() {
         </Link>
 
         <div className={`nav-links ${open ? 'open' : ''}`} id="navLinks">
-          <NavLink to="/social" end onClick={close}>Inicio</NavLink>
-          <NavLink to="/social/eventos" onClick={close}>Eventos</NavLink>
-          <NavLink to="/social/lugares" onClick={close}>Lugares</NavLink>
-          <NavLink to="/social/nosotros" onClick={close}>Nosotros</NavLink>
-          <NavLink to="/social/pqr" onClick={close}>PQRS</NavLink>
-          <Link to="/social/nosotros#contactanos" onClick={close}>Contacto</Link>
+          <NavLink title="Ir al inicio" to="/social" end onClick={close}>Inicio</NavLink>
+          <NavLink title="Ver los eventos sociales" to="/social/eventos" onClick={close}>Eventos</NavLink>
+          <NavLink title="Ver los lugares disponibles" to="/social/lugares" onClick={close}>Lugares</NavLink>
+          <NavLink title="Conocer SKYED Social" to="/social/nosotros" onClick={close}>Nosotros</NavLink>
+          <NavLink title="Ir a peticiones, quejas, reclamos y sugerencias" to="/social/pqr" onClick={close}>PQRS</NavLink>
+          <Link title="Ir a la sección de contacto" to="/social/nosotros#contactanos" onClick={close}>Contacto</Link>
         </div>
 
         {/* Si hay usuario, muestra el menú desplegable. Si NO hay, muestra el botón que envía al login con redirección */}
@@ -46,7 +46,7 @@ export default function SocialNav() {
     {!esAdmin && <NotificationBell />}
   </div>
 ) : (
-          <Link 
+          <Link title="Iniciar sesión para reservar" 
             to="/login?redirect=/social/reservar" 
             className="nav-cta" 
             onClick={close}
@@ -55,7 +55,7 @@ export default function SocialNav() {
           </Link>
         )}
 
-        <button className={`hamburger ${open ? 'active' : ''}`} id="hamburger" onClick={() => setOpen((o) => !o)} aria-label="Menú">
+        <button title={open ? 'Cerrar el menú' : 'Abrir el menú'} className={`hamburger ${open ? 'active' : ''}`} id="hamburger" onClick={() => setOpen((o) => !o)} aria-label="Menú">
           <span></span><span></span><span></span>
         </button>
       </div>

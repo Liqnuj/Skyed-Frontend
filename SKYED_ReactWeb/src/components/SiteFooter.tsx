@@ -12,9 +12,9 @@ export default function SiteFooter({ variant = 'main' }: { variant?: 'main' | 's
         </div>
         <div>
           <h3>Explora</h3>
-          <Link to="/">Inicio</Link>
-          <Link to="/deportivo">SKYED Deportivo</Link>
-          <Link to="/social">SKYED Social</Link>
+          <Link title="Ir al inicio de SKYED" to="/">Inicio</Link>
+          <Link title="Ir a SKYED Deportivo" to="/deportivo">SKYED Deportivo</Link>
+          <Link title="Ir a SKYED Social" to="/social">SKYED Social</Link>
         </div>
         <div>
           <h3>Contacto</h3>
