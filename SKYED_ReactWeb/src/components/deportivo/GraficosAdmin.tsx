@@ -108,7 +108,7 @@ export function TendenciaMensual({ pagos }: { pagos: PagoGrafico[] }) {
         </div>
         <div className="chart-toggle" role="tablist" aria-label="Dato de la gráfica">
           {(["ingresos", "inscripciones"] as Metrica[]).map((m) => (
-            <button
+            <button title={m === "ingresos" ? 'Ver el gráfico de ingresos' : 'Ver el gráfico de inscripciones'}
               key={m}
               type="button"
               role="tab"
@@ -309,7 +309,7 @@ export function EstadoPagos({
           <span className="card-kicker">PAGOS</span>
           <h2>Estado de los pagos</h2>
         </div>
-        <button className="link-button" onClick={onVerPendientes}>Ver por validar →</button>
+        <button title="Ver los pagos por validar" className="link-button" onClick={onVerPendientes}>Ver por validar →</button>
       </div>
 
       {total ? (

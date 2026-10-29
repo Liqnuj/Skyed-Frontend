@@ -41,7 +41,7 @@ export default function SkyFooter({ datos }: { datos: DatosFooter }) {
         <div className="sf-grid">
           {/* Marca */}
           <div className="sf-marca">
-            <Link to={`/${modulo}`} className="sf-logo" aria-label={`Inicio de Skyed ${modulo === "social" ? "Social" : "Deportivo"}`}>
+            <Link title={`Ir al inicio de SKYED ${modulo === "social" ? "Social" : "Deportivo"}`} to={`/${modulo}`} className="sf-logo" aria-label={`Inicio de Skyed ${modulo === "social" ? "Social" : "Deportivo"}`}>
               <img src={logo} alt="" />
               <span>
                 SKYED <em>{modulo === "social" ? "Social" : "Deportivo"}</em>
@@ -62,7 +62,7 @@ export default function SkyFooter({ datos }: { datos: DatosFooter }) {
             <h3>Explorar</h3>
             <ul>
               {enlaces.map((e) => (
-                <li key={e.a}><Link to={e.a}>{e.texto}</Link></li>
+                <li key={e.a}><Link title={`Ir a ${e.texto}`} to={e.a}>{e.texto}</Link></li>
               ))}
             </ul>
           </div>
@@ -97,18 +97,18 @@ export default function SkyFooter({ datos }: { datos: DatosFooter }) {
             <h3>Ayuda</h3>
             <ul>
               {ayuda.map((e) => (
-                <li key={e.a}><Link to={e.a}>{e.texto}</Link></li>
+                <li key={e.a}><Link title={`Ir a ${e.texto}`} to={e.a}>{e.texto}</Link></li>
               ))}
-              <li><button type="button" onClick={() => setTermsOpen(true)}>Términos de uso</button></li>
-              <li><button type="button" onClick={() => setTermsOpen(true)}>Privacidad</button></li>
-              <li><Link to="/">Ir a SKYED principal</Link></li>
+              <li><button title="Leer los términos de uso" type="button" onClick={() => setTermsOpen(true)}>Términos de uso</button></li>
+              <li><button title="Leer la política de privacidad" type="button" onClick={() => setTermsOpen(true)}>Privacidad</button></li>
+              <li><Link title="Ir a la página principal de SKYED" to="/">Ir a SKYED principal</Link></li>
             </ul>
           </div>
         </div>
 
         <div className="sf-base">
           <p>© {new Date().getFullYear()} SKYED · Todos los derechos reservados</p>
-          <button type="button" className="sf-arriba" onClick={volverArriba}>
+          <button title="Volver al inicio de la página" type="button" className="sf-arriba" onClick={volverArriba}>
             Volver arriba
             <i className="ti ti-arrow-up" aria-hidden="true" />
           </button>

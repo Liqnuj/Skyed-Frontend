@@ -82,7 +82,7 @@ export default function ContactSection({ variant }: { variant: Variant }) {
             <div className="ctu-socials">
               <span>Síguenos</span>
               {c.socials.map((s) => (
-                <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.label}>
+                <a title={s.label} key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.label}>
                   {s.short}
                 </a>
               ))}

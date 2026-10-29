@@ -113,7 +113,7 @@ export default function Venues() {
                       <div className="venue-price">
                         {formatPrecio(a.precio_referencia_a)} <span>arriendo / evento</span>
                       </div>
-                      <button className="btn-sm-outline btn-nowrap" onClick={openBooking}>
+                      <button title="Reservar este lugar" className="btn-sm-outline btn-nowrap" onClick={openBooking}>
                         Reservar
                       </button>
                     </div>

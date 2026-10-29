@@ -84,7 +84,7 @@ export default function SocialUserMenu() {
 
   return (
     <div className={`um-wrap${abierto ? ' is-open' : ''}`} ref={contenedorRef}>
-      <button
+      <button title={abierto ? 'Cerrar el menú de tu cuenta' : 'Abrir el menú de tu cuenta'}
         ref={botonRef}
         type="button"
         className="nav-cta um-trigger"
@@ -112,7 +112,7 @@ export default function SocialUserMenu() {
 
         <div className="um-list">
           {esAdminSocial && (
-            <Link to="/social/admin" className="um-item is-admin" role="menuitem">
+            <Link title="Ir al panel de administración social" to="/social/admin" className="um-item is-admin" role="menuitem">
               <span className="um-item-icon"><i className="ti ti-shield-check" aria-hidden="true" /></span>
               <span className="um-item-text">
                 <strong>Panel de administración</strong>
@@ -123,7 +123,7 @@ export default function SocialUserMenu() {
           {esAdminSocial && opciones.length > 0 && <div className="um-sep" role="separator" />}
 
           {opciones.map((opcion) => (
-            <Link key={opcion.to} to={opcion.to} className="um-item" role="menuitem">
+            <Link title={opcion.titulo} key={opcion.to} to={opcion.to} className="um-item" role="menuitem">
               <span className="um-item-icon"><i className={`ti ${opcion.icono}`} aria-hidden="true" /></span>
               <span className="um-item-text">
                 <strong>{opcion.titulo}</strong>
@@ -134,7 +134,7 @@ export default function SocialUserMenu() {
 
           <div className="um-sep" role="separator" />
 
-          <button type="button" className="um-item is-logout" role="menuitem" onClick={cerrarSesion}>
+          <button title="Cerrar tu sesión" type="button" className="um-item is-logout" role="menuitem" onClick={cerrarSesion}>
             <span className="um-item-icon"><i className="ti ti-logout" aria-hidden="true" /></span>
             <span className="um-item-text">
               <strong>Cerrar sesión</strong>

@@ -239,7 +239,7 @@ function Modal({
             <h2>{title}</h2>
             {subtitle && <p>{subtitle}</p>}
           </div>
-          <button className="icon-btn" onClick={onClose} aria-label="Cerrar">
+          <button title="Cerrar" className="icon-btn" onClick={onClose} aria-label="Cerrar">
             <X size={19} />
           </button>
         </div>
@@ -340,11 +340,11 @@ function ImageUploadField({
             <div className="admin-dropzone-overlay"><Loader2 size={20} className="admin-spin" /></div>
           )}
           <div className="admin-dropzone-preview-actions">
-            <button type="button" className="secondary-btn" disabled={uploading}
+            <button title="Cambiar la imagen" type="button" className="secondary-btn" disabled={uploading}
               onClick={e => { e.stopPropagation(); inputRef.current?.click(); }}>
               <Upload size={13} /> Cambiar
             </button>
-            <button type="button" className="secondary-btn danger" disabled={uploading}
+            <button title="Quitar la imagen" type="button" className="secondary-btn danger" disabled={uploading}
               onClick={e => { e.stopPropagation(); onChange(""); }}>
               <X size={13} /> Quitar
             </button>
@@ -392,7 +392,7 @@ function SectionTable({
           <h2>{title}</h2>
         </div>
         {action && (
-          <button className="primary-btn" onClick={onAction}>
+          <button title={action} className="primary-btn" onClick={onAction}>
             <Plus size={16} /> {action}
           </button>
         )}
@@ -709,14 +709,14 @@ function AdminPage() {
     >
       <header className="admin-header">
         <div className="admin-header-left">
-          <button
+          <button title={'Abrir o cerrar el menú lateral'}
             className="icon-btn header-menu"
             onClick={() => window.innerWidth <= 900 ? setMobileOpen(v => !v) : setCollapsed(v => !v)}
             aria-label="Abrir menú"
           >
             <Menu size={21} />
           </button>
-          <Link to="/social" className="admin-brand">
+          <Link title="Ir al inicio de SKYED Social" to="/social" className="admin-brand">
             <img src="/assets/social/logo_social.png" alt="Skyed Social" />
             <span>Skyed <em>Social</em></span>
           </Link>
@@ -797,7 +797,7 @@ function AdminPage() {
               placeholder="Buscar en esta sección..."
             />
             {search && (
-              <button onClick={() => setSearch("")} aria-label="Limpiar">
+              <button title="Borrar la búsqueda" onClick={() => setSearch("")} aria-label="Limpiar">
                 <X size={15} />
               </button>
             )}
@@ -826,7 +826,7 @@ function AdminPage() {
                     <span className="card-kicker">ACTIVIDAD</span>
                     <h2>Últimas reservas</h2>
                   </div>
-                  <button className="link-button" onClick={() => selectSection("reservas")}>Ver todas →</button>
+                  <button title="Ver todas las reservas" className="link-button" onClick={() => selectSection("reservas")}>Ver todas →</button>
                 </div>
                 <div className="reservation-list">
                   {reservas.slice(0, 5).map(r => (
@@ -886,8 +886,8 @@ function AdminPage() {
                   <td>#{a.id_a}</td><td><strong>{a.nombre_a}</strong></td><td>{a.capacidad_a}</td>
                   <td>{money(a.precio_referencia_a)}</td>
                   <td><div className="row-actions">
-                    <button className="table-action" onClick={() => { setEditing(a); setModal("ambiente"); }}><Pencil size={15} /></button>
-                    <button className="table-action danger" onClick={() => deleteAmbiente(a.id_a)}><Trash2 size={15} /></button>
+                    <button title="Editar este ambiente" className="table-action" onClick={() => { setEditing(a); setModal("ambiente"); }}><Pencil size={15} /></button>
+                    <button title="Eliminar este ambiente" className="table-action danger" onClick={() => deleteAmbiente(a.id_a)}><Trash2 size={15} /></button>
                   </div></td>
                 </tr>
               ))}
@@ -908,8 +908,8 @@ function AdminPage() {
                   <td>{s.descripcion ?? s.descripcion_s ?? "—"}</td>
                   <td>{s.ambientes?.length ?? 0}</td>
                   <td><div className="row-actions">
-                    <button className="table-action" onClick={() => { setEditing(s); setModal("servicio"); }}><Pencil size={15} /></button>
-                    <button className="table-action danger" onClick={() => deleteServicio(id)}><Trash2 size={15} /></button>
+                    <button title="Editar este servicio" className="table-action" onClick={() => { setEditing(s); setModal("servicio"); }}><Pencil size={15} /></button>
+                    <button title="Eliminar este servicio" className="table-action danger" onClick={() => deleteServicio(id)}><Trash2 size={15} /></button>
                   </div></td>
                 </tr>;
               })}
@@ -935,9 +935,9 @@ function AdminPage() {
                     <td>#{e.id_er}</td><td><strong>{e.nombre_er}</strong></td><td>{formatDate(e.fecha_er)}</td>
                     <td><Badge value={e.estado_er} /></td>
                     <td><div className="row-actions">
-                      <button className="table-action" onClick={() => { setEditing(e); setModal("evento"); }}><Pencil size={15} /></button>
-                      <button className="table-action" onClick={() => toggleEvento(e)}>{e.estado_er === "activo" ? "Desactivar" : "Activar"}</button>
-                      <button className="table-action danger" onClick={() => deleteEvento(e.id_er)}><Trash2 size={15} /></button>
+                      <button title="Editar este evento" className="table-action" onClick={() => { setEditing(e); setModal("evento"); }}><Pencil size={15} /></button>
+                      <button title={e.estado_er === "activo" ? 'Desactivar este evento' : 'Activar este evento'} className="table-action" onClick={() => toggleEvento(e)}>{e.estado_er === "activo" ? "Desactivar" : "Activar"}</button>
+                      <button title="Eliminar este evento" className="table-action danger" onClick={() => deleteEvento(e.id_er)}><Trash2 size={15} /></button>
                     </div></td>
                   </tr>
                 );
@@ -1173,8 +1173,8 @@ function AmbienteModal({ item, onClose, onSave, notify }: { item?: Ambiente; onC
       </Field>
 
       <div className="modal-actions">
-        <button type="button" className="secondary-btn" onClick={onClose}>Cancelar</button>
-        <button className="primary-btn" disabled={saving || !form.imagen_principal_a.trim()}>{saving ? "Guardando…" : "Guardar"}</button>
+        <button title="Cancelar y cerrar sin guardar" type="button" className="secondary-btn" onClick={onClose}>Cancelar</button>
+        <button title={saving ? 'Guardando…' : 'Guardar los cambios'} className="primary-btn" disabled={saving || !form.imagen_principal_a.trim()}>{saving ? "Guardando…" : "Guardar"}</button>
       </div>
     </form>
   </Modal>;
@@ -1231,8 +1231,8 @@ function ServicioModal({ item, onClose, onSave }: { item?: Servicio; onClose: ()
       </Field>
 
       <div className="modal-actions">
-        <button type="button" className="secondary-btn" onClick={onClose}>Cancelar</button>
-        <button className="primary-btn" disabled={saving}>{saving ? "Guardando…" : "Guardar"}</button>
+        <button title="Cancelar y cerrar sin guardar" type="button" className="secondary-btn" onClick={onClose}>Cancelar</button>
+        <button title={saving ? 'Guardando…' : 'Guardar los cambios'} className="primary-btn" disabled={saving}>{saving ? "Guardando…" : "Guardar"}</button>
       </div>
     </form>
   </Modal>;
@@ -1336,8 +1336,8 @@ function EventoModal({ item, ambientes, tipos, onClose, onSave, notify }: { item
       </Field>
 
       <div className="modal-actions">
-        <button type="button" className="secondary-btn" onClick={onClose}>Cancelar</button>
-        <button className="primary-btn" disabled={saving}>{saving ? "Guardando…" : "Guardar"}</button>
+        <button title="Cancelar y cerrar sin guardar" type="button" className="secondary-btn" onClick={onClose}>Cancelar</button>
+        <button title={saving ? 'Guardando…' : 'Guardar los cambios'} className="primary-btn" disabled={saving}>{saving ? "Guardando…" : "Guardar"}</button>
       </div>
     </form>
   </Modal>;
@@ -1568,7 +1568,7 @@ function AdminPqrManager({
           <section className="admin-card upcoming-card apqr-panel">
             <div className="card-head"><div><span className="card-kicker">SOLICITUD #{current.id_pqr}</span><h2>Historial</h2></div>
               {puedeOcultar && (
-                <button type="button" className="apqr-hide-btn" onClick={ocultar}><EyeOff size={15} /> Ocultar</button>
+                <button title="Ocultar esta PQR de la lista" type="button" className="apqr-hide-btn" onClick={ocultar}><EyeOff size={15} /> Ocultar</button>
               )}
             </div>
             <div className="apqr-thread">
@@ -1605,7 +1605,7 @@ function AdminPqrManager({
                       <option key={o.value} value={o.value}>{o.label}</option>
                     ))}
                   </select>
-                  <button type="button" className="primary-btn" disabled={sending} onClick={enviar}>
+                  <button title={sending ? 'Enviando…' : 'Enviar la respuesta al usuario'} type="button" className="primary-btn" disabled={sending} onClick={enviar}>
                     {sending ? "Enviando…" : "Enviar respuesta"}
                   </button>
                 </div>

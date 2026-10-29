@@ -143,7 +143,7 @@ export default function LoginPage() {
                     value={password} onChange={(e) => setPassword(e.target.value)}
                     style={{ paddingRight: '45px' }}
                   />
-                  <button 
+                  <button title={showPass ? 'Ocultar contraseña' : 'Mostrar contraseña'} 
                     type="button" 
                     className="toggle-pass" 
                     onClick={() => setShowPass((s) => !s)}
@@ -163,17 +163,17 @@ export default function LoginPage() {
                   <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
                   Recordarme
                 </label>
-                <Link to="/recuperar" className="link-accent">¿Olvidaste tu contraseña?</Link>
+                <Link title="Recuperar tu contraseña" to="/recuperar" className="link-accent">¿Olvidaste tu contraseña?</Link>
               </div>
 
-              <button type="submit" className="form-submit" disabled={loading}>
+              <button title={loading ? 'Iniciando sesión…' : 'Iniciar sesión'} type="submit" className="form-submit" disabled={loading}>
                 {loading ? 'Iniciando sesión...' : <>Iniciar sesión <i className="ti ti-arrow-right" /></>}
               </button>
 
               <div className="form-divider">o</div>
 
-              <p className="form-footer">¿No tienes cuenta? <Link to="/registro" className="link-accent">Regístrate gratis</Link></p>
-              <p className="form-footer"><Link to="/" className="link-accent">Volver al inicio</Link></p>
+              <p className="form-footer">¿No tienes cuenta? <Link title="Crear una cuenta gratis" to="/registro" className="link-accent">Regístrate gratis</Link></p>
+              <p className="form-footer"><Link title="Volver a la página de inicio" to="/" className="link-accent">Volver al inicio</Link></p>
             </form>
           </div>
         </main>
@@ -182,9 +182,9 @@ export default function LoginPage() {
       <footer className="footer">
         <span>© 2026 SKYED · Sogamoso, Boyacá, Colombia</span>
         <div className="footer-links">
-          <button type="button" onClick={() => setTermsOpen(true)}>Términos</button>
-          <button type="button" onClick={() => setTermsOpen(true)}>Privacidad</button>
-          <a href="#">Soporte</a>
+          <button title="Leer los términos y condiciones" type="button" onClick={() => setTermsOpen(true)}>Términos</button>
+          <button title="Leer la política de privacidad" type="button" onClick={() => setTermsOpen(true)}>Privacidad</button>
+          <a title="Contactar con soporte" href="#">Soporte</a>
         </div>
       </footer>
 

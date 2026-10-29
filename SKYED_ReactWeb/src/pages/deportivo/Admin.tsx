@@ -233,7 +233,7 @@ function Modal({
             <h2>{title}</h2>
             {subtitle && <p>{subtitle}</p>}
           </div>
-          <button className="icon-btn" onClick={onClose} aria-label="Cerrar">
+          <button title="Cerrar" className="icon-btn" onClick={onClose} aria-label="Cerrar">
             <X size={19} />
           </button>
         </div>
@@ -333,7 +333,7 @@ function ImageUploadField({
             <div className="admin-dropzone-overlay"><Loader2 size={20} className="admin-spin" /></div>
           )}
           <div className="admin-dropzone-preview-actions">
-            <button type="button" className="secondary-btn" disabled={uploading}
+            <button title="Cambiar la imagen" type="button" className="secondary-btn" disabled={uploading}
               onClick={e => { e.stopPropagation(); inputRef.current?.click(); }}>
               <Upload size={13} /> Cambiar
             </button>
@@ -383,7 +383,7 @@ function SectionTable({
           <h2>{title}</h2>
         </div>
         {action && (
-          <button className="primary-btn" onClick={onAction}>
+          <button title={action} className="primary-btn" onClick={onAction}>
             <Plus size={16} /> {action}
           </button>
         )}
@@ -595,6 +595,32 @@ function AdminPage() {
     run(() => apiFetch(`/kits/${k.id_k}`, { method: "DELETE" }), "Kit eliminado", false);
   };
 
+  /** Un <select> de filtro con el estilo del panel. */
+  const filtroSelect = (
+    value: string,
+    onChange: (v: string) => void,
+    label: string,
+    todos: string,
+    opciones: Array<{ value: string; label: string }>,
+  ) => (
+    <select className="admin-select" value={value} onChange={e => onChange(e.target.value)} aria-label={label}>
+      <option value="">{todos}</option>
+      {opciones.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+    </select>
+  );
+
+  /** Botón "Limpiar filtros" + contador "Mostrando X de Y". */
+  const filtroPie = (activo: boolean, limpiar: () => void, mostrando: number, total: number) => (
+    <>
+      {activo && (
+        <button title="Quitar todos los filtros aplicados" type="button" className="secondary-btn filter-clear" onClick={limpiar}>
+          <X size={14} /> Limpiar filtros
+        </button>
+      )}
+      <span className="filter-count">Mostrando {mostrando} de {total}</span>
+    </>
+  );
+
   const filtroEventoSelect = (
     <select className="admin-select" value={filtroEvento} onChange={e => setFiltroEvento(e.target.value)} aria-label="Filtrar por evento">
       <option value="">Todos los eventos</option>
@@ -609,14 +635,14 @@ function AdminPage() {
     >
       <header className="admin-header">
         <div className="admin-header-left">
-          <button
+          <button title="Abrir o cerrar el menú lateral"
             className="icon-btn header-menu"
             onClick={() => window.innerWidth <= 900 ? setMobileOpen(v => !v) : setCollapsed(v => !v)}
             aria-label="Abrir menú"
           >
             <Menu size={21} />
           </button>
-          <Link to="/deportivo" className="admin-brand">
+          <Link title="Ir al inicio de SKYED Deportivo" to="/deportivo" className="admin-brand">
             <img src="/assets/deportivo/logo_deportivo.png" alt="Skyed Deportivo" />
             <span>Skyed <em>Deportivo</em></span>
           </Link>
@@ -698,7 +724,7 @@ function AdminPage() {
                 placeholder="Buscar en esta sección..."
               />
               {search && (
-                <button onClick={() => setSearch("")} aria-label="Limpiar">
+                <button title="Borrar la búsqueda" onClick={() => setSearch("")} aria-label="Limpiar">
                   <X size={15} />
                 </button>
               )}
@@ -730,7 +756,7 @@ function AdminPage() {
                     <span className="card-kicker">CALENDARIO</span>
                     <h2>Próximos eventos</h2>
                   </div>
-                  <button className="link-button" onClick={() => selectSection("eventos")}>Ver todos →</button>
+                  <button title="Ver todos los eventos" className="link-button" onClick={() => selectSection("eventos")}>Ver todos →</button>
                 </div>
                 <div className="resource-list">
                   {proximos.map(e => (
@@ -1128,8 +1154,8 @@ function EventoModal({ item, kits, onClose, onSave, notify }: {
       </Field>
 
       <div className="modal-actions">
-        <button type="button" className="secondary-btn" onClick={onClose}>Cancelar</button>
-        <button className="primary-btn" disabled={saving}>{saving ? "Guardando…" : "Guardar"}</button>
+        <button title="Cancelar y cerrar sin guardar" type="button" className="secondary-btn" onClick={onClose}>Cancelar</button>
+        <button title={saving ? 'Guardando…' : 'Guardar los cambios'} className="primary-btn" disabled={saving}>{saving ? "Guardando…" : "Guardar"}</button>
       </div>
     </form>
   </Modal>;
@@ -1244,8 +1270,8 @@ function CategoriasModal({ evento, onClose, notify, confirmar }: { evento: Event
         </Field>
       </div>
       <div className="modal-actions">
-        <button type="button" className="secondary-btn" onClick={onClose}>Listo</button>
-        <button className="primary-btn" disabled={saving}><Plus size={15} /> {saving ? "Agregando…" : "Agregar categoría"}</button>
+        <button title="Terminar y cerrar" type="button" className="secondary-btn" onClick={onClose}>Listo</button>
+        <button title={saving ? 'Agregando…' : 'Agregar la categoría'} className="primary-btn" disabled={saving}><Plus size={15} /> {saving ? "Agregando…" : "Agregar categoría"}</button>
       </div>
     </form>
   </Modal>;
@@ -1311,7 +1337,7 @@ function PagoModal({ item, onClose, onCambiar }: { item: Pago; onClose: () => vo
                     onError={() => setErrorImg("No se pudo mostrar la imagen. Cierra y vuelve a abrir esta ventana.")}
                   />
                 </a>
-                <a className="secondary-btn" href={comprobanteUrl} target="_blank" rel="noopener noreferrer" style={{ marginTop: 10, display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <a title="Abrir el comprobante en una pestaña nueva a tamaño grande" className="secondary-btn" href={comprobanteUrl} target="_blank" rel="noopener noreferrer" style={{ marginTop: 10, display: "inline-flex", alignItems: "center", gap: 6 }}>
                   <Eye size={15} /> Ver en grande
                 </a>
               </>}
@@ -1325,10 +1351,10 @@ function PagoModal({ item, onClose, onCambiar }: { item: Pago; onClose: () => vo
         </p>
       </div>
       <div className="modal-actions">
-        <button type="button" className="secondary-btn" onClick={onClose}>Cerrar</button>
+        <button title="Cerrar esta ventana" type="button" className="secondary-btn" onClick={onClose}>Cerrar</button>
         {item.estado_p === "pendiente" && <>
-          <button type="button" className="secondary-btn danger" onClick={() => onCambiar("rechazado")}><X size={15} /> Rechazar</button>
-          <button type="button" className="primary-btn" onClick={() => onCambiar("confirmado")}><Check size={15} /> Confirmar pago</button>
+          <button title="Rechazar el pago" type="button" className="secondary-btn danger" onClick={() => onCambiar("rechazado")}><X size={15} /> Rechazar</button>
+          <button title="Confirmar el pago" type="button" className="primary-btn" onClick={() => onCambiar("confirmado")}><Check size={15} /> Confirmar pago</button>
         </>}
       </div>
     </div>
@@ -1451,14 +1477,14 @@ function ControlAcceso({ notify, onValidado }: { notify: (message: string) => vo
               aria-label="Código del QR"
               autoFocus
             />
-            <button className="primary-btn" disabled={validando || !codigo.trim()}>
+            <button title={validando ? 'Validando…' : 'Validar el código de entrada'} className="primary-btn" disabled={validando || !codigo.trim()}>
               {validando ? <Loader2 size={16} className="admin-spin" /> : <ScanLine size={16} />} Validar
             </button>
           </form>
           <div style={{ marginTop: 12 }}>
             {camara
-              ? <button type="button" className="secondary-btn" onClick={detenerCamara}><CameraOff size={15} /> Apagar cámara</button>
-              : <button type="button" className="secondary-btn" onClick={iniciarCamara}><Camera size={15} /> Escanear con la cámara</button>}
+              ? <button title="Apagar la cámara" type="button" className="secondary-btn" onClick={detenerCamara}><CameraOff size={15} /> Apagar cámara</button>
+              : <button title="Escanear el código QR con la cámara" type="button" className="secondary-btn" onClick={iniciarCamara}><Camera size={15} /> Escanear con la cámara</button>}
           </div>
           <video ref={videoRef} className="qr-video" muted playsInline hidden={!camara} />
         </div>
@@ -1614,8 +1640,8 @@ function ResultadoModal({ item, eventos, onClose, onSave, notify }: {
       </div>
 
       <div className="modal-actions">
-        <button type="button" className="secondary-btn" onClick={onClose}>Cancelar</button>
-        <button className="primary-btn" disabled={saving}><ListOrdered size={15} /> {saving ? "Guardando…" : "Guardar"}</button>
+        <button title="Cancelar y cerrar sin guardar" type="button" className="secondary-btn" onClick={onClose}>Cancelar</button>
+        <button title={saving ? 'Guardando…' : 'Guardar el orden'} className="primary-btn" disabled={saving}><ListOrdered size={15} /> {saving ? "Guardando…" : "Guardar"}</button>
       </div>
     </form>
   </Modal>;
@@ -1802,8 +1828,8 @@ function KitModal({ item, eventos, onClose, onSave, notify }: { item?: Kit | nul
         <small className="field-hint">{form.contenido_k.length}/255 caracteres</small>
       </Field>
       <div className="modal-actions">
-        <button type="button" className="secondary-btn" onClick={onClose}>Cancelar</button>
-        <button className="primary-btn" disabled={saving}>{saving ? "Guardando…" : "Guardar"}</button>
+        <button title="Cancelar y cerrar sin guardar" type="button" className="secondary-btn" onClick={onClose}>Cancelar</button>
+        <button title={saving ? 'Guardando…' : 'Guardar los cambios'} className="primary-btn" disabled={saving}>{saving ? "Guardando…" : "Guardar"}</button>
       </div>
     </form>
   </Modal>;

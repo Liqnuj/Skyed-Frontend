@@ -14,7 +14,7 @@ export function SportEventCard({ event }: { event: SportEvent }) {
         <p>{event.description}</p>
         <div className="card-row">
           <strong>${event.price.toLocaleString('es-CO')}</strong>
-          <Link className="button small" to={`/deportivo/eventos/${event.id}`}>Ver evento</Link>
+          <Link title="Ver el evento" className="button small" to={`/deportivo/eventos/${event.id}`}>Ver evento</Link>
         </div>
       </div>
     </article>
@@ -36,8 +36,8 @@ export function SocialEventCard({ event, onViewDetails }: { event: SocialEvent; 
         </div>
         <p className="event-card-desc">{event.description}</p>
         <div className="event-card-footer">
-          <button className="btn-sm-primary" onClick={() => onViewDetails(event.id)}>Ver detalles</button>
-          <Link className="btn-sm-outline" to="/social/reservar">
+          <button title="Ver los detalles del evento" className="btn-sm-primary" onClick={() => onViewDetails(event.id)}>Ver detalles</button>
+          <Link title="Cotizar este evento" className="btn-sm-outline" to="/social/reservar">
             Cotizar
           </Link>
         </div>

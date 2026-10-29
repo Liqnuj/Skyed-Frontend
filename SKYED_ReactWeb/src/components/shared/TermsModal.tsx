@@ -212,6 +212,7 @@ export default function TermsModal({
             className="skyed-modal__close"
             onClick={onClose}
             aria-label="Cerrar"
+            title="Cerrar esta ventana"
           >
             ×
           </button>
@@ -254,6 +255,7 @@ export default function TermsModal({
               handleChangeTab("terminos")
             }
             role="tab"
+            title="Ver los términos y condiciones"
             aria-selected={
               activeTab === "terminos"
             }
@@ -272,6 +274,7 @@ export default function TermsModal({
               handleChangeTab("privacidad")
             }
             role="tab"
+            title="Ver la política de privacidad"
             aria-selected={
               activeTab === "privacidad"
             }
@@ -331,6 +334,7 @@ export default function TermsModal({
               type="button"
               className="btn-modal-accept"
               disabled={!currentRead}
+              title={currentRead ? 'Aceptar y continuar' : 'Desplázate hasta el final para poder aceptar'}
               onClick={handleAccept}
             >
               ✓ &nbsp; He leído y acepto
@@ -339,6 +343,7 @@ export default function TermsModal({
             <button
               type="button"
               className="btn-modal-accept"
+              title="Cerrar esta ventana"
               onClick={onClose}
             >
               Cerrar

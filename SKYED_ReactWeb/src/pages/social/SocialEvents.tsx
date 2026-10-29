@@ -104,7 +104,7 @@ export default function SocialEvents() {
                 {mapped.length > 0 && (
                   <div className="filter-bar">
                     {categories.map((c) => (
-                      <button
+                      <button title={`Filtrar eventos: ${c}`}
                         key={c}
                         className={`filter-btn ${filter === c ? 'active' : ''}`}
                         onClick={() => handleFilter(c)}
@@ -134,10 +134,10 @@ export default function SocialEvents() {
                         </div>
                         <p className="event-card-desc">{e.description}</p>
                         <div className="event-card-footer">
-                          <button className="btn-sm-primary" onClick={() => setModalEvent(e.id)}>
+                          <button title="Ver los detalles de este evento" className="btn-sm-primary" onClick={() => setModalEvent(e.id)}>
                             Ver detalles
                           </button>
-                          <Link className="btn-sm-outline" to="/social/reservar">
+                          <Link title="Cotizar este evento" className="btn-sm-outline" to="/social/reservar">
                             Cotizar
                           </Link>
                         </div>
@@ -148,7 +148,7 @@ export default function SocialEvents() {
 
                 {hasMore && (
                   <div className="events-load">
-                    <button className="btn-primary" onClick={() => setVisible((v) => v + PAGE_SIZE)}>
+                    <button title="Mostrar más eventos" className="btn-primary" onClick={() => setVisible((v) => v + PAGE_SIZE)}>
                       Ver más eventos →
                     </button>
                   </div>
@@ -172,7 +172,7 @@ export default function SocialEvents() {
                   <img src={ev.image} alt={ev.title} className="media-fill-img" />
                 </div>
               </div>
-              <button className="modal-close" onClick={() => setModalEvent(null)} aria-label="Cerrar">
+              <button title="Cerrar" className="modal-close" onClick={() => setModalEvent(null)} aria-label="Cerrar">
                 ✕
               </button>
               <div className="modal-body">
@@ -206,7 +206,7 @@ export default function SocialEvents() {
                     <div className="modal-price">{ev.price}</div>
                     <div className="modal-price-note">Precio base · Personalizable</div>
                   </div>
-                  <Link
+                  <Link title="Cotizar este evento ahora"
                     to="/social/reservar"
                     className="btn-primary modal-cta-btn"
                     onClick={() => setModalEvent(null)}

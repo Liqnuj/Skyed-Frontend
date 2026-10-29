@@ -3,7 +3,9 @@ import { Bell, Camera, IdCard, Loader2, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { apiFetch } from '../../services/api';
 import { prepararImagen } from '../../utils/prepararImagen';
-import { errorContrasena } from '../../utils/validaciones';
+import {
+  errorContrasena, errorDocumento, errorTelefono, ayudaDocumento, maxDocumento, soloLetras, soloDigitos,
+} from '../../utils/validaciones';
 import '../../styles/shared/adminAjustes.css';
 
 /**
@@ -110,13 +112,20 @@ export default function AdminAjustes({ avisos, notify }: Props) {
   const guardarDatos = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrDatos(null);
+    const hoy = new Date().toLocaleDateString('en-CA');
+    const motivo =
+      (!nombre.trim() || !apellido.trim() ? 'El nombre y el apellido son obligatorios.' : null) ??
+      errorDocumento(tipoDoc, documento) ??
+      errorTelefono(telefono) ??
+      (fechaNac && fechaNac > hoy ? 'La fecha de nacimiento no puede ser futura.' : null);
+    if (motivo) return setErrDatos(motivo);
     setGuardando(true);
     try {
       await updateProfile({
-        nombre_u: nombre || undefined,
-        apellido_u: apellido || undefined,
+        nombre_u: nombre.trim() || undefined,
+        apellido_u: apellido.trim() || undefined,
         telefono_u: telefono || undefined,
-        ciudad_u: ciudad || undefined,
+        ciudad_u: ciudad.trim() || undefined,
         tipo_documento_u: tipoDoc || undefined,
         documento_u: documento ? Number(documento) : undefined,
         rh_u: rh || undefined,
@@ -197,7 +206,7 @@ export default function AdminAjustes({ avisos, notify }: Props) {
           required
           autoComplete={id === 'actual' ? 'current-password' : 'new-password'}
         />
-        <button
+        <button title={ver[id] ? 'Ocultar contraseña' : 'Mostrar contraseña'}
           type="button"
           className="aj-pass-toggle"
           onClick={() => setVer((v) => ({ ...v, [id]: !v[id] }))}
@@ -248,15 +257,23 @@ export default function AdminAjustes({ avisos, notify }: Props) {
             <div className="form-grid">
               <label className="admin-field">
                 <span>Nombre</span>
-                <input value={nombre} onChange={(e) => setNombre(e.target.value)} required />
+                <input value={nombre} onChange={(e) => setNombre(soloLetras(e.target.value))} required maxLength={50} />
               </label>
               <label className="admin-field">
                 <span>Apellido</span>
-                <input value={apellido} onChange={(e) => setApellido(e.target.value)} required />
+                <input value={apellido} onChange={(e) => setApellido(soloLetras(e.target.value))} required maxLength={50} />
               </label>
               <label className="admin-field">
                 <span>Tipo de documento</span>
-                <select value={tipoDoc} onChange={(e) => setTipoDoc(e.target.value)}>
+                <select
+                  value={tipoDoc}
+                  onChange={(e) => {
+                    const t = e.target.value;
+                    setTipoDoc(t);
+                    // Al cambiar de tipo se recorta lo escrito al máximo del nuevo tipo
+                    setDocumento((d) => soloDigitos(d, maxDocumento(t)));
+                  }}
+                >
                   <option value="">Seleccionar...</option>
                   {TIPOS_DOC.map((t) => <option key={t.v} value={t.v}>{t.l}</option>)}
                 </select>
@@ -266,8 +283,12 @@ export default function AdminAjustes({ avisos, notify }: Props) {
                 <input
                   inputMode="numeric"
                   value={documento}
-                  onChange={(e) => setDocumento(e.target.value.replace(/\D/g, ''))}
+                  maxLength={maxDocumento(tipoDoc)}
+                  disabled={!tipoDoc}
+                  placeholder={tipoDoc ? 'Escribe el número' : 'Selecciona primero el tipo'}
+                  onChange={(e) => setDocumento(soloDigitos(e.target.value, maxDocumento(tipoDoc)))}
                 />
+                <small className="aj-hint">{ayudaDocumento(tipoDoc)}</small>
               </label>
               <label className="admin-field">
                 <span>Correo</span>
@@ -275,11 +296,11 @@ export default function AdminAjustes({ avisos, notify }: Props) {
               </label>
               <label className="admin-field">
                 <span>Teléfono</span>
-                <input type="tel" value={telefono} onChange={(e) => setTelefono(e.target.value)} placeholder="Ej: 3001234567" />
+                <input type="tel" inputMode="numeric" maxLength={15} value={telefono} onChange={(e) => setTelefono(soloDigitos(e.target.value, 15))} placeholder="Ej: 3001234567" />
               </label>
               <label className="admin-field">
                 <span>Fecha de nacimiento</span>
-                <input type="date" value={fechaNac} onChange={(e) => setFechaNac(e.target.value)} />
+                <input type="date" value={fechaNac} max={new Date().toLocaleDateString('en-CA')} onChange={(e) => setFechaNac(e.target.value)} />
               </label>
               <label className="admin-field">
                 <span>Tipo de sangre (RH)</span>
@@ -290,11 +311,11 @@ export default function AdminAjustes({ avisos, notify }: Props) {
               </label>
               <label className="admin-field">
                 <span>Ciudad</span>
-                <input value={ciudad} onChange={(e) => setCiudad(e.target.value)} placeholder="Ej: Sogamoso" />
+                <input value={ciudad} maxLength={80} onChange={(e) => setCiudad(e.target.value.slice(0, 80))} placeholder="Ej: Sogamoso" />
               </label>
             </div>
             {errDatos && <p className="aj-error" role="alert">{errDatos}</p>}
-            <button className="primary-btn" disabled={guardando}>
+            <button title={guardando ? 'Guardando…' : 'Guardar los cambios'} className="primary-btn" disabled={guardando}>
               {guardando ? 'Guardando…' : 'Guardar cambios'}
             </button>
           </form>
@@ -311,7 +332,7 @@ export default function AdminAjustes({ avisos, notify }: Props) {
               {avisos.map((a) => (
                 <div className="aj-toggle-row" key={a.key}>
                   <div className="aj-toggle-label">{a.title}<small>{a.desc}</small></div>
-                  <button
+                  <button title={`${activo(a) ? 'Desactivar' : 'Activar'}: ${a.title}`}
                     type="button"
                     role="switch"
                     aria-checked={activo(a)}
@@ -337,7 +358,7 @@ export default function AdminAjustes({ avisos, notify }: Props) {
                 {claveField('confirmar', 'Confirmar nueva contraseña', confirmar, setConfirmar)}
               </div>
               {errClave && <p className="aj-error" role="alert">{errClave}</p>}
-              <button className="secondary-btn" disabled={enviando}>
+              <button title={enviando ? 'Actualizando…' : 'Actualizar tu contraseña'} className="secondary-btn" disabled={enviando}>
                 {enviando ? 'Actualizando…' : 'Actualizar contraseña'}
               </button>
             </form>

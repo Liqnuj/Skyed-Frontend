@@ -200,7 +200,7 @@ export default function RegisterPage() {
 
         <main className="auth-main">
           <div className="auth-card">
-            <Link
+            <Link title="Volver a iniciar sesión"
               to="/login"
               className="auth-back"
             >
@@ -373,7 +373,7 @@ export default function RegisterPage() {
                       outline: 'none'
                     }}
                   />
-                  <button
+                  <button title={showPass ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                     type="button"
                     className="toggle-pass"
                     aria-label="Mostrar contraseña"
@@ -431,7 +431,7 @@ export default function RegisterPage() {
                       outline: 'none'
                     }}
                   />
-                  <button
+                  <button title={showConfirm ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                     type="button"
                     className="toggle-pass"
                     aria-label="Mostrar contraseña"
@@ -470,7 +470,7 @@ export default function RegisterPage() {
                 />
                 <label htmlFor="terms">
                   Acepto los{' '}
-                  <button
+                  <button title="Leer los términos y condiciones"
                     type="button"
                     className="link-terminos"
                     onClick={() => setTermsOpen(true)}
@@ -478,7 +478,7 @@ export default function RegisterPage() {
                     términos y condiciones
                   </button>
                   {' '}y la{' '}
-                  <button
+                  <button title="Leer la política de privacidad"
                     type="button"
                     className="link-terminos"
                     onClick={() => setTermsOpen(true)}
@@ -490,14 +490,14 @@ export default function RegisterPage() {
               </div>
 
               {/* BOTÓN REGISTRO */}
-            <button type="submit" className="form-submit" disabled={loading}>
+            <button title={loading ? 'Creando cuenta…' : 'Crear tu cuenta en SKYED'} type="submit" className="form-submit" disabled={loading}>
                 {loading ? 'Creando cuenta...' : 'Crear cuenta'}
                 {!loading && <i className="ti ti-arrow-right" />}
             </button>
 
               <p className="form-footer" style={{ marginTop: '1.5rem' }}>
                 ¿Ya tienes cuenta?{' '}
-                <Link to="/login" className="link-accent">
+                <Link title="Ir a iniciar sesión" to="/login" className="link-accent">
                   Inicia sesión
                 </Link>
               </p>
@@ -519,9 +519,9 @@ export default function RegisterPage() {
       <footer className="footer">
         <span>© 2026 SKYED · Sogamoso, Boyacá, Colombia</span>
         <div className="footer-links">
-          <button type="button" onClick={() => setTermsOpen(true)}>Términos</button>
-          <button type="button" onClick={() => setTermsOpen(true)}>Privacidad</button>
-          <a href="#">Soporte</a>
+          <button title="Leer los términos y condiciones" type="button" onClick={() => setTermsOpen(true)}>Términos</button>
+          <button title="Leer la política de privacidad" type="button" onClick={() => setTermsOpen(true)}>Privacidad</button>
+          <a title="Contactar con soporte" href="#">Soporte</a>
         </div>
       </footer>
 

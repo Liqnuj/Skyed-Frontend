@@ -7,11 +7,11 @@ import type { GrupoMenu } from '../shared/AccountMenu';
 
 // Secciones de la página de inicio (cada id está en HomePage.tsx).
 const SECCIONES = [
-  { id: 'inicio', etiqueta: 'Inicio' },
-  { id: 'mundos', etiqueta: 'Elige tu destino' },
-  { id: 'encontraras', etiqueta: 'Qué encontrarás' },
-  { id: 'quienes', etiqueta: 'Quiénes somos' },
-  { id: 'unete', etiqueta: 'Únete' },
+  { id: 'inicio', etiqueta: 'Inicio', descripcion: 'Volver al inicio de la página' },
+  { id: 'mundos', etiqueta: 'Elige tu destino', descripcion: 'Elegir entre SKYED Social y SKYED Deportivo' },
+  { id: 'encontraras', etiqueta: 'Qué encontrarás', descripcion: 'Ver lo que ofrece cada plataforma' },
+  { id: 'quienes', etiqueta: 'Quiénes somos', descripcion: 'Conocer nuestra visión, misión y valores' },
+  { id: 'unete', etiqueta: 'Únete', descripcion: 'Unirte a la comunidad SKYED' },
 ];
 
 /** Baja (o sube) suavemente hasta una sección. El margen del encabezado fijo
@@ -113,7 +113,7 @@ export default function PrincipalNav() {
   return (
     <>
       <nav className="nav">
-        <div className="nav-brand">
+        <div className="nav-brand" title="SKYED">
           <div className="nav-gem"><img src="/assets/principal/icon1.png" alt="logol" /></div>
           <span>SKY<em>ED</em></span>
         </div>
@@ -125,6 +125,7 @@ export default function PrincipalNav() {
               <Link
                 to={destino(sec.id)}
                 className={`nav-section-link${enInicio && activa === sec.id ? ' active' : ''}`}
+                title={sec.descripcion}
                 aria-current={enInicio && activa === sec.id ? 'true' : undefined}
                 onClick={(e) => alPulsar(e, sec.id)}
               >
@@ -137,7 +138,7 @@ export default function PrincipalNav() {
         {user ? (
           <AccountMenu tema="principal" grupos={grupos} rol={rol} alSalirIrA="/" />
         ) : (
-          <Link to="/login" className="nav-login">
+          <Link to="/login" className="nav-login" title="Iniciar sesión o crear una cuenta en SKYED">
             <i className="ti ti-login" /> Iniciar sesión
           </Link>
         )}
@@ -146,6 +147,7 @@ export default function PrincipalNav() {
         <button
           className="nav-menu-btn"
           aria-label="Abrir menú de secciones"
+          title={open ? 'Cerrar el menú de secciones' : 'Abrir el menú de secciones'}
           aria-expanded={open}
           onClick={() => setOpen((o) => !o)}
         >
@@ -158,13 +160,14 @@ export default function PrincipalNav() {
               key={sec.id}
               to={destino(sec.id)}
               className={enInicio && activa === sec.id ? 'active' : undefined}
+              title={sec.descripcion}
               onClick={(e) => alPulsar(e, sec.id)}
             >
               {sec.etiqueta}
             </Link>
           ))}
           {!user && (
-            <Link to="/login" className="mobile-login" onClick={() => setOpen(false)}>Iniciar sesión</Link>
+            <Link to="/login" className="mobile-login" title="Iniciar sesión o crear una cuenta en SKYED" onClick={() => setOpen(false)}>Iniciar sesión</Link>
           )}
         </div>
       </nav>

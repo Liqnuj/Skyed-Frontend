@@ -82,10 +82,10 @@ function ConfirmDialog({
         <h2 id="cd-titulo">{titulo}</h2>
         <p id="cd-mensaje">{mensaje}</p>
         <div className="cd-actions">
-          <button ref={cancelarRef} type="button" className="cd-btn cd-btn-cancel" onClick={() => onCerrar(false)}>
+          <button title="Cancelar y cerrar esta ventana" ref={cancelarRef} type="button" className="cd-btn cd-btn-cancel" onClick={() => onCerrar(false)}>
             Cancelar
           </button>
-          <button ref={aceptarRef} type="button" className="cd-btn cd-btn-ok" onClick={() => onCerrar(true)}>
+          <button title={confirmar} ref={aceptarRef} type="button" className="cd-btn cd-btn-ok" onClick={() => onCerrar(true)}>
             {confirmar}
           </button>
         </div>

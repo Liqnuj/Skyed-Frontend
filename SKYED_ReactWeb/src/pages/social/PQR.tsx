@@ -200,9 +200,9 @@ function PQRForm() {
                     </div>
                     <div className="privacy-notice">
                       🔒 Tu información es tratada con confidencialidad conforme a nuestra{' '}
-                      <a href="#" className="privacy-link">Política de privacidad</a>. No compartimos tus datos con terceros.
+                      <a title="Leer la política de privacidad" href="#" className="privacy-link">Política de privacidad</a>. No compartimos tus datos con terceros.
                     </div>
-                    <button className="pf-submit" type="submit" disabled={saving}>
+                    <button title={saving ? 'Enviando…' : 'Radicar tu solicitud'} className="pf-submit" type="submit" disabled={saving}>
                       {saving ? 'Enviando...' : '✦ Radicar solicitud'}
                     </button>
                   </form>
@@ -221,7 +221,7 @@ function PQRForm() {
                     <div className="status-step"><div className="status-dot">3</div><div className="status-label">En proceso</div></div>
                     <div className="status-step"><div className="status-dot">4</div><div className="status-label">Resuelto</div></div>
                   </div>
-                  <a
+                  <a title="Hacer seguimiento por WhatsApp"
                     className="pqr-whatsapp-btn"
                     href={enlaceWhatsApp()}
                     target="_blank"
@@ -232,8 +232,8 @@ function PQRForm() {
                   <p className="pqr-whatsapp-hint">
                     Opcional: abre un chat con nuestro equipo con tu radicado y el detalle ya escritos.
                   </p>
-                  <Link to="/social/perfil?tab=pqr" className="btn-primary"style={{ fontSize: '.88rem', display: 'inline-block', marginRight: '.75rem' }}>Ver mis PQR</Link>
-                  <button className="btn-primary" onClick={resetPQR} style={{ fontSize: '.88rem' }}>Radicar otra solicitud</button>
+                  <Link title="Ver mis PQR" to="/social/perfil?tab=pqr" className="btn-primary"style={{ fontSize: '.88rem', display: 'inline-block', marginRight: '.75rem' }}>Ver mis PQR</Link>
+                  <button title="Radicar otra solicitud" className="btn-primary" onClick={resetPQR} style={{ fontSize: '.88rem' }}>Radicar otra solicitud</button>
                 </div>
               )}
             </div>

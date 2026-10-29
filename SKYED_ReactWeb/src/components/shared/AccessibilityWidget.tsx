@@ -41,6 +41,7 @@ function Interruptor({
       type="button"
       role="switch"
       aria-checked={activo}
+      title={`${titulo}: ${detalle}`}
       className={`ax-opcion ${activo ? 'is-on' : ''}`}
       onClick={() => onCambio(!activo)}
     >
@@ -108,7 +109,7 @@ export default function AccessibilityWidget({
             <h2>Accesibilidad</h2>
             <p>Ajusta la página a como te sea más cómoda</p>
           </div>
-          <button type="button" className="ax-cerrar" aria-label="Cerrar opciones de accesibilidad" onClick={onToggleOpen}>
+          <button type="button" className="ax-cerrar" aria-label="Cerrar opciones de accesibilidad" title="Cerrar opciones de accesibilidad" onClick={onToggleOpen}>
             <i className="ti ti-x" aria-hidden="true" />
           </button>
         </header>
@@ -161,6 +162,7 @@ export default function AccessibilityWidget({
                   type="button"
                   role="radio"
                   aria-checked={daltonismo === o.valor}
+                  title={`${o.titulo}: ${o.detalle}`}
                   className={`ax-dalt ax-dalt-${o.valor} ${daltonismo === o.valor ? 'is-on' : ''}`}
                   onClick={() => setDaltonismo(o.valor)}
                 >
@@ -194,10 +196,10 @@ export default function AccessibilityWidget({
                 {lector && (
                   <div className="ax-lector">
                     <div className="ax-lector-botones">
-                      <button type="button" className="ax-btn ax-btn-principal" onClick={leerPagina}>
+                      <button type="button" className="ax-btn ax-btn-principal" title="Leer en voz alta el contenido de esta página" onClick={leerPagina}>
                         <i className="ti ti-player-play" aria-hidden="true" /> Leer esta página
                       </button>
-                      <button type="button" className="ax-btn" onClick={detenerLectura}>
+                      <button type="button" className="ax-btn" title="Detener la lectura en voz alta" onClick={detenerLectura}>
                         <i className="ti ti-player-stop" aria-hidden="true" /> Detener
                       </button>
                     </div>
@@ -209,6 +211,7 @@ export default function AccessibilityWidget({
                           type="button"
                           role="radio"
                           aria-checked={velocidadLector === v}
+                          title={`Velocidad de lectura: ${NOMBRES_VELOCIDAD[v]}`}
                           className={velocidadLector === v ? 'is-on' : ''}
                           onClick={() => setVelocidadLector(v)}
                         >
@@ -226,7 +229,7 @@ export default function AccessibilityWidget({
         </div>
 
         <footer className="ax-pie">
-          <button type="button" className="ax-btn ax-reset" onClick={onReset}>
+          <button type="button" className="ax-btn ax-reset" title="Volver a los ajustes de accesibilidad originales" onClick={onReset}>
             <i className="ti ti-refresh" aria-hidden="true" /> Restablecer todo
           </button>
         </footer>
