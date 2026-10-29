@@ -1928,3 +1928,17 @@
   resize: vertical;
 }
 .mod-social .pfc-motivo:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 40%, transparent); outline-offset: 1px; }
+
+/* Modal de nueva contraseña: fondo desvanecido sobre toda la pantalla */
+.mod-social .pf-modal-backdrop.pfp-backdrop {
+  z-index: 900; /* sobre el footer y el menú, bajo el toast (1000) */
+  padding: 1.5rem;
+  background: rgba(10, 0, 21, .55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  animation: pfc-fade .25s ease both;
+}
+.mod-social .pf-modal-backdrop.pfp-backdrop .pf-modal {
+  max-height: calc(100dvh - 3rem);
+  animation: pfc-pop .22s cubic-bezier(.2, .9, .3, 1.2);
+}
