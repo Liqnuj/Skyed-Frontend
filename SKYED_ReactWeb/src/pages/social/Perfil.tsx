@@ -1679,8 +1679,10 @@ function PerfilPanel() {
                 </div>
               </div>
               <AjustesForm user={user} updateProfile={updateProfile} />
-              <CambiarContrasena />
-              <CuentaCard rol={esAdmin ? 'Administrador' : 'Cliente'} deleteAccount={deleteAccount} />
+              <div className="pfx-pair">
+                <CambiarContrasena />
+                <CuentaCard rol={esAdmin ? 'Administrador' : 'Cliente'} deleteAccount={deleteAccount} />
+              </div>
             </div>
           </div>
         )}
@@ -1818,18 +1820,56 @@ function AjustesForm({
   );
 }
 
-/** Igual que en el perfil de SKYED Deportivo: PUT /cambiar-contrasena. */
 function CambiarContrasena() {
   const [actual, setActual] = useState('');
   const [nueva, setNueva] = useState('');
   const [confirmar, setConfirmar] = useState('');
   const [ver, setVer] = useState(false);
+  
+  // Estados para controlar el modal y las cargas
+  const [verModal, setVerModal] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [verificando, setVerificando] = useState(false);
   const [msg, setMsg] = useState<ToastMsg | null>(null);
 
-  const submit = async (e: FormEvent) => {
+  // EFECTO NUEVO: Bloquear el scroll de la página cuando el modal se abre
+  useEffect(() => {
+    if (verModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    // Limpieza en caso de que el componente se desmonte
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [verModal]);
+
+  // Acción 1: Validar la contraseña actual
+  const verificarActual = async (e: FormEvent) => {
     e.preventDefault();
     setMsg(null);
+    if (!actual) return;
+    setVerificando(true);
+    
+    try {
+      await apiFetch('/verificar-contrasena', {
+        method: 'POST',
+        body: JSON.stringify({ contrasena_actual: actual }),
+      });
+      setVerModal(true); 
+    } catch (err) {
+      setMsg({ tipo: 'error', texto: 'La contraseña actual es incorrecta.', id: Date.now() });
+    } finally {
+      setVerificando(false);
+    }
+  };
+
+  // Acción 2: Guardar la nueva contraseña
+  const submitCambio = async (e: FormEvent) => {
+    e.preventDefault();
+    setMsg(null);
+    
     const motivo = errorContrasena(nueva);
     if (motivo) {
       setMsg({ tipo: 'error', texto: motivo, id: Date.now() });
@@ -1843,6 +1883,7 @@ function CambiarContrasena() {
       setMsg({ tipo: 'error', texto: 'Las contraseñas no coinciden.', id: Date.now() });
       return;
     }
+    
     setSaving(true);
     try {
       await apiFetch('/cambiar-contrasena', {
@@ -1854,11 +1895,13 @@ function CambiarContrasena() {
         }),
       });
       setMsg({ tipo: 'ok', texto: 'Contraseña actualizada correctamente.', id: Date.now() });
+      setVerModal(false);
       setActual('');
       setNueva('');
       setConfirmar('');
+      setVer(false);
     } catch (err) {
-      setMsg({ tipo: 'error', texto: err instanceof Error ? err.message : 'No se pudo cambiar la contraseña.', id: Date.now() });
+      setMsg({ tipo: 'error', texto: err instanceof Error ? err.message : 'No se pudo cambiar la contraseña. Asegúrate de no usar una contraseña reciente.', id: Date.now() });
     } finally {
       setSaving(false);
     }
@@ -1867,35 +1910,84 @@ function CambiarContrasena() {
   const tipo = ver ? 'text' : 'password';
 
   return (
-    <div className="pfx-card">
-      <div className="pfx-card-head pfx-head-icon">
-        <span className="pfx-chip pfx-chip-sm"><i className="ti ti-lock" aria-hidden="true" /></span>
-        <h3>Seguridad</h3>
-      </div>
-      <form className="pfx-form" onSubmit={submit}>
-        <Toast msg={msg} onClose={() => setMsg(null)} />
-        <label className="pfx-field">
-          <span>Contraseña actual</span>
-          <input type={tipo} value={actual} onChange={(e) => setActual(e.target.value)} required autoComplete="current-password" />
-        </label>
-        <label className="pfx-field">
-          <span>Nueva contraseña</span>
-          <input type={tipo} value={nueva} onChange={(e) => setNueva(e.target.value)} required autoComplete="new-password" maxLength={72} />
-          <small>Mínimo 8 caracteres, con mayúscula, minúscula y número.</small>
-        </label>
-        <label className="pfx-field">
-          <span>Confirmar nueva contraseña</span>
-          <input type={tipo} value={confirmar} onChange={(e) => setConfirmar(e.target.value)} required autoComplete="new-password" maxLength={72} />
-        </label>
-        <label className="pf-check">
-          <input type="checkbox" checked={ver} onChange={(e) => setVer(e.target.checked)} />
-          Mostrar contraseñas
-        </label>
-        <div className="pfx-form-actions">
-          <button title={saving ? 'Guardando…' : 'Actualizar tu contraseña'} className="pfx-btn pfx-btn-primary" disabled={saving}>{saving ? 'Guardando…' : 'Actualizar contraseña'}</button>
+    <>
+      <div className="pfx-card">
+        <div className="pfx-card-head pfx-head-icon">
+          <span className="pfx-chip pfx-chip-sm"><i className="ti ti-lock" aria-hidden="true" /></span>
+          <h3>Seguridad</h3>
         </div>
-      </form>
-    </div>
+        <form className="pfx-form" onSubmit={verificarActual}>
+          <Toast msg={msg} onClose={() => setMsg(null)} />
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+            Digita tu contraseña actual para poder actualizarla.
+          </p>
+          <label className="pfx-field">
+            <span>Contraseña actual</span>
+            <input type={tipo} value={actual} onChange={(e) => setActual(e.target.value)} required autoComplete="current-password" />
+          </label>
+          <label className="pf-check">
+            <input type="checkbox" checked={ver} onChange={(e) => setVer(e.target.checked)} />
+            Mostrar contraseña
+          </label>
+          <div className="pfx-form-actions">
+            <button type="submit" className="pfx-btn pfx-btn-primary" disabled={verificando || !actual}>
+              {verificando ? 'Validando…' : 'Validar y cambiar'}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* Modal para la nueva contraseña */}
+      {verModal && createPortal(
+        <div className="pf-modal-backdrop pfp-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) setVerModal(false); }}>
+          <div 
+            className="pf-modal" 
+            style={{ 
+              maxWidth: '420px', 
+              padding: '0', 
+              backgroundColor: 'var(--plum)', /* Se fuerza el fondo estático y sólido */
+              border: '1px solid rgba(255,255,255,0.1)',
+              position: 'relative'
+            }} 
+            role="dialog" 
+            aria-modal="true"
+          >
+            <div className="pf-modal-head" style={{ padding: '1.25rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+              <h3 style={{ fontSize: '1.2rem', color: '#fff', margin: 0 }}>Nueva contraseña</h3>
+              <button type="button" className="pf-modal-close" onClick={() => setVerModal(false)} aria-label="Cerrar">×</button>
+            </div>
+            
+            <form className="pfx-form" onSubmit={submitCambio} style={{ padding: '1.5rem' }}>
+              <label className="pfx-field">
+                <span>Nueva contraseña</span>
+                <input type={tipo} value={nueva} onChange={(e) => setNueva(e.target.value)} required autoComplete="new-password" maxLength={72} autoFocus />
+                <small style={{ color: 'var(--text-muted)' }}>Mínimo 8 caracteres, con mayúscula, minúscula y número.</small>
+              </label>
+              
+              <label className="pfx-field" style={{ marginTop: '1rem' }}>
+                <span>Confirmar nueva contraseña</span>
+                <input type={tipo} value={confirmar} onChange={(e) => setConfirmar(e.target.value)} required autoComplete="new-password" maxLength={72} />
+              </label>
+              
+              <label className="pf-check" style={{ marginTop: '1rem' }}>
+                <input type="checkbox" checked={ver} onChange={(e) => setVer(e.target.checked)} />
+                Mostrar contraseñas
+              </label>
+              
+              <div className="pfx-modal-actions" style={{ marginTop: '1.75rem', display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                <button type="button" className="pfx-btn pfx-btn-outline" onClick={() => setVerModal(false)} disabled={saving}>
+                  Cancelar
+                </button>
+                <button type="submit" className="pfx-btn pfx-btn-primary pfx-btn-solid" disabled={saving || !nueva || !confirmar}>
+                  {saving ? 'Guardando…' : 'Guardar contraseña'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>,
+        document.querySelector('.mod-social') ?? document.body,
+      )}
+    </>
   );
 }
 
