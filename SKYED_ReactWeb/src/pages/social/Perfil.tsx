@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import type { FormEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
@@ -431,7 +431,6 @@ function construirConversacion(pqr: PqrConSeguimientos): MensajePqr[] {
     });
   });
 
-
   // PQR respondidas antes de que existiera el historial.
   if (ultimaRespuesta === -1 && pqr.respuesta_pqr) {
     msgs.push({
@@ -452,14 +451,23 @@ interface PfConfirmarProps {
   confirmar: string;
   onConfirmar: () => void;
   onCancelar: () => void;
+  /** Icono de tabler. Por defecto el de "ocultar". */
+  icono?: string;
+  /** Contenido extra bajo el texto (por ejemplo, un campo). */
+  children?: ReactNode;
 }
 
 /** Ventana de confirmación con el estilo del sitio (reemplaza window.confirm). */
-function PfConfirmar({ titulo, texto, confirmar, onConfirmar, onCancelar }: PfConfirmarProps) {
+function PfConfirmar({ titulo, texto, confirmar, onConfirmar, onCancelar, icono = 'ti-eye-off', children }: PfConfirmarProps) {
   const cancelarRef = useRef<HTMLButtonElement>(null);
 
+  // El foco va al botón "Cancelar" solo al abrir (no en cada render,
+  // para no quitárselo a un campo mientras se escribe).
   useEffect(() => {
     cancelarRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
     // En fase de captura: Escape cierra solo esta ventana y no el detalle de abajo.
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
@@ -480,9 +488,10 @@ function PfConfirmar({ titulo, texto, confirmar, onConfirmar, onCancelar }: PfCo
         aria-describedby="pfc-texto"
         onClick={(e) => e.stopPropagation()}
       >
-        <span className="pfc-icon" aria-hidden="true"><i className="ti ti-eye-off" /></span>
+        <span className="pfc-icon" aria-hidden="true"><i className={`ti ${icono}`} /></span>
         <h3 id="pfc-titulo" className="pfc-title">{titulo}</h3>
         <p id="pfc-texto" className="pfc-text">{texto}</p>
+        {children}
         <div className="pfc-actions">
           <button ref={cancelarRef} type="button" className="pfc-btn pfc-btn--ghost" onClick={onCancelar}>Cancelar</button>
           <button type="button" className="pfc-btn pfc-btn--main" onClick={onConfirmar}>{confirmar}</button>
@@ -513,13 +522,7 @@ const TEXTO_ESTADO: Record<Pqr['estado_pqr'], string> = {
   cerrado: 'Este caso fue cerrado.',
 };
 
-function PqrDetalle({ pqr, onClose, onEnviar, onOcultar, oculta }: PqrDetalleProps) {
-  const puedeOcultar = !['en_proceso', 'en_revision'].includes(pqr.estado_pqr);
-  const [confirmando, setConfirmando] = useState(false);
-  const ocultar = () => {
-    if (oculta) { onOcultar(); return; }
-    setConfirmando(true);
-  };
+function PqrDetalle({ pqr, onClose, onEnviar }: PqrDetalleProps) {
   const [texto, setTexto] = useState('');
   const [enviando, setEnviando] = useState(false);
   const cuerpoRef = useRef<HTMLDivElement>(null);
@@ -581,6 +584,7 @@ function PqrDetalle({ pqr, onClose, onEnviar, onOcultar, oculta }: PqrDetallePro
           >
             <div className="pfd-status-top">
               <PqrEstadoPill estado={pqr.estado_pqr} />
+              <PqrPlazoChip pqr={pqr} />
             </div>
             <p className="pfd-status-text">{TEXTO_ESTADO[pqr.estado_pqr]}</p>
             <PqrStepper estado={pqr.estado_pqr} />
@@ -615,7 +619,7 @@ function PqrDetalle({ pqr, onClose, onEnviar, onOcultar, oculta }: PqrDetallePro
                 </div>
               </div>
             ))}
-
+            
             {!hayRespuestaEquipo && puedeResponder && (
               <div className="pfd-wait">
                 <i className="ti ti-clock" aria-hidden="true" />
@@ -658,24 +662,6 @@ function PqrDetalle({ pqr, onClose, onEnviar, onOcultar, oculta }: PqrDetallePro
             <span>Esta solicitud ya fue {pqr.estado_pqr === 'cerrado' ? 'cerrada' : 'resuelta'}.</span>
             <Link to="/social/pqr">Radicar una nueva PQR →</Link>
           </div>
-        )}
-
-        {(oculta || puedeOcultar) && (
-          <div className="pfd-hide-row">
-            <button type="button" className="pf-hide-btn" onClick={ocultar}>
-              <i className={`ti ${oculta ? 'ti-eye' : 'ti-eye-off'}`} aria-hidden="true" />
-              {oculta ? ' Mostrar en mi lista' : ' Ocultar de mi lista'}
-            </button>
-          </div>
-        )}
-        {confirmando && (
-          <PfConfirmar
-            titulo="¿Ocultar esta PQR?"
-            texto="Dejará de verse en tu lista, pero el equipo conserva el registro. La encuentras en “Ocultas”."
-            confirmar="Sí, ocultar"
-            onConfirmar={() => { setConfirmando(false); onOcultar(); }}
-            onCancelar={() => setConfirmando(false)}
-          />
         )}
       </div>
     </div>
@@ -728,11 +714,16 @@ interface ReservaDetalleProps {
   onOcultar: () => Promise<void>;
   /** true si la reserva está en "Ocultas": el botón pasa a "Mostrar en mi lista". */
   oculta: boolean;
+  /** Cancela la reserva; devuelve true si se canceló. El motivo es opcional. */
+  onCancelar: (motivo: string) => Promise<boolean>;
 }
 
-function ReservaDetalle({ reserva, onClose, onRenombrar, onOcultar, oculta }: ReservaDetalleProps) {
+function ReservaDetalle({ reserva, onClose, onRenombrar, onOcultar, oculta, onCancelar }: ReservaDetalleProps) {
   const puedeOcultar = ['cancelada', 'completada'].includes(reserva.estado_rese);
   const [confirmando, setConfirmando] = useState(false);
+  const [confirmandoCancelar, setConfirmandoCancelar] = useState(false);
+  const [cancelando, setCancelando] = useState(false);
+  const [motivo, setMotivo] = useState('');
   const ocultar = () => {
     if (oculta) { onOcultar(); return; }
     setConfirmando(true);
@@ -757,6 +748,18 @@ function ReservaDetalle({ reserva, onClose, onRenombrar, onOcultar, oculta }: Re
     setGuardando(false);
     if (ok) setEditando(false);
   };
+
+  const confirmarCancelacion = async () => {
+    if (cancelando) return;
+    setCancelando(true);
+    const ok = await onCancelar(motivo.trim());
+    setCancelando(false);
+    if (ok) {
+      setConfirmandoCancelar(false);
+      setMotivo('');
+    }
+  };
+
   const estado = reserva.estado_rese as string;
   const pill = reservaEstadoPill(reserva.estado_rese);
   const cancelada = estado === 'cancelada';
@@ -764,6 +767,8 @@ function ReservaDetalle({ reserva, onClose, onRenombrar, onOcultar, oculta }: Re
   const pasos = ['Solicitada', 'Confirmada', 'Completada'];
 
   const dias = diasPara(reserva.fecha_evento_rese);
+  // Solo se cancela una reserva activa cuyo evento aún no pasó.
+  const puedeCancelar = ['pendiente', 'confirmada'].includes(estado) && (dias === null || dias >= 0);
   let cuenta: string | null = null;
   if (!cancelada && estado !== 'completada' && dias !== null && dias >= 0) {
     cuenta = dias === 0 ? '¡Tu evento es hoy!' : dias === 1 ? 'Tu evento es mañana.' : `Faltan ${dias} días para tu evento.`;
@@ -824,22 +829,20 @@ function ReservaDetalle({ reserva, onClose, onRenombrar, onOcultar, oculta }: Re
             ) : (
               <>
                 <h3 id="pf-rese-title">{nombreReserva(reserva)}</h3>
-                <p className="pf-list-item-sub">{fmtFechaLarga(reserva.fecha_evento_rese)}</p>
+                <p className="pf-list-item-sub">{fmtFecha(reserva.fecha_evento_rese)}</p>
+                <button type="button" className="pf-rename-btn" onClick={() => setEditando(true)}>
+                  <i className="ti ti-pencil" aria-hidden="true" />
+                  {(r.nombre_rese ?? '').trim() ? 'Cambiar nombre' : 'Ponle un nombre'}
+                </button>
               </>
             )}
           </div>
           <button className="pf-modal-close" onClick={onClose} aria-label="Cerrar">×</button>
         </div>
 
-        <div className="pf-pqr-meta pfr-meta">
+        <div className="pf-pqr-meta">
           <span className="pf-item-code">Reserva #{reserva.id_rese}</span>
           <span className={`pf-pill ${pill.cls}`}>{pill.txt}</span>
-          {!editando && (
-            <button type="button" className="pf-rename-btn pfr-rename" onClick={() => setEditando(true)}>
-              <i className="ti ti-pencil" aria-hidden="true" />
-              {(r.nombre_rese ?? '').trim() ? 'Cambiar nombre' : 'Ponle un nombre'}
-            </button>
-          )}
         </div>
 
         {!cancelada && (
@@ -852,6 +855,46 @@ function ReservaDetalle({ reserva, onClose, onRenombrar, onOcultar, oculta }: Re
         )}
 
         <div className="pf-rese-body">
+          <div className="pf-info-grid">
+            <div className="pf-info-card wide">
+              <span className="pf-info-label">Fecha del evento</span>
+              <span className="pf-info-value">{fmtFechaLarga(reserva.fecha_evento_rese)}</span>
+            </div>
+            {ubicacion && (
+              <div className="pf-info-card wide">
+                <span className="pf-info-label">Ubicación</span>
+                <span className="pf-info-value">{ubicacion}</span>
+              </div>
+            )}
+            <div className="pf-info-card">
+              <span className="pf-info-label">Invitados</span>
+              <span className="pf-info-value">{reserva.invitados_rese}</span>
+            </div>
+            {r.presupuesto_rese != null && (
+              <div className="pf-info-card">
+                <span className="pf-info-label">Tu presupuesto</span>
+                <span className="pf-info-value">{fmtMoney(Number(r.presupuesto_rese))}</span>
+              </div>
+            )}
+            <div className="pf-info-card">
+              <span className="pf-info-label">Total</span>
+              <span className="pf-info-value">{totalPorDefinir ? 'Por definir' : fmtMoney(reserva.total_rese)}</span>
+            </div>
+            {r.creado_en_rese && (
+              <div className="pf-info-card">
+                <span className="pf-info-label">Reservada el</span>
+                <span className="pf-info-value">{fmtFecha(r.creado_en_rese)}</span>
+              </div>
+            )}
+          </div>
+
+          {observaciones && (
+            <div className="pf-bubble mine pf-rese-obs">
+              <span className="pf-bubble-who">Tus observaciones</span>
+              <p>{observaciones}</p>
+            </div>
+          )}
+
           {cuenta && (
             <div className="pf-rese-note">
               <i className="ti ti-hourglass" aria-hidden="true" />
@@ -862,49 +905,6 @@ function ReservaDetalle({ reserva, onClose, onRenombrar, onOcultar, oculta }: Re
             <i className={`ti ${cancelada ? 'ti-circle-x' : 'ti-info-circle'}`} aria-hidden="true" />
             <span>{RESERVA_NOTA[estado] ?? ''}</span>
           </div>
-
-          <dl className="pfr-ficha">
-            {ubicacion && (
-              <div className="pfr-row">
-                <span className="pfr-icon" aria-hidden="true"><i className="ti ti-map-pin" /></span>
-                <dt className="pfr-label">Ubicación</dt>
-                <dd className="pfr-value">{ubicacion}</dd>
-              </div>
-            )}
-            <div className="pfr-row">
-              <span className="pfr-icon" aria-hidden="true"><i className="ti ti-users" /></span>
-              <dt className="pfr-label">Invitados</dt>
-              <dd className="pfr-value">{reserva.invitados_rese}</dd>
-            </div>
-            {r.presupuesto_rese != null && (
-              <div className="pfr-row">
-                <span className="pfr-icon" aria-hidden="true"><i className="ti ti-wallet" /></span>
-                <dt className="pfr-label">Tu presupuesto</dt>
-                <dd className="pfr-value">{fmtMoney(Number(r.presupuesto_rese))}</dd>
-              </div>
-            )}
-            <div className="pfr-row">
-              <span className="pfr-icon" aria-hidden="true"><i className="ti ti-receipt" /></span>
-              <dt className="pfr-label">Total</dt>
-              <dd className={`pfr-value${totalPorDefinir ? ' pfr-value--pending' : ''}`}>
-                {totalPorDefinir ? 'Por definir' : fmtMoney(reserva.total_rese)}
-              </dd>
-            </div>
-          </dl>
-
-          {r.creado_en_rese && (
-            <p className="pfr-foot">
-              <i className="ti ti-clock" aria-hidden="true" />
-              Reservada el {fmtFecha(r.creado_en_rese)}
-            </p>
-          )}
-
-          {observaciones && (
-            <div className="pfr-obs">
-              <span className="pfr-obs-label">Tus observaciones</span>
-              <p>{observaciones}</p>
-            </div>
-          )}
 
           {historial.length > 0 && (
             <div className="pf-history">
@@ -926,6 +926,13 @@ function ReservaDetalle({ reserva, onClose, onRenombrar, onOcultar, oculta }: Re
               {oculta ? ' Mostrar en mi lista' : ' Ocultar de mi lista'}
             </button>
           )}
+
+          {puedeCancelar && (
+            <button type="button" className="pf-cancel-btn" onClick={() => setConfirmandoCancelar(true)}>
+              <i className="ti ti-circle-x" aria-hidden="true" /> Cancelar reserva
+            </button>
+          )}
+
           {confirmando && (
             <PfConfirmar
               titulo="¿Ocultar esta reserva?"
@@ -934,6 +941,27 @@ function ReservaDetalle({ reserva, onClose, onRenombrar, onOcultar, oculta }: Re
               onConfirmar={() => { setConfirmando(false); onOcultar(); }}
               onCancelar={() => setConfirmando(false)}
             />
+          )}
+
+          {confirmandoCancelar && (
+            <PfConfirmar
+              icono="ti-circle-x"
+              titulo="¿Cancelar esta reserva?"
+              texto="El equipo será informado y la reserva quedará como cancelada. Esta acción no se puede deshacer."
+              confirmar={cancelando ? 'Cancelando…' : 'Sí, cancelar reserva'}
+              onConfirmar={confirmarCancelacion}
+              onCancelar={() => setConfirmandoCancelar(false)}
+            >
+              <textarea
+                className="pfc-motivo"
+                rows={3}
+                maxLength={255}
+                value={motivo}
+                onChange={(e) => setMotivo(e.target.value)}
+                placeholder="Cuéntanos el motivo (opcional)"
+                aria-label="Motivo de la cancelación"
+              />
+            </PfConfirmar>
           )}
         </div>
       </div>
@@ -1034,6 +1062,23 @@ function PerfilPanel() {
       setToast({
         tipo: 'error',
         texto: err instanceof Error ? err.message : 'No se pudo guardar el nombre. Intenta de nuevo.',
+        id: Date.now(),
+      });
+      return false;
+    }
+  };
+
+  const cancelarReserva = async (reserva: Reserva, motivo: string): Promise<boolean> => {
+    try {
+      const actualizada = await reservaService.cancelar(reserva.id_rese, motivo);
+      setReservas((prev) => prev && prev.map((x) => (x.id_rese === reserva.id_rese ? { ...x, ...actualizada } : x)));
+      setDetalleReserva((prev) => (prev && prev.id_rese === reserva.id_rese ? { ...prev, ...actualizada } : prev));
+      setToast({ tipo: 'ok', texto: 'Tu reserva fue cancelada.', id: Date.now() });
+      return true;
+    } catch (err) {
+      setToast({
+        tipo: 'error',
+        texto: err instanceof Error ? err.message : 'No se pudo cancelar la reserva. Intenta de nuevo.',
         id: Date.now(),
       });
       return false;
@@ -1191,15 +1236,6 @@ function PerfilPanel() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [subiendoFoto, setSubiendoFoto] = useState(false);
-  const [infoOpen, setInfoOpen] = useState(false);
-
-  useEffect(() => {
-    const mq = window.matchMedia('(min-width: 901px)');
-    const sync = () => setInfoOpen(mq.matches);
-    sync();
-    mq.addEventListener('change', sync);
-    return () => mq.removeEventListener('change', sync);
-  }, []);
   const handleFotoClick = () => fileInputRef.current?.click();
   const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const original = e.target.files?.[0];
@@ -1269,70 +1305,57 @@ function PerfilPanel() {
   // para que la zona horaria no mueva el día).
   const sidebar = (
     <aside className="pfx-side">
-      <details
-        className="pfx-details"
-        open={infoOpen}
-        onToggle={(e) => setInfoOpen((e.currentTarget as HTMLDetailsElement).open)}
-      >
-        <summary className="pfx-summary">
-          <i className="ti ti-info-circle" aria-hidden="true" /> Ver información del perfil
-          <i className="ti ti-chevron-down part-info-chevron" aria-hidden="true" />
-        </summary>
-        
-        <div className="pfx-details-content">
-          <div className="pfx-card">
-            <div className="pfx-card-head">
-              <h3>Información</h3>
-              <button type="button" className="pfx-link" onClick={() => setTab('ajustes')}>
-                <i className="ti ti-edit" aria-hidden="true" /> Editar
-              </button>
-            </div>
-            <div className="pfx-card-body">
-              {filasInfo.map((f) => (
-                <div className="pfx-row" key={f.label}>
-                  <span className="pfx-row-label">{f.label}</span>
-                  {f.value ? (
-                    <span className="pfx-row-value">{f.value}</span>
-                  ) : f.editable ? (
-                    <button type="button" className="pfx-link" onClick={() => setTab('ajustes')}>
-                      + Agregar
-                    </button>
-                  ) : (
-                    <span className="pfx-row-value">—</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {perfilPct < 100 && (
-            <div className="pfx-card">
-              <div className="pfx-card-head">
-                <h3>Perfil completo</h3>
-                <span className="pfx-pct">{perfilPct} %</span>
-              </div>
-              <div className="pfx-card-body pfx-progress-body">
-                <div
-                  className="pfx-bar"
-                  role="progressbar"
-                  aria-valuenow={perfilPct}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-label="Perfil completado"
-                >
-                  <span style={{ width: `${perfilPct}%` }} />
-                </div>
-                <p className="pfx-progress-hint">Te falta agregar: {faltantes.join(', ')}.</p>
-                {faltanDatos && (
-                  <button type="button" className="pfx-btn pfx-btn-primary" onClick={() => setTab('ajustes')}>
-                    Completar datos
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
+      <div className="pfx-card">
+        <div className="pfx-card-head">
+          <h3>Información</h3>
+          <button type="button" className="pfx-link" onClick={() => setTab('ajustes')}>
+            <i className="ti ti-edit" aria-hidden="true" /> Editar
+          </button>
         </div>
-      </details>
+        <div className="pfx-card-body">
+          {filasInfo.map((f) => (
+            <div className="pfx-row" key={f.label}>
+              <span className="pfx-row-label">{f.label}</span>
+              {f.value ? (
+                <span className="pfx-row-value">{f.value}</span>
+              ) : f.editable ? (
+                <button type="button" className="pfx-link" onClick={() => setTab('ajustes')}>
+                  + Agregar
+                </button>
+              ) : (
+                <span className="pfx-row-value">—</span>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {perfilPct < 100 && (
+        <div className="pfx-card">
+          <div className="pfx-card-head">
+            <h3>Perfil completo</h3>
+            <span className="pfx-pct">{perfilPct} %</span>
+          </div>
+          <div className="pfx-card-body pfx-progress-body">
+            <div
+              className="pfx-bar"
+              role="progressbar"
+              aria-valuenow={perfilPct}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label="Perfil completado"
+            >
+              <span style={{ width: `${perfilPct}%` }} />
+            </div>
+            <p className="pfx-progress-hint">Te falta agregar: {faltantes.join(', ')}.</p>
+            {faltanDatos && (
+              <button type="button" className="pfx-btn pfx-btn-primary" onClick={() => setTab('ajustes')}>
+                Completar datos
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </aside>
   );
 
@@ -1654,10 +1677,8 @@ function PerfilPanel() {
                 </div>
               </div>
               <AjustesForm user={user} updateProfile={updateProfile} />
-              <div className="pfx-pair">
-                <CambiarContrasena />
-                <CuentaCard rol={esAdmin ? 'Administrador' : 'Cliente'} deleteAccount={deleteAccount} />
-              </div>
+              <CambiarContrasena />
+              <CuentaCard rol={esAdmin ? 'Administrador' : 'Cliente'} deleteAccount={deleteAccount} />
             </div>
           </div>
         )}
@@ -1668,6 +1689,7 @@ function PerfilPanel() {
           reserva={detalleReserva}
           onClose={() => setDetalleReserva(null)}
           onRenombrar={(nombre) => renombrarReserva(detalleReserva, nombre)}
+          onCancelar={(motivo) => cancelarReserva(detalleReserva, motivo)}
           oculta={!!reservasOcultas?.some((x) => x.id_rese === detalleReserva.id_rese)}
           onOcultar={() => alternarOcultaReserva(detalleReserva, !reservasOcultas?.some((x) => x.id_rese === detalleReserva.id_rese))}
         />
@@ -1794,42 +1816,18 @@ function AjustesForm({
   );
 }
 
+/** Igual que en el perfil de SKYED Deportivo: PUT /cambiar-contrasena. */
 function CambiarContrasena() {
   const [actual, setActual] = useState('');
   const [nueva, setNueva] = useState('');
   const [confirmar, setConfirmar] = useState('');
   const [ver, setVer] = useState(false);
-  const [verModal, setVerModal] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [verificando, setVerificando] = useState(false);
   const [msg, setMsg] = useState<ToastMsg | null>(null);
 
-  // Paso 1: Validar que la contraseña actual sea correcta antes de abrir el modal
-  const verificarActual = async (e: FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
     setMsg(null);
-    if (!actual) return;
-    setVerificando(true);
-    
-    try {
-      // Necesitarás crear este endpoint en Laravel
-      await apiFetch('/verificar-contrasena', {
-        method: 'POST',
-        body: JSON.stringify({ contrasena_actual: actual }),
-      });
-      setVerModal(true); // Se abre el modal si es correcta
-    } catch (err) {
-      setMsg({ tipo: 'error', texto: 'La contraseña actual es incorrecta.', id: Date.now() });
-    } finally {
-      setVerificando(false);
-    }
-  };
-
-  // Paso 2: Enviar la nueva contraseña
-  const submitCambio = async (e: FormEvent) => {
-    e.preventDefault();
-    setMsg(null);
-    
     const motivo = errorContrasena(nueva);
     if (motivo) {
       setMsg({ tipo: 'error', texto: motivo, id: Date.now() });
@@ -1843,7 +1841,6 @@ function CambiarContrasena() {
       setMsg({ tipo: 'error', texto: 'Las contraseñas no coinciden.', id: Date.now() });
       return;
     }
-    
     setSaving(true);
     try {
       await apiFetch('/cambiar-contrasena', {
@@ -1855,13 +1852,11 @@ function CambiarContrasena() {
         }),
       });
       setMsg({ tipo: 'ok', texto: 'Contraseña actualizada correctamente.', id: Date.now() });
-      setVerModal(false);
       setActual('');
       setNueva('');
       setConfirmar('');
     } catch (err) {
-      // El backend devolverá error si la contraseña ya está en el historial
-      setMsg({ tipo: 'error', texto: err instanceof Error ? err.message : 'No se pudo cambiar la contraseña. Revisa que no sea una que ya hayas usado.', id: Date.now() });
+      setMsg({ tipo: 'error', texto: err instanceof Error ? err.message : 'No se pudo cambiar la contraseña.', id: Date.now() });
     } finally {
       setSaving(false);
     }
@@ -1870,66 +1865,35 @@ function CambiarContrasena() {
   const tipo = ver ? 'text' : 'password';
 
   return (
-    <>
-      <div className="pfx-card">
-        <div className="pfx-card-head pfx-head-icon">
-          <span className="pfx-chip pfx-chip-sm"><i className="ti ti-lock" aria-hidden="true" /></span>
-          <h3>Seguridad</h3>
-        </div>
-        <form className="pfx-form" onSubmit={verificarActual}>
-          <Toast msg={msg} onClose={() => setMsg(null)} />
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
-            Digita tu contraseña actual para poder actualizarla.
-          </p>
-          <label className="pfx-field">
-            <span>Contraseña actual</span>
-            <input type={tipo} value={actual} onChange={(e) => setActual(e.target.value)} required autoComplete="current-password" />
-          </label>
-          <label className="pf-check">
-            <input type="checkbox" checked={ver} onChange={(e) => setVer(e.target.checked)} />
-            Mostrar contraseña
-          </label>
-          <div className="pfx-form-actions">
-            <button type="submit" className="pfx-btn pfx-btn-primary" disabled={verificando || !actual}>
-              {verificando ? 'Validando…' : 'Validar y cambiar'}
-            </button>
-          </div>
-        </form>
+    <div className="pfx-card">
+      <div className="pfx-card-head pfx-head-icon">
+        <span className="pfx-chip pfx-chip-sm"><i className="ti ti-lock" aria-hidden="true" /></span>
+        <h3>Seguridad</h3>
       </div>
-
-      {verModal && (
-        <div className="pf-modal-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) setVerModal(false); }}>
-          <div className="pf-modal" style={{ maxWidth: '420px', padding: '0' }} role="dialog" aria-modal="true">
-            <div className="pf-modal-head" style={{ padding: '1.25rem', borderBottom: '1px solid var(--border)' }}>
-              <h3 style={{ fontSize: '1.2rem', color: 'var(--plum)' }}>Nueva contraseña</h3>
-              <button type="button" className="pf-modal-close" onClick={() => setVerModal(false)} aria-label="Cerrar">×</button>
-            </div>
-            
-            <form className="pfx-form" onSubmit={submitCambio} style={{ padding: '1.5rem' }}>
-              <label className="pfx-field">
-                <span>Nueva contraseña</span>
-                <input type={tipo} value={nueva} onChange={(e) => setNueva(e.target.value)} required autoComplete="new-password" maxLength={72} autoFocus />
-                <small style={{ color: 'var(--text-muted)' }}>Mínimo 8 caracteres, con mayúscula, minúscula y número.</small>
-              </label>
-              
-              <label className="pfx-field" style={{ marginTop: '1rem' }}>
-                <span>Confirmar nueva contraseña</span>
-                <input type={tipo} value={confirmar} onChange={(e) => setConfirmar(e.target.value)} required autoComplete="new-password" maxLength={72} />
-              </label>
-              
-              <div className="pfx-modal-actions" style={{ marginTop: '1.75rem', display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-                <button type="button" className="pfx-btn pfx-btn-outline" onClick={() => setVerModal(false)} disabled={saving}>
-                  Cancelar
-                </button>
-                <button type="submit" className="pfx-btn pfx-btn-primary pfx-btn-solid" disabled={saving || !nueva || !confirmar}>
-                  {saving ? 'Guardando…' : 'Guardar contraseña'}
-                </button>
-              </div>
-            </form>
-          </div>
+      <form className="pfx-form" onSubmit={submit}>
+        <Toast msg={msg} onClose={() => setMsg(null)} />
+        <label className="pfx-field">
+          <span>Contraseña actual</span>
+          <input type={tipo} value={actual} onChange={(e) => setActual(e.target.value)} required autoComplete="current-password" />
+        </label>
+        <label className="pfx-field">
+          <span>Nueva contraseña</span>
+          <input type={tipo} value={nueva} onChange={(e) => setNueva(e.target.value)} required autoComplete="new-password" maxLength={72} />
+          <small>Mínimo 8 caracteres, con mayúscula, minúscula y número.</small>
+        </label>
+        <label className="pfx-field">
+          <span>Confirmar nueva contraseña</span>
+          <input type={tipo} value={confirmar} onChange={(e) => setConfirmar(e.target.value)} required autoComplete="new-password" maxLength={72} />
+        </label>
+        <label className="pf-check">
+          <input type="checkbox" checked={ver} onChange={(e) => setVer(e.target.checked)} />
+          Mostrar contraseñas
+        </label>
+        <div className="pfx-form-actions">
+          <button className="pfx-btn pfx-btn-primary" disabled={saving}>{saving ? 'Guardando…' : 'Actualizar contraseña'}</button>
         </div>
-      )}
-    </>
+      </form>
+    </div>
   );
 }
 
