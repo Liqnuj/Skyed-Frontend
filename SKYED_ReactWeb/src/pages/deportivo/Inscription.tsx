@@ -12,8 +12,21 @@ import { createWorker } from 'tesseract.js';
 import '../../styles/deportivo/participante.css';
 
 interface Kit {
+  nombre?: string | null;
   precio?: number;
+  imagen_url?: string | null;
+  contenido?: string | null;
+  fecha_entrega?: string | null;
+  lugar_entrega?: string | null;
   incluido?: boolean;
+}
+
+/** "2026-10-27T00:00:00.000000Z" -> "27 de octubre de 2026" sin desfase de zona horaria. */
+function fmtFechaKit(iso: string | null | undefined) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso ?? ''));
+  if (!m) return '';
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
+    .toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 interface EventoInscripcion {
@@ -127,6 +140,8 @@ function InscriptionWizard() {
   const [errorInvTelefono, setErrorInvTelefono] = useState('');
   const [invFechaNacimiento, setInvFechaNacimiento] = useState('');
   const [invCorreo, setInvCorreo] = useState('');
+  const [invDeseaKit, setInvDeseaKit] = useState(false);
+  const [invTallaKit, setInvTallaKit] = useState('');
 
   const [enviando, setEnviando] = useState(false);
   // Si la inscripción se creó pero la subida del comprobante falló, aquí queda el id del pago
@@ -192,6 +207,8 @@ function InscriptionWizard() {
       if (draft.invTelefono) setInvTelefono(draft.invTelefono);
       if (draft.invFechaNacimiento) setInvFechaNacimiento(draft.invFechaNacimiento);
       if (draft.invCorreo) setInvCorreo(draft.invCorreo);
+      if (draft.invDeseaKit) setInvDeseaKit(draft.invDeseaKit);
+      if (draft.invTallaKit) setInvTallaKit(draft.invTallaKit);
       if (draft.metodoPago) setMetodoPago(draft.metodoPago);
 
       // El archivo del comprobante nunca se puede restaurar tras recargar
@@ -234,6 +251,8 @@ function InscriptionWizard() {
       invTelefono,
       invFechaNacimiento,
       invCorreo,
+      invDeseaKit,
+      invTallaKit,
       metodoPago,
     };
     try {
@@ -243,7 +262,7 @@ function InscriptionWizard() {
     id, step, rh, contactoEmergenciaNombre, contactoEmergenciaTelefono, parentesco,
     categoriaId, deseaJersey, dorsalPreferido, tallaKit, condicionesMedicas,
     mostrarInvitado, invTipoDocumento, invDocumento, invNombre, invApellido,
-    invRh, invTelefono, invFechaNacimiento, invCorreo, metodoPago,
+    invRh, invTelefono, invFechaNacimiento, invCorreo, invDeseaKit, invTallaKit, metodoPago,
   ]);
 
   useEffect(() => {
@@ -430,8 +449,12 @@ function InscriptionWizard() {
   }, [msg]);
 
 
-  const precioKit = deseaJersey && evento?.kit ? Number(evento.kit.precio || 0) : 0;
-  const total = (evento?.precio || 0) + precioKit;
+  const precioEvento = evento?.precio || 0;
+  const precioKitUnitario = evento?.kit ? Number(evento.kit.precio || 0) : 0;
+  const precioKit = deseaJersey ? precioKitUnitario : 0;
+  const precioInvitado = mostrarInvitado ? precioEvento : 0;
+  const precioKitInvitado = mostrarInvitado && invDeseaKit ? precioKitUnitario : 0;
+  const total = precioEvento + precioKit + precioInvitado + precioKitInvitado;
   const referenciaPago = evento ? `SKYED-${String(evento.id).padStart(4, '0')}` : '';
 
   function irAPago(e: FormEvent) {
@@ -456,8 +479,8 @@ function InscriptionWizard() {
     if (!contactoEmergenciaTelefono) { setErrorTelefonoEmergencia('Este campo es obligatorio.'); faltaAlgo = true; }
     if (!parentesco) { setErrorParentesco('Selecciona el parentesco.'); faltaAlgo = true; }
     if (!categoriaId) { faltaAlgo = true; }
-    if (deseaJersey === null) { faltaAlgo = true; }
-    if (deseaJersey === true && !tallaKit) {
+    if (evento?.kit && deseaJersey === null) { faltaAlgo = true; }
+    if (evento?.kit && deseaJersey === true && !tallaKit) {
       faltaAlgo = true;
       mostrarMsg('error', 'Selecciona la talla del kit.');
     }
@@ -467,6 +490,10 @@ function InscriptionWizard() {
       if (!invNombre) { setErrorInvNombre('Este campo es obligatorio.'); faltaAlgo = true; }
       if (!invApellido) { setErrorInvApellido('Este campo es obligatorio.'); faltaAlgo = true; }
       if (!invTelefono) { setErrorInvTelefono('Este campo es obligatorio.'); faltaAlgo = true; }
+      if (invDeseaKit && !invTallaKit) {
+        faltaAlgo = true;
+        mostrarMsg('error', 'Selecciona la talla del kit del invitado.');
+      }
     }
 
     if (faltaAlgo) {
@@ -553,8 +580,8 @@ function InscriptionWizard() {
       contacto_emergencia_parentesco: parentesco,
       fecha_nacimiento: fechaNacimiento,
       id_categoria: categoriaId,
-      desea_jersey: deseaJersey,
-      numero_dorsal_preferido: dorsalPreferido || null,
+      desea_jersey: evento?.kit ? deseaJersey === true : false,
+      numero_dorsal_preferido: evento?.kit && deseaJersey ? (dorsalPreferido || null) : null,
       talla_kit: deseaJersey ? (tallaKit || null) : null,
       condiciones_medicas: condicionesMedicas || null,
       metodo_pago_p: metodoPago,
@@ -573,6 +600,8 @@ function InscriptionWizard() {
         telefono_inv: invTelefono,
         fecha_nacimiento_inv: invFechaNacimiento,
         correo_inv: invCorreo || null,
+        desea_kit: evento?.kit ? invDeseaKit : false,
+        talla_kit: evento?.kit && invDeseaKit ? (invTallaKit || null) : null,
       };
     }
 
@@ -837,53 +866,78 @@ function InscriptionWizard() {
                 </div>
               </div>
 
-              {/* Tarjeta 4: kit / jersey / dorsal */}
-              <div className="part-card">
-                <div className="part-card-head">
-                  <span className="part-card-head-icon"><i className="ti ti-shirt-sport" aria-hidden="true" /></span>
-                  <h3>Kit y dorsal</h3>
-                </div>
-                <div className="part-card-body">
-                  <div className="part-form-group">
-                    <label>¿Desea adquirir su jersey? *</label>
-                    <p className="part-form-hint" style={{ marginTop: '0rem' }}>
-                      El kit incluye jersey, pantaloneta y medias. Al adquirirlo se sumarán {fmtMoney(evento.kit?.precio)} al valor de la inscripción.
-                    </p>
-                    <div style={{ display: 'flex', gap: '.6rem', marginTop: '.6rem' }}>
-                      <button type="button" className={`btn ${deseaJersey === true ? 'btn-primary' : 'btn-outline'}`} onClick={() => setDeseaJersey(true)}>Sí</button>
-                      <button type="button" className={`btn ${deseaJersey === false ? 'btn-primary' : 'btn-outline'}`} onClick={() => setDeseaJersey(false)}>No</button>
-                    </div>
+              {/* Tarjeta 4: kit / jersey / dorsal (solo si el evento tiene kit) */}
+              {evento.kit && (
+                <div className="part-card">
+                  <div className="part-card-head">
+                    <span className="part-card-head-icon"><i className="ti ti-shirt-sport" aria-hidden="true" /></span>
+                    <h3>Kit y dorsal</h3>
                   </div>
+                  <div className="part-card-body">
+                    {evento.kit && (
+                      <div style={{ border: '1px dashed var(--border, #e5e7eb)', borderRadius: 10, padding: '.9rem 1rem', marginBottom: '1rem' }}>
+                        {evento.kit.imagen_url && (
+                          <img
+                            src={evento.kit.imagen_url}
+                            alt={evento.kit.nombre || 'Kit del evento'}
+                            style={{ display: 'block', width: '100%', maxHeight: 260, objectFit: 'cover', borderRadius: 8, marginBottom: '.8rem' }}
+                            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                          />
+                        )}
+                        <div className="part-review-row"><span>Kit</span><strong>{evento.kit.nombre || 'Kit del evento'}</strong></div>
+                        {evento.kit.contenido && (
+                          <div className="part-review-row"><span>Incluye</span><strong>{evento.kit.contenido}</strong></div>
+                        )}
+                        {evento.kit.lugar_entrega && (
+                          <div className="part-review-row"><span>Recogida</span><strong>{evento.kit.lugar_entrega}</strong></div>
+                        )}
+                        {evento.kit.fecha_entrega && (
+                          <div className="part-review-row"><span>Fecha de entrega</span><strong>{fmtFechaKit(evento.kit.fecha_entrega)}</strong></div>
+                        )}
+                        <div className="part-review-row"><span>Precio</span><strong>{fmtMoney(evento.kit.precio)}</strong></div>
+                      </div>
+                    )}
+                    <div className="part-form-group">
+                      <label>¿Desea adquirir el kit? *</label>
+                      <p className="part-form-hint" style={{ marginTop: '0rem' }}>
+                        Si lo pides, se suman {fmtMoney(evento.kit?.precio)} al valor de la inscripción. El kit es individual: cada persona (titular e invitado) elige el suyo.
+                      </p>
+                      <div style={{ display: 'flex', gap: '.6rem', marginTop: '.6rem' }}>
+                        <button type="button" className={`btn ${deseaJersey === true ? 'btn-primary' : 'btn-outline'}`} onClick={() => setDeseaJersey(true)}>Sí</button>
+                        <button type="button" className={`btn ${deseaJersey === false ? 'btn-primary' : 'btn-outline'}`} onClick={() => setDeseaJersey(false)}>No</button>
+                      </div>
+                    </div>
 
-                  {deseaJersey === true && (
-                    <>
-                      <div className="part-form-group">
-                        <label>Talla del kit (jersey, pantaloneta y medias) *</label>
-                        <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', marginTop: '.6rem' }}>
-                          {['XS', 'S', 'M', 'L', 'XL', 'XXL'].map((t) => (
-                            <button
-                              key={t}
-                              type="button"
-                              className={`btn ${tallaKit === t ? 'btn-primary' : 'btn-outline'}`}
-                              onClick={() => setTallaKit(t)}
-                            >
-                              {t}
-                            </button>
-                          ))}
+                    {deseaJersey === true && (
+                      <>
+                        <div className="part-form-group">
+                          <label>Talla del kit *</label>
+                          <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', marginTop: '.6rem' }}>
+                            {['XS', 'S', 'M', 'L', 'XL', 'XXL'].map((t) => (
+                              <button
+                                key={t}
+                                type="button"
+                                className={`btn ${tallaKit === t ? 'btn-primary' : 'btn-outline'}`}
+                                onClick={() => setTallaKit(t)}
+                              >
+                                {t}
+                              </button>
+                            ))}
+                          </div>
                         </div>
-                      </div>
 
-                      <div className="part-form-group" style={{ marginBottom: 0 }}>
-                        <label htmlFor="dorsal">Número de dorsal preferido (opcional, sujeto a disponibilidad)</label>
-                        <input id="dorsal" placeholder="Ej: 42" inputMode="numeric" value={dorsalPreferido} onChange={(e) => setDorsalPreferido(e.target.value.replace(/\D/g, ''))} />
-                        <br></br>
-                        <br></br>
-                        <div className="part-form-hint" style={{ marginBottom: 0 }}>Si el número ya está tomado, se asignará uno automáticamente.</div>
-                      </div>
-                    </>
-                  )}
+                        <div className="part-form-group" style={{ marginBottom: 0 }}>
+                          <label htmlFor="dorsal">Número de dorsal preferido (opcional, sujeto a disponibilidad)</label>
+                          <input id="dorsal" placeholder="Ej: 42" inputMode="numeric" value={dorsalPreferido} onChange={(e) => setDorsalPreferido(e.target.value.replace(/\D/g, ''))} />
+                          <br></br>
+                          <br></br>
+                          <div className="part-form-hint" style={{ marginBottom: 0 }}>Si el número ya está tomado, se asignará uno automáticamente.</div>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Tarjeta 5: información médica */}
               <div className="part-card">
@@ -1011,6 +1065,37 @@ function InscriptionWizard() {
                           <input id="i-correo" type="email" value={invCorreo} onChange={(e) => setInvCorreo(e.target.value)} />
                         </div>
                       </div>
+
+                      <div className="part-form-hint" style={{ margin: '0 0 .75rem' }}>
+                        El invitado paga su propia inscripción: se suman {fmtMoney(evento.precio)} al total.
+                      </div>
+
+                      {evento.kit && (
+                        <div className="part-form-group" style={{ marginBottom: 0 }}>
+                          <label>¿El invitado desea el kit?</label>
+                          <p className="part-form-hint" style={{ marginTop: 0 }}>
+                            Si lo pide, se suman {fmtMoney(evento.kit.precio)} al total.
+                          </p>
+                          <div style={{ display: 'flex', gap: '.6rem', marginTop: '.6rem' }}>
+                            <button type="button" className={`btn ${invDeseaKit ? 'btn-primary' : 'btn-outline'}`} onClick={() => setInvDeseaKit(true)}>Sí</button>
+                            <button type="button" className={`btn ${!invDeseaKit ? 'btn-primary' : 'btn-outline'}`} onClick={() => { setInvDeseaKit(false); setInvTallaKit(''); }}>No</button>
+                          </div>
+                          {invDeseaKit && (
+                            <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', marginTop: '.75rem' }}>
+                              {['XS', 'S', 'M', 'L', 'XL', 'XXL'].map((t) => (
+                                <button
+                                  key={t}
+                                  type="button"
+                                  className={`btn ${invTallaKit === t ? 'btn-primary' : 'btn-outline'}`}
+                                  onClick={() => setInvTallaKit(t)}
+                                >
+                                  {t}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1181,8 +1266,14 @@ function InscriptionWizard() {
                   <div className="part-review-row"><span>Nombre</span><strong>{user?.name}</strong></div>
                   <div className="part-review-row"><span>Documento</span><strong>{documento}</strong></div>
                   <div className="part-review-row"><span>Correo</span><strong>{user?.email}</strong></div>
-                  <div className="part-review-row"><span>Kit</span><strong>{deseaJersey ? 'Incluido' : 'Sin kit'}</strong></div>
+                  <div className="part-review-row"><span>Kit</span><strong>{deseaJersey && evento?.kit ? 'Incluido' : 'Sin kit'}</strong></div>
                   <div className="part-review-row"><span>Dorsal preferido</span><strong>{dorsalPreferido || '—'}</strong></div>
+                  {mostrarInvitado && (
+                    <>
+                      <div className="part-review-row"><span>Invitado</span><strong>{`${invNombre} ${invApellido}`.trim()}</strong></div>
+                      <div className="part-review-row"><span>Kit del invitado</span><strong>{invDeseaKit ? `Talla ${invTallaKit}` : 'Sin kit'}</strong></div>
+                    </>
+                  )}
                 </div>
 
                 <div className="part-review-block">
@@ -1300,7 +1391,13 @@ function InscriptionWizard() {
 
             <div style={{ borderTop: '1px solid var(--border, #e5e7eb)', paddingTop: '.75rem' }}>
               <div className="part-review-row"><span>Inscripción</span><strong>{fmtMoney(evento.precio)}</strong></div>
-              <div className="part-review-row"><span>Kit de bienvenida</span><strong>{deseaJersey ? fmtMoney(evento.kit?.precio) : 'No incluido'}</strong></div>
+              <div className="part-review-row"><span>Kit de bienvenida</span><strong>{deseaJersey && evento.kit ? fmtMoney(evento.kit.precio) : 'No incluido'}</strong></div>
+              {mostrarInvitado && (
+                <>
+                  <div className="part-review-row"><span>Inscripción del invitado</span><strong>{fmtMoney(precioInvitado)}</strong></div>
+                  <div className="part-review-row"><span>Kit del invitado</span><strong>{invDeseaKit ? fmtMoney(precioKitInvitado) : 'No incluido'}</strong></div>
+                </>
+              )}
             </div>
             <div className="part-review-total"><span>Total</span><strong>{fmtMoney(total)}</strong></div>
 

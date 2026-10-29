@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, Navigate, useSearchParams } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import jsQR from "jsqr";
 import {
   ArrowLeft,
@@ -43,7 +43,6 @@ import { prepararImagen } from "../../utils/prepararImagen";
 import { EstadoPagos, InscritosPorEvento, TendenciaMensual } from "../../components/deportivo/GraficosAdmin";
 import { useConfirmacion } from "../../components/shared/ConfirmDialog";
 import { CargandoPanel, NumeroAnimado } from "../../components/shared/AdminMotion";
-import AdminFooter from "../../components/shared/AdminFooter";
 
 type Confirmar = ReturnType<typeof useConfirmacion>["confirmar"];
 // Base del panel: mismo diseño del panel social con la paleta deportiva
@@ -60,8 +59,6 @@ type Section =
   | "kits"
   | "usuarios"
   | "ajustes";
-
-const SECCIONES: Section[] = ["inicio", "eventos", "inscripciones", "acceso", "resultados", "kits", "usuarios", "ajustes"];
 
 type Categoria = {
   id: number;
@@ -99,12 +96,18 @@ type Kit = {
   id_k: number;
   nombre_k: string;
   stock_k: number;
+  precio_k?: number | string | null;
+  imagen_k?: string | null;
+  imagen_url?: string | null;
+  eventos?: { id_e: number; nombre_e: string }[];
   fecha_entrega_k?: string | null;
   lugar_entrega_k?: string | null;
   contenido_k?: string | null;
   talla_camiseta_k?: string | null;
   numero_dorsal_k?: number | null;
 };
+
+const moneda = (n: number | string | null | undefined) => `$${(Number(n) || 0).toLocaleString("es-CO")}`;
 
 type Persona = { nombre_u?: string; apellido_u?: string; correo_u?: string; telefono_u?: string };
 
@@ -412,8 +415,6 @@ function AdminPage() {
     setFontSize,
     dyslexia,
     setDyslexia,
-    accentOverride,
-    setAccent,
     reset,
   } = useAccessibility();
 
@@ -433,17 +434,6 @@ function AdminPage() {
 
   const [filtroPago, setFiltroPago] = useState<"todos" | Pago["estado_p"]>("pendiente");
   const [filtroEvento, setFiltroEvento] = useState("");
-  // Filtros por sección (cadena vacía = "todos")
-  const [filtroCategoriaEvento, setFiltroCategoriaEvento] = useState("");
-  const [filtroEstadoEvento, setFiltroEstadoEvento] = useState("");
-  const [filtroFechaEvento, setFiltroFechaEvento] = useState(""); // proximos | pasados
-  const [filtroCuposEvento, setFiltroCuposEvento] = useState(""); // con | agotado
-  const [filtroMetodoPago, setFiltroMetodoPago] = useState("");
-  const [filtroEstadoResultado, setFiltroEstadoResultado] = useState("");
-  const [filtroStockKit, setFiltroStockKit] = useState(""); // con | bajo | agotado
-  const [filtroLugarKit, setFiltroLugarKit] = useState("");
-  const [filtroRolUsuario, setFiltroRolUsuario] = useState("");
-  const [filtroEstadoUsuario, setFiltroEstadoUsuario] = useState("");
 
   const [modal, setModal] = useState<
     "evento" | "categorias" | "kit" | "pago" | "resultado" | null
@@ -505,87 +495,28 @@ function AdminPage() {
   const selectSection = (next: Section) => {
     setSection(next);
     setSearch("");
-    setFiltroEvento("");
-    setFiltroCategoriaEvento("");
-    setFiltroEstadoEvento("");
-    setFiltroFechaEvento("");
-    setFiltroCuposEvento("");
-    setFiltroMetodoPago("");
-    setFiltroEstadoResultado("");
-    setFiltroStockKit("");
-    setFiltroLugarKit("");
-    setFiltroRolUsuario("");
-    setFiltroEstadoUsuario("");
     setMobileOpen(false);
   };
-
-  // Un enlace (p. ej. un botón de SKAI) puede abrir una sección directo:
-  // ?seccion=kits. Luego se limpia la URL para que recargar no la fuerce.
-  const [params, setParams] = useSearchParams();
-  useEffect(() => {
-    const pedida = params.get("seccion") as Section | null;
-    if (pedida && SECCIONES.includes(pedida)) {
-      selectSection(pedida);
-      setParams({}, { replace: true });
-    }
-  }, [params]);
 
   const filtered = (text: string) =>
     text.toLowerCase().includes(search.toLowerCase());
 
-  const STOCK_BAJO = 10; // kits con este stock o menos se consideran "stock bajo"
-
-  const visibleEventos = eventos
-    .filter((e) => !filtroCategoriaEvento || e.categoria === filtroCategoriaEvento)
-    .filter((e) => !filtroEstadoEvento || e.estado === filtroEstadoEvento)
-    .filter((e) => {
-      if (!filtroFechaEvento) return true;
-      const fecha = (e.fecha ?? "").slice(0, 10);
-      return filtroFechaEvento === "proximos" ? fecha >= hoy() : fecha < hoy();
-    })
-    .filter((e) => {
-      if (!filtroCuposEvento) return true;
-      return filtroCuposEvento === "con"
-        ? Number(e.cupos_disponibles) > 0
-        : Number(e.cupos_disponibles) <= 0;
-    })
-    .filter((e) =>
-      filtered(`${e.nombre} ${e.categoria} ${e.ubicacion} ${e.estado}`)
-    );
+  const visibleEventos = eventos.filter((e) =>
+    filtered(`${e.nombre} ${e.categoria} ${e.ubicacion} ${e.estado}`)
+  );
   const visiblePagos = pagos
     .filter((p) => filtroPago === "todos" || p.estado_p === filtroPago)
     .filter((p) => !filtroEvento || String(p.inscripcion?.evento?.id_e) === filtroEvento)
-    .filter((p) => !filtroMetodoPago || p.metodo_pago_p === filtroMetodoPago)
     .filter((p) =>
       filtered(`${nombreDe(p.inscripcion?.usuario)} ${p.inscripcion?.usuario?.correo_u ?? ""} ${p.inscripcion?.evento?.nombre_e ?? ""} ${p.referencia_p ?? ""}`)
     );
   const visibleResultados = resultados
     .filter((r) => !filtroEvento || String(r.inscripcion?.evento?.id_e) === filtroEvento)
-    .filter((r) => !filtroEstadoResultado || r.estado_r === filtroEstadoResultado)
     .filter((r) => filtered(`${nombreDe(r.inscripcion?.usuario)} ${r.inscripcion?.evento?.nombre_e ?? ""} ${r.estado_r}`))
     .sort((a, b) =>
       (a.inscripcion?.evento?.nombre_e ?? "").localeCompare(b.inscripcion?.evento?.nombre_e ?? "")
       || (a.posicion_general_r ?? 9999) - (b.posicion_general_r ?? 9999));
-  const visibleKits = kits
-    .filter((k) => {
-      if (!filtroStockKit) return true;
-      const stock = Number(k.stock_k);
-      if (filtroStockKit === "agotado") return stock <= 0;
-      if (filtroStockKit === "bajo") return stock > 0 && stock <= STOCK_BAJO;
-      return stock > 0; // "con"
-    })
-    .filter((k) => !filtroLugarKit || (k.lugar_entrega_k ?? "") === filtroLugarKit)
-    .filter((k) => filtered(`${k.nombre_k} ${k.lugar_entrega_k ?? ""} ${k.contenido_k ?? ""}`));
-
-  const visibleUsers = users
-    .filter((u) => !filtroRolUsuario || (u.roles ?? []).some((r) => r.nombre_rol === filtroRolUsuario))
-    .filter((u) => !filtroEstadoUsuario || (u.estado_u ?? "activo") === filtroEstadoUsuario)
-    .filter((u) => filtered(`${u.nombre_u} ${u.apellido_u ?? ""} ${u.correo_u}`));
-
-  // Opciones que salen de los propios datos
-  const metodosPago = Array.from(new Set(pagos.map((p) => p.metodo_pago_p).filter(Boolean) as string[])).sort();
-  const lugaresKit = Array.from(new Set(kits.map((k) => k.lugar_entrega_k).filter(Boolean) as string[])).sort();
-  const rolesUsuario = Array.from(new Set(users.flatMap((u) => (u.roles ?? []).map((r) => r.nombre_rol)))).sort();
+  const visibleKits = kits.filter((k) => filtered(`${k.nombre_k} ${k.lugar_entrega_k ?? ""} ${k.contenido_k ?? ""}`));
 
   const stats = useMemo(() => {
     const activos = eventos.filter((e) => e.estado === "activo");
@@ -622,7 +553,7 @@ function AdminPage() {
     ajustes: { label: "Ajustes", icon: Settings },
   };
 
-  const accent = accentOverride ?? "#2c9caf";
+  const accent = "#2c9caf";
   const scale = parseInt(fontSize, 10) / 16;
 
   const cambiarEstadoEvento = (e: Evento, estado_e: Evento["estado"]) =>
@@ -663,32 +594,6 @@ function AdminPage() {
     if (!(await confirmar({ titulo: "Eliminar kit", mensaje: `¿Eliminar el kit "${k.nombre_k}"? Si un evento lo usa no se podrá borrar.`, confirmar: "Eliminar", tipo: "peligro" }))) return;
     run(() => apiFetch(`/kits/${k.id_k}`, { method: "DELETE" }), "Kit eliminado", false);
   };
-
-  /** Un <select> de filtro con el estilo del panel. */
-  const filtroSelect = (
-    value: string,
-    onChange: (v: string) => void,
-    label: string,
-    todos: string,
-    opciones: Array<{ value: string; label: string }>,
-  ) => (
-    <select className="admin-select" value={value} onChange={e => onChange(e.target.value)} aria-label={label}>
-      <option value="">{todos}</option>
-      {opciones.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-    </select>
-  );
-
-  /** Botón "Limpiar filtros" + contador "Mostrando X de Y". */
-  const filtroPie = (activo: boolean, limpiar: () => void, mostrando: number, total: number) => (
-    <>
-      {activo && (
-        <button type="button" className="secondary-btn filter-clear" onClick={limpiar}>
-          <X size={14} /> Limpiar filtros
-        </button>
-      )}
-      <span className="filter-count">Mostrando {mostrando} de {total}</span>
-    </>
-  );
 
   const filtroEventoSelect = (
     <select className="admin-select" value={filtroEvento} onChange={e => setFiltroEvento(e.target.value)} aria-label="Filtrar por evento">
@@ -731,8 +636,8 @@ function AdminPage() {
       <aside className="admin-sidebar">
         <div className="sidebar-brand">
           <img className="sidebar-logo" src="/assets/deportivo/logo_deportivo.png" alt="Skyed Deportivo" width={37} height={37} />
-          {/* El nombre del módulo ya está en el encabezado; aquí solo "Administración" */}
           <div className="sidebar-brand-text">
+            <strong>Skyed <em>Deportivo</em></strong>
             <span>ADMINISTRACIÓN</span>
           </div>
         </div>
@@ -850,32 +755,7 @@ function AdminPage() {
         )}
 
         {section === "eventos" && (
-          <SectionTable
-            title="Gestión de eventos deportivos"
-            action="Nuevo evento"
-            onAction={() => { setEditing(null); setModal("evento"); }}
-            toolbar={<>
-              {filtroSelect(filtroCategoriaEvento, setFiltroCategoriaEvento, "Filtrar por categoría", "Todas las categorías", CATEGORIAS_EVENTO)}
-              {filtroSelect(filtroEstadoEvento, setFiltroEstadoEvento, "Filtrar por estado", "Todos los estados", [
-                { value: "activo", label: "Activo" },
-                { value: "inactivo", label: "Inactivo" },
-                { value: "inhabilitado", label: "Inhabilitado" },
-              ])}
-              {filtroSelect(filtroFechaEvento, setFiltroFechaEvento, "Filtrar por fecha", "Todas las fechas", [
-                { value: "proximos", label: "Próximos" },
-                { value: "pasados", label: "Ya realizados" },
-              ])}
-              {filtroSelect(filtroCuposEvento, setFiltroCuposEvento, "Filtrar por cupos", "Todos los cupos", [
-                { value: "con", label: "Con cupos" },
-                { value: "agotado", label: "Sin cupos" },
-              ])}
-              {filtroPie(
-                !!(filtroCategoriaEvento || filtroEstadoEvento || filtroFechaEvento || filtroCuposEvento),
-                () => { setFiltroCategoriaEvento(""); setFiltroEstadoEvento(""); setFiltroFechaEvento(""); setFiltroCuposEvento(""); },
-                visibleEventos.length, eventos.length,
-              )}
-            </>}
-          >
+          <SectionTable title="Gestión de eventos deportivos" action="Nuevo evento" onAction={() => { setEditing(null); setModal("evento"); }}>
             <thead><tr><th>Foto</th><th>Nombre</th><th>Categoría</th><th>Fecha</th><th>Precio</th><th>Cupos</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody>
               {visibleEventos.map(e => (
@@ -909,7 +789,7 @@ function AdminPage() {
                   </div></td>
                 </tr>
               ))}
-              {!visibleEventos.length && <tr><td colSpan={8}>{eventos.length ? "No hay eventos con estos filtros." : "No hay eventos deportivos."}</td></tr>}
+              {!visibleEventos.length && <tr><td colSpan={8}>No hay eventos deportivos.</td></tr>}
             </tbody>
           </SectionTable>
         )}
@@ -926,13 +806,6 @@ function AdminPage() {
                 <option value="todos">Todos</option>
               </select>
               {filtroEventoSelect}
-              {filtroSelect(filtroMetodoPago, setFiltroMetodoPago, "Filtrar por método de pago", "Todos los métodos",
-                metodosPago.map(m => ({ value: m, label: human(m) })))}
-              {filtroPie(
-                !!(filtroPago !== "todos" || filtroEvento || filtroMetodoPago),
-                () => { setFiltroPago("todos"); setFiltroEvento(""); setFiltroMetodoPago(""); },
-                visiblePagos.length, pagos.length,
-              )}
             </>}
           >
             <thead><tr><th>Participante</th><th>Evento</th><th>Inscripción</th><th>Monto</th><th>Método</th><th>Pago</th><th>Acciones</th></tr></thead>
@@ -969,19 +842,7 @@ function AdminPage() {
             title="Resultados oficiales"
             action="Registrar resultado"
             onAction={() => { setEditing(null); setModal("resultado"); }}
-            toolbar={<>
-              {filtroEventoSelect}
-              {filtroSelect(filtroEstadoResultado, setFiltroEstadoResultado, "Filtrar por estado del resultado", "Todos los estados", [
-                { value: "oficial", label: "Oficial" },
-                { value: "en revision", label: "En revisión" },
-                { value: "descalificado", label: "Descalificado" },
-              ])}
-              {filtroPie(
-                !!(filtroEvento || filtroEstadoResultado),
-                () => { setFiltroEvento(""); setFiltroEstadoResultado(""); },
-                visibleResultados.length, resultados.length,
-              )}
-            </>}
+            toolbar={filtroEventoSelect}
           >
             <thead><tr><th>Pos.</th><th>Participante</th><th>Evento</th><th>Tiempo</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody>
@@ -998,47 +859,36 @@ function AdminPage() {
                   </div></td>
                 </tr>
               ))}
-              {!visibleResultados.length && <tr><td colSpan={6}>{resultados.length ? "No hay resultados con estos filtros." : "No hay resultados registrados."}</td></tr>}
+              {!visibleResultados.length && <tr><td colSpan={6}>No hay resultados registrados.</td></tr>}
             </tbody>
           </SectionTable>
         )}
 
         {section === "kits" && (
-          <SectionTable
-            title="Kits del participante"
-            action="Nuevo kit"
-            onAction={() => { setEditing(null); setModal("kit"); }}
-            toolbar={<>
-              {filtroSelect(filtroStockKit, setFiltroStockKit, "Filtrar por stock", "Todo el stock", [
-                { value: "con", label: "Con stock" },
-                { value: "bajo", label: `Stock bajo (${STOCK_BAJO} o menos)` },
-                { value: "agotado", label: "Agotado" },
-              ])}
-              {filtroSelect(filtroLugarKit, setFiltroLugarKit, "Filtrar por lugar de entrega", "Todos los lugares",
-                lugaresKit.map(l => ({ value: l, label: l })))}
-              {filtroPie(
-                !!(filtroStockKit || filtroLugarKit),
-                () => { setFiltroStockKit(""); setFiltroLugarKit(""); },
-                visibleKits.length, kits.length,
-              )}
-            </>}
-          >
-            <thead><tr><th>Nombre</th><th>Stock</th><th>Entrega</th><th>Lugar</th><th>Contenido</th><th>Acciones</th></tr></thead>
+          <SectionTable title="Kits del participante" action="Nuevo kit" onAction={() => { setEditing(null); setModal("kit"); }}>
+            <thead><tr><th>Imagen</th><th>Nombre</th><th>Stock</th><th>Precio</th><th>Entrega</th><th>Lugar</th><th>Contenido</th><th>Evento</th><th>Acciones</th></tr></thead>
             <tbody>
               {visibleKits.map(k => (
                 <tr key={k.id_k}>
+                  <td>
+                    {k.imagen_url
+                      ? <img className="admin-thumb" src={k.imagen_url} alt={k.nombre_k} onError={ev => { (ev.target as HTMLImageElement).style.visibility = "hidden"; }} />
+                      : <span>—</span>}
+                  </td>
                   <td><strong>{k.nombre_k}</strong></td>
                   <td>{k.stock_k}</td>
+                  <td>{moneda(k.precio_k)}</td>
                   <td>{formatDate(k.fecha_entrega_k)}</td>
                   <td>{k.lugar_entrega_k ?? "—"}</td>
                   <td>{k.contenido_k ?? "—"}</td>
+                  <td>{k.eventos?.length ? k.eventos.map(e => e.nombre_e).join(", ") : "Sin asignar"}</td>
                   <td><div className="row-actions">
                     <button className="table-action" title="Editar" onClick={() => { setEditing(k); setModal("kit"); }}><Pencil size={15} /></button>
                     <button className="table-action danger" title="Eliminar" onClick={() => eliminarKit(k)}><Trash2 size={15} /></button>
                   </div></td>
                 </tr>
               ))}
-              {!visibleKits.length && <tr><td colSpan={6}>{kits.length ? "No hay kits con estos filtros." : "No hay kits registrados."}</td></tr>}
+              {!visibleKits.length && <tr><td colSpan={9}>No hay kits registrados.</td></tr>}
             </tbody>
           </SectionTable>
         )}
@@ -1057,37 +907,24 @@ function AdminPage() {
         {section === "usuarios" && (
           <SectionTable
             title="Usuarios registrados"
-            toolbar={<>
-              <Link className="secondary-btn" to="/admin/usuarios">Gestionar roles →</Link>
-              {filtroSelect(filtroRolUsuario, setFiltroRolUsuario, "Filtrar por rol", "Todos los roles",
-                rolesUsuario.map(r => ({ value: r, label: r })))}
-              {filtroSelect(filtroEstadoUsuario, setFiltroEstadoUsuario, "Filtrar por estado", "Todos los estados", [
-                { value: "activo", label: "Activo" },
-                { value: "inactivo", label: "Inactivo" },
-              ])}
-              {filtroPie(
-                !!(filtroRolUsuario || filtroEstadoUsuario),
-                () => { setFiltroRolUsuario(""); setFiltroEstadoUsuario(""); },
-                visibleUsers.length, users.length,
-              )}
-            </>}
+            toolbar={<Link className="secondary-btn" to="/admin/usuarios">Gestionar roles →</Link>}
           >
             <thead><tr><th>ID</th><th>Nombre</th><th>Correo</th><th>Roles</th><th>Estado</th></tr></thead>
             <tbody>
-              {visibleUsers.map(u => (
+              {users.filter(u => filtered(`${u.nombre_u} ${u.apellido_u ?? ""} ${u.correo_u}`)).map(u => (
                 <tr key={u.id_u}>
                   <td>#{u.id_u}</td><td>{u.nombre_u} {u.apellido_u ?? ""}</td><td>{u.correo_u}</td>
                   <td>{u.roles?.map(r => r.nombre_rol).join(", ") || "—"}</td>
                   <td><Badge value={u.estado_u ?? "activo"} /></td>
                 </tr>
               ))}
-              {!users.length && <tr><td colSpan={5}>{users.length ? "No hay usuarios con estos filtros." : "La API de usuarios no devolvió registros."}</td></tr>}
+              {!users.length && <tr><td colSpan={5}>La API de usuarios no devolvió registros.</td></tr>}
             </tbody>
           </SectionTable>
         )}
-
-        <AdminFooter modulo="deportivo" />
       </main>
+
+      <div className="admin-footer-note">SKYED DEPORTIVO · Panel administrativo <span>•</span> Gestión interna</div>
 
       <AccessibilityWidget
         open={panelOpen}
@@ -1096,8 +933,6 @@ function AdminPage() {
         onFontSize={setFontSize}
         dyslexia={dyslexia}
         onDyslexia={setDyslexia}
-        accent={accent}
-        onAccent={setAccent}
         darkMode={darkMode}
         onToggleDark={toggleDark}
         onReset={reset}
@@ -1125,6 +960,8 @@ function AdminPage() {
       {modal === "kit" && (
         <KitModal
           item={editing}
+          eventos={eventos}
+          notify={notify}
           onClose={() => setModal(null)}
           onSave={data => run(
             () => editing
@@ -1261,9 +1098,12 @@ function EventoModal({ item, kits, onClose, onSave, notify }: {
         </Field>
 
         <Field label="Kit (opcional)">
+          <small className="field-hint">Solo aparecen los kits sin evento asignado. Cada kit es de un solo evento.</small>
           <select value={form.id_k} onChange={e => set("id_k", e.target.value)}>
             <option value="">Sin kit</option>
-            {kits.map(k => <option key={k.id_k} value={k.id_k}>{k.nombre_k}</option>)}
+            {kits
+              .filter(k => !k.eventos?.length || k.eventos.some(e => e.id_e === item?.id))
+              .map(k => <option key={k.id_k} value={k.id_k}>{k.nombre_k} · {moneda(k.precio_k)}</option>)}
           </select>
         </Field>
       </div>
@@ -1785,53 +1625,180 @@ function ResultadoModal({ item, eventos, onClose, onSave, notify }: {
    KITS
 ================================================================ */
 
-function KitModal({ item, onClose, onSave }: { item?: Kit | null; onClose: () => void; onSave: (data: any) => Promise<boolean> }) {
+/** Normaliza para buscar sin tildes ni mayúsculas. */
+const normalizarBusqueda = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+
+/**
+ * Selector de evento con foto, nombre y buscador.
+ * La lista es visible (no flota), así que funciona igual en claro/oscuro y en móvil.
+ */
+function EventoPicker({ eventos, value, onChange, obligatorio }: {
+  eventos: Evento[];
+  value: string;
+  onChange: (id: string) => void;
+  obligatorio: boolean;
+}) {
+  const [q, setQ] = useState("");
+  const termino = normalizarBusqueda(q);
+  const lista = eventos.filter(e =>
+    !termino || normalizarBusqueda(`${e.nombre} ${e.ubicacion ?? ""} ${e.categoria ?? ""} ${e.fecha ?? ""}`).includes(termino)
+  );
+  const seleccionado = eventos.find(e => String(e.id) === value);
+
+  const fila = (activo: boolean): React.CSSProperties => ({
+    display: "flex", alignItems: "center", gap: ".7rem", width: "100%", textAlign: "left",
+    padding: ".5rem .6rem", borderRadius: 10, cursor: "pointer", color: "inherit", font: "inherit",
+    border: `1px solid ${activo ? "var(--admin-accent, #2c9caf)" : "transparent"}`,
+    background: activo ? "color-mix(in srgb, var(--admin-accent, #2c9caf) 14%, transparent)" : "transparent",
+  });
+  const miniatura: React.CSSProperties = {
+    width: 52, height: 40, borderRadius: 8, objectFit: "cover", flexShrink: 0,
+    background: "color-mix(in srgb, currentColor 10%, transparent)",
+  };
+
+  return (
+    <div className="admin-field">
+      <span>{obligatorio ? "Evento (obligatorio)" : "Evento"}</span>
+
+      <div style={{ display: "flex", alignItems: "center", gap: ".6rem" }}>
+        <Search size={16} style={{ opacity: .6, flexShrink: 0 }} aria-hidden="true" />
+        <input
+          type="text"
+          value={q}
+          onChange={e => setQ(e.target.value)}
+          placeholder="Buscar evento por nombre, lugar o fecha…"
+          aria-label="Buscar evento"
+          style={{ flex: 1, minWidth: 0 }}
+        />
+      </div>
+
+      <div
+        role="listbox"
+        aria-label="Eventos disponibles"
+        style={{
+          maxHeight: 230, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4,
+          padding: 6, borderRadius: 12, marginTop: 6,
+          border: "1px solid color-mix(in srgb, currentColor 18%, transparent)",
+        }}
+      >
+        {lista.map(e => {
+          const activo = String(e.id) === value;
+          return (
+            <button key={e.id} type="button" role="option" aria-selected={activo} style={fila(activo)} onClick={() => onChange(String(e.id))}>
+              {e.imagen_url
+                ? <img src={e.imagen_url} alt="" style={miniatura} onError={ev => { (ev.target as HTMLImageElement).style.visibility = "hidden"; }} />
+                : <span style={{ ...miniatura, display: "grid", placeItems: "center", opacity: .7 }}><ImagePlus size={16} /></span>}
+              <span style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1 }}>
+                <strong style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.nombre}</strong>
+                <small style={{ opacity: .7 }}>{e.fecha?.slice(0, 10)} · {e.ubicacion}</small>
+              </span>
+              {activo && <Check size={16} style={{ color: "var(--admin-accent, #2c9caf)", flexShrink: 0 }} />}
+            </button>
+          );
+        })}
+
+        {!lista.length && (
+          <p style={{ margin: ".6rem", opacity: .7, fontSize: ".85rem" }}>
+            {eventos.length ? "Ningún evento coincide con la búsqueda." : "No hay eventos sin kit. Libera uno o crea un evento nuevo."}
+          </p>
+        )}
+      </div>
+
+      <small className="field-hint">
+        {seleccionado ? `Seleccionado: ${seleccionado.nombre}. ` : (obligatorio ? "Debes elegir un evento. " : "")}Solo aparecen los eventos que aún no tienen kit.
+      </small>
+    </div>
+  );
+}
+
+function KitModal({ item, eventos, onClose, onSave, notify }: { item?: Kit | null; eventos: Evento[]; onClose: () => void; onSave: (data: any) => Promise<boolean>; notify: (m: string) => void }) {
+  // Eventos que pueden recibir este kit: los que no tienen kit, o el que ya lo tiene asignado.
+  const eventosDisponibles = eventos.filter(e => !e.kit || e.kit.id === item?.id_k);
   const [form, setForm] = useState({
+    id_e: item?.eventos?.[0]?.id_e ? String(item.eventos[0].id_e) : "",
     nombre_k: item?.nombre_k ?? "",
     stock_k: item ? String(item.stock_k) : "",
+    precio_k: item?.precio_k != null ? String(Math.round(Number(item.precio_k))) : "",
     fecha_entrega_k: item?.fecha_entrega_k?.slice(0, 10) ?? "",
     lugar_entrega_k: item?.lugar_entrega_k ?? "",
     contenido_k: item?.contenido_k ?? "",
     talla_camiseta_k: item?.talla_camiseta_k ?? "",
+    imagen_k: item?.imagen_k ?? "",
   });
+  const [preview, setPreview] = useState(item?.imagen_url ?? "");
   const [saving, setSaving] = useState(false);
   const set = (campo: keyof typeof form, valor: string) => setForm(f => ({ ...f, [campo]: valor }));
+  // Al crear un kit todos los datos son obligatorios; al editar solo se cambia lo que se quiera.
+  const esNuevo = !item;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
-    await onSave({
+
+    if (esNuevo) {
+      if (!form.id_e) { notify("Selecciona el evento al que pertenece el kit."); return; }
+      if (!form.imagen_k) { notify("Sube la imagen del kit."); return; }
+      if (![form.nombre_k, form.lugar_entrega_k, form.talla_camiseta_k, form.contenido_k].every(v => v.trim())) {
+        notify("Completa todos los datos del kit.");
+        return;
+      }
+    }
+
+    // Al editar solo se envían los campos que tienen valor; los vacíos se dejan como estaban.
+    const datos: Record<string, unknown> = {
       nombre_k: form.nombre_k.trim(),
-      stock_k: Number(form.stock_k || 0),
-      fecha_entrega_k: form.fecha_entrega_k || null,
-      lugar_entrega_k: form.lugar_entrega_k.trim() || null,
-      contenido_k: form.contenido_k.trim() || null,
-      talla_camiseta_k: form.talla_camiseta_k.trim() || null,
-    });
+      stock_k: form.stock_k === "" ? "" : Number(form.stock_k),
+      precio_k: form.precio_k === "" ? "" : Number(form.precio_k),
+      id_e: form.id_e ? Number(form.id_e) : "",
+      fecha_entrega_k: form.fecha_entrega_k,
+      lugar_entrega_k: form.lugar_entrega_k.trim(),
+      contenido_k: form.contenido_k.trim(),
+      talla_camiseta_k: form.talla_camiseta_k.trim(),
+      imagen_k: form.imagen_k,
+    };
+    const payload = esNuevo
+      ? datos
+      : Object.fromEntries(Object.entries(datos).filter(([, v]) => v !== ""));
+
+    setSaving(true);
+    await onSave(payload);
     setSaving(false);
   };
 
-  return <Modal title={item ? "Editar kit" : "Nuevo kit"} subtitle="Se puede asignar a uno o varios eventos." onClose={onClose}>
+  return <Modal title={item ? "Editar kit" : "Nuevo kit"} subtitle="Cada kit es individual: se asigna a un solo evento." onClose={onClose}>
     <form className="modal-form" onSubmit={submit}>
       <div className="form-grid">
         <Field label="Nombre">
-          <input required maxLength={45} value={form.nombre_k} onChange={e => set("nombre_k", sanitizeText(e.target.value, 45))} placeholder="Ej. Kit Gran Fondo 2026" />
+          <input required={esNuevo} maxLength={45} value={form.nombre_k} onChange={e => set("nombre_k", sanitizeText(e.target.value, 45))} placeholder="Ej. Kit Gran Fondo 2026" />
         </Field>
         <Field label="Unidades disponibles">
-          <input required type="number" min="0" inputMode="numeric" value={form.stock_k} onChange={e => set("stock_k", sanitizeInteger(e.target.value, 6))} />
+          <input required={esNuevo} type="number" min="0" inputMode="numeric" value={form.stock_k} onChange={e => set("stock_k", sanitizeInteger(e.target.value, 6))} />
         </Field>
-        <Field label="Fecha de entrega (opcional)">
-          <input type="date" value={form.fecha_entrega_k} onChange={e => set("fecha_entrega_k", e.target.value)} />
+        <Field label="Precio del kit (COP)">
+          <input required={esNuevo} type="number" min="0" inputMode="numeric" value={form.precio_k} onChange={e => set("precio_k", sanitizeInteger(e.target.value, 8))} placeholder="Ej. 45000" />
+          <small className="field-hint">Se suma al total que paga el participante si pide el kit.</small>
         </Field>
-        <Field label="Lugar de entrega (opcional)">
-          <input maxLength={45} value={form.lugar_entrega_k} onChange={e => set("lugar_entrega_k", sanitizeText(e.target.value, 45))} />
+        <Field label="Fecha de entrega">
+          <input required={esNuevo} type="date" value={form.fecha_entrega_k} onChange={e => set("fecha_entrega_k", e.target.value)} />
         </Field>
-        <Field label="Tallas (opcional)">
-          <input maxLength={10} value={form.talla_camiseta_k} onChange={e => set("talla_camiseta_k", sanitizeText(e.target.value, 10))} placeholder="Ej. S-XL" />
+        <Field label="Lugar de entrega">
+          <input required={esNuevo} maxLength={45} value={form.lugar_entrega_k} onChange={e => set("lugar_entrega_k", sanitizeText(e.target.value, 45))} />
+        </Field>
+        <Field label="Tallas">
+          <input required={esNuevo} maxLength={10} value={form.talla_camiseta_k} onChange={e => set("talla_camiseta_k", sanitizeText(e.target.value, 10))} placeholder="Ej. S-XL" />
         </Field>
       </div>
-      <Field label="Contenido (opcional)">
-        <textarea rows={3} maxLength={255} value={form.contenido_k} onChange={e => set("contenido_k", e.target.value.slice(0, 255))} placeholder="Ej. Jersey, número, chip de cronometraje, hidratación." />
+      <EventoPicker eventos={eventosDisponibles} value={form.id_e} onChange={id => set("id_e", id)} obligatorio={esNuevo} />
+      <Field label={esNuevo ? "Imagen del kit (obligatoria)" : "Imagen del kit"}>
+        <ImageUploadField
+          path={form.imagen_k}
+          previewUrl={preview}
+          onChange={(path, url) => { set("imagen_k", path); setPreview(url); }}
+          onError={notify}
+        />
+        <small className="field-hint">Una foto de cómo se ve el kit. La verán los participantes al inscribirse.</small>
+      </Field>
+      <Field label="Contenido">
+        <textarea required={esNuevo} rows={3} maxLength={255} value={form.contenido_k} onChange={e => set("contenido_k", e.target.value.slice(0, 255))} placeholder="Ej. Jersey, número, chip de cronometraje, hidratación." />
         <small className="field-hint">{form.contenido_k.length}/255 caracteres</small>
       </Field>
       <div className="modal-actions">
