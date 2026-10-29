@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { Link, Navigate, useSearchParams } from "react-router-dom";
 import jsQR from "jsqr";
 import {
   ArrowLeft,
@@ -43,6 +43,7 @@ import { prepararImagen } from "../../utils/prepararImagen";
 import { EstadoPagos, InscritosPorEvento, TendenciaMensual } from "../../components/deportivo/GraficosAdmin";
 import { useConfirmacion } from "../../components/shared/ConfirmDialog";
 import { CargandoPanel, NumeroAnimado } from "../../components/shared/AdminMotion";
+import AdminFooter from "../../components/shared/AdminFooter";
 
 type Confirmar = ReturnType<typeof useConfirmacion>["confirmar"];
 // Base del panel: mismo diseño del panel social con la paleta deportiva
@@ -59,6 +60,8 @@ type Section =
   | "kits"
   | "usuarios"
   | "ajustes";
+
+const SECCIONES: Section[] = ["inicio", "eventos", "inscripciones", "acceso", "resultados", "kits", "usuarios", "ajustes"];
 
 type Categoria = {
   id: number;
@@ -495,6 +498,17 @@ function AdminPage() {
 
   const [filtroPago, setFiltroPago] = useState<"todos" | Pago["estado_p"]>("pendiente");
   const [filtroEvento, setFiltroEvento] = useState("");
+  // Filtros por sección (cadena vacía = "todos")
+  const [filtroCategoriaEvento, setFiltroCategoriaEvento] = useState("");
+  const [filtroEstadoEvento, setFiltroEstadoEvento] = useState("");
+  const [filtroFechaEvento, setFiltroFechaEvento] = useState(""); // proximos | pasados
+  const [filtroCuposEvento, setFiltroCuposEvento] = useState(""); // con | agotado
+  const [filtroMetodoPago, setFiltroMetodoPago] = useState("");
+  const [filtroEstadoResultado, setFiltroEstadoResultado] = useState("");
+  const [filtroStockKit, setFiltroStockKit] = useState(""); // con | bajo | agotado
+  const [filtroLugarKit, setFiltroLugarKit] = useState("");
+  const [filtroRolUsuario, setFiltroRolUsuario] = useState("");
+  const [filtroEstadoUsuario, setFiltroEstadoUsuario] = useState("");
 
   const [modal, setModal] = usePersistentState<ModalKind>("admin_modal", null);
   const [editing, setEditing] = usePersistentState<any>("admin_editing", null);
@@ -560,28 +574,87 @@ function AdminPage() {
   const selectSection = (next: Section) => {
     setSection(next);
     setSearch("");
+    setFiltroEvento("");
+    setFiltroCategoriaEvento("");
+    setFiltroEstadoEvento("");
+    setFiltroFechaEvento("");
+    setFiltroCuposEvento("");
+    setFiltroMetodoPago("");
+    setFiltroEstadoResultado("");
+    setFiltroStockKit("");
+    setFiltroLugarKit("");
+    setFiltroRolUsuario("");
+    setFiltroEstadoUsuario("");
     setMobileOpen(false);
   };
+
+  // Un enlace (p. ej. un botón de SKAI) puede abrir una sección directo:
+  // ?seccion=kits. Luego se limpia la URL para que recargar no la fuerce.
+  const [params, setParams] = useSearchParams();
+  useEffect(() => {
+    const pedida = params.get("seccion") as Section | null;
+    if (pedida && SECCIONES.includes(pedida)) {
+      selectSection(pedida);
+      setParams({}, { replace: true });
+    }
+  }, [params]);
 
   const filtered = (text: string) =>
     text.toLowerCase().includes(search.toLowerCase());
 
-  const visibleEventos = eventos.filter((e) =>
-    filtered(`${e.nombre} ${e.categoria} ${e.ubicacion} ${e.estado}`)
-  );
+  const STOCK_BAJO = 10; // kits con este stock o menos se consideran "stock bajo"
+
+  const visibleEventos = eventos
+    .filter((e) => !filtroCategoriaEvento || e.categoria === filtroCategoriaEvento)
+    .filter((e) => !filtroEstadoEvento || e.estado === filtroEstadoEvento)
+    .filter((e) => {
+      if (!filtroFechaEvento) return true;
+      const fecha = (e.fecha ?? "").slice(0, 10);
+      return filtroFechaEvento === "proximos" ? fecha >= hoy() : fecha < hoy();
+    })
+    .filter((e) => {
+      if (!filtroCuposEvento) return true;
+      return filtroCuposEvento === "con"
+        ? Number(e.cupos_disponibles) > 0
+        : Number(e.cupos_disponibles) <= 0;
+    })
+    .filter((e) =>
+      filtered(`${e.nombre} ${e.categoria} ${e.ubicacion} ${e.estado}`)
+    );
   const visiblePagos = pagos
     .filter((p) => filtroPago === "todos" || p.estado_p === filtroPago)
     .filter((p) => !filtroEvento || String(p.inscripcion?.evento?.id_e) === filtroEvento)
+    .filter((p) => !filtroMetodoPago || p.metodo_pago_p === filtroMetodoPago)
     .filter((p) =>
       filtered(`${nombreDe(p.inscripcion?.usuario)} ${p.inscripcion?.usuario?.correo_u ?? ""} ${p.inscripcion?.evento?.nombre_e ?? ""} ${p.referencia_p ?? ""}`)
     );
   const visibleResultados = resultados
     .filter((r) => !filtroEvento || String(r.inscripcion?.evento?.id_e) === filtroEvento)
+    .filter((r) => !filtroEstadoResultado || r.estado_r === filtroEstadoResultado)
     .filter((r) => filtered(`${nombreDe(r.inscripcion?.usuario)} ${r.inscripcion?.evento?.nombre_e ?? ""} ${r.estado_r}`))
     .sort((a, b) =>
       (a.inscripcion?.evento?.nombre_e ?? "").localeCompare(b.inscripcion?.evento?.nombre_e ?? "")
       || (a.posicion_general_r ?? 9999) - (b.posicion_general_r ?? 9999));
-  const visibleKits = kits.filter((k) => filtered(`${k.nombre_k} ${k.lugar_entrega_k ?? ""} ${k.contenido_k ?? ""}`));
+  const visibleKits = kits
+    .filter((k) => {
+      if (!filtroStockKit) return true;
+      const stock = Number(k.stock_k);
+      if (filtroStockKit === "agotado") return stock <= 0;
+      if (filtroStockKit === "bajo") return stock > 0 && stock <= STOCK_BAJO;
+      return stock > 0; // "con"
+    })
+    .filter((k) => !filtroLugarKit || (k.lugar_entrega_k ?? "") === filtroLugarKit)
+    .filter((k) => filtered(`${k.nombre_k} ${k.lugar_entrega_k ?? ""} ${k.contenido_k ?? ""}`));
+
+  const visibleUsers = users
+    .filter((u) => !filtroRolUsuario || (u.roles ?? []).some((r) => r.nombre_rol === filtroRolUsuario))
+    .filter((u) => !filtroEstadoUsuario || (u.estado_u ?? "activo") === filtroEstadoUsuario)
+    .filter((u) => filtered(`${u.nombre_u} ${u.apellido_u ?? ""} ${u.correo_u}`));
+
+  // Opciones que salen de los propios datos
+  const metodosPago = Array.from(new Set(pagos.map((p) => p.metodo_pago_p).filter(Boolean) as string[])).sort();
+  const lugaresKit = Array.from(new Set(kits.map((k) => k.lugar_entrega_k).filter(Boolean) as string[])).sort();
+  const rolesUsuario = Array.from(new Set(users.flatMap((u) => (u.roles ?? []).map((r) => r.nombre_rol)))).sort();
 
   const stats = useMemo(() => {
     const activos = eventos.filter((e) => e.estado === "activo");
@@ -727,8 +800,8 @@ function AdminPage() {
       <aside className="admin-sidebar">
         <div className="sidebar-brand">
           <img className="sidebar-logo" src="/assets/deportivo/logo_deportivo.png" alt="Skyed Deportivo" width={37} height={37} />
+          {/* El nombre del módulo ya está en el encabezado; aquí solo "Administración" */}
           <div className="sidebar-brand-text">
-            <strong>Skyed <em>Deportivo</em></strong>
             <span>ADMINISTRACIÓN</span>
           </div>
         </div>
@@ -846,7 +919,32 @@ function AdminPage() {
         )}
 
         {section === "eventos" && (
-          <SectionTable title="Gestión de eventos deportivos" action="Nuevo evento" onAction={() => { setEditing(null); setModal("evento"); }}>
+          <SectionTable
+            title="Gestión de eventos deportivos"
+            action="Nuevo evento"
+            onAction={() => { setEditing(null); setModal("evento"); }}
+            toolbar={<>
+              {filtroSelect(filtroCategoriaEvento, setFiltroCategoriaEvento, "Filtrar por categoría", "Todas las categorías", CATEGORIAS_EVENTO)}
+              {filtroSelect(filtroEstadoEvento, setFiltroEstadoEvento, "Filtrar por estado", "Todos los estados", [
+                { value: "activo", label: "Activo" },
+                { value: "inactivo", label: "Inactivo" },
+                { value: "inhabilitado", label: "Inhabilitado" },
+              ])}
+              {filtroSelect(filtroFechaEvento, setFiltroFechaEvento, "Filtrar por fecha", "Todas las fechas", [
+                { value: "proximos", label: "Próximos" },
+                { value: "pasados", label: "Ya realizados" },
+              ])}
+              {filtroSelect(filtroCuposEvento, setFiltroCuposEvento, "Filtrar por cupos", "Todos los cupos", [
+                { value: "con", label: "Con cupos" },
+                { value: "agotado", label: "Sin cupos" },
+              ])}
+              {filtroPie(
+                !!(filtroCategoriaEvento || filtroEstadoEvento || filtroFechaEvento || filtroCuposEvento),
+                () => { setFiltroCategoriaEvento(""); setFiltroEstadoEvento(""); setFiltroFechaEvento(""); setFiltroCuposEvento(""); },
+                visibleEventos.length, eventos.length,
+              )}
+            </>}
+          >
             <thead><tr><th>Foto</th><th>Nombre</th><th>Categoría</th><th>Fecha</th><th>Precio</th><th>Cupos</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody>
               {visibleEventos.map(e => (
@@ -880,7 +978,7 @@ function AdminPage() {
                   </div></td>
                 </tr>
               ))}
-              {!visibleEventos.length && <tr><td colSpan={8}>No hay eventos deportivos.</td></tr>}
+              {!visibleEventos.length && <tr><td colSpan={8}>{eventos.length ? "No hay eventos con estos filtros." : "No hay eventos deportivos."}</td></tr>}
             </tbody>
           </SectionTable>
         )}
@@ -897,6 +995,13 @@ function AdminPage() {
                 <option value="todos">Todos</option>
               </select>
               {filtroEventoSelect}
+              {filtroSelect(filtroMetodoPago, setFiltroMetodoPago, "Filtrar por método de pago", "Todos los métodos",
+                metodosPago.map(m => ({ value: m, label: human(m) })))}
+              {filtroPie(
+                !!(filtroPago !== "todos" || filtroEvento || filtroMetodoPago),
+                () => { setFiltroPago("todos"); setFiltroEvento(""); setFiltroMetodoPago(""); },
+                visiblePagos.length, pagos.length,
+              )}
             </>}
           >
             <thead><tr><th>Participante</th><th>Evento</th><th>Inscripción</th><th>Monto</th><th>Método</th><th>Pago</th><th>Acciones</th></tr></thead>
@@ -933,7 +1038,19 @@ function AdminPage() {
             title="Resultados oficiales"
             action="Registrar resultado"
             onAction={() => { setEditing(null); setModal("resultado"); }}
-            toolbar={filtroEventoSelect}
+            toolbar={<>
+              {filtroEventoSelect}
+              {filtroSelect(filtroEstadoResultado, setFiltroEstadoResultado, "Filtrar por estado del resultado", "Todos los estados", [
+                { value: "oficial", label: "Oficial" },
+                { value: "en revision", label: "En revisión" },
+                { value: "descalificado", label: "Descalificado" },
+              ])}
+              {filtroPie(
+                !!(filtroEvento || filtroEstadoResultado),
+                () => { setFiltroEvento(""); setFiltroEstadoResultado(""); },
+                visibleResultados.length, resultados.length,
+              )}
+            </>}
           >
             <thead><tr><th>Pos.</th><th>Participante</th><th>Evento</th><th>Tiempo</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody>
@@ -950,13 +1067,31 @@ function AdminPage() {
                   </div></td>
                 </tr>
               ))}
-              {!visibleResultados.length && <tr><td colSpan={6}>No hay resultados registrados.</td></tr>}
+              {!visibleResultados.length && <tr><td colSpan={6}>{resultados.length ? "No hay resultados con estos filtros." : "No hay resultados registrados."}</td></tr>}
             </tbody>
           </SectionTable>
         )}
 
         {section === "kits" && (
-          <SectionTable title="Kits del participante" action="Nuevo kit" onAction={() => { setEditing(null); setModal("kit"); }}>
+          <SectionTable
+            title="Kits del participante"
+            action="Nuevo kit"
+            onAction={() => { setEditing(null); setModal("kit"); }}
+            toolbar={<>
+              {filtroSelect(filtroStockKit, setFiltroStockKit, "Filtrar por stock", "Todo el stock", [
+                { value: "con", label: "Con stock" },
+                { value: "bajo", label: `Stock bajo (${STOCK_BAJO} o menos)` },
+                { value: "agotado", label: "Agotado" },
+              ])}
+              {filtroSelect(filtroLugarKit, setFiltroLugarKit, "Filtrar por lugar de entrega", "Todos los lugares",
+                lugaresKit.map(l => ({ value: l, label: l })))}
+              {filtroPie(
+                !!(filtroStockKit || filtroLugarKit),
+                () => { setFiltroStockKit(""); setFiltroLugarKit(""); },
+                visibleKits.length, kits.length,
+              )}
+            </>}
+          >
             <thead><tr><th>Imagen</th><th>Nombre</th><th>Stock</th><th>Precio</th><th>Entrega</th><th>Lugar</th><th>Contenido</th><th>Evento</th><th>Acciones</th></tr></thead>
             <tbody>
               {visibleKits.map(k => (
@@ -986,7 +1121,7 @@ function AdminPage() {
                   </div></td>
                 </tr>
               ))}
-              {!visibleKits.length && <tr><td colSpan={9}>No hay kits registrados.</td></tr>}
+              {!visibleKits.length && <tr><td colSpan={9}>{kits.length ? "No hay kits con estos filtros." : "No hay kits registrados."}</td></tr>}
             </tbody>
           </SectionTable>
         )}
@@ -1005,24 +1140,37 @@ function AdminPage() {
         {section === "usuarios" && (
           <SectionTable
             title="Usuarios registrados"
-            toolbar={<Link className="secondary-btn" to="/admin/usuarios">Gestionar roles →</Link>}
+            toolbar={<>
+              <Link className="secondary-btn" to="/admin/usuarios">Gestionar roles →</Link>
+              {filtroSelect(filtroRolUsuario, setFiltroRolUsuario, "Filtrar por rol", "Todos los roles",
+                rolesUsuario.map(r => ({ value: r, label: r })))}
+              {filtroSelect(filtroEstadoUsuario, setFiltroEstadoUsuario, "Filtrar por estado", "Todos los estados", [
+                { value: "activo", label: "Activo" },
+                { value: "inactivo", label: "Inactivo" },
+              ])}
+              {filtroPie(
+                !!(filtroRolUsuario || filtroEstadoUsuario),
+                () => { setFiltroRolUsuario(""); setFiltroEstadoUsuario(""); },
+                visibleUsers.length, users.length,
+              )}
+            </>}
           >
             <thead><tr><th>ID</th><th>Nombre</th><th>Correo</th><th>Roles</th><th>Estado</th></tr></thead>
             <tbody>
-              {users.filter(u => filtered(`${u.nombre_u} ${u.apellido_u ?? ""} ${u.correo_u}`)).map(u => (
+              {visibleUsers.map(u => (
                 <tr key={u.id_u}>
                   <td>#{u.id_u}</td><td>{u.nombre_u} {u.apellido_u ?? ""}</td><td>{u.correo_u}</td>
                   <td>{u.roles?.map(r => r.nombre_rol).join(", ") || "—"}</td>
                   <td><Badge value={u.estado_u ?? "activo"} /></td>
                 </tr>
               ))}
-              {!users.length && <tr><td colSpan={5}>La API de usuarios no devolvió registros.</td></tr>}
+              {!users.length && <tr><td colSpan={5}>{users.length ? "No hay usuarios con estos filtros." : "La API de usuarios no devolvió registros."}</td></tr>}
             </tbody>
           </SectionTable>
         )}
-      </main>
 
-      <div className="admin-footer-note">SKYED DEPORTIVO · Panel administrativo <span>•</span> Gestión interna</div>
+        <AdminFooter modulo="deportivo" />
+      </main>
 
       <AccessibilityWidget
         open={panelOpen}
