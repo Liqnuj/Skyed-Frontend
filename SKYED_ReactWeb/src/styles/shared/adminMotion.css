@@ -204,7 +204,52 @@
   50%      { opacity: 0.6; }
 }
 
+/* ---------- Fondo animado del panel de Deportivo ----------
+   Luces suaves del color de acento que se desplazan despacio por detrás del
+   contenido. Va en ::before con z-index:-1 dentro de .admin-main (que ya crea
+   su propio contexto de apilamiento), así queda encima del fondo sólido pero
+   debajo de tarjetas, tablas y ventanas, y no intercepta ningún clic. */
+@keyframes am-fondo {
+  0%   { background-position: 0% 0%,     100% 100%, 50% 50%; }
+  50%  { background-position: 100% 40%,  0% 60%,    30% 80%; }
+  100% { background-position: 0% 0%,     100% 100%, 50% 50%; }
+}
+
+.deportivo-admin .admin-main::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at center, color-mix(in srgb, var(--admin-accent) 22%, transparent) 0, transparent 55%),
+    radial-gradient(circle at center, color-mix(in srgb, #3b82f6 16%, transparent) 0, transparent 55%),
+    radial-gradient(circle at center, color-mix(in srgb, var(--admin-accent) 12%, transparent) 0, transparent 50%);
+  background-size: 70% 70%, 60% 60%, 45% 45%;
+  background-repeat: no-repeat;
+  animation: am-fondo 26s ease-in-out infinite;
+}
+
+/* ---------- Fondo animado del panel de Social ----------
+   Mismo movimiento que Deportivo, con la paleta morada y dorada de Social. */
+.social-admin .admin-main::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at center, color-mix(in srgb, var(--admin-accent) 26%, transparent) 0, transparent 55%),
+    radial-gradient(circle at center, color-mix(in srgb, #c9a84c 14%, transparent) 0, transparent 55%),
+    radial-gradient(circle at center, color-mix(in srgb, #d946ef 14%, transparent) 0, transparent 50%);
+  background-size: 70% 70%, 55% 55%, 45% 45%;
+  background-repeat: no-repeat;
+  animation: am-fondo 26s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  :is(.deportivo-admin, .social-admin) .admin-main::before { animation: none; }
+
   :is(.deportivo-admin, .social-admin) :is(
     .sidebar-nav > *,
     .admin-topbar h1,

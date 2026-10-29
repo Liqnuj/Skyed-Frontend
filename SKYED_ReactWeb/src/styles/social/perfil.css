@@ -9,6 +9,14 @@
 }
 .mod-social.dark-mode .pf-header { background: #1c0329 }
 
+/* Burbujas que suben (mismas del hero de Inicio/Nosotros) */
+.mod-social .pf-header { position: relative; overflow: hidden; }
+.mod-social .pf-header > :not(.hero-particles) { position: relative; z-index: 2; }
+.mod-social .pf-header .hero-particles { pointer-events: none; }
+.mod-social .pf-header .particle { background: var(--accent) !important; }
+.mod-social.dark-mode .pf-header .particle { background: rgba(255, 255, 255, .8) !important; }
+@media (prefers-reduced-motion: reduce) { .mod-social .pf-header .hero-particles { display: none; } }
+
 .mod-social .pf-header-inner {
   max-width: 1200px;
   margin: 0 auto;
