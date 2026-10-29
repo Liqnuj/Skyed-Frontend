@@ -28,7 +28,7 @@ function renderTexto(text: string, irA: (ruta: string) => void) {
     const boton = parte.match(/^\[\[([^[\]|]+)\|(\/[^[\]\s]*)\]\]$/);
     if (boton) {
       return (
-        <button key={i} type="button" className="skyed-link-btn" onClick={() => irA(boton[2])}>
+        <button title={boton[1].trim()} key={i} type="button" className="skyed-link-btn" onClick={() => irA(boton[2])}>
           {boton[1].trim()}
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
         </button>
@@ -222,6 +222,7 @@ export default function SkaiWidget() {
         className={`skyed-teaser ${teaserVisible && !oculto ? 'is-visible' : ''}`}
         onClick={openPanel}
         role="button"
+        title="Abrir el asistente SKAI"
         tabIndex={0}
       >
         ¿Necesitas ayuda para elegir tu evento?
@@ -268,7 +269,7 @@ export default function SkaiWidget() {
               En línea
             </div>
           </div>
-          <button className="skyed-panel-close" aria-label="Cerrar asistente" onClick={closePanel}>
+          <button className="skyed-panel-close" aria-label="Cerrar asistente" title="Cerrar el asistente SKAI" onClick={closePanel}>
             <svg viewBox="0 0 24 24">
               <path d="M18.3 5.71L12 12l6.3 6.29-1.42 1.42L10.59 13.4 4.3 19.71 2.88 18.3 9.17 12 2.88 5.71 4.3 4.29l6.29 6.3 6.3-6.3z" />
             </svg>
@@ -309,7 +310,7 @@ export default function SkaiWidget() {
         </div>
 
         <div className="skyed-chips">
-          <button className="skyed-chip" onClick={() => sendMessage('Quiero hablar con soporte')}>
+          <button className="skyed-chip" title="Enviar el mensaje «Quiero hablar con soporte»" onClick={() => sendMessage('Quiero hablar con soporte')}>
             Hablar con soporte
           </button>
         </div>
@@ -329,6 +330,7 @@ export default function SkaiWidget() {
           <button
             className="skyed-send-btn"
             aria-label="Enviar mensaje"
+            title="Enviar mensaje"
             disabled={isTyping}
             onClick={() => sendMessage(input)}
           >

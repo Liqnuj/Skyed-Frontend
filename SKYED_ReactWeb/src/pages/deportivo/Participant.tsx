@@ -301,7 +301,7 @@ function ListToolbar({ filtros, base, onChange, rangos, estados, conteos, placeh
           const n = e.value === 'todos' ? total : (conteos[e.value] ?? 0);
           const sel = filtros.estado === e.value;
           return (
-            <button
+            <button title={`Filtrar por estado: ${e.label}`}
               key={e.value}
               type="button"
               className={`part-chip${sel ? ' active' : ''}`}
@@ -342,7 +342,7 @@ function ListToolbar({ filtros, base, onChange, rangos, estados, conteos, placeh
           {activo ? `Mostrando ${mostrando} de ${total}` : `${total} ${unidad(total)}`}
         </span>
         {activo && (
-          <button
+          <button title="Quitar todos los filtros"
             type="button"
             className="part-tool-clear"
             onClick={() => onChange({ ...base, orden: filtros.orden })}
@@ -619,13 +619,13 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
             >
               <i className="ti ti-edit" aria-hidden="true" /> Editar perfil
             </button>
-            <Link to="/deportivo/eventos" className="btn btn-primary">+ Inscribirme</Link>
+            <Link title="Inscribirme a un evento" to="/deportivo/eventos" className="btn btn-primary">+ Inscribirme</Link>
           </div>
         </div>
 
         <div className="part-tabs" role="tablist">
           {(['resumen', 'historial', 'inscripciones', 'ajustes'] as TabId[]).map((t) => (
-            <button
+            <button title={t === 'resumen' ? 'Ver el resumen' : t === 'historial' ? 'Ver el historial' : t === 'inscripciones' ? 'Ver mis inscripciones' : 'Ver los ajustes de tu cuenta'}
               key={t}
               role="tab"
               className={`part-tab-btn${tab === t ? ' active' : ''}`}
@@ -685,11 +685,11 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
 
               <p className="part-section-label">
                 Próximas inscripciones
-                <button onClick={() => setTab('inscripciones')}>Ver todo →</button>
+                <button title="Ver todas mis inscripciones" onClick={() => setTab('inscripciones')}>Ver todo →</button>
               </p>
               {loadError && <div className="part-empty-row">{loadError}</div>}
               {!loadError && proximas.length === 0 && (
-                <div className="part-empty-row">Sin eventos próximos. <Link to="/deportivo/eventos">Explora eventos →</Link></div>
+                <div className="part-empty-row">Sin eventos próximos. <Link title="Explorar los eventos disponibles" to="/deportivo/eventos">Explora eventos →</Link></div>
               )}
               {proximas.slice(0, 3).map((i) => (
                 <EventRow key={i.id} insc={i} onVerDetalle={() => abrirDetalle(i)} onCancelar={() => pedirCancelacion(i)} />
@@ -723,7 +723,7 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
               {filasHist.length > 0 && filasHistFiltradas.length === 0 && (
                 <div className="part-empty-row">
                   No encontramos resultados. Prueba con otra palabra, otro estado u otro rango de fechas.{' '}
-                  <button type="button" className="part-tool-clear" onClick={() => setFiltrosHist({ ...FILTROS_HIST, orden: filtrosHist.orden })}>
+                  <button title="Quitar todos los filtros" type="button" className="part-tool-clear" onClick={() => setFiltrosHist({ ...FILTROS_HIST, orden: filtrosHist.orden })}>
                     Limpiar filtros
                   </button>
                 </div>
@@ -772,7 +772,7 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
               {!loadError && totalInsc > 0 && mostrandoInsc === 0 && (
                 <div className="part-empty-row">
                   No encontramos resultados. Prueba con otra palabra, otro estado u otro rango de fechas.{' '}
-                  <button type="button" className="part-tool-clear" onClick={() => setFiltrosInsc({ ...FILTROS_INSC, orden: filtrosInsc.orden })}>
+                  <button title="Quitar todos los filtros" type="button" className="part-tool-clear" onClick={() => setFiltrosInsc({ ...FILTROS_INSC, orden: filtrosInsc.orden })}>
                     Limpiar filtros
                   </button>
                 </div>
@@ -795,7 +795,7 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
                 </>
               )}
               <div style={{ textAlign: 'center', padding: '1rem 0' }}>
-                <Link to="/deportivo/eventos" className="btn btn-primary">Explorar más eventos →</Link>
+                <Link title="Explorar más eventos" to="/deportivo/eventos" className="btn btn-primary">Explorar más eventos →</Link>
               </div>
             </>
           )}
@@ -818,7 +818,7 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
       {cancelarInsc && createPortal(
         <div className={`mod-deportivo part-qr-overlay${darkMode ? ' dark-mode' : ''}`} onClick={cerrarCancelacion}>
           <div className="part-qr-modal" onClick={(e) => e.stopPropagation()}>
-            <button
+            <button title="Cerrar"
               className="part-qr-close"
               onClick={cerrarCancelacion}
               aria-label="Cerrar"
@@ -855,7 +855,7 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
               </div>
             )}
             <div style={{ display: 'flex', gap: '.75rem' }}>
-              <button
+              <button title="Volver sin cancelar"
                 type="button"
                 className="btn btn-outline"
                 style={{ flex: 1, justifyContent: 'center' }}
@@ -864,7 +864,7 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
               >
                 Volver
               </button>
-              <button
+              <button title={cancelando ? 'Cancelando…' : 'Confirmar la cancelación de la inscripción'}
                 type="button"
                 className="btn btn-primary"
                 style={{
@@ -907,9 +907,9 @@ function EventRow({
           {insc.evento?.ubicacion && <span>{insc.evento.ubicacion}</span>}
           {insc.evento?.categoria && <span>{insc.evento.categoria}</span>}
         </div>
-        <button className="part-btn-link-detail" onClick={onVerDetalle}>Ver detalles</button>
+        <button title="Ver los detalles de la inscripción" className="part-btn-link-detail" onClick={onVerDetalle}>Ver detalles</button>
         {onCancelar && (
-          <button
+          <button title="Cancelar esta inscripción"
             className="part-btn-link-detail"
             style={{ marginLeft: '1rem', color: '#dc2626' }}
             onClick={onCancelar}
@@ -948,7 +948,7 @@ function DetalleInscripcion({
         <div className="part-detail-hero-blob a" aria-hidden="true" />
         <div className="part-detail-hero-blob b" aria-hidden="true" />
 
-        <button className="part-btn-link-detail part-detail-back" onClick={onVolver}>← Volver a inscripciones</button>
+        <button title="Volver a la lista de inscripciones" className="part-btn-link-detail part-detail-back" onClick={onVolver}>← Volver a inscripciones</button>
         <span className={`part-status-pill ${pill.cls} part-detail-pill ${isPending ? 'part-pulse' : ''}`}>{pill.txt}</span>
         <h2>{insc.evento?.nombre || 'Inscripción'}</h2>
         <p className="part-detail-meta">
@@ -1028,7 +1028,7 @@ function DetalleInscripcion({
             }}
           >
             {insc.qr?.codigo && !verQr && (
-              <button
+              <button title="Ver mi código QR de entrada"
                 className="btn btn-primary part-detail-qr-btn"
                 style={{ margin: 0 }}
                 onClick={onVerQr}
@@ -1037,7 +1037,7 @@ function DetalleInscripcion({
               </button>
             )}
             {onCancelar && (
-              <button
+              <button title="Cancelar esta inscripción"
                 type="button"
                 onClick={onCancelar}
                 style={{
@@ -1063,7 +1063,7 @@ function DetalleInscripcion({
         {insc.qr?.codigo && verQr && createPortal(
                     <div className={`mod-deportivo part-qr-overlay${darkMode ? ' dark-mode' : ''}`} onClick={onCerrarQr}>
             <div className="part-qr-modal" onClick={(e) => e.stopPropagation()}>
-              <button className="part-qr-close" onClick={onCerrarQr} aria-label="Cerrar">
+              <button title="Cerrar" className="part-qr-close" onClick={onCerrarQr} aria-label="Cerrar">
                 <i className="ti ti-x" aria-hidden="true" />
               </button>
               <div className="part-qr-glow">
@@ -1411,7 +1411,7 @@ function AjustesTab() {
                     <div className="part-alert-timer" />
                   </div>
                 )}
-                <button type="submit" className="btn btn-primary" disabled={guardandoDatos}>
+                <button title={guardandoDatos ? 'Guardando…' : 'Guardar los cambios de tu perfil'} type="submit" className="btn btn-primary" disabled={guardandoDatos}>
                   {guardandoDatos ? 'Guardando…' : 'Guardar cambios'}
                 </button>
               </form>
@@ -1461,7 +1461,7 @@ function AjustesTab() {
                         onChange={(e) => setActual(e.target.value)}
                         required
                       />
-                      <button
+                      <button title={verActual ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                         type="button"
                         className="part-pass-toggle"
                         onClick={() => setVerActual((v) => !v)}
@@ -1482,7 +1482,7 @@ function AjustesTab() {
                     </div>
                   )}
 
-                  <button type="submit" className="btn btn-outline" disabled={verificando || !actual}>
+                  <button title={verificando ? 'Validando…' : 'Validar tu contraseña actual para cambiarla'} type="submit" className="btn btn-outline" disabled={verificando || !actual}>
                     {verificando ? 'Validando…' : 'Validar y cambiar'}
                   </button>
                 </form>
@@ -1496,7 +1496,7 @@ function AjustesTab() {
               </div>
               <div className="part-card-body">
                 <div className="part-stat-row"><span className="part-label">Rol</span><span>{user?.role === 'admin' ? 'Administrador' : 'Participante'}</span></div>
-                <button
+                <button title={eliminandoCuenta ? 'Eliminando…' : 'Eliminar tu cuenta'}
                   type="button"
                   className="btn btn-outline"
                   style={{ marginTop: '1rem', color: '#dc2626' }}
@@ -1532,7 +1532,7 @@ function AjustesTab() {
           >
             <div className="part-card-head" style={{ padding: '1.25rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ margin: 0, color: 'var(--text)' }}>Nueva contraseña</h3>
-              <button
+              <button title="Cerrar"
                 type="button"
                 className="part-qr-close"
                 onClick={() => setVerModal(false)}
@@ -1557,7 +1557,7 @@ function AjustesTab() {
                       minLength={8}
                       autoFocus
                     />
-                    <button
+                    <button title={verNueva ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                       type="button"
                       className="part-pass-toggle"
                       onClick={() => setVerNueva((v) => !v)}
@@ -1581,7 +1581,7 @@ function AjustesTab() {
                       onChange={(e) => setConfirmar(e.target.value)}
                       required
                     />
-                    <button
+                    <button title={verConfirmar ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                       type="button"
                       className="part-pass-toggle"
                       onClick={() => setVerConfirmar((v) => !v)}
@@ -1601,10 +1601,10 @@ function AjustesTab() {
                 )}
 
                 <div style={{ marginTop: '1.75rem', display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-                  <button type="button" className="btn btn-outline" onClick={() => setVerModal(false)} disabled={enviando}>
+                  <button title="Cancelar y cerrar esta ventana" type="button" className="btn btn-outline" onClick={() => setVerModal(false)} disabled={enviando}>
                     Cancelar
                   </button>
-                  <button type="submit" className="btn btn-primary" disabled={enviando || !nueva || !confirmar}>
+                  <button title={enviando ? 'Guardando…' : 'Guardar la nueva contraseña'} type="submit" className="btn btn-primary" disabled={enviando || !nueva || !confirmar}>
                     {enviando ? 'Guardando…' : 'Guardar contraseña'}
                   </button>
                 </div>
@@ -1619,7 +1619,7 @@ function AjustesTab() {
       {confirmarEliminar && createPortal(
         <div className={`mod-deportivo part-qr-overlay${darkMode ? ' dark-mode' : ''}`} onClick={() => !eliminandoCuenta && setConfirmarEliminar(false)}>
           <div className="part-qr-modal" onClick={(e) => e.stopPropagation()}>
-            <button
+            <button title="Cerrar"
               className="part-qr-close"
               onClick={() => setConfirmarEliminar(false)}
               aria-label="Cerrar"
@@ -1634,10 +1634,10 @@ function AjustesTab() {
               Vas a desactivar tu cuenta. Se cerrará tu sesión y no podrás iniciar sesión de nuevo hasta que un administrador la reactive.
             </p>
             <div style={{ display: 'flex', gap: '.75rem', justifyContent: 'flex-end' }}>
-              <button type="button" className="btn btn-outline" onClick={() => setConfirmarEliminar(false)} disabled={eliminandoCuenta}>
+              <button title="Cancelar y conservar tu cuenta" type="button" className="btn btn-outline" onClick={() => setConfirmarEliminar(false)} disabled={eliminandoCuenta}>
                 Cancelar
               </button>
-              <button
+              <button title={eliminandoCuenta ? 'Eliminando…' : 'Confirmar y eliminar tu cuenta'}
                 type="button"
                 className="btn btn-primary"
                 style={{ background: '#dc2626' }}

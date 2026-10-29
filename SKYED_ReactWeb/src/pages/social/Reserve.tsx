@@ -371,7 +371,7 @@ export default function Reserve() {
                   />
                 </div>
 
-                <button className="form-submit" type="submit">
+                <button title="Enviar tu solicitud de cotización" className="form-submit" type="submit">
                   ✦ Enviar solicitud
                 </button>
               </form>

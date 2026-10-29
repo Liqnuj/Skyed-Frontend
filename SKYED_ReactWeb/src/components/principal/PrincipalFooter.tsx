@@ -8,9 +8,9 @@ export default function PrincipalFooter() {
     <footer className="footer">
       <span>© 2026 SKYED · Sogamoso, Boyacá, Colombia</span>
       <div className="footer-links">
-        <button type="button" onClick={() => setTermsOpen(true)}>Términos</button>
-        <button type="button" onClick={() => setTermsOpen(true)}>Privacidad</button>
-        <a href="#">Soporte</a>
+        <button type="button" title="Leer los términos y condiciones" onClick={() => setTermsOpen(true)}>Términos</button>
+        <button type="button" title="Leer la política de privacidad" onClick={() => setTermsOpen(true)}>Privacidad</button>
+        <a href="#" title="Contactar con soporte">Soporte</a>
       </div>
 
       <TermsModal

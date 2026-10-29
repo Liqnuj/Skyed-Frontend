@@ -72,6 +72,7 @@ export default function AccountMenu({ tema, grupos, rol, alSalirIrA }: Props) {
         className="am-trigger"
         aria-haspopup="menu"
         aria-expanded={abierto}
+        title={abierto ? 'Cerrar el menú de tu cuenta' : 'Abrir el menú de tu cuenta'}
         onClick={() => setAbierto((v) => !v)}
       >
         {avatar('am-avatar')}
@@ -103,6 +104,7 @@ export default function AccountMenu({ tema, grupos, rol, alSalirIrA }: Props) {
                     key={opcion.to}
                     to={opcion.to}
                     role="menuitem"
+                    title={opcion.detalle ? `${opcion.titulo}: ${opcion.detalle}` : opcion.titulo}
                     className={`am-item${opcion.destacada ? ' is-highlight' : ''}${opcion.color ? ` is-${opcion.color}` : ''}`}
                   >
                     <span className="am-item-icon"><i className={`ti ${opcion.icono}`} aria-hidden="true" /></span>
@@ -118,7 +120,7 @@ export default function AccountMenu({ tema, grupos, rol, alSalirIrA }: Props) {
 
           <div className="am-sep" role="separator" />
 
-          <button type="button" role="menuitem" className="am-item is-logout" onClick={cerrarSesion}>
+          <button type="button" role="menuitem" className="am-item is-logout" title="Cerrar tu sesión en SKYED" onClick={cerrarSesion}>
             <span className="am-item-icon"><i className="ti ti-logout" aria-hidden="true" /></span>
             <span className="am-item-text"><strong>Cerrar sesión</strong></span>
           </button>

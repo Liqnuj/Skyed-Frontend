@@ -77,7 +77,7 @@ export default function HomePage() {
               <li><span className="feat-dot" />Cotización personalizada en línea</li>
               <li><span className="feat-dot" />Coordinación total del evento</li>
             </ul>
-            <a href="/social" className="big-btn">
+            <a href="/social" className="big-btn" title="Entrar a SKYED Social: bodas, quinceañeras y eventos corporativos">
               <span>Ingresar a SKYEDSocial</span>
               <div className="big-btn-arrow"><i className="ti ti-arrow-right" /></div>
             </a>
@@ -105,7 +105,7 @@ export default function HomePage() {
               <li><span className="feat-dot" />Rankings y resultados en tiempo real</li>
               <li><span className="feat-dot" />Kits y dorsales personalizados</li>
             </ul>
-            <a href="/deportivo" className="big-btn">
+            <a href="/deportivo" className="big-btn" title="Entrar a SKYED Deportivo: inscríbete a eventos de ciclismo">
               <span>Ingresar a SKYEDDeportivo</span>
               <div className="big-btn-arrow"><i className="ti ti-arrow-right" /></div>
             </a>
@@ -225,7 +225,7 @@ export default function HomePage() {
           </span>
           <h2 className="cta-title">¿Listo para tu <span className="cta-highlight">próximo evento</span>?</h2>
           <p className="cta-subtitle">Únete a miles de personas que ya están encontrando y disfrutando eventos con SKYED.</p>
-          <a href="/login" className="cta-btn">
+          <a href="/login" className="cta-btn" title="Crear tu cuenta o iniciar sesión en SKYED">
             Comenzar gratis
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M5 12h14M12 5l7 7-7 7" />

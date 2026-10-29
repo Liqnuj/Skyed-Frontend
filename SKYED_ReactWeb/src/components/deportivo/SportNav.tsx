@@ -34,7 +34,7 @@ const { user } = useAuth();
   return (
     <header className="site-header" role="banner">
       <nav className="nav" aria-label="Navegación principal">
-        <Link className="brand" to="/deportivo" aria-label="Inicio SKYED">
+        <Link title="Ir al inicio de SKYED Deportivo" className="brand" to="/deportivo" aria-label="Inicio SKYED">
           <img src="/assets/deportivo/logo_deportivo.png" alt="" />
           <span>SKYED<em>DEPORTIVO</em></span>
         </Link>
@@ -43,14 +43,14 @@ const { user } = useAuth();
           <i className="ti ti-home" aria-hidden="true" />
         </Link>
 
-        <button className={`hamburger ${open ? 'active' : ''}`} aria-expanded={open} aria-controls="nav-list" aria-label="Abrir menú" onClick={() => setOpen((o) => !o)}>
+        <button title={open ? 'Cerrar el menú' : 'Abrir el menú'} className={`hamburger ${open ? 'active' : ''}`} aria-expanded={open} aria-controls="nav-list" aria-label="Abrir menú" onClick={() => setOpen((o) => !o)}>
           <span></span><span></span><span></span>
         </button>
         <ul className={`nav-links ${open ? 'open' : ''}`} id="nav-list">
-          <li><NavLink to="/deportivo" end onClick={close}>Inicio</NavLink></li>
-          <li><NavLink to="/deportivo/eventos" onClick={close}>Eventos</NavLink></li>
-          <li><NavLink to="/deportivo/nosotros" onClick={close}>Nosotros</NavLink></li>
-          <li><Link to="/deportivo/nosotros#contactanos" onClick={close}>Contacto</Link></li>
+          <li><NavLink title="Ir al inicio" to="/deportivo" end onClick={close}>Inicio</NavLink></li>
+          <li><NavLink title="Ver los eventos deportivos" to="/deportivo/eventos" onClick={close}>Eventos</NavLink></li>
+          <li><NavLink title="Conocer SKYED Deportivo" to="/deportivo/nosotros" onClick={close}>Nosotros</NavLink></li>
+          <li><Link title="Ir a la sección de contacto" to="/deportivo/nosotros#contactanos" onClick={close}>Contacto</Link></li>
         </ul>
         <div className="nav-cta">
           {user ? (
@@ -61,7 +61,7 @@ const { user } = useAuth();
               alSalirIrA="/deportivo"
             />
           ) : (
-            <Link to="/login" className="btn btn-primary">Iniciar sesión</Link>
+            <Link title="Iniciar sesión o crear una cuenta" to="/login" className="btn btn-primary">Iniciar sesión</Link>
           )}
         </div>
       </nav>
