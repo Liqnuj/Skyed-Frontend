@@ -50,9 +50,23 @@ export function useInViewAnimations(rootRef: RefObject<HTMLElement | null>) {
       { threshold: 0.15, rootMargin: '0px 0px -6% 0px' },
     );
 
-    root.querySelectorAll('[data-anim]').forEach((el) => io.observe(el));
+    // Observa los [data-anim] que existan ahora y los que se agreguen después
+    // (tarjetas que llegan de la API o que cambian al filtrar).
+    const seen = new WeakSet<Element>();
+    const scan = () => {
+      root.querySelectorAll('[data-anim]').forEach((el) => {
+        if (seen.has(el) || el.classList.contains('is-inview')) return;
+        seen.add(el);
+        io.observe(el);
+      });
+    };
+    scan();
+
+    const mo = new MutationObserver(scan);
+    mo.observe(root, { childList: true, subtree: true });
 
     return () => {
+      mo.disconnect();
       io.disconnect();
       root.classList.remove('anim-ready');
     };

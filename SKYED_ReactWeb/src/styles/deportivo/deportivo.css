@@ -1085,7 +1085,7 @@
 }
 .mod-deportivo .event-item{
   background:#fff;border-radius:var(--radius);overflow:hidden;
-  border:1px solid var(--accent);transition:var(--transition);
+  border:2px solid var(--accent);transition:var(--transition);
   display:flex;flex-direction:column;
 }
 
@@ -2991,3 +2991,28 @@
     max-width: 100% !important;
   }
 }
+
+
+/* ===== Tarjeta de evento (inicio): footer con precio + botón "Ver más" ===== */
+.mod-deportivo .event-card .footer{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:1rem;margin-top:auto;
+}
+.mod-deportivo .event-card .btn-ghost{
+  display:inline-flex;align-items:center;justify-content:center;
+  margin-left:0;padding:.5rem 1.1rem;
+  border:2px solid var(--accent);border-radius:10px;
+  background:transparent;color:var(--accent);
+  font-family:inherit;font-size:inherit;line-height:inherit;cursor:pointer;
+  font-weight:700;text-decoration:none;white-space:nowrap;
+  transition:transform var(--transition),box-shadow var(--transition),background var(--transition),color var(--transition);
+}
+.mod-deportivo .event-card .btn-ghost:hover{
+  background:var(--accent);color:#fff;border-color:var(--accent);
+  transform:translateY(-1px);box-shadow:var(--shadow);
+}
+.mod-deportivo .event-card .btn-ghost:focus-visible{
+  outline:2px solid var(--accent);outline-offset:2px;
+}
+.mod-deportivo.dark-mode .event-card .btn-ghost{color:var(--accent)}
+.mod-deportivo.dark-mode .event-card .btn-ghost:hover{color:#fff}

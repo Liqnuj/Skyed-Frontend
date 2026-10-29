@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import SportWrapper from '../../components/deportivo/SportWrapper';
-import { useRevealObserver } from '../../hooks/useRevealObserver';
+import { anim, useInViewAnimations } from '../../hooks/useInViewAnimations';
+import '../../styles/shared/nosotrosMotion.css';
 import { useAuth } from '../../context/AuthContext';
 import { eventoDeportivoService, type EventoDeportivo } from '../../services/deportivoService';
 
@@ -36,9 +37,9 @@ export default function SportEvents() {
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('all');
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error'; show: boolean }>({ msg: '', type: 'success', show: false });
-  const listRef = useRef<HTMLElement>(null);
-  // Las tarjetas suben desde abajo al entrar en pantalla (igual que en Social)
-  useRevealObserver(listRef);
+  const mainRef = useRef<HTMLElement>(null);
+  // Mismas animaciones de "Sobre nosotros": ruedas, barra de progreso y entrada al hacer scroll
+  useInViewAnimations(mainRef);
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -80,6 +81,8 @@ export default function SportEvents() {
 
   return (
     <SportWrapper>
+      <main id="main" className="events-page" ref={mainRef}>
+      <div className="nos-progress" aria-hidden="true" />
       <section className="page-header">
         <h1>Nuestros eventos</h1>
         <p>Descubre las próximas competencias y rodadas de la temporada e inscríbete con un clic.</p>
@@ -99,17 +102,17 @@ export default function SportEvents() {
         </div>
       </div>
 
-      <section className="events-section" ref={listRef}>
+      <section className="events-section">
         {loading && <p className="container">Cargando eventos...</p>}
         {error && <p className="container form-error error">{error}</p>}
 
         {!loading && !error && (
           <div className="events-list" aria-live="polite">
             {filtered.length === 0 ? (
-              <div className="empty-state">No hay eventos en esta categoría.</div>
+              <div className="empty-state" {...anim('fade-up')}>No hay eventos en esta categoría.</div>
             ) : (
-              filtered.map((e) => (
-                <article key={e.id} className="event-item reveal">
+              filtered.map((e, i) => (
+                <article key={`${filter}-${e.id}`} className="event-item" {...anim('zoom-in', i % 3)}>
                   <div
                     className="img"
                     style={{ backgroundImage: `url('${e.imagen_url ?? ''}')` }}
@@ -141,6 +144,7 @@ export default function SportEvents() {
           </div>
         )}
       </section>
+      </main>
 
       <div className={`toast ${toast.type}${toast.show ? ' show' : ''}`}>
         <span className="toast-icon">{toast.type === 'success' ? '✓' : '⚠'}</span>
@@ -148,4 +152,4 @@ export default function SportEvents() {
       </div>
     </SportWrapper>
   );
-}
+}

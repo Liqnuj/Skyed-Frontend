@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import SportWrapper from '../../components/deportivo/SportWrapper';
 import { eventoDeportivoService, type EventoDeportivo } from '../../services/deportivoService';
 import { sportHeroSlides } from '../../data/sportHomeData';
+import { useAuth } from '../../context/AuthContext';
 
 
 const FEATURES = [
@@ -65,6 +66,23 @@ function StatItem({ target, suffix, label }: { target: number; suffix: string; l
 
 export default function SportHome() {
   const [slide, setSlide] = useState(0);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error'; show: boolean }>({ msg: '', type: 'success', show: false });
+
+  function showToast(msg: string, type: 'success' | 'error') {
+    setToast({ msg, type, show: true });
+    setTimeout(() => setToast((t) => ({ ...t, show: false })), 3200);
+  }
+
+  function handleInscribirme(id: number) {
+    if (!user) {
+      showToast('Debes iniciar sesión para inscribirte', 'error');
+      setTimeout(() => navigate('/login'), 1200);
+      return;
+    }
+    navigate(`/deportivo/inscripcion/${id}`);
+  }
 
     const [eventos, setEventos] = useState<EventoDeportivo[]>([]);
 
@@ -89,19 +107,19 @@ export default function SportHome() {
             <div key={src} className={`slide ${i === slide ? 'active' : ''}`} style={{ backgroundImage: `url('${src}')` }} />
           ))}
         </div>
-        <button title="Ver la diapositiva anterior" className="carousel-arrow prev" aria-label="Slide anterior" onClick={() => setSlide((s) => (s - 1 + sportHeroSlides.length) % sportHeroSlides.length)}>‹</button>
-        <button title="Ver la diapositiva siguiente" className="carousel-arrow next" aria-label="Slide siguiente" onClick={() => setSlide((s) => (s + 1) % sportHeroSlides.length)}>›</button>
+        <button className="carousel-arrow prev" aria-label="Slide anterior" onClick={() => setSlide((s) => (s - 1 + sportHeroSlides.length) % sportHeroSlides.length)}>‹</button>
+        <button className="carousel-arrow next" aria-label="Slide siguiente" onClick={() => setSlide((s) => (s + 1) % sportHeroSlides.length)}>›</button>
         <div className="hero-content">
           <span className="eyebrow">Temporada 2026 abierta</span>
           <h1>Vive el <em>ciclismo</em> como nunca antes</h1>
           <p>Inscríbete en los mejores eventos de ruta, MTB, gravel, pista y BMX. Una plataforma, miles de pedaladas.</p>
           <div className="hero-actions">
-            <Link title="Ver los eventos" to="/deportivo/eventos" className="btn btn-primary">Ver eventos</Link>
+            <Link to="/deportivo/eventos" className="btn btn-primary">Ver eventos</Link>
           </div>
         </div>
         <div className="carousel-dots" role="tablist" aria-label="Navegación del carrusel">
           {sportHeroSlides.map((src, i) => (
-            <button title={`Ir a la diapositiva ${i + 1}`} key={src} className={i === slide ? 'active' : ''} onClick={() => setSlide(i)} aria-label={`Ir a la diapositiva ${i + 1}`} />
+            <button key={src} className={i === slide ? 'active' : ''} onClick={() => setSlide(i)} aria-label={`Ir a la diapositiva ${i + 1}`} />
           ))}
         </div>
       </section>
@@ -170,7 +188,7 @@ export default function SportHome() {
                     <p className="desc">{e.descripcion}</p>
                     <div className="footer">
                       <span className="price">${e.precio.toLocaleString('es-CO')}</span>
-                      <Link title="Ver más sobre este evento" to={`/deportivo/evento/${e.id}`} className="btn-ghost">Ver más</Link>
+                      <button type="button" className="btn-ghost" title="Inscribirme a este evento" onClick={() => handleInscribirme(e.id)}>Ver más</button>
                     </div>
                   </div>
                 </article>
@@ -178,10 +196,15 @@ export default function SportHome() {
             )}
           </div>
           <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-            <Link title="Ver todos los eventos" to="/deportivo/eventos" className="btn btn-primary">Ver todos los eventos →</Link>
+            <Link to="/deportivo/eventos" className="btn btn-primary">Ver todos los eventos →</Link>
           </div>
         </div>
       </section>
+
+      <div className={`toast ${toast.type}${toast.show ? ' show' : ''}`}>
+        <span className="toast-icon">{toast.type === 'success' ? '✓' : '⚠'}</span>
+        <span>{toast.msg}</span>
+      </div>
     </SportWrapper>
   );
 }
