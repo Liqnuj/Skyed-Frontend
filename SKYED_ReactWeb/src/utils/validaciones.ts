@@ -65,3 +65,44 @@ export function errorTelefono(tel: string): string | null {
   if (!tel) return null;
   return tel.length < 7 || tel.length > 15 ? 'El teléfono debe tener entre 7 y 15 dígitos.' : null;
 }
+
+/** Nombre o apellido: al menos 2 letras (los espacios sueltos no cuentan). Vacío → obligatorio. */
+export function errorNombrePersona(valor: string, etiqueta: 'nombre' | 'apellido'): string | null {
+  const limpio = valor.trim();
+  if (!limpio) return `Escribe el ${etiqueta}.`;
+  if (limpio.replace(/\s/g, '').length < 2) return `El ${etiqueta} debe tener al menos 2 letras.`;
+  return null;
+}
+
+/** Correo con formato válido (usuario@dominio.ext) y de hasta 80 caracteres, como en el registro. */
+export function errorCorreo(correo: string): string | null {
+  const c = correo.trim();
+  if (!c) return 'Escribe el correo electrónico.';
+  if (c.length > 80) return 'El correo no puede superar los 80 caracteres.';
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@.]{2,}$/.test(c) || c.includes('..')) return 'Escribe un correo válido, por ejemplo nombre@correo.com.';
+  return null;
+}
+
+/** Edad cumplida en años a hoy, o null si la fecha (AAAA-MM-DD) no es válida. */
+export function edadEnAnios(fecha: string): number | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return null;
+  const [y, m, d] = fecha.split('-').map(Number);
+  const nac = new Date(y, m - 1, d);
+  // Rechaza fechas que JS "corrige" (31 de febrero, mes 13, etc.).
+  if (nac.getFullYear() !== y || nac.getMonth() !== m - 1 || nac.getDate() !== d) return null;
+  const hoy = new Date();
+  let edad = hoy.getFullYear() - y;
+  if (hoy.getMonth() < m - 1 || (hoy.getMonth() === m - 1 && hoy.getDate() < d)) edad--;
+  return edad;
+}
+
+/** Motivo si la fecha de nacimiento no sirve (vacía, inválida, futura, menor de 10 o de más de 120 años). */
+export function errorFechaNacimiento(fecha: string, edadMinima = 10): string | null {
+  if (!fecha) return 'Selecciona la fecha de nacimiento.';
+  const edad = edadEnAnios(fecha);
+  if (edad === null) return 'La fecha de nacimiento no es válida.';
+  if (edad < 0) return 'La fecha de nacimiento no puede ser futura.';
+  if (edad < edadMinima) return `La persona debe tener al menos ${edadMinima} años.`;
+  if (edad > 120) return 'Revisa la fecha de nacimiento: la edad no puede superar los 120 años.';
+  return null;
+}

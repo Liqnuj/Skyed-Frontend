@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   Bike,
   Check,
@@ -18,7 +18,15 @@ import {
   X,
 } from "lucide-react";
 import { userService } from "../../services/userRoleService";
-import { errorContrasena, normalizarCorreo, soloDigitos, soloLetras } from "../../utils/validaciones";
+import {
+  errorContrasena,
+  errorCorreo,
+  errorFechaNacimiento,
+  errorNombrePersona,
+  normalizarCorreo,
+  soloDigitos,
+  soloLetras,
+} from "../../utils/validaciones";
 import type { useConfirmacion } from "../shared/ConfirmDialog";
 import "../../styles/deportivo/AdminUsuarios.css";
 
@@ -424,8 +432,11 @@ export function RolesModal({ users, inicialId, yoId, onClose, onCambio, notify, 
   );
 }
 
+
 /* ================================================================
    NUEVO USUARIO
+   Lo usan el panel deportivo y el panel social. Mismas reglas que el
+   registro público (y que el backend), con el error bajo cada campo.
 ================================================================ */
 
 const MAYUS = "ABCDEFGHJKLMNPQRSTUVWXYZ";
@@ -460,12 +471,31 @@ function fuerzaClave(clave: string) {
   return { puntos, texto };
 }
 
-export function UsuarioModal({ onClose, onCreado, notify }: {
+type CampoUsuario = "tipo" | "documento" | "nombre" | "apellido" | "correo" | "telefono" | "fecha" | "clave";
+const ORDEN_CAMPOS: CampoUsuario[] = ["tipo", "documento", "nombre", "apellido", "correo", "telefono", "fecha", "clave"];
+
+/** Mensaje de error bajo un campo (solo se pinta cuando hay error). */
+function ErrorCampo({ id, texto }: { id: string; texto?: string | null }) {
+  if (!texto) return null;
+  return <small id={id} className="usr-error" role="alert">{texto}</small>;
+}
+
+export function UsuarioModal({ modulo = "deportivo", existentes = [], onClose, onCreado, notify }: {
+  /** Panel desde el que se crea: define el rol por defecto y los roles extra que se pueden dar. */
+  modulo?: "deportivo" | "social";
+  /** Usuarios ya cargados en el panel: sirven para avisar de un correo repetido antes de enviar. */
+  existentes?: Array<{ correo_u: string }>;
   onClose: () => void;
   /** Se llama cuando la cuenta ya se creó (el panel cierra el modal y recarga). */
   onCreado: () => Promise<void> | void;
   notify: (mensaje: string) => void;
 }) {
+  const esSocial = modulo === "social";
+  const contextoBase: Contexto = esSocial ? "social" : "deportivo";
+  // El admin social solo puede dar el rol de su módulo; el deportivo, los de ROLES_ASIGNABLES.
+  const rolesExtra = esSocial ? ROLES.filter((r) => r.nombre === "adminSocial") : ROLES_ASIGNABLES;
+  const rolPorDefecto = esSocial ? "Cliente" : "Participante";
+
   const [form, setForm] = useState({
     tipo: "",
     documento: "",
@@ -476,25 +506,73 @@ export function UsuarioModal({ onClose, onCreado, notify }: {
     fecha: "",
     clave: "",
   });
+  const [tocados, setTocados] = useState<Partial<Record<CampoUsuario, boolean>>>({});
+  const [errorApi, setErrorApi] = useState<string | null>(null);
   const [rol, setRol] = useState(""); // "" = el rol por defecto que asigna el registro
-  const [contexto, setContexto] = useState<Contexto>("deportivo");
+  const [contexto, setContexto] = useState<Contexto>(contextoBase);
   const [verClave, setVerClave] = useState(false);
   const [copiada, setCopiada] = useState(false);
   const [guardando, setGuardando] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
 
-  const set = (campo: keyof typeof form, valor: string) => setForm((f) => ({ ...f, [campo]: valor }));
+  const set = (campo: CampoUsuario, valor: string) => {
+    setErrorApi(null);
+    setForm((f) => ({ ...f, [campo]: valor }));
+  };
+  const tocar = (campo: CampoUsuario) => setTocados((t) => (t[campo] ? t : { ...t, [campo]: true }));
 
-  // El registro público exige 10 años cumplidos como mínimo.
-  const fechaMaxima = useMemo(() => {
+  // Fecha más reciente permitida (10 años cumplidos) y más antigua razonable (120 años).
+  const { fechaMaxima, fechaMinima } = useMemo(() => {
     const d = new Date();
-    d.setFullYear(d.getFullYear() - 10);
-    return d.toISOString().slice(0, 10);
+    const max = new Date(d.getFullYear() - 10, d.getMonth(), d.getDate());
+    const min = new Date(d.getFullYear() - 120, d.getMonth(), d.getDate());
+    const iso = (x: Date) => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`;
+    return { fechaMaxima: iso(max), fechaMinima: iso(min) };
   }, []);
+
+  const correosUsados = useMemo(
+    () => new Set(existentes.map((u) => normalizarCorreo(u.correo_u ?? ""))),
+    [existentes],
+  );
+
+  // Todas las reglas en un solo lugar: el mismo resultado sirve para pintar y para bloquear el envío.
+  const errores: Record<CampoUsuario, string | null> = useMemo(() => {
+    const doc = form.documento;
+    const correo = form.correo.trim();
+    return {
+      tipo: form.tipo ? null : "Selecciona el tipo de documento.",
+      documento: !doc
+        ? "Escribe el número de documento."
+        : doc.length < 5 || doc.length > 12
+          ? "El número de documento debe tener entre 5 y 12 dígitos."
+          : /^0+$/.test(doc)
+            ? "El número de documento no es válido."
+            : null,
+      nombre: errorNombrePersona(form.nombre, "nombre"),
+      apellido: errorNombrePersona(form.apellido, "apellido"),
+      correo: errorCorreo(correo) ?? (correosUsados.has(normalizarCorreo(correo)) ? "Ya existe un usuario con este correo." : null),
+      telefono: !form.telefono
+        ? "Escribe el teléfono."
+        : form.telefono.length < 7 || form.telefono.length > 15
+          ? "El teléfono debe tener entre 7 y 15 dígitos."
+          : null,
+      fecha: errorFechaNacimiento(form.fecha, 10),
+      clave: form.clave ? errorContrasena(form.clave) : "Escribe o genera una contraseña.",
+    };
+  }, [form, correosUsados]);
+
+  const visible = (c: CampoUsuario) => (tocados[c] ? errores[c] : null);
+  const claseCampo = (c: CampoUsuario) => (visible(c) ? "usr-invalido" : "");
+  const ariaCampo = (c: CampoUsuario) => ({
+    "aria-invalid": visible(c) ? true : undefined,
+    "aria-describedby": visible(c) ? `usr-err-${c}` : undefined,
+  });
 
   const fuerza = fuerzaClave(form.clave);
 
   const generar = () => {
     set("clave", generarClave());
+    tocar("clave");
     setVerClave(true);
     setCopiada(false);
   };
@@ -514,44 +592,30 @@ export function UsuarioModal({ onClose, onCreado, notify }: {
     e.preventDefault();
     if (guardando) return;
 
-    if (![form.tipo, form.documento, form.nombre.trim(), form.apellido.trim(), form.correo.trim(), form.telefono, form.fecha, form.clave].every(Boolean)) {
-      notify("Completa todos los datos del usuario.");
-      return;
-    }
-    if (form.documento.length < 5 || form.documento.length > 12) {
-      notify("El número de documento debe tener entre 5 y 12 dígitos.");
-      return;
-    }
-    if (form.telefono.length < 7 || form.telefono.length > 15) {
-      notify("El teléfono debe tener entre 7 y 15 dígitos.");
-      return;
-    }
-    if (!/^\S+@\S+\.\S+$/.test(form.correo.trim())) {
-      notify("Escribe un correo válido.");
-      return;
-    }
-    if (form.fecha > fechaMaxima) {
-      notify("El usuario debe tener al menos 10 años.");
-      return;
-    }
-    const motivoClave = errorContrasena(form.clave);
-    if (motivoClave) {
-      notify(motivoClave);
+    const primerError = ORDEN_CAMPOS.find((c) => errores[c]);
+    if (primerError) {
+      // Se marcan todos los campos para que se vea qué falta, y se lleva el foco al primero.
+      setTocados(Object.fromEntries(ORDEN_CAMPOS.map((c) => [c, true])));
+      notify("Revisa los campos marcados en rojo.");
+      const el = formRef.current?.querySelector<HTMLElement>(`[data-campo="${primerError}"]`);
+      el?.focus();
       return;
     }
 
     setGuardando(true);
+    setErrorApi(null);
     try {
       const res = await userService.crear({
         tipo_documento_u: form.tipo,
         documento_u: parseInt(form.documento, 10),
-        nombre_u: form.nombre.trim(),
-        apellido_u: form.apellido.trim(),
+        nombre_u: form.nombre.trim().replace(/\s{2,}/g, " "),
+        apellido_u: form.apellido.trim().replace(/\s{2,}/g, " "),
         telefono_u: form.telefono,
         correo_u: normalizarCorreo(form.correo),
         fecha_nacimiento_u: form.fecha,
         contrasena_u: form.clave,
-        contexto: rol && contexto === "social" ? "social" : "deportivo",
+        // El registro asigna el rol base según el contexto: cliente en social, participante en deportivo.
+        contexto: esSocial ? "social" : rol && contexto === "social" ? "social" : "deportivo",
       });
 
       // Rol adicional elegido por el administrador (si no, queda el que da el registro).
@@ -567,13 +631,16 @@ export function UsuarioModal({ onClose, onCreado, notify }: {
       notify(`Usuario ${form.nombre.trim()} creado.${aviso}`);
       await onCreado();
     } catch (err) {
-      notify(err instanceof Error ? err.message : "No se pudo crear el usuario.");
+      // El backend también valida (correo o documento repetidos, etc.): se deja el motivo dentro del formulario.
+      const mensaje = err instanceof Error ? err.message : "No se pudo crear el usuario.";
+      setErrorApi(mensaje);
+      notify(mensaje);
     } finally {
       setGuardando(false);
     }
   };
 
-  const eligioAdmin = rol === "adminDeportivo";
+  const eligioAdmin = rol === "adminDeportivo" || rol === "adminSocial";
 
   return (
     <ModalBase
@@ -582,50 +649,130 @@ export function UsuarioModal({ onClose, onCreado, notify }: {
       onClose={onClose}
       cerrarFuera={false}
     >
-      <form className="modal-form" onSubmit={enviar} autoComplete="off">
+      <form ref={formRef} className="modal-form" onSubmit={enviar} autoComplete="off" noValidate>
         <div className="form-grid">
-          <label className="admin-field">
+          <label className={`admin-field ${claseCampo("tipo")}`}>
             <span>Tipo de documento</span>
-            <select required value={form.tipo} onChange={(e) => set("tipo", e.target.value)}>
+            <select
+              required
+              data-campo="tipo"
+              value={form.tipo}
+              onChange={(e) => { set("tipo", e.target.value); tocar("tipo"); }}
+              onBlur={() => tocar("tipo")}
+              {...ariaCampo("tipo")}
+            >
               <option value="">Selecciona</option>
               {TIPOS_DOCUMENTO.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>
+            <ErrorCampo id="usr-err-tipo" texto={visible("tipo")} />
           </label>
-          <label className="admin-field">
+          <label className={`admin-field ${claseCampo("documento")}`}>
             <span>Número de documento</span>
-            <input required inputMode="numeric" value={form.documento} onChange={(e) => set("documento", soloDigitos(e.target.value, 12))} placeholder="Ej. 1052345678" />
+            <input
+              required
+              data-campo="documento"
+              inputMode="numeric"
+              maxLength={12}
+              value={form.documento}
+              onChange={(e) => set("documento", soloDigitos(e.target.value, 12))}
+              onBlur={() => tocar("documento")}
+              placeholder="Ej. 1052345678"
+              {...ariaCampo("documento")}
+            />
+            <ErrorCampo id="usr-err-documento" texto={visible("documento")} />
           </label>
-          <label className="admin-field">
+          <label className={`admin-field ${claseCampo("nombre")}`}>
             <span>Nombres</span>
-            <input required value={form.nombre} onChange={(e) => set("nombre", soloLetras(e.target.value, 50))} placeholder="Ej. Camila" />
+            <input
+              required
+              data-campo="nombre"
+              maxLength={50}
+              autoComplete="off"
+              value={form.nombre}
+              onChange={(e) => set("nombre", soloLetras(e.target.value, 50).replace(/^\s+/, "").replace(/\s{2,}/g, " "))}
+              onBlur={() => tocar("nombre")}
+              placeholder="Ej. Camila"
+              {...ariaCampo("nombre")}
+            />
+            <ErrorCampo id="usr-err-nombre" texto={visible("nombre")} />
           </label>
-          <label className="admin-field">
+          <label className={`admin-field ${claseCampo("apellido")}`}>
             <span>Apellidos</span>
-            <input required value={form.apellido} onChange={(e) => set("apellido", soloLetras(e.target.value, 50))} placeholder="Ej. Rojas" />
+            <input
+              required
+              data-campo="apellido"
+              maxLength={50}
+              autoComplete="off"
+              value={form.apellido}
+              onChange={(e) => set("apellido", soloLetras(e.target.value, 50).replace(/^\s+/, "").replace(/\s{2,}/g, " "))}
+              onBlur={() => tocar("apellido")}
+              placeholder="Ej. Rojas"
+              {...ariaCampo("apellido")}
+            />
+            <ErrorCampo id="usr-err-apellido" texto={visible("apellido")} />
           </label>
-          <label className="admin-field">
+          <label className={`admin-field ${claseCampo("correo")}`}>
             <span>Correo electrónico</span>
-            <input required type="email" maxLength={100} value={form.correo} onChange={(e) => set("correo", e.target.value.replace(/\s/g, ""))} placeholder="nombre@correo.com" />
+            <input
+              required
+              data-campo="correo"
+              type="email"
+              maxLength={80}
+              value={form.correo}
+              onChange={(e) => set("correo", e.target.value.replace(/\s/g, ""))}
+              onBlur={() => tocar("correo")}
+              placeholder="nombre@correo.com"
+              {...ariaCampo("correo")}
+            />
+            <ErrorCampo id="usr-err-correo" texto={visible("correo")} />
           </label>
-          <label className="admin-field">
+          <label className={`admin-field ${claseCampo("telefono")}`}>
             <span>Teléfono</span>
-            <input required inputMode="tel" value={form.telefono} onChange={(e) => set("telefono", soloDigitos(e.target.value, 15))} placeholder="Ej. 3101234567" />
+            <input
+              required
+              data-campo="telefono"
+              inputMode="tel"
+              maxLength={15}
+              value={form.telefono}
+              onChange={(e) => set("telefono", soloDigitos(e.target.value, 15))}
+              onBlur={() => tocar("telefono")}
+              placeholder="Ej. 3101234567"
+              {...ariaCampo("telefono")}
+            />
+            <ErrorCampo id="usr-err-telefono" texto={visible("telefono")} />
           </label>
-          <label className="admin-field">
+          <label className={`admin-field ${claseCampo("fecha")}`}>
             <span>Fecha de nacimiento</span>
-            <input required type="date" max={fechaMaxima} value={form.fecha} onChange={(e) => set("fecha", e.target.value)} />
+            <input
+              required
+              data-campo="fecha"
+              type="date"
+              min={fechaMinima}
+              max={fechaMaxima}
+              value={form.fecha}
+              onChange={(e) => set("fecha", e.target.value)}
+              onBlur={() => tocar("fecha")}
+              {...ariaCampo("fecha")}
+            />
+            {visible("fecha")
+              ? <ErrorCampo id="usr-err-fecha" texto={visible("fecha")} />
+              : <small className="usr-ayuda">Debe tener al menos 10 años.</small>}
           </label>
 
-          <div className="admin-field usr-clave">
+          <div className={`admin-field usr-clave ${claseCampo("clave")}`}>
             <span>Contraseña</span>
             <div className="usr-clave-fila">
               <input
                 required
+                data-campo="clave"
                 type={verClave ? "text" : "password"}
                 autoComplete="new-password"
+                maxLength={50}
                 value={form.clave}
                 onChange={(e) => { set("clave", e.target.value); setCopiada(false); }}
+                onBlur={() => tocar("clave")}
                 placeholder="Mín. 8 con mayúscula, minúscula y número"
+                {...ariaCampo("clave")}
               />
               <button type="button" className="usr-mini" title={verClave ? "Ocultar la contraseña" : "Mostrar la contraseña"} aria-label={verClave ? "Ocultar la contraseña" : "Mostrar la contraseña"} onClick={() => setVerClave((v) => !v)}>
                 {verClave ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -641,6 +788,7 @@ export function UsuarioModal({ onClose, onCreado, notify }: {
               <i /><i /><i /><i />
               <small>{fuerza.texto}</small>
             </div>
+            <ErrorCampo id="usr-err-clave" texto={visible("clave")} />
           </div>
         </div>
 
@@ -649,7 +797,7 @@ export function UsuarioModal({ onClose, onCreado, notify }: {
             <KeyRound size={16} />
             <div>
               <strong>Rol adicional (opcional)</strong>
-              <small>Si no eliges ninguno, la cuenta queda con el rol que asigna el registro.</small>
+              <small>Si no eliges ninguno, la cuenta queda como {rolPorDefecto}, el rol que asigna el registro.</small>
             </div>
           </div>
           <div className="usr-rol-inicial-campos">
@@ -659,12 +807,12 @@ export function UsuarioModal({ onClose, onCreado, notify }: {
                 value={rol}
                 onChange={(e) => {
                   setRol(e.target.value);
-                  const base = ROLES_ASIGNABLES.find((r) => r.nombre === e.target.value)?.contextoBase;
-                  if (base) setContexto(base);
+                  const base = rolesExtra.find((r) => r.nombre === e.target.value)?.contextoBase;
+                  setContexto(base ?? contextoBase);
                 }}
               >
-                <option value="">Solo el rol por defecto</option>
-                {ROLES_ASIGNABLES.map((r) => <option key={r.nombre} value={r.nombre}>{r.etiqueta}</option>)}
+                <option value="">Solo el rol por defecto ({rolPorDefecto})</option>
+                {rolesExtra.map((r) => <option key={r.nombre} value={r.nombre}>{r.etiqueta}</option>)}
               </select>
             </label>
             <div className={`usr-contexto ${rol ? "" : "apagado"}`} role="radiogroup" aria-label="Contexto del rol">
@@ -690,6 +838,8 @@ export function UsuarioModal({ onClose, onCreado, notify }: {
             <p className="usr-aviso alerta">Este usuario tendrá acceso de administración. Asígnalo solo a personas de confianza.</p>
           )}
         </div>
+
+        {errorApi && <p className="usr-aviso alerta usr-error-api" role="alert">{errorApi}</p>}
 
         <div className="modal-actions">
           <button type="button" className="secondary-btn" title="Cerrar sin crear el usuario" onClick={onClose}>Cancelar</button>

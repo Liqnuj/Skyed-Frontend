@@ -1283,6 +1283,8 @@ function AdminPage() {
 
       {modal === "usuario" && (
         <UsuarioModal
+          modulo="deportivo"
+          existentes={users}
           onClose={closeModal}
           notify={notify}
           onCreado={async () => { closeModal(); await loadAll(); }}
