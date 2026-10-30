@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import type { FormEvent } from 'react';
 import SocialWrapper from '../../components/social/SocialWrapper';
 import CanvasParticles from '../../components/social/CanvasParticles';
@@ -38,7 +38,12 @@ const TIEMPO_RESPUESTA: Record<PqrTypeKey, string> = {
 function PQRForm() {
   const { user } = useAuth();
   const [selectedType, setSelectedType] = useState<PqrTypeKey>('peticion');
-  const [asunto, setAsunto] = useState('');
+  // Si llega desde el Centro de Ayuda, el asunto viene precargado (editable).
+  const [paramsUrl] = useSearchParams();
+  const [asunto, setAsunto] = useState(() =>
+    paramsUrl.get('desde') === 'ayuda' ? (paramsUrl.get('asunto') ?? '').slice(0, 100) : '',
+  );
+  
   const [desc, setDesc] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [radicado, setRadicado] = useState('');

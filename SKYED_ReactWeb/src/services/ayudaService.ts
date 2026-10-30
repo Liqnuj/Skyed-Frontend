@@ -37,6 +37,18 @@ export interface RespuestaInicio {
   categorias: AyudaCategoria[];
   faq: AyudaArticuloResumen[];
   destacados: AyudaArticuloResumen[];
+  populares: AyudaArticuloResumen[];
+}
+
+export interface MiValoracion {
+  util: boolean;
+  comentario: string | null;
+}
+
+export interface RespuestaArticulo {
+  articulo: AyudaArticuloDetalle;
+  relacionados: AyudaArticuloResumen[];
+  mi_valoracion: MiValoracion | null;
 }
 
 export interface RespuestaBusqueda {
@@ -108,6 +120,70 @@ async function ayudaGet<T>(ruta: string, params: Record<string, string | undefin
   return data as T;
 }
 
+async function ayudaPost<T>(ruta: string, cuerpo: unknown): Promise<T> {
+  const token = getToken();
+
+  let res: Response;
+  try {
+    res = await fetch(`${apiConfig.baseURL}/ayuda${ruta}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(cuerpo),
+    });
+  } catch {
+    throw new AyudaError(
+      'No pudimos conectarnos con el servidor. Revisa tu conexión e inténtalo de nuevo.',
+      0,
+    );
+  }
+
+  const data = leerJson(await res.text());
+
+  if (!res.ok) {
+    if (res.status === 401) throw new AyudaError('Inicia sesión para dejar tu opinión.', 401);
+    if (res.status === 429) {
+      throw new AyudaError('Hiciste muchas peticiones seguidas. Espera un momento e inténtalo de nuevo.', 429);
+    }
+    if (res.status === 422 && data?.errors) {
+      throw new AyudaError(Object.values(data.errors).flat().join(' '), 422);
+    }
+    throw new AyudaError(data?.message ?? 'No pudimos guardar tu respuesta.', res.status);
+  }
+
+  return data as T;
+}
+
+/**
+ * Cuenta una visita al artículo, una sola vez por artículo y por sesión del
+ * navegador (así recargar no infla el contador). Es "silencioso": si falla, no
+ * se avisa a la persona.
+ */
+export function registrarVisita(slug: string): void {
+  const clave = `skyed_ayuda_visto_${slug}`;
+
+  try {
+    if (sessionStorage.getItem(clave)) return;
+    sessionStorage.setItem(clave, '1');
+  } catch {
+    /* sin sessionStorage: se cuenta igual */
+  }
+
+  const token = getToken();
+  void fetch(`${apiConfig.baseURL}/ayuda/articulos/${encodeURIComponent(slug)}/visita`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    keepalive: true,
+  }).catch(() => undefined);
+}
+
+
 export const ayudaService = {
   inicio: (modulo: ModuloAyuda) => ayudaGet<RespuestaInicio>('', { modulo }),
 
@@ -116,9 +192,12 @@ export const ayudaService = {
       `/categorias/${encodeURIComponent(slug)}`,
     ),
 
-  articulo: (slug: string) =>
-    ayudaGet<{ articulo: AyudaArticuloDetalle; relacionados: AyudaArticuloResumen[] }>(
-      `/articulos/${encodeURIComponent(slug)}`,
+  articulo: (slug: string) => ayudaGet<RespuestaArticulo>(`/articulos/${encodeURIComponent(slug)}`),
+
+  valorar: (slug: string, util: boolean, comentario?: string) =>
+    ayudaPost<{ message: string; valoracion: MiValoracion }>(
+      `/articulos/${encodeURIComponent(slug)}/valoracion`,
+      { util, comentario: util ? undefined : comentario?.trim() || undefined },
     ),
 
   buscar: (q: string, modulo: ModuloAyuda) => ayudaGet<RespuestaBusqueda>('/buscar', { q, modulo }),
