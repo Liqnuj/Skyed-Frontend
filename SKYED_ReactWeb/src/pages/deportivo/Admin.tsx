@@ -24,6 +24,7 @@ import {
   ScanLine,
   Search,
   Settings,
+  ShieldCheck,
   Tags,
   Trash2,
   Trophy,
@@ -44,6 +45,7 @@ import { EstadoPagos, InscritosPorEvento, TendenciaMensual } from "../../compone
 import { useConfirmacion } from "../../components/shared/ConfirmDialog";
 import { CargandoPanel, NumeroAnimado } from "../../components/shared/AdminMotion";
 import AdminFooter from "../../components/shared/AdminFooter";
+import { RolesModal, RolesDeUsuario, UsuarioModal, Avatar, esAdmin, esAdminSocial, type UsuarioFila } from "../../components/deportivo/UsuariosAdmin";
 
 type Confirmar = ReturnType<typeof useConfirmacion>["confirmar"];
 // Base del panel: mismo diseño del panel social con la paleta deportiva
@@ -149,14 +151,7 @@ type Resultado = {
   };
 };
 
-type UserRow = {
-  id_u: number;
-  nombre_u: string;
-  apellido_u?: string;
-  correo_u: string;
-  estado_u?: string;
-  roles?: Array<{ nombre_rol: string }>;
-};
+type UserRow = UsuarioFila;
 
 type Ingreso = {
   ok: boolean;
@@ -263,7 +258,7 @@ const clearDrafts = () => {
 
 const SECTION_KEY = "admin_section";
 const SECTIONS_VALIDAS = ["inicio", "eventos", "inscripciones", "acceso", "resultados", "kits", "usuarios", "ajustes"];
-type ModalKind = "evento" | "categorias" | "kit" | "pago" | "resultado" | null;
+type ModalKind = "evento" | "categorias" | "kit" | "pago" | "resultado" | "roles" | "usuario" | null;
 
 /** "1:05" → "01:05:00"; acepta HH:MM o HH:MM:SS del input type="time". */
 const normalizarTiempo = (value: string) => {
@@ -659,7 +654,9 @@ function AdminPage() {
     .filter((k) => !filtroLugarKit || (k.lugar_entrega_k ?? "") === filtroLugarKit)
     .filter((k) => filtered(`${k.nombre_k} ${k.lugar_entrega_k ?? ""} ${k.contenido_k ?? ""}`));
 
-  const visibleUsers = users
+  // El admin deportivo no ve a los admin sociales.
+  const usersVisibles = users.filter((u) => !esAdminSocial(u));
+  const visibleUsers = usersVisibles
     .filter((u) => !filtroRolUsuario || (u.roles ?? []).some((r) => r.nombre_rol === filtroRolUsuario))
     .filter((u) => !filtroEstadoUsuario || (u.estado_u ?? "activo") === filtroEstadoUsuario)
     .filter((u) => filtered(`${u.nombre_u} ${u.apellido_u ?? ""} ${u.correo_u}`));
@@ -667,7 +664,7 @@ function AdminPage() {
   // Opciones que salen de los propios datos
   const metodosPago = Array.from(new Set(pagos.map((p) => p.metodo_pago_p).filter(Boolean) as string[])).sort();
   const lugaresKit = Array.from(new Set(kits.map((k) => k.lugar_entrega_k).filter(Boolean) as string[])).sort();
-  const rolesUsuario = Array.from(new Set(users.flatMap((u) => (u.roles ?? []).map((r) => r.nombre_rol)))).sort();
+  const rolesUsuario = Array.from(new Set(usersVisibles.flatMap((u) => (u.roles ?? []).map((r) => r.nombre_rol)))).sort();
 
   const stats = useMemo(() => {
     const activos = eventos.filter((e) => e.estado === "activo");
@@ -1153,8 +1150,12 @@ function AdminPage() {
         {section === "usuarios" && (
           <SectionTable
             title="Usuarios registrados"
+            action="Nuevo usuario"
+            onAction={() => { setEditing(null); setModal("usuario"); }}
             toolbar={<>
-              <Link className="secondary-btn" to="/admin/usuarios" title="Gestionar los roles de los usuarios">Gestionar roles →</Link>
+              <button type="button" className="secondary-btn" title="Asignar o quitar roles a los usuarios" onClick={() => { setEditing(null); setModal("roles"); }}>
+                <ShieldCheck size={15} /> Gestionar roles
+              </button>
               {filtroSelect(filtroRolUsuario, setFiltroRolUsuario, "Filtrar por rol", "Todos los roles",
                 rolesUsuario.map(r => ({ value: r, label: r })))}
               {filtroSelect(filtroEstadoUsuario, setFiltroEstadoUsuario, "Filtrar por estado", "Todos los estados", [
@@ -1164,20 +1165,34 @@ function AdminPage() {
               {filtroPie(
                 !!(filtroRolUsuario || filtroEstadoUsuario),
                 () => { setFiltroRolUsuario(""); setFiltroEstadoUsuario(""); },
-                visibleUsers.length, users.length,
+                visibleUsers.length, usersVisibles.length,
               )}
             </>}
           >
-            <thead><tr><th>ID</th><th>Nombre</th><th>Correo</th><th>Roles</th><th>Estado</th></tr></thead>
+            <thead><tr><th>ID</th><th>Usuario</th><th>Roles</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody>
               {visibleUsers.map(u => (
                 <tr key={u.id_u}>
-                  <td>#{u.id_u}</td><td>{u.nombre_u} {u.apellido_u ?? ""}</td><td>{u.correo_u}</td>
-                  <td>{u.roles?.map(r => r.nombre_rol).join(", ") || "—"}</td>
+                  <td><span className="usr-id">#{u.id_u}</span></td>
+                  <td>
+                    <div className="usr-celda">
+                      <Avatar usuario={u} />
+                      <div className="usr-celda-texto">
+                        <strong>{u.nombre_u} {u.apellido_u ?? ""}</strong>
+                        <small>{u.correo_u}</small>
+                      </div>
+                    </div>
+                  </td>
+                  <td><RolesDeUsuario usuario={u} /></td>
                   <td><Badge value={u.estado_u ?? "activo"} /></td>
+                  <td>
+                    <button type="button" className="usr-btn-roles" title={esAdmin(u) && u.id_u !== user.id ? `Ver los roles de ${u.nombre_u} (es administrador)` : `Gestionar los roles de ${u.nombre_u}`} onClick={() => { setEditing({ id_u: u.id_u }); setModal("roles"); }}>
+                      <ShieldCheck size={14} /> {esAdmin(u) && u.id_u !== user.id ? "Ver roles" : "Roles"}
+                    </button>
+                  </td>
                 </tr>
               ))}
-              {!users.length && <tr><td colSpan={5}>{users.length ? "No hay usuarios con estos filtros." : "La API de usuarios no devolvió registros."}</td></tr>}
+              {!visibleUsers.length && <tr><td colSpan={5}>{usersVisibles.length ? "No hay usuarios con estos filtros." : "La API de usuarios no devolvió registros."}</td></tr>}
             </tbody>
           </SectionTable>
         )}
@@ -1251,6 +1266,26 @@ function AdminPage() {
               : apiFetch("/resultados", { method: "POST", body: JSON.stringify(data) }),
             editing ? "Resultado actualizado" : "Resultado registrado",
           )}
+        />
+      )}
+
+      {modal === "roles" && (
+        <RolesModal
+          users={users}
+          inicialId={editing?.id_u ?? null}
+          yoId={user.id}
+          onClose={closeModal}
+          notify={notify}
+          confirmar={confirmar}
+          onCambio={loadAll}
+        />
+      )}
+
+      {modal === "usuario" && (
+        <UsuarioModal
+          onClose={closeModal}
+          notify={notify}
+          onCreado={async () => { closeModal(); await loadAll(); }}
         />
       )}
 
