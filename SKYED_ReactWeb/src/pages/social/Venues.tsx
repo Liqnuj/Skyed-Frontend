@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SocialWrapper from '../../components/social/SocialWrapper';
 import CanvasParticles from '../../components/social/CanvasParticles';
+import EstadoLista from '../../components/social/EstadoLista';
 import { ambienteService, type Ambiente } from '../../services/socialService';
 
 interface GalleryItem {
@@ -75,16 +76,21 @@ export default function Venues() {
         </section>
 
         {/* VENUES */}
-        <section className="venue-section">
+        <section className={`venue-section${ambientes.length ? '' : ' is-vacia'}`}>
           <div className="container">
-            {loading && <p className="text-center">Cargando espacios...</p>}
-            {error && <p className="text-center form-error error">{error}</p>}
+            {loading && <EstadoLista tipo="cargando" titulo="Cargando espacios…" />}
+            {error && <EstadoLista tipo="error" titulo={error} />}
 
             {!loading && !error && ambientes.length === 0 && (
-              <p className="text-center">Todavía no hay espacios publicados.</p>
+              <EstadoLista
+                tipo="vacio"
+                titulo="Todavía no hay espacios publicados"
+                texto="Estamos preparando nuevos lugares. Cuéntanos qué necesitas y te ayudamos a encontrar el ideal."
+                accion={{ texto: 'Solicitar cotización', a: '/social/reservar' }}
+              />
             )}
 
-            <div className="venue-grid">
+            {ambientes.length > 0 && <div className="venue-grid">
               {ambientes.map((a) => (
                 <div className="venue-card reveal" key={a.id_a}>
                   <div className="venue-img">
@@ -120,7 +126,7 @@ export default function Venues() {
                   </div>
                 </div>
               ))}
-            </div>
+            </div>}
           </div>
         </section>
 

@@ -1,0 +1,394 @@
+/* =========================================================
+   Copias de seguridad (components/shared/CopiasSeguridad.tsx)
+   Toma los colores del panel que la contiene (variables --admin-*).
+   ========================================================= */
+
+/* Se adapta al ancho disponible, no al de la ventana: la barra lateral abierta
+   le quita bastante espacio. */
+.cs {
+  container: cs / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.cs-panel {
+  padding: 22px;
+  border: 1px solid var(--admin-line);
+  border-radius: 16px;
+  background: var(--admin-surface);
+  color: var(--admin-text);
+}
+
+.cs-cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.cs-panel .cs-cabecera h2 {
+  margin: 0 0 4px;
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--admin-text);
+}
+
+.cs-panel .cs-cabecera p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--admin-muted);
+}
+
+/* Botones */
+.cs-panel .cs-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--admin-line);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--admin-text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease;
+}
+
+.cs-panel .cs-btn:hover:not(:disabled) {
+  border-color: var(--admin-accent);
+  background: color-mix(in srgb, var(--admin-accent) 9%, transparent);
+}
+
+.cs-panel .cs-btn:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+.cs-panel .cs-btn:focus-visible,
+.cs-panel .cs-enlace:focus-visible,
+.cs-conjunto input:focus-visible {
+  outline: 2px solid var(--admin-accent);
+  outline-offset: 2px;
+}
+
+.cs-panel .cs-btn-principal {
+  padding: 11px 18px;
+  border-color: var(--admin-accent);
+  background: var(--admin-accent);
+  color: #ffffff;
+  font-size: 14px;
+}
+
+.cs-panel .cs-btn-principal:hover:not(:disabled) {
+  background: var(--admin-accent);
+  filter: brightness(1.08);
+}
+
+.cs-panel .cs-btn-peligro {
+  padding: 8px 10px;
+  color: #dc2626;
+}
+
+.cs-panel .cs-btn-peligro:hover:not(:disabled) {
+  border-color: #dc2626;
+  background: rgba(220, 38, 38, .1);
+}
+
+.dark .cs-panel .cs-btn-peligro {
+  color: #f87171;
+}
+
+.cs-panel .cs-enlace {
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  color: var(--admin-ink, var(--admin-accent));
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cs-panel .cs-enlace:hover {
+  text-decoration: underline;
+}
+
+.dark .cs-panel .cs-enlace {
+  color: var(--admin-text);
+}
+
+/* Grupos y conjuntos */
+.cs-grupo + .cs-grupo {
+  margin-top: 20px;
+}
+
+.cs-grupo-titulo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.cs-panel .cs-grupo-titulo h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--admin-muted);
+}
+
+.cs-conjuntos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 10px;
+}
+
+.cs-conjunto {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 13px;
+  border: 1px solid var(--admin-line);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color .15s ease, background .15s ease;
+}
+
+.cs-conjunto:hover {
+  border-color: var(--admin-accent);
+}
+
+.cs-conjunto.activo {
+  border-color: var(--admin-accent);
+  background: color-mix(in srgb, var(--admin-accent) 8%, transparent);
+}
+
+.cs-conjunto input {
+  flex-shrink: 0;
+  width: 17px;
+  height: 17px;
+  margin: 1px 0 0;
+  accent-color: var(--admin-accent);
+  cursor: pointer;
+}
+
+.cs-conjunto-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.cs-conjunto-texto strong {
+  font-size: 14px;
+  color: var(--admin-text);
+}
+
+.cs-conjunto-texto small {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--admin-muted);
+}
+
+.cs-conjunto-texto em {
+  margin-top: 2px;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+  color: var(--admin-text);
+}
+
+/* Barra de acción */
+.cs-accion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--admin-line);
+  font-size: 13px;
+  color: var(--admin-muted);
+}
+
+.cs-panel .cs-nota {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 14px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--admin-muted);
+}
+
+.cs-nota svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* Copias guardadas */
+.cs-fila {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr) 150px 80px auto;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 0;
+  border-top: 1px solid var(--admin-line);
+  font-size: 13px;
+}
+
+.cs-fila-titulos {
+  padding: 0 0 9px;
+  border-top: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--admin-muted);
+}
+
+/* Reserva el ancho de los botones para que los títulos queden alineados. */
+.cs-fila-titulos > :last-child {
+  min-width: 230px;
+}
+
+.cs-fecha,
+.cs-contenido {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.cs-contenido {
+  font-weight: 600;
+}
+
+.cs-contenido small {
+  font-weight: 400;
+  color: var(--admin-muted);
+}
+
+.cs-origen {
+  align-self: flex-start;
+  padding: 1px 8px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--admin-muted) 16%, transparent);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--admin-text);
+}
+
+.cs-acciones {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  min-width: 230px;
+}
+
+.cs-perdida {
+  color: var(--admin-muted);
+}
+
+.cs-oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.cs-panel.cs-vacio,
+.cs-panel .cs-vacio {
+  margin: 0;
+  padding: 26px 12px;
+  font-size: 14px;
+  text-align: center;
+  color: var(--admin-muted);
+}
+
+.cs-panel.cs-vacio p {
+  margin: 0 0 12px;
+}
+
+.cs-girando {
+  animation: cs-girar .9s linear infinite;
+}
+
+@keyframes cs-girar {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cs-conjunto,
+  .cs-panel .cs-btn {
+    transition: none;
+  }
+}
+
+/* Con poco espacio cada copia pasa a ser un bloque. */
+@container cs (max-width: 900px) {
+  .cs-fila-titulos {
+    display: none;
+  }
+
+  .cs-tabla > .cs-fila:nth-child(2) {
+    border-top: 0;
+  }
+
+  .cs-fila {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 14px;
+    padding: 15px 0;
+  }
+
+  .cs-fecha,
+  .cs-contenido,
+  .cs-acciones {
+    grid-column: 1 / -1;
+  }
+
+  .cs-dato::before {
+    content: attr(data-etiqueta) ": ";
+    color: var(--admin-muted);
+  }
+
+  .cs-acciones {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    min-width: 0;
+    margin-top: 4px;
+  }
+}
+
+@container cs (max-width: 520px) {
+  .cs-panel {
+    padding: 16px;
+  }
+
+  .cs-cabecera,
+  .cs-accion {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cs-conjuntos {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cs-fila {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cs-acciones .cs-btn:not(.cs-btn-peligro) {
+    flex: 1;
+  }
+}
