@@ -39,6 +39,7 @@ import { CargandoPanel, NumeroAnimado } from "../../components/shared/AdminMotio
 import AdminFooter from "../../components/shared/AdminFooter";
 import type { EstadoPqr, Pqr } from "../../services/socialService";
 import PqrGestion from "../../components/social/pqr/AdminPqrManager";
+import { UsuarioModal, RolesDeUsuario, Avatar, type UsuarioFila } from "../../components/deportivo/UsuariosAdmin";
 import "../../styles/social/Admin.css";
 
 type Section =
@@ -56,7 +57,7 @@ const SECCIONES: Section[] = ["inicio", "eventos", "reservas", "usuarios", "pqr"
 /* ---------- Persistencia de la vista (sección + formulario abierto) ----------
    Al recargar la página se vuelve a la misma sección y al mismo formulario.
    Se guarda en sessionStorage: sobrevive al F5 pero no a cerrar la pestaña. */
-type ModalKind = "ambiente" | "servicio" | "evento" | "reserva" | "pqr";
+type ModalKind = "ambiente" | "servicio" | "evento" | "reserva" | "pqr" | "usuario";
 type SavedView = { section: Section; modal: ModalKind | null; editId: number | string | null };
 
 const VIEW_KEY = "skyed_admin_social_view";
@@ -165,13 +166,7 @@ type PqrSeg = {
 
 
 
-type UserRow = {
-  id_u: number;
-  nombre_u: string;
-  apellido_u?: string;
-  correo_u: string;
-  estado_u?: string;
-};
+type UserRow = UsuarioFila;
 
 const money = (value: number | string | null | undefined) =>
   new Intl.NumberFormat("es-CO", {
@@ -496,7 +491,7 @@ function AdminPage() {
       // en el selector de "Tipo de evento" de un evento social.
       setTipos((t.data ?? []).filter((tipo: TipoEvento) => tipo.modulo_tipo_eves !== "deportivo"));
       try {
-        const u = await apiFetch("/users");
+        const u = await apiFetch("/users?per_page=200");
         setUsers(u.data ?? u.users ?? []);
       } catch {
         // El módulo social funciona aunque la API de usuarios no esté expuesta.
@@ -521,6 +516,7 @@ function AdminPage() {
           evento: data.eventos,
           pqr: data.pqrs,
           reserva: undefined,
+          usuario: undefined, // el formulario de usuario nunca se restaura (lleva contraseña)
         }[saved.modal];
         const item = lista?.find(x => String(editIdOf(saved.modal, x)) === String(saved.editId));
         if (item) {
@@ -998,16 +994,31 @@ function AdminPage() {
         )}
 
         {section === "usuarios" && (
-          <SectionTable title="Usuarios registrados">
-            <thead><tr><th>ID</th><th>Nombre</th><th>Correo</th><th>Estado</th></tr></thead>
+          <SectionTable
+            title="Usuarios registrados"
+            action="Nuevo usuario"
+            onAction={() => { setEditing(null); setModal("usuario"); }}
+          >
+            <thead><tr><th>ID</th><th>Usuario</th><th>Roles</th><th>Estado</th></tr></thead>
             <tbody>
               {users.filter(u => filtered(`${u.nombre_u} ${u.apellido_u ?? ""} ${u.correo_u}`)).map(u => (
                 <tr key={u.id_u}>
-                  <td>#{u.id_u}</td><td>{u.nombre_u} {u.apellido_u ?? ""}</td><td>{u.correo_u}</td>
+                  <td><span className="usr-id">#{u.id_u}</span></td>
+                  <td>
+                    <div className="usr-celda">
+                      <Avatar usuario={u} />
+                      <div className="usr-celda-texto">
+                        <strong>{u.nombre_u} {u.apellido_u ?? ""}</strong>
+                        <small>{u.correo_u}</small>
+                      </div>
+                    </div>
+                  </td>
+                  <td><RolesDeUsuario usuario={u} /></td>
                   <td><Badge value={u.estado_u ?? "activo"} /></td>
                 </tr>
               ))}
               {!users.length && <tr><td colSpan={4}>La API de usuarios no devolvió registros.</td></tr>}
+              {!!users.length && !users.some(u => filtered(`${u.nombre_u} ${u.apellido_u ?? ""} ${u.correo_u}`)) && <tr><td colSpan={4}>Ningún usuario coincide con la búsqueda.</td></tr>}
             </tbody>
           </SectionTable>
         )}
@@ -1057,6 +1068,16 @@ function AdminPage() {
         />
       )}
 
+
+      {modal === "usuario" && (
+        <UsuarioModal
+          modulo="social"
+          existentes={users}
+          onClose={() => setModal(null)}
+          notify={notify}
+          onCreado={async () => { setModal(null); await loadAll(); }}
+        />
+      )}
 
       {toast && <div className="admin-toast"><Check size={17} />{toast}</div>}
       {dialogo}
