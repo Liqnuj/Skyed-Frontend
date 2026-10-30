@@ -38,6 +38,16 @@ interface Qr {
   codigo: string | null;
   estado: string | null;
   fecha_uso?: string | null;
+  usos_permitidos?: number | null;
+  usos_realizados?: number | null;
+}
+
+// Si el QR ya se escaneó (aunque sea una vez) la persona ya entró al evento
+// y el backend no deja cancelar: aquí se esconde el botón para no ofrecerlo.
+function qrYaUsado(insc: { qr: Qr | null }) {
+  const qr = insc.qr;
+  if (!qr) return false;
+  return qr.estado === 'usado' || !!qr.fecha_uso || (qr.usos_realizados ?? 0) > 0;
 }
 
 interface Inscripcion {
@@ -693,7 +703,7 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
                 <div className="part-empty-row">Sin eventos próximos. <Link title="Explorar los eventos disponibles" to="/deportivo/eventos">Explora eventos →</Link></div>
               )}
               {proximas.slice(0, 3).map((i) => (
-                <EventRow key={i.id} insc={i} onVerDetalle={() => abrirDetalle(i)} onCancelar={() => pedirCancelacion(i)} />
+                <EventRow key={i.id} insc={i} onVerDetalle={() => abrirDetalle(i)} onCancelar={qrYaUsado(i) ? undefined : () => pedirCancelacion(i)} />
               ))}
             </>
           )}
@@ -785,7 +795,7 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
                 <div className="part-empty-row">No tienes inscripciones activas.</div>
               )}
               {proximasFiltradas.map((i) => (
-                <EventRow key={i.id} insc={i} onVerDetalle={() => abrirDetalle(i)} onCancelar={() => pedirCancelacion(i)} />
+                <EventRow key={i.id} insc={i} onVerDetalle={() => abrirDetalle(i)} onCancelar={qrYaUsado(i) ? undefined : () => pedirCancelacion(i)} />
               ))}
               {pasadasFiltradas.length > 0 && (
                 <>
@@ -808,7 +818,7 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
               onVerQr={() => setVerQr(true)}
               onCerrarQr={() => setVerQr(false)}
               onVolver={() => setDetalle(null)}
-              onCancelar={proximas.some((p) => p.id === detalle.id) ? () => pedirCancelacion(detalle) : undefined}
+              onCancelar={proximas.some((p) => p.id === detalle.id) && !qrYaUsado(detalle) ? () => pedirCancelacion(detalle) : undefined}
             />
           )}
 
