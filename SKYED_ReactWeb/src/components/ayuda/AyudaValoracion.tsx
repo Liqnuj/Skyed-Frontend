@@ -27,7 +27,11 @@ export default function AyudaValoracion({ slug, inicial }: { slug: string; inici
       <div className="ay-valoracion" role="group" aria-labelledby={idTitulo}>
         <h2 id={idTitulo}>¿Te fue útil esta información?</h2>
         <p>Inicia sesión para dejarnos tu opinión y ayudarnos a mejorar esta guía.</p>
-        <Link className="ay-btn ay-btn--suave" to={`/login?redirect=${encodeURIComponent(pathname)}`}>
+        <Link
+          className="ay-btn ay-btn--suave"
+          to={`/login?redirect=${encodeURIComponent(pathname)}`}
+          title="Iniciar sesión para valorar esta guía"
+        >
           Iniciar sesión
         </Link>
       </div>
@@ -60,7 +64,12 @@ export default function AyudaValoracion({ slug, inicial }: { slug: string; inici
           <i className={`ti ${util ? 'ti-mood-smile' : 'ti-heart-handshake'}`} aria-hidden="true" />
           {util ? '¡Gracias por tu opinión! Nos alegra haberte ayudado.' : 'Gracias, revisaremos este artículo para mejorarlo.'}
         </p>
-        <button type="button" className="ay-btn ay-btn--suave" onClick={() => setFase('pregunta')}>
+        <button
+          type="button"
+          className="ay-btn ay-btn--suave"
+          title="Cambiar mi respuesta sobre esta guía"
+          onClick={() => setFase('pregunta')}
+        >
           Cambiar mi respuesta
         </button>
       </div>
@@ -90,10 +99,21 @@ export default function AyudaValoracion({ slug, inicial }: { slug: string; inici
           </p>
         )}
         <div className="ay-voto">
-          <button type="submit" className="ay-btn ay-btn--primario" disabled={enviando}>
+          <button
+            type="submit"
+            className="ay-btn ay-btn--primario"
+            title={enviando ? 'Enviando tu respuesta' : 'Enviar tu respuesta'}
+            disabled={enviando}
+          >
             {enviando ? 'Enviando…' : 'Enviar'}
           </button>
-          <button type="button" className="ay-btn ay-btn--suave" disabled={enviando} onClick={() => setFase('pregunta')}>
+          <button
+            type="button"
+            className="ay-btn ay-btn--suave"
+            title="Volver a la pregunta"
+            disabled={enviando}
+            onClick={() => setFase('pregunta')}
+          >
             Volver
           </button>
         </div>
@@ -115,6 +135,7 @@ export default function AyudaValoracion({ slug, inicial }: { slug: string; inici
         <button
           type="button"
           className="ay-btn ay-btn--suave"
+          title="Indicar que esta guía fue útil"
           aria-pressed={util === true}
           disabled={ocupado}
           onClick={() => void enviar(true)}
@@ -124,6 +145,7 @@ export default function AyudaValoracion({ slug, inicial }: { slug: string; inici
         <button
           type="button"
           className="ay-btn ay-btn--suave"
+          title="Indicar que esta guía no fue útil"
           aria-pressed={util === false}
           disabled={ocupado}
           onClick={() => {

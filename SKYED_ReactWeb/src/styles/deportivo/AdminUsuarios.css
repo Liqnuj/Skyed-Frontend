@@ -1,0 +1,604 @@
+/* =========================================================
+   PANEL DEPORTIVO · USUARIOS Y ROLES
+   Todo va bajo .deportivo-admin y con prefijo "usr-" para no
+   chocar con los estilos del resto del panel. Usa las mismas
+   variables (--admin-*) para heredar el color y el modo oscuro.
+   ========================================================= */
+
+/* ---------- Colores por rol ---------- */
+
+.deportivo-admin .tono-teal { --t: #0e9f8e; }
+.deportivo-admin .tono-blue { --t: #3b82f6; }
+.deportivo-admin .tono-violet { --t: #8b5cf6; }
+.deportivo-admin .tono-amber { --t: #d97706; }
+
+/* ---------- Avatar con iniciales ---------- */
+
+.deportivo-admin .usr-avatar {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .02em;
+  background: linear-gradient(135deg, var(--a1), var(--a2));
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--a1) 30%, transparent);
+}
+.deportivo-admin .usr-avatar.grande {
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+  font-size: 18px;
+}
+.deportivo-admin .usr-av-0 { --a1: #2c9caf; --a2: #1f6f8b; }
+.deportivo-admin .usr-av-1 { --a1: #8b5cf6; --a2: #6d3fd1; }
+.deportivo-admin .usr-av-2 { --a1: #f59e0b; --a2: #d97706; }
+.deportivo-admin .usr-av-3 { --a1: #ec4899; --a2: #be2f78; }
+.deportivo-admin .usr-av-4 { --a1: #10b981; --a2: #0b8a62; }
+
+/* ---------- Tabla de usuarios ---------- */
+
+.deportivo-admin .usr-celda {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 220px;
+}
+.deportivo-admin .usr-celda-texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.deportivo-admin .usr-celda-texto strong {
+  font-size: 13px;
+  color: var(--admin-text);
+}
+.deportivo-admin .usr-celda-texto small {
+  color: var(--admin-muted);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.deportivo-admin .usr-id {
+  color: var(--admin-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+.deportivo-admin .usr-sin-roles {
+  color: var(--admin-muted);
+  font-size: 11px;
+  font-style: italic;
+}
+.deportivo-admin .usr-btn-roles {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 11px;
+  border: 1px solid var(--admin-line);
+  border-radius: 9px;
+  background: var(--admin-surface);
+  color: var(--admin-accent);
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s ease, border-color .15s ease, transform .15s ease;
+}
+.deportivo-admin .usr-btn-roles:hover {
+  border-color: var(--admin-accent);
+  background: color-mix(in srgb, var(--admin-accent) 9%, var(--admin-surface));
+  transform: translateY(-1px);
+}
+
+/* ---------- Etiquetas de rol ---------- */
+
+.deportivo-admin .usr-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.deportivo-admin .usr-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border: 1px solid color-mix(in srgb, var(--t) 28%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--t) 12%, var(--admin-surface));
+  color: color-mix(in srgb, var(--t) 78%, #000);
+  font-size: 11px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.deportivo-admin.dark .usr-chip {
+  color: color-mix(in srgb, var(--t) 70%, #fff);
+}
+.deportivo-admin .usr-chip b {
+  font-weight: 800;
+}
+.deportivo-admin .usr-chip em {
+  padding-left: 6px;
+  border-left: 1px solid color-mix(in srgb, var(--t) 35%, transparent);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+  opacity: .8;
+  text-transform: capitalize;
+}
+.deportivo-admin .usr-chips.grandes .usr-chip {
+  padding: 6px 8px 6px 11px;
+  font-size: 12px;
+}
+.deportivo-admin .usr-chip-x,
+.deportivo-admin .usr-chip-lock {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  margin-left: 2px;
+  border: 0;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--t) 18%, transparent);
+  color: inherit;
+  padding: 0;
+}
+.deportivo-admin .usr-chip-x {
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+}
+.deportivo-admin .usr-chip-x:hover:not(:disabled) {
+  background: #dc2626;
+  color: #fff;
+}
+.deportivo-admin .usr-chip-x:disabled {
+  opacity: .5;
+  cursor: wait;
+}
+.deportivo-admin .usr-chip-lock {
+  cursor: not-allowed;
+  opacity: .75;
+}
+.deportivo-admin .usr-mas {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--admin-surface-2);
+  border: 1px solid var(--admin-line);
+  color: var(--admin-muted);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+/* ---------- Modal de roles ---------- */
+
+.deportivo-admin .admin-modal.usr-modal-ancho {
+  width: min(940px, 100%) !important;
+}
+
+.deportivo-admin .usr-roles {
+  display: grid;
+  grid-template-columns: 290px 1fr;
+  min-height: 430px;
+}
+
+.deportivo-admin .usr-lista {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border-right: 1px solid var(--admin-line);
+  background: var(--admin-surface-2);
+}
+.deportivo-admin .usr-buscar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 14px 8px;
+  padding: 0 11px;
+  border: 1.5px solid var(--admin-line);
+  border-radius: 11px;
+  background: var(--admin-surface);
+  color: var(--admin-muted);
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.deportivo-admin .usr-buscar:focus-within {
+  border-color: var(--admin-accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--admin-accent) 14%, transparent);
+}
+.deportivo-admin .usr-buscar input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--admin-text);
+  font-size: 12px;
+}
+.deportivo-admin .usr-lista ul {
+  margin: 0;
+  padding: 4px 10px 12px;
+  list-style: none;
+  max-height: 52vh;
+  overflow: auto;
+}
+.deportivo-admin .usr-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+  padding: 9px 10px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--admin-text);
+  text-align: left;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease;
+}
+.deportivo-admin .usr-item:hover {
+  background: color-mix(in srgb, var(--admin-accent) 7%, var(--admin-surface));
+}
+.deportivo-admin .usr-item.activo {
+  border-color: color-mix(in srgb, var(--admin-accent) 45%, transparent);
+  background: color-mix(in srgb, var(--admin-accent) 12%, var(--admin-surface));
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--admin-accent) 14%, transparent);
+}
+.deportivo-admin .usr-item .usr-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  font-size: 11px;
+}
+.deportivo-admin .usr-item-texto {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.deportivo-admin .usr-item-texto strong,
+.deportivo-admin .usr-item-texto small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.deportivo-admin .usr-item-texto strong { font-size: 12px; }
+.deportivo-admin .usr-item-texto small { color: var(--admin-muted); font-size: 10px; }
+.deportivo-admin .usr-item-n {
+  min-width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-line);
+  color: var(--admin-muted);
+  font-size: 10px;
+  font-weight: 800;
+}
+.deportivo-admin .usr-vacio-lista {
+  padding: 22px 8px;
+  color: var(--admin-muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.deportivo-admin .usr-detalle {
+  min-width: 0;
+  padding: 22px;
+}
+.deportivo-admin .usr-vacio {
+  height: 100%;
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--admin-muted);
+  text-align: center;
+}
+.deportivo-admin .usr-vacio svg { color: var(--admin-accent); opacity: .7; }
+.deportivo-admin .usr-vacio strong { color: var(--admin-text); font-size: 14px; }
+.deportivo-admin .usr-vacio span { font-size: 12px; }
+
+.deportivo-admin .usr-perfil {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--admin-line);
+  border-radius: 16px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--admin-accent) 10%, var(--admin-surface)), var(--admin-surface) 70%);
+}
+.deportivo-admin .usr-perfil > div { flex: 1; min-width: 0; }
+.deportivo-admin .usr-perfil h3 {
+  margin: 0;
+  color: var(--admin-text);
+  font-size: 16px;
+  font-weight: 800;
+}
+.deportivo-admin .usr-perfil p {
+  margin: 3px 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--admin-muted);
+  font-size: 12px;
+}
+
+.deportivo-admin .usr-subtitulo {
+  margin: 22px 0 10px;
+  color: var(--admin-muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.deportivo-admin .usr-aviso {
+  margin: 0;
+  padding: 11px 13px;
+  border: 1px dashed var(--admin-line);
+  border-radius: 11px;
+  background: var(--admin-surface-2);
+  color: var(--admin-muted);
+  font-size: 12px;
+}
+.deportivo-admin .usr-aviso.alerta {
+  margin-top: 12px;
+  border: 1px solid #fcd34d;
+  background: #fffbeb;
+  color: #92400e;
+}
+.deportivo-admin.dark .usr-aviso.alerta {
+  border-color: #92400e;
+  background: color-mix(in srgb, #f59e0b 12%, var(--admin-surface));
+  color: #fcd34d;
+}
+
+/* Tarjetas para elegir el rol */
+.deportivo-admin .usr-roles-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.deportivo-admin .usr-rol-card {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 12px 13px;
+  border: 1.5px solid var(--admin-line);
+  border-radius: 14px;
+  background: var(--admin-surface);
+  color: var(--admin-text);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .15s ease, background .15s ease, transform .15s ease, box-shadow .15s ease;
+}
+.deportivo-admin .usr-rol-card:hover {
+  border-color: color-mix(in srgb, var(--t) 50%, var(--admin-line));
+  transform: translateY(-1px);
+}
+.deportivo-admin .usr-rol-card.activo {
+  border-color: var(--t);
+  background: color-mix(in srgb, var(--t) 9%, var(--admin-surface));
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--t) 18%, transparent);
+}
+.deportivo-admin .usr-rol-icono {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--t) 16%, transparent);
+  color: var(--t);
+}
+.deportivo-admin .usr-rol-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding-right: 16px;
+}
+.deportivo-admin .usr-rol-texto strong { font-size: 12px; }
+.deportivo-admin .usr-rol-texto small {
+  color: var(--admin-muted);
+  font-size: 10.5px;
+  line-height: 1.35;
+}
+.deportivo-admin .usr-rol-check {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  color: var(--t);
+}
+
+/* Contexto (segmentos) + botón asignar */
+.deportivo-admin .usr-asignar-fila {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--admin-line);
+}
+.deportivo-admin .usr-contexto {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  transition: opacity .15s ease;
+}
+.deportivo-admin .usr-contexto.apagado {
+  opacity: .45;
+  pointer-events: none;
+}
+.deportivo-admin .usr-contexto > span {
+  color: var(--admin-muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+.deportivo-admin .usr-segmentos {
+  display: inline-flex;
+  padding: 3px;
+  border: 1.5px solid var(--admin-line);
+  border-radius: 12px;
+  background: var(--admin-surface-2);
+}
+.deportivo-admin .usr-segmentos button {
+  padding: 7px 14px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--admin-muted);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease, box-shadow .15s ease;
+}
+.deportivo-admin .usr-segmentos button:hover:not(.activo) {
+  color: var(--admin-text);
+}
+.deportivo-admin .usr-segmentos button.activo {
+  background: var(--admin-accent);
+  color: #fff;
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--admin-accent) 35%, transparent);
+}
+
+/* ---------- Modal de nuevo usuario ---------- */
+
+.deportivo-admin .usr-clave {
+  grid-column: 1 / -1;
+}
+.deportivo-admin .usr-clave-fila {
+  display: flex;
+  gap: 6px;
+}
+.deportivo-admin .usr-clave-fila input {
+  flex: 1;
+  min-width: 0;
+}
+.deportivo-admin .usr-mini {
+  flex: none;
+  width: 42px;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--admin-line);
+  border-radius: 11px;
+  background: var(--admin-surface-2);
+  color: var(--admin-muted);
+  cursor: pointer;
+  transition: border-color .15s ease, color .15s ease, background .15s ease;
+}
+.deportivo-admin .usr-mini:hover:not(:disabled) {
+  border-color: var(--admin-accent);
+  color: var(--admin-accent);
+  background: var(--admin-surface);
+}
+.deportivo-admin .usr-mini:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.deportivo-admin .usr-fuerza {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.deportivo-admin .usr-fuerza i {
+  flex: 1;
+  height: 5px;
+  border-radius: 99px;
+  background: var(--admin-line);
+  transition: background .2s ease;
+}
+.deportivo-admin .usr-fuerza small {
+  min-width: 48px;
+  margin-left: 4px;
+  color: var(--admin-muted);
+  font-size: 10px;
+  font-weight: 800;
+  text-align: right;
+}
+.deportivo-admin .usr-fuerza[data-nivel="1"] i:nth-child(-n+1),
+.deportivo-admin .usr-fuerza[data-nivel="2"] i:nth-child(-n+2) { background: #ef4444; }
+.deportivo-admin .usr-fuerza[data-nivel="3"] i:nth-child(-n+3) { background: #f59e0b; }
+.deportivo-admin .usr-fuerza[data-nivel="4"] i { background: #10b981; }
+
+.deportivo-admin .usr-rol-inicial {
+  padding: 14px 16px 16px;
+  border: 1px solid var(--admin-line);
+  border-radius: 14px;
+  background: var(--admin-surface-2);
+}
+.deportivo-admin .usr-rol-inicial-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
+  color: var(--admin-accent);
+}
+.deportivo-admin .usr-rol-inicial-head div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.deportivo-admin .usr-rol-inicial-head strong { color: var(--admin-text); font-size: 12px; }
+.deportivo-admin .usr-rol-inicial-head small { color: var(--admin-muted); font-size: 11px; }
+.deportivo-admin .usr-rol-inicial-campos {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+.deportivo-admin .usr-rol-inicial-campos .admin-field {
+  flex: 1;
+  min-width: 200px;
+}
+
+/* ---------- Animación del botón ocupado ---------- */
+
+@keyframes usr-girar { to { transform: rotate(360deg); } }
+.deportivo-admin .usr-girar { animation: usr-girar .8s linear infinite; }
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 760px) {
+  .deportivo-admin .usr-roles {
+    grid-template-columns: 1fr;
+  }
+  .deportivo-admin .usr-lista {
+    border-right: 0;
+    border-bottom: 1px solid var(--admin-line);
+  }
+  .deportivo-admin .usr-lista ul {
+    max-height: 190px;
+  }
+  .deportivo-admin .usr-detalle {
+    padding: 15px;
+  }
+  .deportivo-admin .usr-roles-grid {
+    grid-template-columns: 1fr;
+  }
+  .deportivo-admin .usr-asignar-fila {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .deportivo-admin .usr-asignar-fila .primary-btn {
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .deportivo-admin .usr-girar { animation: none; }
+  .deportivo-admin .usr-rol-card,
+  .deportivo-admin .usr-btn-roles { transition: none; }
+}
