@@ -56,11 +56,13 @@ const ROLES: Array<{
   descripcion: string;
   tono: "teal" | "blue" | "violet" | "amber";
   icono: typeof Bike;
+  /** Contexto en el que normalmente vive el rol (así se crean las cuentas base). */
+  contextoBase: Contexto;
 }> = [
-  { nombre: "participante", etiqueta: "Participante", descripcion: "Se inscribe y compite en los eventos deportivos.", tono: "teal", icono: Bike },
-  { nombre: "cliente", etiqueta: "Cliente", descripcion: "Reserva y gestiona eventos sociales.", tono: "blue", icono: User },
-  { nombre: "adminDeportivo", etiqueta: "Admin deportivo", descripcion: "Administra eventos, pagos, kits y usuarios deportivos.", tono: "violet", icono: ShieldCheck },
-  { nombre: "adminSocial", etiqueta: "Admin social", descripcion: "Administra el módulo de eventos sociales.", tono: "amber", icono: Shield },
+  { nombre: "participante", etiqueta: "Participante", descripcion: "Se inscribe y compite en los eventos deportivos.", tono: "teal", icono: Bike, contextoBase: "deportivo" },
+  { nombre: "cliente", etiqueta: "Cliente", descripcion: "Reserva y gestiona eventos sociales.", tono: "blue", icono: User, contextoBase: "social" },
+  { nombre: "adminDeportivo", etiqueta: "Admin deportivo", descripcion: "Administra eventos, pagos, kits y usuarios deportivos.", tono: "violet", icono: ShieldCheck, contextoBase: "deportivo" },
+  { nombre: "adminSocial", etiqueta: "Admin social", descripcion: "Administra el módulo de eventos sociales.", tono: "amber", icono: Shield, contextoBase: "social" },
 ];
 
 const rolInfo = (nombre: string) =>
@@ -70,7 +72,17 @@ const rolInfo = (nombre: string) =>
     descripcion: "",
     tono: "blue" as const,
     icono: User,
+    contextoBase: "general" as Contexto,
   };
+
+/**
+ * Jerarquía del panel deportivo:
+ *  - El admin deportivo no ve a los admin sociales ni puede asignar ese rol.
+ *  - Un admin no puede cambiarle los roles a otro admin (solo verlos).
+ */
+export const ROLES_ASIGNABLES = ROLES.filter((r) => r.nombre !== "adminSocial");
+export const esAdminSocial = (u: UsuarioFila) => !!u.roles?.some((r) => r.nombre_rol === "adminSocial");
+export const esAdmin = (u: UsuarioFila) => !!u.roles?.some((r) => r.nombre_rol.startsWith("admin"));
 
 const TIPOS_DOCUMENTO = [
   { value: "cedula_ciudadania", label: "Cédula de ciudadanía" },
@@ -202,19 +214,23 @@ export function RolesModal({ users, inicialId, yoId, onClose, onCambio, notify, 
   const [contexto, setContexto] = useState<Contexto>("deportivo");
   const [ocupado, setOcupado] = useState(false);
 
-  const sel = users.find((u) => u.id_u === selId) ?? null;
+  // Un admin deportivo nunca ve a los admin sociales.
+  const visibles = useMemo(() => users.filter((u) => !esAdminSocial(u)), [users]);
+  const sel = visibles.find((u) => u.id_u === selId) ?? null;
+  // Otro administrador: se pueden ver sus roles, no cambiarlos.
+  const soloLectura = !!sel && esAdmin(sel) && sel.id_u !== yoId;
 
   const lista = useMemo(() => {
     const q = quitarTildes(busqueda.trim());
-    return users.filter((u) => !q || quitarTildes(`${nombreCompleto(u)} ${u.correo_u}`).includes(q));
-  }, [users, busqueda]);
+    return visibles.filter((u) => !q || quitarTildes(`${nombreCompleto(u)} ${u.correo_u}`).includes(q));
+  }, [visibles, busqueda]);
 
   const yaLoTiene = !!sel?.roles?.some(
     (r) => r.nombre_rol === rol && (r.pivot?.contexto ?? "general") === contexto,
   );
 
   const asignar = async () => {
-    if (!sel || yaLoTiene || ocupado) return;
+    if (!sel || soloLectura || yaLoTiene || ocupado) return;
     setOcupado(true);
     try {
       await userService.asignarRol(sel.id_u, rol, contexto);
@@ -228,7 +244,7 @@ export function RolesModal({ users, inicialId, yoId, onClose, onCambio, notify, 
   };
 
   const quitar = async (idRol: number | undefined, nombreRol: string, ctx: string) => {
-    if (!sel || idRol == null || ocupado) return;
+    if (!sel || soloLectura || idRol == null || ocupado) return;
     const ok = await confirmar({
       titulo: "Quitar rol",
       mensaje: `¿Quitar el rol ${rolInfo(nombreRol).etiqueta} (${ctx}) a ${nombreCompleto(sel)}?`,
@@ -288,7 +304,7 @@ export function RolesModal({ users, inicialId, yoId, onClose, onCambio, notify, 
             ))}
             {!lista.length && (
               <li className="usr-vacio-lista">
-                {users.length ? "Ningún usuario coincide con la búsqueda." : "No hay usuarios cargados."}
+                {visibles.length ? "Ningún usuario coincide con la búsqueda." : "No hay usuarios cargados."}
               </li>
             )}
           </ul>
@@ -327,7 +343,7 @@ export function RolesModal({ users, inicialId, yoId, onClose, onCambio, notify, 
                         ocupado={ocupado}
                         bloqueado={propio || r.id_rol == null}
                         motivoBloqueo={propio ? "No puedes quitarte tu propio rol de administrador." : "Este rol no se puede quitar desde aquí."}
-                        onQuitar={() => quitar(r.id_rol, r.nombre_rol, ctx)}
+                        onQuitar={soloLectura ? undefined : () => quitar(r.id_rol, r.nombre_rol, ctx)}
                       />
                     );
                   })}
@@ -336,62 +352,70 @@ export function RolesModal({ users, inicialId, yoId, onClose, onCambio, notify, 
                 <p className="usr-aviso">Este usuario aún no tiene roles asignados.</p>
               )}
 
-              <h4 className="usr-subtitulo">Asignar un rol</h4>
-              <div className="usr-roles-grid" role="radiogroup" aria-label="Rol a asignar">
-                {ROLES.map((r) => {
-                  const Icono = r.icono;
-                  const activo = rol === r.nombre;
-                  return (
-                    <button
-                      key={r.nombre}
-                      type="button"
-                      role="radio"
-                      aria-checked={activo}
-                      title={`Elegir el rol ${r.etiqueta}`}
-                      className={`usr-rol-card tono-${r.tono} ${activo ? "activo" : ""}`}
-                      onClick={() => setRol(r.nombre)}
-                    >
-                      <span className="usr-rol-icono"><Icono size={18} /></span>
-                      <span className="usr-rol-texto">
-                        <strong>{r.etiqueta}</strong>
-                        <small>{r.descripcion}</small>
-                      </span>
-                      {activo && <Check size={16} className="usr-rol-check" />}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="usr-asignar-fila">
-                <div className="usr-contexto" role="radiogroup" aria-label="Contexto del rol">
-                  <span>Contexto</span>
-                  <div className="usr-segmentos">
-                    {CONTEXTOS.map((c) => (
+              {soloLectura ? (
+                <p className="usr-aviso bloqueado">
+                  <Lock size={14} /> Esta persona es administradora: puedes ver sus roles, pero solo ella misma o el sistema pueden cambiarlos.
+                </p>
+              ) : (
+                <>
+                <h4 className="usr-subtitulo">Asignar un rol</h4>
+                <div className="usr-roles-grid" role="radiogroup" aria-label="Rol a asignar">
+                  {ROLES_ASIGNABLES.map((r) => {
+                    const Icono = r.icono;
+                    const activo = rol === r.nombre;
+                    return (
                       <button
-                        key={c.value}
+                        key={r.nombre}
                         type="button"
                         role="radio"
-                        aria-checked={contexto === c.value}
-                        title={`Aplicar el rol en el contexto ${c.label.toLowerCase()}`}
-                        className={contexto === c.value ? "activo" : ""}
-                        onClick={() => setContexto(c.value)}
+                        aria-checked={activo}
+                        title={`Elegir el rol ${r.etiqueta}`}
+                        className={`usr-rol-card tono-${r.tono} ${activo ? "activo" : ""}`}
+                        onClick={() => { setRol(r.nombre); setContexto(r.contextoBase); }}
                       >
-                        {c.label}
+                        <span className="usr-rol-icono"><Icono size={18} /></span>
+                        <span className="usr-rol-texto">
+                          <strong>{r.etiqueta}</strong>
+                          <small>{r.descripcion}</small>
+                        </span>
+                        {activo && <Check size={16} className="usr-rol-check" />}
                       </button>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
-                <button
-                  type="button"
-                  className="primary-btn"
-                  title={yaLoTiene ? "El usuario ya tiene este rol en este contexto" : "Asignar el rol seleccionado al usuario"}
-                  disabled={ocupado || yaLoTiene}
-                  onClick={asignar}
-                >
-                  {ocupado ? <Loader2 size={16} className="usr-girar" /> : <ShieldCheck size={16} />}
-                  {yaLoTiene ? "Ya lo tiene" : "Asignar rol"}
-                </button>
-              </div>
+
+                <div className="usr-asignar-fila">
+                  <div className="usr-contexto" role="radiogroup" aria-label="Contexto del rol">
+                    <span>Contexto</span>
+                    <div className="usr-segmentos">
+                      {CONTEXTOS.map((c) => (
+                        <button
+                          key={c.value}
+                          type="button"
+                          role="radio"
+                          aria-checked={contexto === c.value}
+                          title={`Aplicar el rol en el contexto ${c.label.toLowerCase()}`}
+                          className={contexto === c.value ? "activo" : ""}
+                          onClick={() => setContexto(c.value)}
+                        >
+                          {c.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="primary-btn"
+                    title={yaLoTiene ? "El usuario ya tiene este rol en este contexto" : "Asignar el rol seleccionado al usuario"}
+                    disabled={ocupado || yaLoTiene}
+                    onClick={asignar}
+                  >
+                    {ocupado ? <Loader2 size={16} className="usr-girar" /> : <ShieldCheck size={16} />}
+                    {yaLoTiene ? "Ya lo tiene" : "Asignar rol"}
+                  </button>
+                </div>
+                </>
+              )}
             </>
           )}
         </section>
@@ -549,7 +573,7 @@ export function UsuarioModal({ onClose, onCreado, notify }: {
     }
   };
 
-  const esAdmin = rol === "adminDeportivo" || rol === "adminSocial";
+  const eligioAdmin = rol === "adminDeportivo";
 
   return (
     <ModalBase
@@ -631,9 +655,16 @@ export function UsuarioModal({ onClose, onCreado, notify }: {
           <div className="usr-rol-inicial-campos">
             <label className="admin-field">
               <span>Rol</span>
-              <select value={rol} onChange={(e) => setRol(e.target.value)}>
+              <select
+                value={rol}
+                onChange={(e) => {
+                  setRol(e.target.value);
+                  const base = ROLES_ASIGNABLES.find((r) => r.nombre === e.target.value)?.contextoBase;
+                  if (base) setContexto(base);
+                }}
+              >
                 <option value="">Solo el rol por defecto</option>
-                {ROLES.map((r) => <option key={r.nombre} value={r.nombre}>{r.etiqueta}</option>)}
+                {ROLES_ASIGNABLES.map((r) => <option key={r.nombre} value={r.nombre}>{r.etiqueta}</option>)}
               </select>
             </label>
             <div className={`usr-contexto ${rol ? "" : "apagado"}`} role="radiogroup" aria-label="Contexto del rol">
@@ -655,7 +686,7 @@ export function UsuarioModal({ onClose, onCreado, notify }: {
               </div>
             </div>
           </div>
-          {esAdmin && (
+          {eligioAdmin && (
             <p className="usr-aviso alerta">Este usuario tendrá acceso de administración. Asígnalo solo a personas de confianza.</p>
           )}
         </div>

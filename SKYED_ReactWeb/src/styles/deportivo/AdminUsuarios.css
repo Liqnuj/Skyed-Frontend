@@ -347,6 +347,15 @@
   color: var(--admin-muted);
   font-size: 12px;
 }
+.deportivo-admin .usr-aviso.bloqueado {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 22px;
+  border-style: solid;
+  line-height: 1.45;
+}
+.deportivo-admin .usr-aviso.bloqueado svg { flex: none; margin-top: 2px; color: var(--admin-accent); }
 .deportivo-admin .usr-aviso.alerta {
   margin-top: 12px;
   border: 1px solid #fcd34d;

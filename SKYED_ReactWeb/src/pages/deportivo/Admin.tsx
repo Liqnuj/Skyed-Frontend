@@ -45,7 +45,7 @@ import { EstadoPagos, InscritosPorEvento, TendenciaMensual } from "../../compone
 import { useConfirmacion } from "../../components/shared/ConfirmDialog";
 import { CargandoPanel, NumeroAnimado } from "../../components/shared/AdminMotion";
 import AdminFooter from "../../components/shared/AdminFooter";
-import { RolesModal, RolesDeUsuario, UsuarioModal, Avatar, type UsuarioFila } from "../../components/deportivo/UsuariosAdmin";
+import { RolesModal, RolesDeUsuario, UsuarioModal, Avatar, esAdmin, esAdminSocial, type UsuarioFila } from "../../components/deportivo/UsuariosAdmin";
 
 type Confirmar = ReturnType<typeof useConfirmacion>["confirmar"];
 // Base del panel: mismo diseño del panel social con la paleta deportiva
@@ -645,7 +645,9 @@ function AdminPage() {
     .filter((k) => !filtroLugarKit || (k.lugar_entrega_k ?? "") === filtroLugarKit)
     .filter((k) => filtered(`${k.nombre_k} ${k.lugar_entrega_k ?? ""} ${k.contenido_k ?? ""}`));
 
-  const visibleUsers = users
+  // El admin deportivo no ve a los admin sociales.
+  const usersVisibles = users.filter((u) => !esAdminSocial(u));
+  const visibleUsers = usersVisibles
     .filter((u) => !filtroRolUsuario || (u.roles ?? []).some((r) => r.nombre_rol === filtroRolUsuario))
     .filter((u) => !filtroEstadoUsuario || (u.estado_u ?? "activo") === filtroEstadoUsuario)
     .filter((u) => filtered(`${u.nombre_u} ${u.apellido_u ?? ""} ${u.correo_u}`));
@@ -653,7 +655,7 @@ function AdminPage() {
   // Opciones que salen de los propios datos
   const metodosPago = Array.from(new Set(pagos.map((p) => p.metodo_pago_p).filter(Boolean) as string[])).sort();
   const lugaresKit = Array.from(new Set(kits.map((k) => k.lugar_entrega_k).filter(Boolean) as string[])).sort();
-  const rolesUsuario = Array.from(new Set(users.flatMap((u) => (u.roles ?? []).map((r) => r.nombre_rol)))).sort();
+  const rolesUsuario = Array.from(new Set(usersVisibles.flatMap((u) => (u.roles ?? []).map((r) => r.nombre_rol)))).sort();
 
   const stats = useMemo(() => {
     const activos = eventos.filter((e) => e.estado === "activo");
@@ -1154,7 +1156,7 @@ function AdminPage() {
               {filtroPie(
                 !!(filtroRolUsuario || filtroEstadoUsuario),
                 () => { setFiltroRolUsuario(""); setFiltroEstadoUsuario(""); },
-                visibleUsers.length, users.length,
+                visibleUsers.length, usersVisibles.length,
               )}
             </>}
           >
@@ -1175,13 +1177,13 @@ function AdminPage() {
                   <td><RolesDeUsuario usuario={u} /></td>
                   <td><Badge value={u.estado_u ?? "activo"} /></td>
                   <td>
-                    <button type="button" className="usr-btn-roles" title={`Gestionar los roles de ${u.nombre_u}`} onClick={() => { setEditing({ id_u: u.id_u }); setModal("roles"); }}>
-                      <ShieldCheck size={14} /> Roles
+                    <button type="button" className="usr-btn-roles" title={esAdmin(u) && u.id_u !== user.id ? `Ver los roles de ${u.nombre_u} (es administrador)` : `Gestionar los roles de ${u.nombre_u}`} onClick={() => { setEditing({ id_u: u.id_u }); setModal("roles"); }}>
+                      <ShieldCheck size={14} /> {esAdmin(u) && u.id_u !== user.id ? "Ver roles" : "Roles"}
                     </button>
                   </td>
                 </tr>
               ))}
-              {!visibleUsers.length && <tr><td colSpan={5}>{users.length ? "No hay usuarios con estos filtros." : "La API de usuarios no devolvió registros."}</td></tr>}
+              {!visibleUsers.length && <tr><td colSpan={5}>{usersVisibles.length ? "No hay usuarios con estos filtros." : "La API de usuarios no devolvió registros."}</td></tr>}
             </tbody>
           </SectionTable>
         )}
