@@ -1,7 +1,9 @@
+import { useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import AyudaLayout from '../../components/ayuda/AyudaLayout';
 import AyudaBuscador from '../../components/ayuda/AyudaBuscador';
 import AyudaContenido from '../../components/ayuda/AyudaContenido';
+import AyudaValoracion from '../../components/ayuda/AyudaValoracion';
 import {
   AyudaArticuloCard,
   AyudaCargando,
@@ -14,7 +16,7 @@ import {
 import type { Miga } from '../../components/ayuda/AyudaPartes';
 import { rutaAyuda } from '../../components/ayuda/rutas';
 import { useAyudaDatos } from '../../hooks/useAyudaDatos';
-import { ayudaService } from '../../services/ayudaService';
+import { ayudaService, registrarVisita } from '../../services/ayudaService';
 import type { ModuloAyuda } from '../../services/ayudaService';
 
 export default function AyudaArticuloPage({ modulo }: { modulo: ModuloAyuda }) {
@@ -23,6 +25,14 @@ export default function AyudaArticuloPage({ modulo }: { modulo: ModuloAyuda }) {
   const estado = useAyudaDatos(() => ayudaService.articulo(slug), [slug]);
   const articulo = estado.datos?.articulo;
   const relacionados = estado.datos?.relacionados ?? [];
+
+  
+  // Cuenta la visita una vez por artículo y sesión (ver registrarVisita).
+  const slugCargado = articulo?.slug;
+  useEffect(() => {
+    if (slugCargado) registrarVisita(slugCargado);
+  }, [slugCargado]);
+
 
   const migas: Miga[] = [
     { texto: 'Inicio', a: `/${modulo}` },
@@ -54,11 +64,11 @@ export default function AyudaArticuloPage({ modulo }: { modulo: ModuloAyuda }) {
             >
               <div className="ay-acciones">
                 {estado.error?.status !== 404 && (
-                  <button type="button" className="ay-btn ay-btn--primario" onClick={estado.reintentar}>
+                  <button type="button" title="Reintentar la carga" className="ay-btn ay-btn--primario" onClick={estado.reintentar}>
                     Reintentar
                   </button>
                 )}
-                <Link className="ay-btn ay-btn--suave" to={base}>
+                <Link className="ay-btn ay-btn--suave" to={base} title="Ir al Centro de Ayuda">
                   Volver al Centro de Ayuda
                 </Link>
               </div>
@@ -73,7 +83,15 @@ export default function AyudaArticuloPage({ modulo }: { modulo: ModuloAyuda }) {
             )}
 
             <AyudaContenido texto={articulo.contenido} />
+            
+            
+            <AyudaValoracion
+              key={articulo.slug}
+              slug={articulo.slug}
+              inicial={estado.datos?.mi_valoracion ?? null}
+            />
 
+            
             {relacionados.length > 0 && (
               <div className="ay-seccion">
                 <h2>Artículos relacionados</h2>

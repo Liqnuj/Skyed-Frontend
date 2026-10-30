@@ -85,7 +85,7 @@ function Resultados({
       <div className="ay-seccion ay-fin">
         <AyudaEstado alerta icono="ti-wifi-off" titulo="No pudimos buscar" texto={estado.error.message}>
           <div className="ay-acciones">
-            <button type="button" className="ay-btn ay-btn--primario" onClick={estado.reintentar}>
+            <button type="button" title="Reintentar la carga" className="ay-btn ay-btn--primario" onClick={estado.reintentar}>
               Reintentar
             </button>
           </div>
@@ -113,7 +113,7 @@ function Resultados({
             <li>Contactar soporte.</li>
           </ul>
           <div className="ay-acciones">
-            <Link className="ay-btn ay-btn--suave" to={base}>
+            <Link className="ay-btn ay-btn--suave" to={base} title="Ir al Centro de Ayuda">
               Ver categorías
             </Link>
           </div>
@@ -158,7 +158,7 @@ function Portada({
           texto={estado.error?.message ?? 'Inténtalo de nuevo en un momento.'}
         >
           <div className="ay-acciones">
-            <button type="button" className="ay-btn ay-btn--primario" onClick={estado.reintentar}>
+            <button type="button" title="Reintentar la carga" className="ay-btn ay-btn--primario" onClick={estado.reintentar}>
               Reintentar
             </button>
           </div>
@@ -167,7 +167,7 @@ function Portada({
     );
   }
 
-  const { categorias, faq, destacados } = estado.datos;
+  const { categorias, faq, destacados, populares = [] } = estado.datos;
 
   if (categorias.length === 0) {
     return (
@@ -208,6 +208,19 @@ function Portada({
               <AyudaArticuloCard key={a.id} articulo={a} modulo={modulo} />
             ))}
           </div>
+        </div>
+      )}
+
+      {populares.length > 0 && (
+        <div className="ay-seccion">
+          <h2>Lo más consultado</h2>
+          <ol className="ay-top">
+            {populares.map((a) => (
+              <li key={a.id}>
+                <Link to={`${rutaAyuda(modulo)}/articulo/${a.slug}`}>{a.titulo}</Link>
+              </li>
+            ))}
+          </ol>
         </div>
       )}
 

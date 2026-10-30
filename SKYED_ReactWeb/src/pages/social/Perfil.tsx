@@ -1930,7 +1930,7 @@ function CambiarContrasena() {
             Mostrar contraseña
           </label>
           <div className="pfx-form-actions">
-            <button type="submit" className="pfx-btn pfx-btn-primary" disabled={verificando || !actual}>
+            <button type="submit" title="Validar la contraseña actual y continuar" className="pfx-btn pfx-btn-primary" disabled={verificando || !actual}>
               {verificando ? 'Validando…' : 'Validar y cambiar'}
             </button>
           </div>
@@ -1954,7 +1954,7 @@ function CambiarContrasena() {
           >
             <div className="pf-modal-head" style={{ padding: '1.25rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
               <h3 style={{ fontSize: '1.2rem', color: '#fff', margin: 0 }}>Nueva contraseña</h3>
-              <button type="button" className="pf-modal-close" onClick={() => setVerModal(false)} aria-label="Cerrar">×</button>
+              <button type="button" title="Cerrar ventana" className="pf-modal-close" onClick={() => setVerModal(false)} aria-label="Cerrar">×</button>
             </div>
             
             <form className="pfx-form" onSubmit={submitCambio} style={{ padding: '1.5rem' }}>
@@ -1975,10 +1975,10 @@ function CambiarContrasena() {
               </label>
               
               <div className="pfx-modal-actions" style={{ marginTop: '1.75rem', display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-                <button type="button" className="pfx-btn pfx-btn-outline" onClick={() => setVerModal(false)} disabled={saving}>
+                <button type="button" title="Cancelar y cerrar" className="pfx-btn pfx-btn-outline" onClick={() => setVerModal(false)} disabled={saving}>
                   Cancelar
                 </button>
-                <button type="submit" className="pfx-btn pfx-btn-primary pfx-btn-solid" disabled={saving || !nueva || !confirmar}>
+                <button type="submit" title="Guardar la nueva contraseña" className="pfx-btn pfx-btn-primary pfx-btn-solid" disabled={saving || !nueva || !confirmar}>
                   {saving ? 'Guardando…' : 'Guardar contraseña'}
                 </button>
               </div>

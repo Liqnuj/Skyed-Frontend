@@ -160,10 +160,10 @@ const ESTILOS_KIT = `
 function OpcionSiNo({ valor, onSi, onNo }: { valor: boolean | null; onSi: () => void; onNo: () => void }) {
   return (
     <div className="kit-sino" role="radiogroup">
-      <button type="button" role="radio" aria-checked={valor === true} onClick={onSi}>
+      <button type="button" title="Responder Sí" role="radio" aria-checked={valor === true} onClick={onSi}>
         <i className="ti ti-check" aria-hidden="true" /> Sí
       </button>
-      <button type="button" role="radio" aria-checked={valor === false} onClick={onNo}>
+      <button type="button" title="Responder No" role="radio" aria-checked={valor === false} onClick={onNo}>
         <i className="ti ti-x" aria-hidden="true" /> No
       </button>
     </div>
@@ -186,6 +186,7 @@ function TallaOpcion({ talla, quedan, controlado, activa, indice, onClick }: {
   return (
     <button
       type="button"
+      title={agotada ? `La talla ${talla} está agotada` : `Elegir la talla ${talla}`}
       role="radio"
       aria-checked={activa}
       disabled={agotada}

@@ -129,6 +129,7 @@ export function AyudaFaq({ items, modulo }: { items: AyudaArticuloResumen[]; mod
               <button
                 type="button"
                 id={idBoton}
+                title={activo ? "Ocultar la respuesta" : "Ver la respuesta"}
                 className="ay-faq-btn"
                 aria-expanded={activo}
                 aria-controls={idPanel}
@@ -207,9 +208,9 @@ export function AyudaSoporte({
   // Los administradores gestionan las PQRS, no las crean.
   if (user?.role === 'admin') return null;
 
-  const destino = user
-    ? `/social/pqr?desde=ayuda${asunto ? `&asunto=${encodeURIComponent(asunto)}` : ''}`
-    : `/login?redirect=${encodeURIComponent('/social/pqr')}`;
+  // El formulario de PQRS acepta hasta 100 caracteres en el asunto.
+  const rutaPqr = `/social/pqr?desde=ayuda${asunto ? `&asunto=${encodeURIComponent(asunto.slice(0, 100))}` : ''}`;
+  const destino = user ? rutaPqr : `/login?redirect=${encodeURIComponent(rutaPqr)}`;
 
   return (
     <div className="ay-soporte" role="region" aria-labelledby={idTitulo}>
@@ -217,7 +218,7 @@ export function AyudaSoporte({
         <h2 id={idTitulo}>{titulo}</h2>
         <p>{user ? texto : 'Inicia sesión para crear una PQRS y el equipo te responderá.'}</p>
       </div>
-      <Link className="ay-btn ay-btn--primario" to={destino}>
+      <Link className="ay-btn ay-btn--primario" to={destino} title={user ? "Crear una PQRS" : "Iniciar sesión para crear una PQRS"}>
         <i className="ti ti-message-report" aria-hidden="true" />
         {user ? 'Crear PQRS' : 'Iniciar sesión y crear PQRS'}
       </Link>

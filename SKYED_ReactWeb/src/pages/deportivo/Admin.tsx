@@ -1145,7 +1145,7 @@ function AdminPage() {
           <SectionTable
             title="Usuarios registrados"
             toolbar={<>
-              <Link className="secondary-btn" to="/admin/usuarios">Gestionar roles →</Link>
+              <Link className="secondary-btn" to="/admin/usuarios" title="Gestionar los roles de los usuarios">Gestionar roles →</Link>
               {filtroSelect(filtroRolUsuario, setFiltroRolUsuario, "Filtrar por rol", "Todos los roles",
                 rolesUsuario.map(r => ({ value: r, label: r })))}
               {filtroSelect(filtroEstadoUsuario, setFiltroEstadoUsuario, "Filtrar por estado", "Todos los estados", [
@@ -1908,11 +1908,11 @@ function TallasTabla({ filas, onChange, obligatorio, legacy, existentes }: {
 
       <div style={{ display: "flex", gap: ".4rem", flexWrap: "wrap", alignItems: "center" }}>
         {TALLAS_RAPIDAS.filter(t => !usadas.has(t)).map(t => (
-          <button key={t} type="button" className="secondary-btn" onClick={() => agregar(t)}>
+          <button key={t} type="button" title={`Agregar la talla ${t}`} className="secondary-btn" onClick={() => agregar(t)}>
             <Plus size={13} /> {t}
           </button>
         ))}
-        <button type="button" className="secondary-btn" onClick={() => agregar("")}>
+        <button type="button" title="Agregar otra talla" className="secondary-btn" onClick={() => agregar("")}>
           <Plus size={13} /> Otra talla
         </button>
       </div>
@@ -2041,7 +2041,7 @@ function EventoPicker({ eventos, value, onChange, obligatorio }: {
         {lista.map(e => {
           const activo = String(e.id) === value;
           return (
-            <button key={e.id} type="button" role="option" aria-selected={activo} style={fila(activo)} onClick={() => onChange(String(e.id))}>
+            <button key={e.id} type="button" title={`Seleccionar ${e.nombre}`} role="option" aria-selected={activo} style={fila(activo)} onClick={() => onChange(String(e.id))}>
               {e.imagen_url
                 ? <img src={e.imagen_url} alt="" style={miniatura} onError={ev => { (ev.target as HTMLImageElement).style.visibility = "hidden"; }} />
                 : <span style={{ ...miniatura, display: "grid", placeItems: "center", opacity: .7 }}><ImagePlus size={16} /></span>}
