@@ -153,7 +153,16 @@ type Resultado = {
 
 type UserRow = UsuarioFila;
 
-type Ingreso = { ok: boolean; titulo: string; detalle: string[]; hora: string };
+type Ingreso = {
+  ok: boolean;
+  titulo: string;
+  detalle: string[];
+  hora: string;
+  // Solo en accesos permitidos: para el historial ("Entrada 1 de 2").
+  nombre?: string;
+  evento?: string;
+  entrada?: string;
+};
 
 const CATEGORIAS_EVENTO: Array<{ value: string; label: string }> = [
   { value: "ruta", label: "Ruta" },
@@ -1654,11 +1663,34 @@ function ControlAcceso({ notify, onValidado }: { notify: (message: string) => vo
     try {
       const res = await apiFetch("/qr/validar", { method: "POST", body: JSON.stringify({ codigo_qr: limpio }) });
       const ins = res.qr?.inscripcion;
+      const acceso = res.acceso;
+      const total: number = acceso?.usos_permitidos ?? 1;
+      const numero: number = acceso?.ingreso_numero ?? 1;
+      const faltan: number = acceso?.usos_restantes ?? 0;
+      const personas: Array<{ rol: string; nombre: string; documento?: string | number | null }> = acceso?.personas ?? [];
+      const nombreTitular = nombreDe(ins?.usuario);
+      const nombreEvento = ins?.evento?.nombre_e ?? "";
+      // Con invitado el QR sirve para 2 personas: se muestra cuántas van y quiénes
+      // deben presentarse, con su documento, para verificarlas en la puerta.
+      const entrada = total > 1 ? `Entrada ${numero} de ${total}` : "";
+      const estadoEntradas = total > 1
+        ? (faltan > 0
+            ? `Falta que ingrese ${faltan} persona${faltan > 1 ? "s" : ""} más.`
+            : "Ya ingresaron todas las personas.")
+        : "";
       ingreso = {
         ok: true,
         titulo: "Acceso permitido",
-        detalle: [nombreDe(ins?.usuario), ins?.evento?.nombre_e ?? ""].filter(Boolean),
+        detalle: [
+          entrada,
+          nombreEvento,
+          ...personas.map(p => `${p.rol === "invitado" ? "Invitado" : "Titular"}: ${p.nombre}${p.documento ? ` · Doc. ${p.documento}` : ""}`),
+          estadoEntradas,
+        ].filter(Boolean),
         hora,
+        nombre: nombreTitular,
+        evento: nombreEvento,
+        entrada,
       };
       onValidado();
     } catch (err) {
@@ -1726,7 +1758,8 @@ function ControlAcceso({ notify, onValidado }: { notify: (message: string) => vo
         <div className="admin-card">
           <p style={{ margin: 0 }}>
             Escanea el QR del participante o escribe el código que aparece debajo de él en "Mi entrada".
-            Cada QR sirve una sola vez y solo si el pago está confirmado.
+            Cada QR sirve una vez por persona: una entrada si va solo el titular y dos si lleva invitado.
+            Solo funciona si el pago está confirmado.
           </p>
           <form className="qr-check-form" onSubmit={e => { e.preventDefault(); validar(codigo); }}>
             <input
@@ -1770,8 +1803,8 @@ function ControlAcceso({ notify, onValidado }: { notify: (message: string) => vo
                 <div className="resource-item" key={i}>
                   <div className="resource-icon">{h.ok ? <Check size={16} /> : <X size={16} />}</div>
                   <div className="resource-main">
-                    <strong>{h.ok ? h.detalle[0] : h.titulo}</strong>
-                    <span>{h.hora} · {h.ok ? (h.detalle[1] ?? "") : h.detalle[0]}</span>
+                    <strong>{h.ok ? (h.nombre ?? h.detalle[0]) : h.titulo}</strong>
+                    <span>{h.hora} · {h.ok ? [h.entrada, h.evento].filter(Boolean).join(" · ") : h.detalle[0]}</span>
                   </div>
                 </div>
               ))}
