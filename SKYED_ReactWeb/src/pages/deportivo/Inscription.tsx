@@ -261,6 +261,7 @@ function InscriptionWizard() {
   const [invCorreo, setInvCorreo] = useState('');
   const [invDeseaKit, setInvDeseaKit] = useState(false);
   const [invTallaKit, setInvTallaKit] = useState('');
+  const [invDorsal, setInvDorsal] = useState('');
 
   const [enviando, setEnviando] = useState(false);
   // Si la inscripción se creó pero la subida del comprobante falló, aquí queda el id del pago
@@ -328,6 +329,7 @@ function InscriptionWizard() {
       if (draft.invCorreo) setInvCorreo(draft.invCorreo);
       if (draft.invDeseaKit) setInvDeseaKit(draft.invDeseaKit);
       if (draft.invTallaKit) setInvTallaKit(draft.invTallaKit);
+      if (draft.invDorsal) setInvDorsal(draft.invDorsal);
       if (draft.metodoPago) setMetodoPago(draft.metodoPago);
 
       // El archivo del comprobante nunca se puede restaurar tras recargar
@@ -372,6 +374,7 @@ function InscriptionWizard() {
       invCorreo,
       invDeseaKit,
       invTallaKit,
+      invDorsal,
       metodoPago,
     };
     try {
@@ -381,7 +384,7 @@ function InscriptionWizard() {
     id, step, rh, contactoEmergenciaNombre, contactoEmergenciaTelefono, parentesco,
     categoriaId, deseaJersey, dorsalPreferido, tallaKit, condicionesMedicas,
     mostrarInvitado, invTipoDocumento, invDocumento, invNombre, invApellido,
-    invRh, invTelefono, invFechaNacimiento, invCorreo, invDeseaKit, invTallaKit, metodoPago,
+    invRh, invTelefono, invFechaNacimiento, invCorreo, invDeseaKit, invTallaKit, invDorsal, metodoPago,
   ]);
 
   useEffect(() => {
@@ -736,6 +739,7 @@ function InscriptionWizard() {
         correo_inv: invCorreo || null,
         desea_kit: evento?.kit ? invDeseaKit : false,
         talla_kit: evento?.kit && invDeseaKit ? (invTallaKit || null) : null,
+        numero_dorsal_inv: evento?.kit && invDeseaKit ? (invDorsal || null) : null,
       };
     }
 
@@ -1207,8 +1211,9 @@ function InscriptionWizard() {
                           <p className="part-form-hint" style={{ marginTop: 0 }}>
                             Si lo pide, se suman {fmtMoney(evento.kit.precio)} al total.
                           </p>
-                          <OpcionSiNo valor={invDeseaKit} onSi={() => setInvDeseaKit(true)} onNo={() => { setInvDeseaKit(false); setInvTallaKit(''); }} />
+                          <OpcionSiNo valor={invDeseaKit} onSi={() => setInvDeseaKit(true)} onNo={() => { setInvDeseaKit(false); setInvTallaKit(''); setInvDorsal(''); }} />
                           {invDeseaKit && (
+                            <>
                             <div role="radiogroup" aria-label="Talla del kit del invitado" className="kit-rejilla">
                               {opcionesTalla.map((t, idx) => (
                                 <TallaOpcion
@@ -1222,6 +1227,12 @@ function InscriptionWizard() {
                                 />
                               ))}
                             </div>
+                            <div className="part-form-group" style={{ marginTop: '1rem', marginBottom: 0 }}>
+                              <label htmlFor="inv-dorsal">Número de dorsal preferido del invitado (opcional, sujeto a disponibilidad)</label>
+                              <input id="inv-dorsal" placeholder="Ej: 43" inputMode="numeric" value={invDorsal} onChange={(e) => setInvDorsal(e.target.value.replace(/\D/g, ''))} />
+                              <div className="part-form-hint" style={{ marginBottom: 0 }}>Si el número ya está tomado, se asignará uno automáticamente.</div>
+                            </div>
+                            </>
                           )}
                         </div>
                       )}
@@ -1401,6 +1412,7 @@ function InscriptionWizard() {
                     <>
                       <div className="part-review-row"><span>Invitado</span><strong>{`${invNombre} ${invApellido}`.trim()}</strong></div>
                       <div className="part-review-row"><span>Kit del invitado</span><strong>{invDeseaKit ? `Talla ${invTallaKit}` : 'Sin kit'}</strong></div>
+                      <div className="part-review-row"><span>Dorsal preferido del invitado</span><strong>{invDeseaKit && invDorsal ? invDorsal : '—'}</strong></div>
                     </>
                   )}
                 </div>
