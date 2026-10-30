@@ -167,7 +167,7 @@ function Portada({
     );
   }
 
-  const { categorias, faq, destacados } = estado.datos;
+  const { categorias, faq, destacados, populares = [] } = estado.datos;
 
   if (categorias.length === 0) {
     return (
@@ -208,6 +208,19 @@ function Portada({
               <AyudaArticuloCard key={a.id} articulo={a} modulo={modulo} />
             ))}
           </div>
+        </div>
+      )}
+
+      {populares.length > 0 && (
+        <div className="ay-seccion">
+          <h2>Lo más consultado</h2>
+          <ol className="ay-top">
+            {populares.map((a) => (
+              <li key={a.id}>
+                <Link to={`${rutaAyuda(modulo)}/articulo/${a.slug}`}>{a.titulo}</Link>
+              </li>
+            ))}
+          </ol>
         </div>
       )}
 

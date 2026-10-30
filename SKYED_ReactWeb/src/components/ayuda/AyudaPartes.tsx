@@ -208,9 +208,9 @@ export function AyudaSoporte({
   // Los administradores gestionan las PQRS, no las crean.
   if (user?.role === 'admin') return null;
 
-  const destino = user
-    ? `/social/pqr?desde=ayuda${asunto ? `&asunto=${encodeURIComponent(asunto)}` : ''}`
-    : `/login?redirect=${encodeURIComponent('/social/pqr')}`;
+  // El formulario de PQRS acepta hasta 100 caracteres en el asunto.
+  const rutaPqr = `/social/pqr?desde=ayuda${asunto ? `&asunto=${encodeURIComponent(asunto.slice(0, 100))}` : ''}`;
+  const destino = user ? rutaPqr : `/login?redirect=${encodeURIComponent(rutaPqr)}`;
 
   return (
     <div className="ay-soporte" role="region" aria-labelledby={idTitulo}>

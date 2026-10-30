@@ -193,6 +193,38 @@ div.ayuda :is(h1, h2, h3) { color: inherit; }
 }
 @keyframes ay-brillo { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
 
+
+
+/* ---------- Valoración "¿Te fue útil?" ---------- */
+.ayuda .ay-valoracion { margin-top: 2rem; padding: 1.25rem 1.4rem; background: var(--ay-surface); border: 1px solid var(--ay-border); border-radius: 18px; }
+.ayuda .ay-valoracion h2 { font-size: calc(1.15rem * var(--fs-scale, 1)); font-weight: 800; margin-bottom: .75rem; }
+.ayuda .ay-valoracion p { color: var(--ay-muted); margin-bottom: .75rem; }
+.ayuda .ay-voto { display: flex; gap: .75rem; flex-wrap: wrap; }
+.ayuda .ay-voto .ay-btn[aria-pressed="true"] { background: var(--ay-strong); color: #fff; }
+.ayuda .ay-btn[disabled] { opacity: .6; cursor: not-allowed; }
+.ayuda .ay-valoracion label { display: block; font-weight: 700; margin-bottom: .4rem; }
+.ayuda .ay-valoracion textarea {
+  width: 100%; min-height: 96px; resize: vertical; font: inherit; color: var(--ay-text);
+  background: var(--ay-bg); border: 1px solid var(--ay-border); border-radius: 12px; padding: .7rem .9rem;
+}
+.ayuda .ay-contador { font-size: calc(.82rem * var(--fs-scale, 1)); text-align: right; margin: .25rem 0 .75rem; }
+.ayuda .ay-valoracion .ay-error, .ayuda .ay-error { color: #b3261e; font-weight: 600; margin: .5rem 0; }
+.dark-mode .ayuda .ay-error { color: #ffb4ab; }
+.ayuda .ay-gracias { display: flex; align-items: center; gap: .6rem; font-weight: 700; color: var(--ay-text); }
+.ayuda .ay-gracias i { color: var(--ay-link); font-size: 1.4rem; flex: none; }
+
+/* ---------- Lo más consultado ---------- */
+.ayuda .ay-top { list-style: none; padding: 0; margin: 0; display: grid; gap: .5rem; counter-reset: top; }
+.ayuda .ay-top li { counter-increment: top; background: var(--ay-surface); border: 1px solid var(--ay-border); border-radius: 14px; }
+.ayuda .ay-top a { display: flex; gap: .9rem; align-items: center; padding: .85rem 1.1rem; min-height: 48px; color: var(--ay-text); text-decoration: none; font-weight: 600; }
+.ayuda .ay-top a::before {
+  content: counter(top); width: 1.9rem; height: 1.9rem; border-radius: 50%; background: var(--ay-tint);
+  color: var(--ay-link); display: grid; place-items: center; font-weight: 800; flex: none;
+}
+.ayuda .ay-top a:hover { color: var(--ay-link); }
+
+
+
 /* ---------- Responsive y accesibilidad ---------- */
 @media (max-width: 640px) {
   .ayuda .ay-hero { padding: 6.5rem 1rem 2.5rem; }
