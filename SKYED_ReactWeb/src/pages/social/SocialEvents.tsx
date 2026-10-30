@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import SocialWrapper from '../../components/social/SocialWrapper';
 import CanvasParticles from '../../components/social/CanvasParticles';
+import EstadoLista from '../../components/social/EstadoLista';
 import { eventoSocialService, type EventoSocial } from '../../services/socialService';
 
 const PAGE_SIZE = 6;
@@ -94,10 +95,10 @@ export default function SocialEvents() {
         </section>
 
         {/* EVENTS */}
-        <section className="events-section">
+        <section className={`events-section${mapped.length ? '' : ' is-vacia'}`}>
           <div className="container">
-            {loading && <p className="text-center">Cargando eventos...</p>}
-            {error && <p className="text-center form-error error">{error}</p>}
+            {loading && <EstadoLista tipo="cargando" titulo="Cargando eventos…" />}
+            {error && <EstadoLista tipo="error" titulo={error} />}
 
             {!loading && !error && (
               <>
@@ -116,7 +117,12 @@ export default function SocialEvents() {
                 )}
 
                 {mapped.length === 0 && (
-                  <p className="text-center">Todavía no hay eventos publicados.</p>
+                  <EstadoLista
+                    tipo="vacio"
+                    titulo="Todavía no hay eventos publicados"
+                    texto="Pronto habrá nuevas experiencias. Mientras tanto, cuéntanos cómo imaginas tu celebración."
+                    accion={{ texto: 'Solicitar cotización', a: '/social/reservar' }}
+                  />
                 )}
 
                 <div className="events-grid">

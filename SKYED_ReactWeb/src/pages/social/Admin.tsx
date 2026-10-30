@@ -8,6 +8,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  DatabaseBackup,
   ImagePlus,
   LayoutDashboard,
   Loader2,
@@ -33,6 +34,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useAccessibility } from "../../context/AccessibilityContext";
 import AccessibilityWidget from "../../components/shared/AccessibilityWidget";
 import AdminAjustes from "../../components/shared/AdminAjustes";
+import CopiasSeguridad from "../../components/shared/CopiasSeguridad";
 import { apiFetch } from "../../services/api";
 import { useConfirmacion } from "../../components/shared/ConfirmDialog";
 import { CargandoPanel, NumeroAnimado } from "../../components/shared/AdminMotion";
@@ -50,9 +52,10 @@ type Section =
   | "pqr"
   | "lugares"
   | "servicios"
+  | "copias"
   | "ajustes";
 
-const SECCIONES: Section[] = ["inicio", "eventos", "reservas", "usuarios", "pqr", "lugares", "servicios", "ajustes"];
+const SECCIONES: Section[] = ["inicio", "eventos", "reservas", "usuarios", "pqr", "lugares", "servicios", "copias", "ajustes"];
 
 /* ---------- Persistencia de la vista (sección + formulario abierto) ----------
    Al recargar la página se vuelve a la misma sección y al mismo formulario.
@@ -441,7 +444,6 @@ function AdminPage() {
   const [loading, setLoading] = useState(true); // true desde el inicio: sin "flash" de tarjetas en cero
   // true después de la primera carga: las recargas no vuelven a mostrar la pantalla de carga.
   const [cargoUnaVez, setCargoUnaVez] = useState(false);
-  const [panelOpen, setPanelOpen] = useState(false);
 
   const [ambientes, setAmbientes] = useState<Ambiente[]>([]);
   const [servicios, setServicios] = useState<Servicio[]>([]);
@@ -594,6 +596,7 @@ function AdminPage() {
     pqr: { label: "PQRS", icon: MessageSquareText },
     lugares: { label: "Lugares", icon: Building2 },
     servicios: { label: "Servicios", icon: Wrench },
+    copias: { label: "Copias de seguridad", icon: DatabaseBackup },
     ajustes: { label: "Ajustes", icon: Settings },
   };
 
@@ -785,7 +788,7 @@ function AdminPage() {
             <span className="admin-eyebrow">ADMINISTRACIÓN</span>
             <h1 key={section}>{sectionMeta[section].label}</h1>
           </div>
-          {section !== "ajustes" && <label className="admin-search">
+          {section !== "ajustes" && section !== "copias" && <label className="admin-search">
             <Search size={17} />
             <input
               value={search}
@@ -982,6 +985,10 @@ function AdminPage() {
           />
         )}
 
+        {section === "copias" && (
+          <CopiasSeguridad modulo="social" notify={notify} confirmar={confirmar} />
+        )}
+
         {section === "ajustes" && (
           <AdminAjustes
             notify={notify}
@@ -1027,8 +1034,6 @@ function AdminPage() {
       </main>
 
       <AccessibilityWidget
-        open={panelOpen}
-        onToggleOpen={() => setPanelOpen(o => !o)}
         fontSize={fontSize}
         onFontSize={setFontSize}
         dyslexia={dyslexia}

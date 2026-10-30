@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 export const FONT_SIZES = ['14px', '16px', '19px', '22px'];
 const DEFAULT_SIZE = FONT_SIZES[1];
@@ -14,7 +14,7 @@ interface AccessibilityState {
   contraste: boolean;
   /** Corrección de color para el tipo de daltonismo elegido. */
   daltonismo: Daltonismo;
-  /** Lector en voz alta: lee lo que se toca o se enfoca con el teclado. */
+  /** Lector en voz alta: lee lo que se toca o se enfoca con el teclado (Tab). */
   lector: boolean;
   velocidadLector: number;
 }
@@ -60,13 +60,19 @@ const MATRICES_DALTONISMO: Record<Exclude<Daltonismo, 'ninguno'>, string> = {
 
 const hayVoz = () => typeof window !== 'undefined' && 'speechSynthesis' in window;
 
-/** Voz en español (prefiere Colombia, luego Latinoamérica, luego cualquiera). */
+/**
+ * Voz en español. Primero las instaladas en el equipo (responden al instante;
+ * las "Online" dependen de internet y tardan en arrancar) y, entre ellas,
+ * Colombia, luego Latinoamérica, luego cualquiera.
+ */
 function vozEspanol(): SpeechSynthesisVoice | undefined {
   const voces = window.speechSynthesis.getVoices().filter((v) => v.lang.toLowerCase().startsWith('es'));
+  const locales = voces.filter((v) => v.localService);
+  const lista = locales.length ? locales : voces;
   return (
-    voces.find((v) => v.lang === 'es-CO') ??
-    voces.find((v) => /es-(MX|US|419)/i.test(v.lang)) ??
-    voces[0]
+    lista.find((v) => v.lang === 'es-CO') ??
+    lista.find((v) => /es-(MX|US|419)/i.test(v.lang)) ??
+    lista[0]
   );
 }
 
@@ -87,14 +93,64 @@ function enFrases(texto: string): string[] {
   return partes;
 }
 
-/** Texto que se lee de un elemento (aria-label, alt o su contenido). */
+const MAX_TEXTO = 1200;
+const CAMPOS = 'input,select,textarea';
+const INTERACTIVOS = 'a,button,label,summary,[role="button"],[role="switch"],[role="radio"],[role="tab"],[role="menuitem"]';
+const BLOQUES = 'h1,h2,h3,h4,h5,h6,p,li,td,th,dt,dd,figcaption,blockquote,caption';
+/** Hasta dónde se sube buscando texto, para no terminar leyendo otra sección. */
+const MAX_NIVELES = 4;
+/** Un recuadro sin texto propio (una tarjeta) se lee entero solo si es corto. */
+const MAX_APARTADO = 500;
+
+/** Texto que se lee de un elemento. Nunca el valor de un campo: podría ser una contraseña. */
 function textoDe(el: Element): string {
-  const etiqueta = el.getAttribute('aria-label') || el.getAttribute('title') || (el as HTMLImageElement).alt;
+  if (el.matches(CAMPOS)) {
+    const campo = el as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+    const nombre = el.getAttribute('aria-label') || campo.labels?.[0]?.innerText || el.getAttribute('placeholder') || 'Campo de texto';
+    const opcion = el instanceof HTMLSelectElement ? el.selectedOptions[0]?.text : '';
+    return `${nombre} ${opcion ?? ''}`.trim().slice(0, MAX_TEXTO);
+  }
   const texto = (el as HTMLElement).innerText?.trim();
-  return (texto || etiqueta || '').slice(0, 600);
+  const etiqueta = el.getAttribute('aria-label') || el.getAttribute('title') || (el as HTMLImageElement).alt;
+  return (texto || etiqueta || '').slice(0, MAX_TEXTO);
 }
 
-const LEIBLES = 'h1,h2,h3,h4,h5,h6,p,li,a,button,label,td,th,figcaption,blockquote,input,select,textarea,[role="button"],img[alt]';
+const tieneTextoPropio = (el: Element) =>
+  Array.from(el.childNodes).some((n) => n.nodeType === Node.TEXT_NODE && n.textContent?.trim());
+
+/**
+ * El elemento que se lee al tocar `origen`: el botón o enlace que lo contiene,
+ * el párrafo o título completo, cualquier otro texto (div, span...) o, si se
+ * tocó el recuadro de un apartado sin texto propio, ese apartado si es corto.
+ */
+function bloqueLeible(origen: EventTarget | null): Element | null {
+  if (!(origen instanceof Element)) return null;
+
+  const directo = origen.closest(`${CAMPOS},img[alt]`) ?? origen.closest(INTERACTIVOS);
+  if (directo && textoDe(directo)) return directo;
+
+  let n: Element | null = origen;
+  for (let i = 0; n && n !== document.body && i < MAX_NIVELES; i++, n = n.parentElement) {
+    if (tieneTextoPropio(n)) return n.closest(BLOQUES) ?? n;
+  }
+
+  const apartado = (origen as HTMLElement).innerText?.trim();
+  return apartado && apartado.length <= MAX_APARTADO ? origen : null;
+}
+
+/** Marca un único elemento con la clase (quita la marca del anterior). */
+function marcador(clase: string) {
+  let actual: Element | null = null;
+  return (el: Element | null) => {
+    if (el === actual) return;
+    actual?.classList.remove(clase);
+    el?.classList.add(clase);
+    actual = el;
+  };
+}
+
+const marcarObjetivo = marcador('ax-objetivo');
+const marcarLectura = marcador('ax-leyendo');
 
 const AccessibilityContext = createContext<AccessibilityContextValue | undefined>(undefined);
 
@@ -126,47 +182,94 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
     raiz.classList.toggle('ax-lector', state.lector);
   }, [state.daltonismo, state.contraste, state.lector]);
 
+  // En refs para que cambiar la velocidad no reinicie la lectura en curso.
+  const velocidad = useRef(state.velocidadLector);
+  velocidad.current = state.velocidadLector;
+  const voz = useRef<SpeechSynthesisVoice | undefined>(undefined);
+  const lecturaActual = useRef(0);
+
+  // Las voces cargan aparte: se dejan listas para no buscarlas en cada clic.
+  useEffect(() => {
+    if (!hayVoz()) return;
+    const cargar = () => { voz.current = vozEspanol(); };
+    cargar();
+    window.speechSynthesis.addEventListener('voiceschanged', cargar);
+    return () => window.speechSynthesis.removeEventListener('voiceschanged', cargar);
+  }, []);
+
   const detenerLectura = useCallback(() => {
+    lecturaActual.current++;
+    marcarLectura(null);
     if (hayVoz()) window.speechSynthesis.cancel();
   }, []);
 
-  const leerTexto = useCallback((texto: string) => {
+  /** Lee el texto de inmediato, cortando lo que se estuviera leyendo. */
+  const leerTexto = useCallback((texto: string, elemento: Element | null = null) => {
     if (!hayVoz() || !texto.trim()) return;
-    window.speechSynthesis.cancel();
-    const voz = vozEspanol();
-    for (const frase of enFrases(texto)) {
+    const sintesis = window.speechSynthesis;
+    const lectura = ++lecturaActual.current;
+    sintesis.cancel();
+    sintesis.resume(); // Chrome a veces queda en pausa y no vuelve a hablar
+    marcarLectura(elemento);
+
+    // Cancelar dispara el fin de la lectura anterior: solo la vigente quita la marca.
+    const alTerminar = () => { if (lecturaActual.current === lectura) marcarLectura(null); };
+    const frases = enFrases(texto);
+    frases.forEach((frase, i) => {
       const u = new SpeechSynthesisUtterance(frase);
-      u.lang = voz?.lang ?? 'es-CO';
-      if (voz) u.voice = voz;
-      u.rate = state.velocidadLector;
-      window.speechSynthesis.speak(u);
-    }
-  }, [state.velocidadLector]);
+      u.lang = voz.current?.lang ?? 'es-CO';
+      if (voz.current) u.voice = voz.current;
+      u.rate = velocidad.current;
+      if (i === frases.length - 1) { u.onend = alTerminar; u.onerror = alTerminar; }
+      sintesis.speak(u);
+    });
+  }, []);
 
   const leerPagina = useCallback(() => {
     const zona = document.querySelector('main, .admin-main') ?? document.body;
     leerTexto((zona as HTMLElement).innerText);
   }, [leerTexto]);
 
-  // Lector activado: lee lo que se toca con el mouse o se enfoca con Tab.
+  // Lector activado: al pasar el mouse se marca lo que se va a leer y al hacer
+  // clic se lee. Con el teclado, lee lo que se enfoca con Tab.
   useEffect(() => {
     if (!state.lector || !hayVoz()) return;
+
+    const alPasar = (e: MouseEvent) => {
+      const el = bloqueLeible(e.target);
+      marcarObjetivo(el && !el.closest('[data-no-leer]') ? el : null);
+    };
+    const alSalir = (e: MouseEvent) => { if (!e.relatedTarget) marcarObjetivo(null); };
     const alTocar = (e: MouseEvent) => {
-      const el = (e.target as Element | null)?.closest(LEIBLES);
-      if (el) leerTexto(textoDe(el));
+      if ((e.target as Element | null)?.closest?.('[data-no-leer]')) return;
+      // Si seleccionó un pedazo de texto, lee solo ese pedazo.
+      const seleccion = window.getSelection()?.toString().trim();
+      if (seleccion) { leerTexto(seleccion.slice(0, MAX_TEXTO)); return; }
+      const el = bloqueLeible(e.target);
+      if (el) leerTexto(textoDe(el), el);
     };
+    // Solo teclado: con el mouse el foco llega justo antes del clic y la voz
+    // arrancaría dos veces (de ahí venía la demora).
     const alEnfocar = (e: FocusEvent) => {
-      const el = e.target as Element | null;
-      if (el && el.matches?.(LEIBLES)) leerTexto(textoDe(el));
+      const el = e.target;
+      if (el instanceof Element && el.matches(':focus-visible') && !el.closest('[data-no-leer]')) {
+        leerTexto(textoDe(el), el);
+      }
     };
+
+    document.addEventListener('mouseover', alPasar);
+    document.addEventListener('mouseout', alSalir);
     document.addEventListener('click', alTocar, true);
     document.addEventListener('focusin', alEnfocar);
     return () => {
+      document.removeEventListener('mouseover', alPasar);
+      document.removeEventListener('mouseout', alSalir);
       document.removeEventListener('click', alTocar, true);
       document.removeEventListener('focusin', alEnfocar);
-      window.speechSynthesis.cancel();
+      marcarObjetivo(null);
+      detenerLectura();
     };
-  }, [state.lector, leerTexto]);
+  }, [state.lector, leerTexto, detenerLectura]);
 
   const value = useMemo<AccessibilityContextValue>(() => ({
     ...state,
@@ -175,7 +278,11 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
     setDyslexia: (dyslexia) => setState((s) => ({ ...s, dyslexia })),
     setContraste: (contraste) => setState((s) => ({ ...s, contraste })),
     setDaltonismo: (daltonismo) => setState((s) => ({ ...s, daltonismo })),
-    setLector: (lector) => setState((s) => ({ ...s, lector })),
+    setLector: (lector) => {
+      setState((s) => ({ ...s, lector }));
+      // Confirma con voz, y deja el motor de voz listo para el primer clic.
+      if (lector) leerTexto('Lector activado. Haz clic en cualquier texto para escucharlo.');
+    },
     setVelocidadLector: (velocidadLector) => setState((s) => ({ ...s, velocidadLector })),
     lectorDisponible: hayVoz(),
     leerTexto,
