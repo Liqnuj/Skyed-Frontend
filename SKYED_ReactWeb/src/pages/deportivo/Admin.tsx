@@ -205,6 +205,10 @@ const sanitizeText = (value: string, maxLength: number) =>
 const sanitizeInteger = (value: string, maxLength = 7) =>
   value.replace(/\D/g, "").slice(0, maxLength);
 
+/** Para lugares: sin números. Deja letras (con tildes y ñ), espacios y . , - ( ) */
+const sanitizePlace = (value: string, maxLength: number) =>
+  sanitizeText(value.replace(/[^\p{L}\s.,\-()]/gu, ""), maxLength);
+
 /** Primera letra en mayúscula (solo para campos de texto libre). */
 const capitalizeFirst = (value: string) =>
   value.length ? value.charAt(0).toUpperCase() + value.slice(1) : value;
@@ -1340,7 +1344,7 @@ function EventoModal({ item, kits, onClose, onSave, notify }: {
         </Field>
 
         <Field label="Lugar de salida">
-          <input required maxLength={120} value={form.ubicacion_e} onChange={e => set("ubicacion_e", capitalizeFirst(sanitizeText(e.target.value, 120)))} placeholder="Ej. Aquitania, Boyacá" />
+          <input required maxLength={120} value={form.ubicacion_e} onChange={e => set("ubicacion_e", capitalizeFirst(sanitizePlace(e.target.value, 120)))} placeholder="Ej. Aquitania, Boyacá" />
         </Field>
 
         <Field label="Kit (opcional)">
@@ -2149,7 +2153,7 @@ function KitModal({ item, eventos, onClose, onSave, notify }: { item?: Kit | nul
           <input required={esNuevo} type="date" value={form.fecha_entrega_k} onChange={e => set("fecha_entrega_k", e.target.value)} />
         </Field>
         <Field label="Lugar de entrega">
-          <input required={esNuevo} maxLength={45} value={form.lugar_entrega_k} onChange={e => set("lugar_entrega_k", capitalizeFirst(sanitizeText(e.target.value, 45)))} />
+          <input required={esNuevo} maxLength={45} value={form.lugar_entrega_k} onChange={e => set("lugar_entrega_k", capitalizeFirst(sanitizePlace(e.target.value, 45)))} />
         </Field>
       </div>
       <TallasTabla filas={tallas} onChange={setTallas} obligatorio={esNuevo} legacy={!esNuevo} existentes={tallasGuardadas} />
