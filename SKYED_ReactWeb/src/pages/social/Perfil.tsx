@@ -5,13 +5,12 @@ import { createPortal } from 'react-dom';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Protected from '../../components/Protected';
 import SocialWrapper from '../../components/social/SocialWrapper';
-import HeroParticles from '../../components/social/HeroParticles';
 import Toast from '../../components/social/Toast';
 import type { ToastMsg } from '../../components/social/Toast';
 import { useAuth } from '../../context/AuthContext';
 import { apiFetch } from '../../services/api';
-import { pqrService, reservaService } from '../../services/socialService';
-import type { Pqr, PqrSeguimiento, Reserva, TipoPqr } from '../../services/socialService';
+import { pqrService, reservaService, testimonioService, tipoEventoService } from '../../services/socialService';
+import type { MiTestimonio, Pqr, PqrSeguimiento, Reserva, TipoEvento, TipoPqr } from '../../services/socialService';
 import { FASES_VISIBLES, PqrEstadoPill, PqrPlazoChip, PqrStepper, PqrTimeline, indiceFaseVisible } from '../../components/social/pqr/PqrTracker';
 import { ESTADO_COLOR, ESTADO_LABEL, TIPO_LABEL } from '../../utils/pqr';
 import { prepararImagen } from '../../utils/prepararImagen';
@@ -706,6 +705,235 @@ function textoSeguimientoReserva(comentario: string) {
   return `Estado cambiado a: ${reservaEstadoPill(m[1].toLowerCase() as Reserva['estado_rese']).txt}`;
 }
 
+/* ---------- Reseña de una reserva completada ---------- */
+const RESENA_MIN = 20;
+const RESENA_MAX = 500;
+
+function ResenaReserva({ idRese }: { idRese: number }) {
+  const [cargando, setCargando] = useState(true);
+  const [resena, setResena] = useState<MiTestimonio | null>(null);
+  const [editando, setEditando] = useState(false);
+  const [estrellas, setEstrellas] = useState(0);
+  const [hover, setHover] = useState(0);
+  const [texto, setTexto] = useState('');
+  const [enviando, setEnviando] = useState(false);
+  const [confirmandoBorrar, setConfirmandoBorrar] = useState(false);
+  const [msg, setMsg] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null);
+
+  useEffect(() => {
+    let activo = true;
+    testimonioService
+      .deReserva(idRese)
+      .then((r) => { if (activo) setResena(r); })
+      .catch(() => { /* si falla, se muestra el formulario vacío */ })
+      .finally(() => { if (activo) setCargando(false); });
+    return () => { activo = false; };
+  }, [idRese]);
+
+  const abrirEdicion = () => {
+    if (!resena) return;
+    setEstrellas(resena.calificacion);
+    setTexto(resena.comentario);
+    setMsg(null);
+    setEditando(true);
+  };
+
+  const cancelarEdicion = () => {
+    setEditando(false);
+    setMsg(null);
+  };
+
+  const guardar = async (e: FormEvent) => {
+    e.preventDefault();
+    if (enviando) return;
+    if (estrellas < 1) {
+      setMsg({ tipo: 'error', texto: 'Elige una calificación de 1 a 5 estrellas.' });
+      return;
+    }
+    if (texto.trim().length < RESENA_MIN) {
+      setMsg({ tipo: 'error', texto: `Cuéntanos un poco más (mínimo ${RESENA_MIN} caracteres).` });
+      return;
+    }
+    setEnviando(true);
+    setMsg(null);
+    try {
+      const payload = { calificacion_tes: estrellas, comentario_tes: texto.trim() };
+      const editandoExistente = !!resena;
+      const guardada = resena
+        ? await testimonioService.editar(resena.id_tes, payload)
+        : await testimonioService.crear(idRese, payload);
+      setResena(guardada);
+      setEditando(false);
+      setMsg({
+        tipo: 'ok',
+        texto: editandoExistente
+          ? 'Tu reseña se actualizó.'
+          : '¡Gracias! Tu reseña ya está publicada en la página principal.',
+      });
+    } catch (err) {
+      setMsg({ tipo: 'error', texto: err instanceof Error ? err.message : 'No se pudo guardar tu reseña.' });
+    } finally {
+      setEnviando(false);
+    }
+  };
+
+  const eliminar = async () => {
+    if (!resena || enviando) return;
+    setEnviando(true);
+    try {
+      await testimonioService.eliminar(resena.id_tes);
+      setResena(null);
+      setEstrellas(0);
+      setTexto('');
+      setConfirmandoBorrar(false);
+      setMsg({ tipo: 'ok', texto: 'Tu reseña se eliminó de la página.' });
+    } catch (err) {
+      setConfirmandoBorrar(false);
+      setMsg({ tipo: 'error', texto: err instanceof Error ? err.message : 'No se pudo eliminar tu reseña.' });
+    } finally {
+      setEnviando(false);
+    }
+  };
+
+  if (cargando) return null;
+
+  const mostrarFormulario = !resena || editando;
+
+  return (
+    <div className="pf-resena">
+      <h4 className="pf-history-title">Tu reseña</h4>
+
+      {mostrarFormulario ? (
+        <form onSubmit={guardar} noValidate>
+          <p className="pf-resena-intro">
+            {resena
+              ? 'Edita tu reseña. Los cambios se ven al instante en la página principal.'
+              : 'Cuéntanos cómo fue tu evento. Tu reseña se publica al instante en la página principal de SkyedSocial, con tu nombre y la inicial de tu apellido.'}
+          </p>
+
+          <div className="pf-stars-pick" role="radiogroup" aria-label="Calificación">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button
+                key={n}
+                type="button"
+                role="radio"
+                aria-checked={estrellas === n}
+                aria-label={`${n} ${n === 1 ? 'estrella' : 'estrellas'}`}
+                title={`${n} de 5`}
+                className={`pf-star${n <= (hover || estrellas) ? ' on' : ''}`}
+                onMouseEnter={() => setHover(n)}
+                onMouseLeave={() => setHover(0)}
+                onClick={() => setEstrellas(n)}
+              >
+                ★
+              </button>
+            ))}
+          </div>
+
+          <textarea
+            className="pf-resena-text"
+            rows={4}
+            maxLength={RESENA_MAX}
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+            placeholder="¿Qué fue lo que más te gustó de tu evento?"
+            aria-label="Tu reseña"
+            disabled={enviando}
+          />
+          <div className="pf-resena-count">{texto.trim().length}/{RESENA_MAX}</div>
+
+          {msg && <div className={`pf-resena-msg ${msg.tipo}`} role="status">{msg.texto}</div>}
+
+          <div className="pf-rename-actions">
+            <button title={resena ? 'Guardar los cambios de tu reseña' : 'Publicar tu reseña'} type="submit" className="pf-reply-btn" disabled={enviando}>
+              {enviando ? 'Guardando…' : resena ? 'Guardar cambios' : 'Publicar reseña'}
+            </button>
+            {resena && (
+              <button title="Descartar los cambios" type="button" className="pf-tool-clear" onClick={cancelarEdicion} disabled={enviando}>
+                Cancelar
+              </button>
+            )}
+          </div>
+        </form>
+      ) : (
+        <>
+          <div className="pf-resena-publicada">
+            <div className="pf-resena-stars" role="img" aria-label={`${resena.calificacion} de 5 estrellas`}>
+              {'★'.repeat(resena.calificacion)}
+              <span className="off">{'★'.repeat(5 - resena.calificacion)}</span>
+            </div>
+            <p>"{resena.comentario}"</p>
+            <small><i className="ti ti-world" aria-hidden="true" /> Publicada en la página principal</small>
+          </div>
+
+          {msg && <div className={`pf-resena-msg ${msg.tipo}`} role="status">{msg.texto}</div>}
+
+          <div className="pf-rename-actions">
+            <button title="Editar tu reseña" type="button" className="pf-hide-btn" onClick={abrirEdicion}>
+              <i className="ti ti-pencil" aria-hidden="true" /> Editar reseña
+            </button>
+            <button title="Quitar tu reseña de la página" type="button" className="pf-hide-btn" onClick={() => setConfirmandoBorrar(true)}>
+              <i className="ti ti-trash" aria-hidden="true" /> Eliminar reseña
+            </button>
+          </div>
+        </>
+      )}
+
+      {confirmandoBorrar && (
+        <PfConfirmar
+          icono="ti-trash"
+          titulo="¿Eliminar tu reseña?"
+          texto="Dejará de verse en la página principal. Después podrás escribir otra."
+          confirmar={enviando ? 'Eliminando…' : 'Sí, eliminar'}
+          onConfirmar={eliminar}
+          onCancelar={() => setConfirmandoBorrar(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ---------- Tipo de evento de una reserva ---------- */
+// Si la API ya trae el nombre del tipo se usa; si solo trae el id, se busca en la lista de tipos
+// (se pide una sola vez y se recuerda mientras la página esté abierta).
+let tiposReservaCache: Map<number, string> | null = null;
+let tiposReservaPromesa: Promise<Map<number, string>> | null = null;
+
+function cargarTiposReserva(): Promise<Map<number, string>> {
+  if (tiposReservaCache) return Promise.resolve(tiposReservaCache);
+  if (!tiposReservaPromesa) {
+    tiposReservaPromesa = tipoEventoService
+      .listar()
+      .then((res) => {
+        const lista = (res?.data ?? []) as TipoEvento[];
+        tiposReservaCache = new Map(lista.map((t) => [t.id_tipo_eves, t.nombre_tipo_eves] as [number, string]));
+        return tiposReservaCache;
+      })
+      .catch(() => {
+        tiposReservaPromesa = null;
+        return new Map<number, string>();
+      });
+  }
+  return tiposReservaPromesa;
+}
+
+function useTipoReserva(reserva: Reserva): string | null {
+  const directo = reserva.tipoEvento?.nombre_tipo_eves ?? null;
+  const idTipo = reserva.id_tipo_eves ?? null;
+  const [porId, setPorId] = useState<string | null>(() =>
+    idTipo != null && tiposReservaCache ? tiposReservaCache.get(idTipo) ?? null : null,
+  );
+
+  useEffect(() => {
+    if (directo || idTipo == null) return;
+    let activo = true;
+    cargarTiposReserva().then((m) => { if (activo) setPorId(m.get(idTipo) ?? null); });
+    return () => { activo = false; };
+  }, [directo, idTipo]);
+
+  return directo ?? porId ?? reserva.evento?.tipoEvento?.nombre_tipo_eves ?? null;
+}
+
 interface ReservaDetalleProps {
   reserva: Reserva;
   onClose: () => void;
@@ -736,6 +964,7 @@ function ReservaDetalle({ reserva, onClose, onRenombrar, onOcultar, oculta, onCa
   }, [onClose]);
 
   const r = reserva as unknown as ReservaConDetalle;
+  const tipoNombre = useTipoReserva(reserva);
 
   const [editando, setEditando] = useState(false);
   const [nombre, setNombre] = useState(r.nombre_rese ?? '');
@@ -857,6 +1086,15 @@ function ReservaDetalle({ reserva, onClose, onRenombrar, onOcultar, oculta, onCa
 
         <div className="pf-rese-body">
           <div className="pf-info-grid">
+            {tipoNombre && (
+              <div className="pf-info-card wide tipo">
+                <span className="pf-info-icon" aria-hidden="true"><i className="ti ti-confetti" /></span>
+                <div>
+                  <span className="pf-info-label">Tipo de evento</span>
+                  <span className="pf-info-value">{tipoNombre}</span>
+                </div>
+              </div>
+            )}
             <div className="pf-info-card wide">
               <span className="pf-info-label">Fecha del evento</span>
               <span className="pf-info-value">{fmtFechaLarga(reserva.fecha_evento_rese)}</span>
@@ -906,6 +1144,8 @@ function ReservaDetalle({ reserva, onClose, onRenombrar, onOcultar, oculta, onCa
             <i className={`ti ${cancelada ? 'ti-circle-x' : 'ti-info-circle'}`} aria-hidden="true" />
             <span>{RESERVA_NOTA[estado] ?? ''}</span>
           </div>
+
+          {estado === 'completada' && <ResenaReserva idRese={reserva.id_rese} />}
 
           {historial.length > 0 && (
             <div className="pf-history">
@@ -1379,7 +1619,6 @@ function PerfilPanel() {
   return (
     <>
       <div className="pf-header">
-        <HeroParticles />
         <div className="pf-header-inner">
           <div className="pf-avatar-wrap">
             {user?.foto_url ? (
@@ -1590,7 +1829,7 @@ function PerfilPanel() {
               <div className="pfq-empty">
                 <span className="pfq-empty-icon" aria-hidden="true"><i className="ti ti-calendar-event" /></span>
                 <h3 className="pfq-empty-title">Aún no tienes reservas</h3>
-                <p className="pfq-empty-text">Explora los eventos disponibles y reserva el tuyo en pocos pasos.</p>
+                <p className="pfq-empty-text">Explora los eventos disponibles y reserva el tuyo en pocos pasos. Cuando tu evento esté completado, podrás dejar tu reseña desde aquí.</p>
                 <Link title="Ver los eventos disponibles" to="/social/eventos" className="pfx-btn pfx-btn-primary">
                   <i className="ti ti-search" aria-hidden="true" /> Ver eventos
                 </Link>
@@ -1930,7 +2169,7 @@ function CambiarContrasena() {
             Mostrar contraseña
           </label>
           <div className="pfx-form-actions">
-            <button type="submit" title="Validar la contraseña actual y continuar" className="pfx-btn pfx-btn-primary" disabled={verificando || !actual}>
+            <button type="submit" className="pfx-btn pfx-btn-primary" disabled={verificando || !actual}>
               {verificando ? 'Validando…' : 'Validar y cambiar'}
             </button>
           </div>
@@ -1954,7 +2193,7 @@ function CambiarContrasena() {
           >
             <div className="pf-modal-head" style={{ padding: '1.25rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
               <h3 style={{ fontSize: '1.2rem', color: '#fff', margin: 0 }}>Nueva contraseña</h3>
-              <button type="button" title="Cerrar ventana" className="pf-modal-close" onClick={() => setVerModal(false)} aria-label="Cerrar">×</button>
+              <button type="button" className="pf-modal-close" onClick={() => setVerModal(false)} aria-label="Cerrar">×</button>
             </div>
             
             <form className="pfx-form" onSubmit={submitCambio} style={{ padding: '1.5rem' }}>
@@ -1975,10 +2214,10 @@ function CambiarContrasena() {
               </label>
               
               <div className="pfx-modal-actions" style={{ marginTop: '1.75rem', display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-                <button type="button" title="Cancelar y cerrar" className="pfx-btn pfx-btn-outline" onClick={() => setVerModal(false)} disabled={saving}>
+                <button type="button" className="pfx-btn pfx-btn-outline" onClick={() => setVerModal(false)} disabled={saving}>
                   Cancelar
                 </button>
-                <button type="submit" title="Guardar la nueva contraseña" className="pfx-btn pfx-btn-primary pfx-btn-solid" disabled={saving || !nueva || !confirmar}>
+                <button type="submit" className="pfx-btn pfx-btn-primary pfx-btn-solid" disabled={saving || !nueva || !confirmar}>
                   {saving ? 'Guardando…' : 'Guardar contraseña'}
                 </button>
               </div>

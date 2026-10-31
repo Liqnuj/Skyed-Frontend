@@ -9,14 +9,6 @@
 }
 .mod-social.dark-mode .pf-header { background: #1c0329 }
 
-/* Burbujas que suben (mismas del hero de Inicio/Nosotros) */
-.mod-social .pf-header { position: relative; overflow: hidden; }
-.mod-social .pf-header > :not(.hero-particles) { position: relative; z-index: 2; }
-.mod-social .pf-header .hero-particles { pointer-events: none; }
-.mod-social .pf-header .particle { background: var(--accent) !important; }
-.mod-social.dark-mode .pf-header .particle { background: rgba(255, 255, 255, .8) !important; }
-@media (prefers-reduced-motion: reduce) { .mod-social .pf-header .hero-particles { display: none; } }
-
 .mod-social .pf-header-inner {
   max-width: 1200px;
   margin: 0 auto;
@@ -1929,16 +1921,196 @@
 }
 .mod-social .pfc-motivo:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 40%, transparent); outline-offset: 1px; }
 
-/* Modal de nueva contraseña: fondo desvanecido sobre toda la pantalla */
-.mod-social .pf-modal-backdrop.pfp-backdrop {
-  z-index: 900; /* sobre el footer y el menú, bajo el toast (1000) */
-  padding: 1.5rem;
-  background: rgba(10, 0, 21, .55);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  animation: pfc-fade .25s ease both;
+/* ===== Reseña de una reserva completada ===== */
+.mod-social .pf-resena { margin-top: 1.1rem; }
+.mod-social .pf-resena-intro {
+  margin: 0 0 .75rem;
+  font-size: calc(.85rem * var(--fs-scale, 1));
+  color: var(--text-muted);
+  line-height: 1.5;
 }
-.mod-social .pf-modal-backdrop.pfp-backdrop .pf-modal {
-  max-height: calc(100dvh - 3rem);
-  animation: pfc-pop .22s cubic-bezier(.2, .9, .3, 1.2);
+.mod-social .pf-stars-pick { display: flex; gap: .25rem; margin-bottom: .75rem; }
+.mod-social .pf-star {
+  background: none; border: none; padding: 0 .1rem; cursor: pointer;
+  font-size: calc(1.9rem * var(--fs-scale, 1)); line-height: 1;
+  color: color-mix(in srgb, currentColor 22%, transparent);
+  transition: transform .12s, color .12s;
 }
+.mod-social .pf-star.on { color: var(--gold, #c9a84c); }
+.mod-social .pf-star:hover { transform: scale(1.15); }
+.mod-social .pf-star:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+.mod-social .pf-resena-text {
+  width: 100%; resize: vertical; min-height: 6.5rem;
+  padding: .8rem 1rem; border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  background: var(--white); color: var(--plum);
+  font: inherit; font-size: calc(.9rem * var(--fs-scale, 1)); line-height: 1.55;
+  outline: none; transition: border-color .2s, box-shadow .2s;
+}
+.mod-social.dark-mode .pf-resena-text { background: var(--plum); color: var(--white); }
+.mod-social .pf-resena-text:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.mod-social .pf-resena-count {
+  margin-top: .25rem; text-align: right;
+  font-size: calc(.75rem * var(--fs-scale, 1)); color: var(--text-muted);
+}
+.mod-social .pf-resena-msg {
+  margin-top: .6rem; padding: .6rem .85rem; border-radius: 10px;
+  font-size: calc(.85rem * var(--fs-scale, 1));
+}
+.mod-social .pf-resena-msg.ok { background: rgba(34, 197, 94, .14); color: #16a34a; }
+.mod-social .pf-resena-msg.error { background: rgba(239, 68, 68, .14); color: #dc2626; }
+.mod-social .pf-resena-publicada {
+  padding: 1rem 1.1rem; border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.mod-social .pf-resena-publicada p { margin: .4rem 0 .6rem; line-height: 1.6; font-size: calc(.92rem * var(--fs-scale, 1)); }
+.mod-social .pf-resena-publicada small { color: var(--text-muted); font-size: calc(.78rem * var(--fs-scale, 1)); }
+.mod-social .pf-resena-stars { color: var(--gold, #c9a84c); font-size: calc(1.1rem * var(--fs-scale, 1)); letter-spacing: .1em; }
+.mod-social .pf-resena-stars .off { color: color-mix(in srgb, currentColor 18%, transparent); opacity: .5; }
+.mod-social .pf-resena .pf-rename-actions { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: .8rem; }
+.mod-social .pf-resena .pf-hide-btn { margin-top: 0; }
+
+/* =========================================================
+   Detalle de reserva: paleta propia (legible y sin choques)
+   - Fondo y tarjetas en tonos de la misma familia violeta oscuro.
+   - Etiquetas en lavanda claro y valores en blanco: buen contraste.
+   - El color de acento queda solo para lo que se quiere resaltar
+     (icono, paso actual, tipo de evento), no para todos los bordes.
+   ========================================================= */
+.mod-social .pf-modal.pf-rese-modal {
+  --rm-bg: #ffffff;
+  --rm-text: #1a0a2e;
+  --rm-sub: #55446b;
+  --rm-label: #6a5a80;
+  --rm-card: #f8f4fc;
+  --rm-card-bd: #e4d9f0;
+  --rm-hi: color-mix(in srgb, var(--accent) 80%, #1a0a2e);
+  background: var(--rm-bg);
+  color: var(--rm-text);
+  border: 1px solid var(--rm-card-bd);
+  box-shadow: 0 30px 80px rgba(10, 0, 21, .45);
+}
+.mod-social.dark-mode .pf-modal.pf-rese-modal {
+  --rm-bg: #1b1030;
+  --rm-text: #f6f1fc;
+  --rm-sub: #cdc0e0;
+  --rm-label: #b9a9d1;
+  --rm-card: rgba(255, 255, 255, .055);
+  --rm-card-bd: rgba(255, 255, 255, .12);
+  --rm-hi: color-mix(in srgb, var(--accent) 50%, white);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, .6);
+}
+
+/* Encabezado */
+.mod-social .pf-modal.pf-rese-modal .pf-pqr-heading .pf-list-item-sub { color: var(--rm-sub); font-size: calc(.82rem * var(--fs-scale, 1)); }
+.mod-social .pf-modal.pf-rese-modal .pf-modal-close { color: var(--rm-sub); border-radius: 8px; transition: background .15s, color .15s; }
+.mod-social .pf-modal.pf-rese-modal .pf-modal-close:hover { color: var(--rm-text); background: var(--rm-card); }
+.mod-social .pf-modal.pf-rese-modal .pf-item-icon { background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--rm-hi); }
+.mod-social .pf-modal.pf-rese-modal .pf-rename-btn { color: var(--rm-hi); }
+.mod-social .pf-modal.pf-rese-modal .pf-item-code {
+  border: 1px solid var(--rm-card-bd);
+  background: var(--rm-card);
+  color: var(--rm-sub);
+}
+
+/* Progreso */
+.mod-social .pf-modal.pf-rese-modal .pf-steps li { color: var(--rm-label); }
+.mod-social .pf-modal.pf-rese-modal .pf-steps li::before { background: var(--rm-bg); border-color: color-mix(in srgb, var(--rm-label) 55%, transparent); }
+.mod-social .pf-modal.pf-rese-modal .pf-steps li:not(:last-child)::after { background: var(--rm-card-bd); }
+.mod-social .pf-modal.pf-rese-modal .pf-steps li.done { color: var(--rm-text); }
+.mod-social .pf-modal.pf-rese-modal .pf-steps li.done::before { background: var(--accent); border-color: var(--accent); color: #fff; }
+.mod-social .pf-modal.pf-rese-modal .pf-steps li.done:not(:last-child)::after { background: var(--accent); }
+.mod-social .pf-modal.pf-rese-modal .pf-steps li.current { color: var(--rm-hi); }
+.mod-social .pf-modal.pf-rese-modal .pf-steps li.current::before {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 4px var(--rm-bg), inset 0 0 0 20px var(--accent);
+}
+
+/* Tarjetas de datos */
+.mod-social .pf-modal.pf-rese-modal .pf-info-grid { gap: .65rem; }
+.mod-social .pf-modal.pf-rese-modal .pf-info-card {
+  padding: .75rem 1rem;
+  border: 1px solid var(--rm-card-bd);
+  background: var(--rm-card);
+  border-radius: 14px;
+}
+.mod-social .pf-modal.pf-rese-modal .pf-info-label {
+  color: var(--rm-label);
+  font-size: calc(.7rem * var(--fs-scale, 1));
+  letter-spacing: .08em;
+}
+.mod-social .pf-modal.pf-rese-modal .pf-info-value {
+  color: var(--rm-text);
+  font-size: calc(1.02rem * var(--fs-scale, 1));
+  font-weight: 600;
+}
+
+/* Tipo de evento: la tarjeta que se resalta */
+.mod-social .pf-modal.pf-rese-modal .pf-info-card.tipo {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.mod-social .pf-modal.pf-rese-modal .pf-info-card.tipo .pf-info-value { font-weight: 700; }
+.mod-social .pf-modal.pf-rese-modal .pf-info-icon {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  font-size: calc(1.15rem * var(--fs-scale, 1));
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+  color: var(--rm-hi);
+}
+
+/* Avisos */
+.mod-social .pf-modal.pf-rese-modal .pf-rese-note {
+  border: 1px solid var(--rm-card-bd);
+  background: var(--rm-card);
+  color: var(--rm-sub);
+}
+.mod-social .pf-modal.pf-rese-modal .pf-rese-note i { color: var(--rm-hi); }
+.mod-social .pf-modal.pf-rese-modal .pf-rese-note.cancel i { color: #e0568f; }
+.mod-social.dark-mode .pf-modal.pf-rese-modal .pf-rese-note.cancel i { color: #f19ac0; }
+
+/* Observaciones del cliente */
+.mod-social .pf-modal.pf-rese-modal .pf-bubble.mine {
+  background: color-mix(in srgb, var(--accent) 12%, var(--rm-bg));
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  color: var(--rm-text);
+}
+.mod-social .pf-modal.pf-rese-modal .pf-bubble-who { color: var(--rm-label); }
+
+/* Historial */
+.mod-social .pf-modal.pf-rese-modal .pf-history-title { color: var(--rm-label); letter-spacing: .08em; }
+.mod-social .pf-modal.pf-rese-modal .pf-history li { color: var(--rm-text); }
+.mod-social .pf-modal.pf-rese-modal .pf-history li small { color: var(--rm-label); }
+
+/* Reseña (formulario y reseña publicada) */
+.mod-social .pf-modal.pf-rese-modal .pf-resena-intro,
+.mod-social .pf-modal.pf-rese-modal .pf-resena-count,
+.mod-social .pf-modal.pf-rese-modal .pf-resena-publicada small { color: var(--rm-sub); }
+.mod-social .pf-modal.pf-rese-modal .pf-resena-text {
+  background: var(--rm-card);
+  color: var(--rm-text);
+  border-color: var(--rm-card-bd);
+}
+.mod-social .pf-modal.pf-rese-modal .pf-resena-text::placeholder { color: var(--rm-label); opacity: 1; }
+.mod-social .pf-modal.pf-rese-modal .pf-resena-text:focus { border-color: var(--accent); }
+.mod-social .pf-modal.pf-rese-modal .pf-resena-publicada {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+}
+.mod-social .pf-modal.pf-rese-modal .pf-star { color: color-mix(in srgb, var(--rm-label) 55%, transparent); }
+.mod-social .pf-modal.pf-rese-modal .pf-star.on { color: var(--gold, #c9a84c); }
+
+/* Botones de abajo */
+.mod-social .pf-modal.pf-rese-modal .pf-hide-btn { color: var(--rm-sub); border-color: var(--rm-card-bd); }
+.mod-social .pf-modal.pf-rese-modal .pf-hide-btn:hover { color: var(--rm-text); border-color: color-mix(in srgb, var(--accent) 55%, transparent); }

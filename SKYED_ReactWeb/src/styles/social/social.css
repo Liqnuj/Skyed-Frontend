@@ -3616,3 +3616,90 @@
     justify-content: center !important;
   }
 }
+
+/* =========================================================
+   Listas sin tarjetas: cargando, error o sin datos (EstadoLista.tsx)
+   .container tiene margin-top: -50px para que las tarjetas se monten sobre el
+   encabezado de la página. Sin tarjetas, un texto suelto quedaba escondido
+   debajo del encabezado: esta tarjeta compensa ese margen.
+   ========================================================= */
+.mod-social .estado-lista {
+  position: relative;
+  z-index: 2;
+  max-width: 480px;
+  margin: calc(50px + 1rem) auto 0;
+  padding: 2.25rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .75rem;
+  text-align: center;
+  border-radius: 20px;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  color: inherit;
+}
+
+.mod-social .estado-lista-icono {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+  font-size: 26px;
+}
+
+.mod-social .estado-lista h3 {
+  margin: 0;
+  color: inherit;
+  font-size: calc(1.15rem * var(--fs-scale, 1));
+  font-weight: 700;
+}
+
+.mod-social .estado-lista p {
+  margin: 0 0 .5rem;
+  color: inherit;
+  opacity: .78;
+  font-size: calc(.95rem * var(--fs-scale, 1));
+  line-height: 1.6;
+}
+
+.mod-social .estado-lista.is-cargando {
+  border-color: transparent;
+  background: transparent;
+}
+
+.mod-social .estado-lista.is-cargando .estado-lista-icono i {
+  animation: estado-lista-gira 1s linear infinite;
+}
+
+@keyframes estado-lista-gira {
+  to { transform: rotate(360deg); }
+}
+
+/* Sin tarjetas no hace falta todo el espacio que la sección reserva abajo */
+.mod-social :is(.venue-section, .events-section).is-vacia {
+  padding-bottom: 2.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mod-social .estado-lista.is-cargando .estado-lista-icono i {
+    animation: none;
+  }
+}
+/* ===== Testimonios: estado vacío y llamada a la acción ===== */
+.mod-social .testimonials-empty {
+  margin: 3rem auto 0; max-width: 520px; text-align: center;
+  padding: 2.25rem 1.5rem; border-radius: 20px;
+  border: 1px dashed var(--accent);
+}
+.mod-social .testimonials-empty-icon { display: block; font-size: 2rem; color: var(--gold); margin-bottom: .6rem; }
+.mod-social .testimonials-empty p { margin: 0; line-height: 1.65; color: var(--text-mid); }
+.mod-social.dark-mode .testimonials-empty p { color: rgba(255, 255, 255, .8); }
+.mod-social .testimonials-cta { margin-top: 3rem; text-align: center; }
+.mod-social .testimonials-cta p { margin: 0 0 1rem; font-size: calc(1.05rem * var(--fs-scale, 1)); color: var(--plum); font-weight: 600; }
+.mod-social.dark-mode .testimonials-cta p { color: var(--white); }
+.mod-social .testimonials-cta small { display: block; margin-top: .85rem; color: var(--text-muted); font-size: calc(.78rem * var(--fs-scale, 1)); }
+
