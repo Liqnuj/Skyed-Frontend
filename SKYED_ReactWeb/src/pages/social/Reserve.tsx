@@ -107,6 +107,20 @@ export default function Reserve() {
     window.setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 4000);
   }
 
+  // Hoy en la hora del usuario (AAAA-MM-DD). No se usa toISOString porque devuelve la fecha en UTC
+  // y en la noche marcaría "mañana".
+  const hoy = () => new Date().toLocaleDateString('en-CA');
+
+  // El calendario ya bloquea los días pasados, pero una fecha escrita a mano se salta ese límite.
+  function cambiarFecha(valor: string) {
+    if (valor && valor < hoy()) {
+      setFdate('');
+      showToast('La fecha del evento no puede ser anterior a hoy', '⚠️');
+      return;
+    }
+    setFdate(valor);
+  }
+
   async function submitForm(e: FormEvent) {
     e.preventDefault();
 
@@ -126,6 +140,10 @@ export default function Reserve() {
     }
     if (!/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]{1,20}$/.test(n) || !/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]{1,20}$/.test(a)) {
       showToast('Nombre y apellido solo pueden tener letras y máximo 20 caracteres', '⚠️');
+      return;
+    }
+    if (fdate < hoy()) {
+      showToast('La fecha del evento no puede ser anterior a hoy', '⚠️');
       return;
     }
     if (phone && !/^\d+$/.test(phone)) {
@@ -319,7 +337,7 @@ export default function Reserve() {
                   </div>
                   <div className="form-group">
                     <label>Fecha estimada</label>
-                    <input type="date" id="fdate" value={fdate} onChange={(e) => setFdate(e.target.value)} />
+                    <input type="date" id="fdate" value={fdate} min={hoy()} onChange={(e) => cambiarFecha(e.target.value)} />
                   </div>
                 </div>
 

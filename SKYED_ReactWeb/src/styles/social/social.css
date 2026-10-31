@@ -3689,3 +3689,16 @@
     animation: none;
   }
 }
+/* ===== Testimonios: estado vacío y llamada a la acción ===== */
+.mod-social .testimonials-empty {
+  margin: 3rem auto 0; max-width: 520px; text-align: center;
+  padding: 2.25rem 1.5rem; border-radius: 20px;
+  border: 1px dashed var(--accent);
+}
+.mod-social .testimonials-empty-icon { display: block; font-size: 2rem; color: var(--gold); margin-bottom: .6rem; }
+.mod-social .testimonials-empty p { margin: 0; line-height: 1.65; color: var(--text-mid); }
+.mod-social.dark-mode .testimonials-empty p { color: rgba(255, 255, 255, .8); }
+.mod-social .testimonials-cta { margin-top: 3rem; text-align: center; }
+.mod-social .testimonials-cta p { margin: 0 0 1rem; font-size: calc(1.05rem * var(--fs-scale, 1)); color: var(--plum); font-weight: 600; }
+.mod-social.dark-mode .testimonials-cta p { color: var(--white); }
+.mod-social .testimonials-cta small { display: block; margin-top: .85rem; color: var(--text-muted); font-size: calc(.78rem * var(--fs-scale, 1)); }

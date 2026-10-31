@@ -1,7 +1,9 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import SocialWrapper from '../../components/social/SocialWrapper';
-import { heroSlides, socialEvents, socialGallery, socialTestimonials } from '../../data/socialData';
+import { heroSlides, socialEvents, socialGallery } from '../../data/socialData';
+import { testimonioService } from '../../services/socialService';
+import type { TestimonioPublico } from '../../services/socialService';
 import HeroParticles from '../../components/social/HeroParticles';
 
 const SERVICES = [
@@ -32,10 +34,21 @@ const PARTICLES = Array.from({ length: 30 }, (_, i) => ({
 export default function SocialHome() {
   const [slide, setSlide] = useState(0);
   const [modalEvent, setModalEvent] = useState<number | null>(null);
+  // null = cargando; [] = todavía no hay reseñas publicadas
+  const [testimonios, setTestimonios] = useState<TestimonioPublico[] | null>(null);
 
   useEffect(() => {
     const t = setInterval(() => setSlide((s) => (s + 1) % heroSlides.length), 6000);
     return () => clearInterval(t);
+  }, []);
+
+  useEffect(() => {
+    let activo = true;
+    testimonioService
+      .publicos(9)
+      .then((res) => { if (activo) setTestimonios(res.data); })
+      .catch(() => { if (activo) setTestimonios([]); });
+    return () => { activo = false; };
   }, []);
 
   const ev = socialEvents.find((e) => e.id === modalEvent);
@@ -212,21 +225,39 @@ export default function SocialHome() {
             <h2 className="section-title">Lo que dicen<br />nuestros <em>clientes</em></h2>
             <p className="section-sub">Las mejores palabras vienen de quienes vivieron la experiencia.</p>
           </div>
-          <div className="testimonials-grid">
-            {socialTestimonials.map((t) => (
-              <div key={t.name} className={`testimonial-card reveal ${t.featured ? 'featured' : ''}`}>
-                <div className="t-event-tag">{t.event}</div>
-                <div className="t-stars">{'★'.repeat(t.stars)}</div>
-                <p className="t-text">"{t.text}"</p>
-                <div className="t-author">
-                  <div className="t-avatar">{t.initials}</div>
-                  <div>
-                    <div className="t-name">{t.name}</div>
-                    <div className="t-role">{t.role}</div>
+          {testimonios && testimonios.length > 0 && (
+            <div className="testimonials-grid">
+              {testimonios.map((t, i) => (
+                // Cada cuatro tarjetas una sale destacada (morada), como en el diseño original.
+                <div key={t.id_tes} className={`testimonial-card reveal ${i % 4 === 0 ? 'featured' : ''}`}>
+                  <div className="t-event-tag">{t.evento}</div>
+                  <div className="t-stars" role="img" aria-label={`${t.calificacion} de 5 estrellas`}>{'★'.repeat(t.calificacion)}</div>
+                  <p className="t-text">"{t.comentario}"</p>
+                  <div className="t-author">
+                    <div className="t-avatar">{t.iniciales}</div>
+                    <div>
+                      <div className="t-name">{t.nombre}</div>
+                      {t.rol && <div className="t-role">{t.rol}</div>}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+          )}
+
+          {testimonios && testimonios.length === 0 && (
+            <div className="testimonials-empty reveal">
+              <span className="testimonials-empty-icon" aria-hidden="true">★</span>
+              <p>Aún no hay reseñas publicadas. ¡Sé la primera persona en contarnos cómo fue tu evento!</p>
+            </div>
+          )}
+
+          <div className="testimonials-cta reveal">
+            <p>¿Ya viviste tu evento con nosotros?</p>
+            <Link title="Deja tu reseña desde tus reservas" to="/social/perfil?tab=reservas" className="btn-primary">
+              Cuéntanos tu experiencia
+            </Link>
+            <small>Puedes dejar tu reseña cuando tu reserva esté completada.</small>
           </div>
         </div>
       </section>

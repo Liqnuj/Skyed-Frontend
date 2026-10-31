@@ -152,6 +152,9 @@ export interface Reserva {
   creado_en_rese?: string | null;
   id_u: number;
   id_er: number;
+  /** Tipo de evento que el cliente eligió al reservar (Boda, Cumpleaños, ...). */
+  id_tipo_eves?: number | null;
+  tipoEvento?: { id_tipo_eves: number; nombre_tipo_eves: string } | null;
   evento?: EventoSocial;
   seguimientos?: SeguimientoReserva[];
 }
@@ -347,5 +350,70 @@ export const pqrService = {
       body: JSON.stringify(payload),
     });
     return data.pqr;
+  },
+};
+
+/* ---------- Testimonios ---------- */
+
+/** Tarjeta pública de la página principal de SkyedSocial. */
+export interface TestimonioPublico {
+  id_tes: number;
+  /** "María R." (nunca el apellido completo). */
+  nombre: string;
+  iniciales: string;
+  /** "Boda · Bogotá" */
+  rol: string;
+  /** Nombre del evento ("Boda en jardín"). */
+  evento: string;
+  calificacion: number;
+  comentario: string;
+  fecha: string | null;
+}
+
+/** La reseña tal como la ve quien la escribió. */
+export interface MiTestimonio {
+  id_tes: number;
+  id_rese: number;
+  calificacion: number;
+  comentario: string;
+  estado: string;
+  fecha: string | null;
+}
+
+export interface TestimonioPayload {
+  calificacion_tes: number;
+  comentario_tes: string;
+}
+
+export const testimonioService = {
+  /** Público: no necesita sesión. */
+  async publicos(limite = 9): Promise<{ data: TestimonioPublico[]; total: number }> {
+    return apiFetch(`/testimonios?limite=${limite}`);
+  },
+
+  /** La reseña que dejé en esa reserva, o null si todavía no escribí ninguna. */
+  async deReserva(idRese: number): Promise<MiTestimonio | null> {
+    const res = await apiFetch(`/reservas/${idRese}/testimonio`);
+    return res.data ?? null;
+  },
+
+  async crear(idRese: number, payload: TestimonioPayload): Promise<MiTestimonio> {
+    const res = await apiFetch(`/reservas/${idRese}/testimonio`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    return res.data;
+  },
+
+  async editar(id: number, payload: TestimonioPayload): Promise<MiTestimonio> {
+    const res = await apiFetch(`/testimonios/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+    return res.data;
+  },
+
+  async eliminar(id: number): Promise<void> {
+    await apiFetch(`/testimonios/${id}`, { method: 'DELETE' });
   },
 };
