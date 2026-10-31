@@ -32,6 +32,7 @@ const { user } = useAuth();
     {
       opciones: [
         { to: '/deportivo/ayuda', icono: 'ti-help-circle', titulo: 'Centro de ayuda', detalle: 'Guías y preguntas frecuentes' },
+                ...(esAdmin ? [{ to: '/admin/ayuda', icono: 'ti-lifebuoy', titulo: 'Administrar ayuda', detalle: 'Artículos y métricas' }] : []),
       ],
     },
   ];

@@ -36,6 +36,7 @@ import './styles/social/social.css';
 import './styles/deportivo/deportivo.css';
 import Participant from './pages/deportivo/Participant';
 import UsersRoles from './pages/admin/UsersRoles';
+import AyudaAdmin from './pages/admin/AyudaAdmin';
 import SkaiWidget from './components/shared/SkaiWidget';
 import AdminProtectedRoute from './components/AdminProtectedRoute';
 import SoloUsuarios from './components/SoloUsuarios';
@@ -93,6 +94,7 @@ function App(){
             </Route>
             <Route element={<AdminProtectedRoute />}>
               <Route path="/admin/usuarios" element={<UsersRoles/>}/>
+              <Route path="/admin/ayuda" element={<AyudaAdmin/>}/>
             </Route>
 
 

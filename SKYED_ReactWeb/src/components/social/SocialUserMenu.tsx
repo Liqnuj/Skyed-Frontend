@@ -70,6 +70,9 @@ export default function SocialUserMenu() {
     { to: '/social/reservar', icono: 'ti-calendar-event', titulo: 'Cotizar reserva', detalle: 'Estimación de costos y disponibilidad' },
   ];
   opciones.push({ to: '/social/ayuda', icono: 'ti-help-circle', titulo: 'Centro de ayuda', detalle: 'Guías y preguntas frecuentes' });
+    if (esAdmin) {
+    opciones.push({ to: '/admin/ayuda', icono: 'ti-lifebuoy', titulo: 'Administrar ayuda', detalle: 'Artículos y métricas' });
+  }
 
   const cerrarSesion = async () => {
     setAbierto(false);

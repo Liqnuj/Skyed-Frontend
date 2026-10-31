@@ -224,6 +224,9 @@ div.ayuda :is(h1, h2, h3) { color: inherit; }
 .ayuda .ay-top a:hover { color: var(--ay-link); }
 
 
+/* Vista previa de un artículo dentro de /admin/ayuda */
+.ayuda.ay-preview { min-height: 0; overflow: visible; }
+
 
 /* ---------- Responsive y accesibilidad ---------- */
 @media (max-width: 640px) {

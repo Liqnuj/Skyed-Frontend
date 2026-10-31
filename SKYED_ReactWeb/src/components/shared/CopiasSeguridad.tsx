@@ -164,7 +164,7 @@ export default function CopiasSeguridad({ modulo, notify, confirmar }: Props) {
         + "Antes se guardará una copia del estado actual.",
       confirmar: "Restaurar",
       tipo: "peligro",
-      palabra: "RESTAURAR",
+      
     });
     if (!ok) return;
 
