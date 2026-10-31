@@ -31,25 +31,18 @@
   line-height: 1.4;
   text-align: left;
   box-shadow: 0 24px 60px -18px rgba(16, 12, 34, 0.35), 0 2px 8px rgba(16, 12, 34, 0.06);
-  /* Oculto: se desvanece y baja un poco. Cierre rápido; "visibility" cambia al
-     final para que el panel no desaparezca antes de terminar el fundido. */
+  /* Oculto: se desvanece y baja un poco */
   opacity: 0;
   visibility: hidden;
-  transform: translateY(8px) scale(0.985);
+  transform: translateY(12px) scale(0.97);
   transform-origin: bottom right;
-  transition: opacity 0.14s ease, transform 0.16s ease, visibility 0s linear 0.16s;
-  /* Capa propia: se anima en la tarjeta gráfica, sin volver a pintar la página
-     (que puede tener partículas o animaciones corriendo detrás). */
-  will-change: opacity, transform;
-  contain: layout paint style;
+  transition: opacity 0.22s ease, transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.1), visibility 0.25s;
 }
 
 .ax-panel.is-open {
   opacity: 1;
   visibility: visible;
   transform: none;
-  /* Apertura: arranca de inmediato y frena suave, sin rebote */
-  transition: opacity 0.16s ease-out, transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s;
 }
 
 /* Modo oscuro de las páginas (.dark-mode) y de los paneles admin (.dark) */
@@ -138,9 +131,6 @@ div.ax-panel.ax-panel :is(header, section, footer) {
   overflow-y: auto;
   padding: 6px 16px 10px;
   scrollbar-width: thin;
-  /* Scroll fluido y sin arrastrar la página al llegar al final */
-  overscroll-behavior: contain;
-  will-change: scroll-position;
 }
 
 .ax-panel .ax-grupo {
@@ -470,17 +460,9 @@ div.ax-panel.ax-panel :is(header, section, footer) {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ax-panel,
-  .ax-panel.is-open {
-    transform: none;
-  }
-
   .ax-panel {
-    transition: opacity 0.14s ease, visibility 0s linear 0.14s;
-  }
-
-  .ax-panel.is-open {
-    transition: opacity 0.14s ease, visibility 0s;
+    transform: none;
+    transition: opacity 0.2s ease, visibility 0.2s;
   }
 }
 
@@ -500,18 +482,9 @@ html.ax-contraste :focus-visible {
   outline-offset: 2px !important;
 }
 
-/* Lector activo: línea punteada en lo que se leerá al hacer clic y resaltado
-   en lo que se está leyendo, con el color del módulo. Solo se pinta por encima
-   (outline y sombra interna): no cambia el fondo ni las esquinas del elemento,
-   para no deformar botones redondos ni tarjetas. */
-html.ax-lector .ax-objetivo {
-  outline: 2px dashed var(--admin-accent, var(--accent, #7c3aed));
+/* Lector activo: marca lo que se va a leer al pasar el mouse */
+html.ax-lector :is(h1, h2, h3, h4, h5, h6, p, li, a, button, label, td, th):hover {
+  outline: 2px dashed color-mix(in srgb, #7c3aed 70%, transparent);
   outline-offset: 3px;
-  cursor: pointer;
-}
-
-html.ax-lector .ax-leyendo {
-  outline: 2px solid var(--admin-accent, var(--accent, #7c3aed));
-  outline-offset: 3px;
-  box-shadow: inset 0 0 0 100vmax color-mix(in srgb, var(--admin-accent, var(--accent, #7c3aed)) 16%, transparent);
+  border-radius: 4px;
 }

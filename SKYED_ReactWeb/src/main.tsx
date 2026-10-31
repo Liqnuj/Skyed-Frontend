@@ -29,6 +29,7 @@ import Perfil from './pages/social/Perfil';
 import Admin from './pages/social/Admin';
 import AdminDeportivo from './pages/deportivo/Admin';
 import AdminRedirect from './components/AdminRedirect';
+import { instalarFiltroDeCaracteres } from './utils/seguridadTexto';
 import './styles/global.css';
 import './styles/principal/principal.css';
 import './styles/social/social.css';
@@ -114,6 +115,9 @@ function App(){
     </AccessibilityProvider>
   );
 }
+
+// Ningún formulario acepta caracteres de inyección (SQL, XSS, comandos): ver utils/seguridadTexto.ts
+instalarFiltroDeCaracteres();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
