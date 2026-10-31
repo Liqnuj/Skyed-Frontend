@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { ReactNode, CSSProperties } from 'react';
 import AccessibilityWidget from '../shared/AccessibilityWidget';
 import { useAccessibility } from '../../context/AccessibilityContext';
@@ -5,6 +6,7 @@ import { useAccessibility } from '../../context/AccessibilityContext';
 const DEFAULT_ACCENT = '#8827f0'; // color de marca SKYED Principal
 
 export default function PrincipalWrapper({ children }: { children: ReactNode }) {
+  const [panelOpen, setPanelOpen] = useState(false);
   const {
     darkMode, toggleDark,
     fontSize, setFontSize,
@@ -30,6 +32,8 @@ export default function PrincipalWrapper({ children }: { children: ReactNode }) 
     >
       {children}
       <AccessibilityWidget
+        open={panelOpen}
+        onToggleOpen={() => setPanelOpen((o) => !o)}
         fontSize={fontSize}
         onFontSize={setFontSize}
         dyslexia={dyslexia}

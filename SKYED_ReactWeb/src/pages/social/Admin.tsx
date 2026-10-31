@@ -8,7 +8,6 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
-  DatabaseBackup,
   ImagePlus,
   LayoutDashboard,
   Loader2,
@@ -34,7 +33,6 @@ import { useAuth } from "../../context/AuthContext";
 import { useAccessibility } from "../../context/AccessibilityContext";
 import AccessibilityWidget from "../../components/shared/AccessibilityWidget";
 import AdminAjustes from "../../components/shared/AdminAjustes";
-import CopiasSeguridad from "../../components/shared/CopiasSeguridad";
 import { apiFetch } from "../../services/api";
 import { useConfirmacion } from "../../components/shared/ConfirmDialog";
 import { CargandoPanel, NumeroAnimado } from "../../components/shared/AdminMotion";
@@ -52,10 +50,9 @@ type Section =
   | "pqr"
   | "lugares"
   | "servicios"
-  | "copias"
   | "ajustes";
 
-const SECCIONES: Section[] = ["inicio", "eventos", "reservas", "usuarios", "pqr", "lugares", "servicios", "copias", "ajustes"];
+const SECCIONES: Section[] = ["inicio", "eventos", "reservas", "usuarios", "pqr", "lugares", "servicios", "ajustes"];
 
 /* ---------- Persistencia de la vista (sección + formulario abierto) ----------
    Al recargar la página se vuelve a la misma sección y al mismo formulario.
@@ -199,7 +196,7 @@ const formatDate = (value?: string | null) => {
 
 const sanitizeName = (value: string, maxLength = 50) =>
   value
-    .replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñÜü\s'-]/g, "")
+    .replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñÜü\s-]/g, "")
     .replace(/\s{2,}/g, " ")
     .slice(0, maxLength);
 
@@ -444,6 +441,7 @@ function AdminPage() {
   const [loading, setLoading] = useState(true); // true desde el inicio: sin "flash" de tarjetas en cero
   // true después de la primera carga: las recargas no vuelven a mostrar la pantalla de carga.
   const [cargoUnaVez, setCargoUnaVez] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(false);
 
   const [ambientes, setAmbientes] = useState<Ambiente[]>([]);
   const [servicios, setServicios] = useState<Servicio[]>([]);
@@ -596,7 +594,6 @@ function AdminPage() {
     pqr: { label: "PQRS", icon: MessageSquareText },
     lugares: { label: "Lugares", icon: Building2 },
     servicios: { label: "Servicios", icon: Wrench },
-    copias: { label: "Copias de seguridad", icon: DatabaseBackup },
     ajustes: { label: "Ajustes", icon: Settings },
   };
 
@@ -788,7 +785,7 @@ function AdminPage() {
             <span className="admin-eyebrow">ADMINISTRACIÓN</span>
             <h1 key={section}>{sectionMeta[section].label}</h1>
           </div>
-          {section !== "ajustes" && section !== "copias" && <label className="admin-search">
+          {section !== "ajustes" && <label className="admin-search">
             <Search size={17} />
             <input
               value={search}
@@ -985,10 +982,6 @@ function AdminPage() {
           />
         )}
 
-        {section === "copias" && (
-          <CopiasSeguridad modulo="social" notify={notify} confirmar={confirmar} />
-        )}
-
         {section === "ajustes" && (
           <AdminAjustes
             notify={notify}
@@ -1034,6 +1027,8 @@ function AdminPage() {
       </main>
 
       <AccessibilityWidget
+        open={panelOpen}
+        onToggleOpen={() => setPanelOpen(o => !o)}
         fontSize={fontSize}
         onFontSize={setFontSize}
         dyslexia={dyslexia}
@@ -1144,7 +1139,7 @@ function AmbienteModal({ item, onClose, onSave, notify }: { item?: Ambiente; onC
           <input
             required
             maxLength={50}
-            pattern="[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s'\-]+"
+            pattern="[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s\-]+"
             title="Usa solamente letras, espacios, guiones o apóstrofes."
             value={form.nombre_a}
             onChange={e => setForm({...form, nombre_a: sanitizeName(e.target.value)})}
@@ -1238,7 +1233,7 @@ function ServicioModal({ item, onClose, onSave }: { item?: Servicio; onClose: ()
         <input
           required
           maxLength={50}
-          pattern="[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s'\-]+"
+          pattern="[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s\-]+"
           title="Usa solamente letras, espacios, guiones o apóstrofes."
           value={form.nombre_s}
           onChange={e => setForm({...form, nombre_s: sanitizeName(e.target.value)})}
@@ -1305,7 +1300,7 @@ function EventoModal({ item, ambientes, tipos, onClose, onSave, notify }: { item
           <input
             required
             maxLength={50}
-            pattern="[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s'\-]+"
+            pattern="[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s\-]+"
             title="Usa solamente letras, espacios, guiones o apóstrofes."
             value={form.nombre_er}
             onChange={e => setForm({...form, nombre_er: sanitizeName(e.target.value)})}

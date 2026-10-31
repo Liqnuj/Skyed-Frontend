@@ -23,12 +23,6 @@ interface EventoInscrito {
   hora: string;
   ubicacion: string;
   imagen_url: string | null;
-  kit?: {
-    nombre: string | null;
-    precio: number | null;
-    fecha_entrega?: string | null;
-    lugar_entrega?: string | null;
-  } | null;
 }
 
 interface Pago {
@@ -56,38 +50,12 @@ function qrYaUsado(insc: { qr: Qr | null }) {
   return qr.estado === 'usado' || !!qr.fecha_uso || (qr.usos_realizados ?? 0) > 0;
 }
 
-interface CategoriaInsc {
-  id: number;
-  nombre: string | null;
-  distancia?: string | null;
-}
-
-interface InvitadoInsc {
-  id?: number;
-  nombre: string | null;
-  apellido: string | null;
-  documento?: number | string | null;
-  numero_dorsal?: number | null;
-  desea_kit?: boolean;
-  talla_kit?: string | null;
-}
-
 interface Inscripcion {
   id: number;
   estado: string;
   fecha: string;
   precio_pagado: number | null;
   talla_camiseta?: string | null;
-  numero_dorsal?: number | null;
-  desea_kit?: boolean;
-  categoria?: CategoriaInsc | null;
-  desglose_precios?: {
-    inscripcion: number | null;
-    kit: number | null;
-    invitado: number | null;
-    kit_invitado: number | null;
-  } | null;
-  invitado?: InvitadoInsc | null;
   evento: EventoInscrito | null;
   pago: Pago | null;
   qr: Qr | null;
@@ -984,9 +952,6 @@ function DetalleInscripcion({
 
   const pill = estadoPill(insc.estado);
   const isPending = insc.estado === 'pendiente';
-  const precioKit = Number(insc.desglose_precios?.kit) || 0;
-  const precioKitInvitado = Number(insc.desglose_precios?.kit_invitado) || 0;
-  const inv = insc.invitado;
 
   return (
     <div className="part-card part-detail-card part-detail-anim">
@@ -1050,79 +1015,16 @@ function DetalleInscripcion({
               )}
             </div>
           </div>
-          {insc.categoria?.nombre && (
-            <div className="part-detail-info-item">
-              <span className="part-detail-icon"><i className="ti ti-trophy" aria-hidden="true" /></span>
-              <div>
-                <span className="part-label">Categoría</span>
-                <strong>{insc.categoria.nombre}</strong>
-                {insc.categoria.distancia && <span className="part-label"> {insc.categoria.distancia}</span>}
-              </div>
-            </div>
-          )}
-          {insc.numero_dorsal != null && (
-            <div className="part-detail-info-item">
-              <span className="part-detail-icon"><i className="ti ti-hash" aria-hidden="true" /></span>
-              <div>
-                <span className="part-label">Mi dorsal</span>
-                <strong>{insc.numero_dorsal}</strong>
-              </div>
-            </div>
-          )}
-          {(insc.desea_kit || insc.talla_camiseta) && (
+          {insc.talla_camiseta && (
             <div className="part-detail-info-item">
               <span className="part-detail-icon"><i className="ti ti-shirt" aria-hidden="true" /></span>
               <div>
-                <span className="part-label">Kit</span>
-                <strong>
-                  {insc.evento?.kit?.nombre || 'Kit de bienvenida'}
-                  {insc.talla_camiseta ? ` · Talla ${insc.talla_camiseta}` : ''}
-                </strong>
-                {precioKit > 0 && <span className="part-label"> {fmtMoney(precioKit)}</span>}
+                <span className="part-label">Talla</span>
+                <strong>{insc.talla_camiseta}</strong>
               </div>
             </div>
           )}
         </div>
-        {inv && (
-          <>
-            <h3 style={{ margin: '1.5rem 0 .75rem', fontSize: '1rem' }}>Invitado</h3>
-            <div className="part-detail-info-grid">
-              <div className="part-detail-info-item">
-                <span className="part-detail-icon"><i className="ti ti-user-plus" aria-hidden="true" /></span>
-                <div>
-                  <span className="part-label">Nombre</span>
-                  <strong>{`${inv.nombre ?? ''} ${inv.apellido ?? ''}`.trim() || '—'}</strong>
-                </div>
-              </div>
-              {inv.documento != null && inv.documento !== '' && (
-                <div className="part-detail-info-item">
-                  <span className="part-detail-icon"><i className="ti ti-id" aria-hidden="true" /></span>
-                  <div>
-                    <span className="part-label">Documento</span>
-                    <strong>{inv.documento}</strong>
-                  </div>
-                </div>
-              )}
-              {inv.numero_dorsal != null && (
-                <div className="part-detail-info-item">
-                  <span className="part-detail-icon"><i className="ti ti-hash" aria-hidden="true" /></span>
-                  <div>
-                    <span className="part-label">Dorsal del invitado</span>
-                    <strong>{inv.numero_dorsal}</strong>
-                  </div>
-                </div>
-              )}
-              <div className="part-detail-info-item">
-                <span className="part-detail-icon"><i className="ti ti-shirt" aria-hidden="true" /></span>
-                <div>
-                  <span className="part-label">Kit del invitado</span>
-                  <strong>{inv.desea_kit ? `Talla ${inv.talla_kit ?? '—'}` : 'Sin kit'}</strong>
-                  {inv.desea_kit && precioKitInvitado > 0 && <span className="part-label"> {fmtMoney(precioKitInvitado)}</span>}
-                </div>
-              </div>
-            </div>
-          </>
-        )}
         {((insc.qr?.codigo && !verQr) || onCancelar) && (
           <div
             style={{

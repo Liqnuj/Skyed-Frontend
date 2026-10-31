@@ -1040,3 +1040,9 @@ color: var(--white) !important;
 .toast-icon {
 font-size: 1.2rem;
 }
+
+/* Aviso breve cuando el filtro de seguridad descarta un carácter (utils/seguridadTexto.ts) */
+.skyed-filtro-aviso {
+  outline: 2px solid #dc2626 !important;
+  outline-offset: 1px;
+}
