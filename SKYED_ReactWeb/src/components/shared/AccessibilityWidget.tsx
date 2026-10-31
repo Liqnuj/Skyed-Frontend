@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useAccessibility, VELOCIDADES_LECTOR, type Daltonismo } from '../../context/AccessibilityContext';
 import '../../styles/shared/accesibilidad.css';
 
@@ -21,6 +21,8 @@ const OPCIONES_DALTONISMO: { valor: Daltonismo; titulo: string; detalle: string 
 const NOMBRES_VELOCIDAD: Record<number, string> = { 0.8: 'Lenta', 1: 'Normal', 1.25: 'Rápida' };
 
 type Props = {
+  open: boolean;
+  onToggleOpen: () => void;
   fontSize: string;
   onFontSize: (s: string) => void;
   dyslexia: boolean;
@@ -58,15 +60,10 @@ function Interruptor({
  * paneles admin). Tamaño de texto, modo oscuro, alto contraste, corrección
  * para daltonismo, letra para dislexia y lector en voz alta.
  * Las opciones nuevas se guardan en AccessibilityContext.
- *
- * El estado abierto/cerrado vive aquí y no en la página: si estuviera afuera,
- * abrir el panel volvería a dibujar toda la página y la animación se traba.
  */
 export default function AccessibilityWidget({
-  fontSize, onFontSize, dyslexia, onDyslexia, darkMode, onToggleDark, onReset,
+  open, onToggleOpen, fontSize, onFontSize, dyslexia, onDyslexia, darkMode, onToggleDark, onReset,
 }: Props) {
-  const [open, setOpen] = useState(false);
-  const onToggleOpen = useCallback(() => setOpen((o) => !o), []);
   const {
     contraste, setContraste,
     daltonismo, setDaltonismo,
@@ -192,17 +189,17 @@ export default function AccessibilityWidget({
                 <Interruptor
                   icono="ti-volume"
                   titulo="Lector en voz alta"
-                  detalle="Pasa el mouse y haz clic en cualquier texto para escucharlo"
+                  detalle="Lee lo que toques o enfoques con Tab"
                   activo={lector}
                   onCambio={setLector}
                 />
                 {lector && (
                   <div className="ax-lector">
                     <div className="ax-lector-botones">
-                      <button type="button" data-no-leer className="ax-btn ax-btn-principal" title="Leer en voz alta el contenido de esta página" onClick={leerPagina}>
+                      <button type="button" className="ax-btn ax-btn-principal" title="Leer en voz alta el contenido de esta página" onClick={leerPagina}>
                         <i className="ti ti-player-play" aria-hidden="true" /> Leer esta página
                       </button>
-                      <button type="button" data-no-leer className="ax-btn" title="Detener la lectura en voz alta" onClick={detenerLectura}>
+                      <button type="button" className="ax-btn" title="Detener la lectura en voz alta" onClick={detenerLectura}>
                         <i className="ti ti-player-stop" aria-hidden="true" /> Detener
                       </button>
                     </div>

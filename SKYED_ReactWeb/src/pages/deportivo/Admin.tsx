@@ -18,7 +18,6 @@ import {
   House,
   Menu,
   Package,
-  DatabaseBackup,
   Pencil,
   Plus,
   QrCode,
@@ -40,7 +39,6 @@ import { useAuth } from "../../context/AuthContext";
 import { useAccessibility } from "../../context/AccessibilityContext";
 import AccessibilityWidget from "../../components/shared/AccessibilityWidget";
 import AdminAjustes from "../../components/shared/AdminAjustes";
-import CopiasSeguridad from "../../components/shared/CopiasSeguridad";
 import { apiFetch } from "../../services/api";
 import { prepararImagen } from "../../utils/prepararImagen";
 import { EstadoPagos, InscritosPorEvento, TendenciaMensual } from "../../components/deportivo/GraficosAdmin";
@@ -63,10 +61,9 @@ type Section =
   | "resultados"
   | "kits"
   | "usuarios"
-  | "copias"
   | "ajustes";
 
-const SECCIONES: Section[] = ["inicio", "eventos", "inscripciones", "acceso", "resultados", "kits", "usuarios", "copias", "ajustes"];
+const SECCIONES: Section[] = ["inicio", "eventos", "inscripciones", "acceso", "resultados", "kits", "usuarios", "ajustes"];
 
 type Categoria = {
   id: number;
@@ -499,6 +496,7 @@ function AdminPage() {
   const [search, setSearch] = useState("");
   const [toast, setToast] = useState<string | null>(null);
   const [loading, setLoading] = useState(true); // true desde el inicio: sin "flash" de tarjetas en cero
+  const [panelOpen, setPanelOpen] = useState(false);
 
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [kits, setKits] = useState<Kit[]>([]);
@@ -700,7 +698,6 @@ function AdminPage() {
     resultados: { label: "Resultados", icon: Trophy },
     kits: { label: "Kits", icon: Package },
     usuarios: { label: "Usuarios", icon: Users },
-    copias: { label: "Copias de seguridad", icon: DatabaseBackup },
     ajustes: { label: "Ajustes", icon: Settings },
   };
 
@@ -866,7 +863,7 @@ function AdminPage() {
             <span className="admin-eyebrow">ADMINISTRACIÓN</span>
             <h1 key={section}>{sectionMeta[section].label}</h1>
           </div>
-          {section !== "acceso" && section !== "inicio" && section !== "ajustes" && section !== "copias" && (
+          {section !== "acceso" && section !== "inicio" && section !== "ajustes" && (
             <label className="admin-search">
               <Search size={17} />
               <input
@@ -1139,10 +1136,6 @@ function AdminPage() {
           </SectionTable>
         )}
 
-        {section === "copias" && (
-          <CopiasSeguridad modulo="deportivo" notify={notify} confirmar={confirmar} />
-        )}
-
         {section === "ajustes" && (
           <AdminAjustes
             notify={notify}
@@ -1208,6 +1201,8 @@ function AdminPage() {
       </main>
 
       <AccessibilityWidget
+        open={panelOpen}
+        onToggleOpen={() => setPanelOpen(o => !o)}
         fontSize={fontSize}
         onFontSize={setFontSize}
         dyslexia={dyslexia}

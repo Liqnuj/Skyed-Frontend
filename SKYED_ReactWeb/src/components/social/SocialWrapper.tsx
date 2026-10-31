@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import type { ReactNode, CSSProperties } from 'react';
 import AccessibilityWidget from '../shared/AccessibilityWidget';
 import { useAccessibility } from '../../context/AccessibilityContext';
@@ -11,6 +11,7 @@ import { setSiteContext } from '../../utils/siteContext';
 const DEFAULT_ACCENT = '#9c02ae'; // color de marca SKYED Social
 
 export default function SocialWrapper({ children }: { children: ReactNode }) {
+  const [panelOpen, setPanelOpen] = useState(false);
   useEffect(() => {
     setSiteContext('social');
   }, []);
@@ -44,6 +45,8 @@ export default function SocialWrapper({ children }: { children: ReactNode }) {
       {children}
       <SocialFooter />
       <AccessibilityWidget
+        open={panelOpen}
+        onToggleOpen={() => setPanelOpen((o) => !o)}
         fontSize={fontSize}
         onFontSize={setFontSize}
         dyslexia={dyslexia}
