@@ -32,6 +32,8 @@ import Protected from "../../components/Protected";
 import { useAuth } from "../../context/AuthContext";
 import { useAccessibility } from "../../context/AccessibilityContext";
 import AccessibilityWidget from "../../components/shared/AccessibilityWidget";
+import ExportMenu from "../../components/shared/ExportMenu";
+import type { ExportFiltro } from "../../components/shared/ExportMenu";
 import AdminAjustes from "../../components/shared/AdminAjustes";
 import { apiFetch } from "../../services/api";
 import { useConfirmacion } from "../../components/shared/ConfirmDialog";
@@ -372,11 +374,13 @@ function SectionTable({
   title,
   action,
   onAction,
+  exportar,
   children,
 }: {
   title: string;
   action?: string;
   onAction?: () => void;
+  exportar?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
@@ -386,12 +390,19 @@ function SectionTable({
           <span className="card-kicker">GESTIÓN</span>
           <h2>{title}</h2>
         </div>
-        {action && (
-          <button title={action} className="primary-btn" onClick={onAction}>
-            <Plus size={16} /> {action}
-          </button>
+        {(action || exportar) && (
+          <div className="export-actions">
+            {exportar}
+            {action && (
+              <button className="primary-btn" onClick={onAction}>
+                <Plus size={16} /> {action}
+              </button>
+            )}
+          </div>
         )}
       </div>
+
+
       <div className="admin-card table-card">
         <div className="table-scroll">
           <table className="admin-table">{children}</table>
@@ -400,6 +411,27 @@ function SectionTable({
     </section>
   );
 }
+
+const FILTRO_ESTADO_EVENTO: ExportFiltro = {
+  clave: "estado", etiqueta: "Estado", tipo: "select",
+  opciones: [{ value: "activo", label: "Activo" }, { value: "inactivo", label: "Inactivo" }],
+};
+const FILTRO_ESTADO_RESERVA: ExportFiltro = {
+  clave: "estado", etiqueta: "Estado", tipo: "select",
+  opciones: [
+    { value: "pendiente", label: "Pendiente" }, { value: "confirmada", label: "Confirmada" },
+    { value: "cancelada", label: "Cancelada" }, { value: "completada", label: "Completada" },
+  ],
+};
+const FILTRO_ESTADO_USUARIO: ExportFiltro = {
+  clave: "estado", etiqueta: "Estado", tipo: "select",
+  opciones: [{ value: "activo", label: "Activo" }, { value: "inactivo", label: "Inactivo" }],
+};
+const FILTROS_FECHA: ExportFiltro[] = [
+  { clave: "fecha_desde", etiqueta: "Desde", tipo: "fecha" },
+  { clave: "fecha_hasta", etiqueta: "Hasta", tipo: "fecha" },
+];
+
 
 function AdminPage() {
   const { user, logout } = useAuth();
@@ -869,7 +901,13 @@ function AdminPage() {
         )}
 
         {section === "lugares" && (
-          <SectionTable title="Gestión de ambientes" action="Nuevo ambiente" onAction={() => { setEditing(null); setModal("ambiente"); }}>
+<SectionTable
+            title="Gestión de ambientes"
+            action="Nuevo ambiente"
+            onAction={() => { setEditing(null); setModal("ambiente"); }}
+            exportar={<ExportMenu ruta="social/ambientes" archivo="skyed-social-ambientes" params={{ q: search }} onMensaje={notify} />}
+          >
+
             <thead><tr><th>Foto</th><th>ID</th><th>Nombre</th><th>Capacidad</th><th>Precio referencia</th><th>Acciones</th></tr></thead>
             <tbody>
               {visibleAmbientes.map(a => (
@@ -893,7 +931,12 @@ function AdminPage() {
         )}
 
         {section === "servicios" && (
-          <SectionTable title="Gestión de servicios" action="Nuevo servicio" onAction={() => { setEditing(null); setModal("servicio"); }}>
+<SectionTable
+            title="Gestión de servicios"
+            action="Nuevo servicio"
+            onAction={() => { setEditing(null); setModal("servicio"); }}
+            exportar={<ExportMenu ruta="social/servicios" archivo="skyed-social-servicios" params={{ q: search }} onMensaje={notify} />}
+          >
             <thead><tr><th>ID</th><th>Nombre</th><th>Descripción</th><th>Ambientes</th><th>Acciones</th></tr></thead>
             <tbody>
               {visibleServicios.map(s => {
@@ -915,7 +958,12 @@ function AdminPage() {
         )}
 
         {section === "eventos" && (
-          <SectionTable title="Gestión de eventos sociales" action="Nuevo evento" onAction={() => { setEditing(null); setModal("evento"); }}>
+<SectionTable
+            title="Gestión de eventos sociales"
+            action="Nuevo evento"
+            onAction={() => { setEditing(null); setModal("evento"); }}
+            exportar={<ExportMenu ruta="social/eventos" archivo="skyed-social-eventos" params={{ q: search }} filtros={[FILTRO_ESTADO_EVENTO, ...FILTROS_FECHA]} onMensaje={notify} />}
+          >
             <thead><tr><th>Foto</th><th>ID</th><th>Nombre</th><th>Fecha</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody>
               {visibleEventos.map(e => {
@@ -944,7 +992,10 @@ function AdminPage() {
         )}
 
         {section === "reservas" && (
-          <SectionTable title="Gestión de reservas">
+<SectionTable
+            title="Gestión de reservas"
+            exportar={<ExportMenu ruta="social/reservas" archivo="skyed-social-reservas" params={{ q: search }} filtros={[FILTRO_ESTADO_RESERVA, ...FILTROS_FECHA]} onMensaje={notify} />}
+          >
             <thead><tr><th>ID</th><th>Fecha</th><th>Invitados</th><th>Total</th><th>Estado</th><th></th></tr></thead>
             <tbody>
               {visibleReservas.map(r => (
@@ -994,8 +1045,10 @@ function AdminPage() {
         )}
 
         {section === "usuarios" && (
-          <SectionTable
+<SectionTable
             title="Usuarios registrados"
+            exportar={<ExportMenu ruta="social/usuarios" archivo="skyed-social-usuarios" params={{ q: search }} filtros={[FILTRO_ESTADO_USUARIO]} onMensaje={notify} />}
+          
             action="Nuevo usuario"
             onAction={() => { setEditing(null); setModal("usuario"); }}
           >
