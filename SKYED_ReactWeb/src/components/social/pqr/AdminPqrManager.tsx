@@ -13,6 +13,7 @@ import {
   hace,
 } from '../../../utils/pqr';
 import { PqrEstadoPill, PqrPlazoChip, PqrStepper, PqrTimeline } from './PqrTracker';
+import ExportMenu from '../../shared/ExportMenu';
 
 
 type Filtro = EstadoPqr | 'todas' | 'vencidas';
@@ -77,6 +78,20 @@ export default function AdminPqrManager({ pqrs, resumen, total, search, onChange
         <div>
           <span className="card-kicker">GESTIÓN</span>
           <h2>Gestión de PQRS</h2>
+        </div>
+        <div className="export-actions">
+          {/* Se envían los mismos filtros que se ven en pantalla: fase, tipo, vencidas y búsqueda. */}
+          <ExportMenu
+            ruta="social/pqrs"
+            archivo="skyed-social-pqrs"
+            params={{
+              q: search,
+              estado: filtro !== 'todas' && filtro !== 'vencidas' ? filtro : undefined,
+              vencidas: filtro === 'vencidas' ? true : undefined,
+              tipo: tipo || undefined,
+            }}
+            onMensaje={notify}
+          />
         </div>
       </div>
 

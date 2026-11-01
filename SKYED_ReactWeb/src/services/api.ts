@@ -74,3 +74,48 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
   }
   return data;
 }
+
+
+
+/**
+ * Descarga un archivo (PDF/Excel) desde la API. Igual que apiFetch envía el
+ * token Bearer, pero la respuesta es un archivo (blob), no JSON. Los errores
+ * (403, 422, 429…) sí llegan como JSON y se convierten en un Error legible.
+ */
+export type ParamsDescarga = Record<string, string | number | boolean | null | undefined>;
+
+export async function apiDownload(path: string, params: ParamsDescarga = {}): Promise<Blob> {
+  const token = getToken();
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([clave, valor]) => {
+    if (valor === null || valor === undefined || valor === '' || valor === false) return;
+    query.set(clave, valor === true ? '1' : String(valor));
+  });
+  const qs = query.toString();
+
+  const res = await fetch(`${apiConfig.baseURL}${path}${qs ? `?${qs}` : ''}`, {
+    headers: {
+      Accept: 'application/json, application/pdf, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+
+  if (res.status === 401) {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem('skyed_user');
+    window.location.href = '/login';
+    throw new Error('Sesión expirada');
+  }
+
+  if (!res.ok) {
+    const data = leerJson(await res.text());
+    if (res.status === 403) throw new Error('No tienes permisos para generar este reporte.');
+    if (res.status === 429) throw new Error('Demasiadas descargas seguidas. Espera un minuto e inténtalo de nuevo.');
+    if (res.status === 422 && data.errors) {
+      throw new Error(Object.values(data.errors).flat().join(' ') || data.message || 'Filtros no válidos.');
+    }
+    throw new Error(data.message ?? 'No se pudo generar el reporte.');
+  }
+
+  return res.blob();
+}
