@@ -42,6 +42,8 @@ import AccessibilityWidget from "../../components/shared/AccessibilityWidget";
 import AdminAjustes from "../../components/shared/AdminAjustes";
 import CopiasSeguridad from "../../components/shared/CopiasSeguridad";
 import { apiFetch } from "../../services/api";
+import ExportMenu from "../../components/shared/ExportMenu";
+import type { ExportFiltro } from "../../components/shared/ExportMenu";
 import { prepararImagen } from "../../utils/prepararImagen";
 import { EstadoPagos, InscritosPorEvento, TendenciaMensual } from "../../components/deportivo/GraficosAdmin";
 import { useConfirmacion } from "../../components/shared/ConfirmDialog";
@@ -443,12 +445,14 @@ function SectionTable({
   action,
   onAction,
   toolbar,
+  exportar,
   children,
 }: {
   title: string;
   action?: string;
   onAction?: () => void;
   toolbar?: React.ReactNode;
+  exportar?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
@@ -458,10 +462,15 @@ function SectionTable({
           <span className="card-kicker">GESTIÓN</span>
           <h2>{title}</h2>
         </div>
-        {action && (
-          <button title={action} className="primary-btn" onClick={onAction}>
-            <Plus size={16} /> {action}
-          </button>
+        {(action || exportar) && (
+          <div className="export-actions">
+            {exportar}
+            {action && (
+              <button className="primary-btn" onClick={onAction}>
+                <Plus size={16} /> {action}
+              </button>
+            )}
+          </div>
         )}
       </div>
       {toolbar && <div className="filter-row">{toolbar}</div>}
@@ -479,6 +488,12 @@ function Kpi({ icon, label, value, compact, formato }: { icon: React.ReactNode; 
   const contenido = typeof value === "number" ? <NumeroAnimado valor={value} formato={formato} /> : value;
   return <div className="kpi-card"><div className="kpi-icon">{icon}</div><span>{label}</span><strong className={compact ? "compact" : ""}>{contenido}</strong></div>;
 }
+
+// Rango de fechas que se elige dentro del menú Exportar (los demás filtros se envían desde la pantalla).
+const FILTROS_FECHA: ExportFiltro[] = [
+  { clave: "fecha_desde", etiqueta: "Desde", tipo: "fecha" },
+  { clave: "fecha_hasta", etiqueta: "Hasta", tipo: "fecha" },
+];
 
 function AdminPage() {
   const { user, logout } = useAuth();
@@ -947,6 +962,7 @@ function AdminPage() {
             title="Gestión de eventos deportivos"
             action="Nuevo evento"
             onAction={() => { setEditing(null); setModal("evento"); }}
+            exportar={<ExportMenu ruta="deportivo/eventos" archivo="skyed-deportivo-eventos" params={{ q: search, estado: filtroEstadoEvento || undefined, categoria: filtroCategoriaEvento || undefined, cuando: filtroFechaEvento || undefined, cupos: filtroCuposEvento || undefined }} filtros={FILTROS_FECHA} onMensaje={notify} />}
             toolbar={<>
               {filtroSelect(filtroCategoriaEvento, setFiltroCategoriaEvento, "Filtrar por categoría", "Todas las categorías", CATEGORIAS_EVENTO)}
               {filtroSelect(filtroEstadoEvento, setFiltroEstadoEvento, "Filtrar por estado", "Todos los estados", [
@@ -1010,6 +1026,7 @@ function AdminPage() {
         {section === "inscripciones" && (
           <SectionTable
             title="Inscripciones y pagos"
+            exportar={<ExportMenu ruta="deportivo/inscripciones-pagos" archivo="skyed-deportivo-inscripciones-pagos" params={{ q: search, estado: filtroPago === "todos" ? undefined : filtroPago, evento: filtroEvento || undefined, metodo: filtroMetodoPago || undefined }} filtros={FILTROS_FECHA} onMensaje={notify} />}
             toolbar={<>
               <select className="admin-select" value={filtroPago} onChange={e => setFiltroPago(e.target.value as typeof filtroPago)} aria-label="Filtrar por estado del pago">
                 <option value="pendiente">Pagos por validar</option>
@@ -1062,6 +1079,7 @@ function AdminPage() {
             title="Resultados oficiales"
             action="Registrar resultado"
             onAction={() => { setEditing(null); setModal("resultado"); }}
+            exportar={<ExportMenu ruta="deportivo/resultados" archivo="skyed-deportivo-resultados" params={{ q: search, evento: filtroEvento || undefined, estado: filtroEstadoResultado || undefined }} onMensaje={notify} />}
             toolbar={<>
               {filtroEventoSelect}
               {filtroSelect(filtroEstadoResultado, setFiltroEstadoResultado, "Filtrar por estado del resultado", "Todos los estados", [
@@ -1101,6 +1119,7 @@ function AdminPage() {
             title="Kits del participante"
             action="Nuevo kit"
             onAction={() => { setEditing(null); setModal("kit"); }}
+            exportar={<ExportMenu ruta="deportivo/kits" archivo="skyed-deportivo-kits" params={{ q: search, stock: filtroStockKit || undefined, lugar: filtroLugarKit || undefined }} onMensaje={notify} />}
             toolbar={<>
               {filtroSelect(filtroStockKit, setFiltroStockKit, "Filtrar por stock", "Todo el stock", [
                 { value: "con", label: "Con stock" },
@@ -1168,8 +1187,7 @@ function AdminPage() {
         {section === "usuarios" && (
           <SectionTable
             title="Usuarios registrados"
-            action="Nuevo usuario"
-            onAction={() => { setEditing(null); setModal("usuario"); }}
+            exportar={<ExportMenu ruta="deportivo/usuarios" archivo="skyed-deportivo-usuarios" params={{ q: search, rol: filtroRolUsuario || undefined, estado: filtroEstadoUsuario || undefined }} onMensaje={notify} />}
             toolbar={<>
               <button type="button" className="secondary-btn" title="Asignar o quitar roles a los usuarios" onClick={() => { setEditing(null); setModal("roles"); }}>
                 <ShieldCheck size={15} /> Gestionar roles
