@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import PrincipalWrapper from '../../components/principal/PrincipalWrapper';
 import AuthTopbar from '../../components/principal/AuthTopbar';
 import TermsModal from '../../components/shared/TermsModal';
+import Captcha, { type RespuestaCaptcha } from '../../components/shared/Captcha';
 import { errorContrasena, normalizarCorreo } from '../../utils/validaciones';
 
 export default function RegisterPage() {
@@ -39,6 +40,9 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [loading, setLoading] = useState(false);
+  const [captcha, setCaptcha] = useState<RespuestaCaptcha | null>(null);
+  // Cada imagen sirve una sola vez: si el registro falla se pide otra.
+  const [intentoCaptcha, setIntentoCaptcha] = useState(0);
 
   // Cálculo de seguridad de la contraseña
   let pwdStrength = 0;
@@ -100,6 +104,12 @@ export default function RegisterPage() {
         return;
       }
 
+      if (!captcha || captcha.respuesta.length < 5) {
+        setError('Escribe los 5 caracteres de la imagen para confirmar que no eres un robot.');
+        setTimeout(() => setError(''), 4000);
+        return;
+      }
+
       const birthDateObj = new Date(fechaNac);
       const today = new Date();
       let age = today.getFullYear() - birthDateObj.getFullYear();
@@ -127,7 +137,9 @@ export default function RegisterPage() {
           correo_u: normalizarCorreo(email),
           fecha_nacimiento_u: fechaNac,
           contrasena_u: password,
-          contrasena_u_confirmation: confirm
+          contrasena_u_confirmation: confirm,
+          captcha_id: captcha.id,
+          captcha: captcha.respuesta,
         });
 
         setSuccessMsg('¡Registro exitoso! Bienvenido a SKYED.');
@@ -141,6 +153,7 @@ export default function RegisterPage() {
       } catch (err) {
         setError(err instanceof Error ? err.message : 'No se pudo crear la cuenta.');
         setTimeout(() => setError(''), 4000);
+        setIntentoCaptcha((n) => n + 1);
       }
 
       setLoading(false);
@@ -488,6 +501,9 @@ export default function RegisterPage() {
                   <span className="req">*</span>
                 </label>
               </div>
+
+              {/* NO SOY UN ROBOT */}
+              <Captcha key={intentoCaptcha} onCambio={setCaptcha} />
 
               {/* BOTÓN REGISTRO */}
             <button title={loading ? 'Creando cuenta…' : 'Crear tu cuenta en SKYED'} type="submit" className="form-submit" disabled={loading}>

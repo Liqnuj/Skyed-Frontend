@@ -45,6 +45,7 @@ import { apiFetch } from "../../services/api";
 import { prepararImagen } from "../../utils/prepararImagen";
 import { EstadoPagos, InscritosPorEvento, TendenciaMensual } from "../../components/deportivo/GraficosAdmin";
 import { useConfirmacion } from "../../components/shared/ConfirmDialog";
+import { useAvisos, type Avisar } from "../../components/shared/Avisos";
 import { CargandoPanel, NumeroAnimado } from "../../components/shared/AdminMotion";
 import AdminFooter from "../../components/shared/AdminFooter";
 import { RolesModal, RolesDeUsuario, UsuarioModal, Avatar, esAdmin, esAdminSocial, type UsuarioFila } from "../../components/deportivo/UsuariosAdmin";
@@ -225,6 +226,8 @@ const capitalizeFirst = (value: string) =>
 ================================================================ */
 
 const DRAFT_PREFIX = "admin_draft:";
+/** Borrador del kit que se crea desde el formulario de un evento. */
+const KIT_DESDE_EVENTO = "desde-evento";
 
 /** Igual que useState, pero guarda el valor en sessionStorage bajo `key`. */
 function usePersistentState<T>(key: string, initial: T) {
@@ -260,7 +263,7 @@ const clearDrafts = () => {
 };
 
 const SECTION_KEY = "admin_section";
-const SECTIONS_VALIDAS = ["inicio", "eventos", "inscripciones", "acceso", "resultados", "kits", "usuarios", "ajustes"];
+const SECTIONS_VALIDAS = ["inicio", "eventos", "inscripciones", "acceso", "resultados", "kits", "usuarios", "copias", "ajustes"];
 type ModalKind = "evento" | "categorias" | "kit" | "pago" | "resultado" | "roles" | "usuario" | null;
 
 /** "1:05" → "01:05:00"; acepta HH:MM o HH:MM:SS del input type="time". */
@@ -497,7 +500,8 @@ function AdminPage() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [toast, setToast] = useState<string | null>(null);
+  // Avisos arriba a la derecha (verde si salió bien, rojo si no)
+  const { avisar: notify, avisos } = useAvisos();
   const [loading, setLoading] = useState(true); // true desde el inicio: sin "flash" de tarjetas en cero
 
   const [eventos, setEventos] = useState<Evento[]>([]);
@@ -529,11 +533,6 @@ function AdminPage() {
     setModal(null);
   };
 
-  const notify = (message: string) => {
-    setToast(message);
-    window.setTimeout(() => setToast(null), 3200);
-  };
-
   const loadAll = async () => {
     setLoading(true);
     try {
@@ -554,7 +553,7 @@ function AdminPage() {
         // El panel funciona aunque la API de usuarios no responda.
       }
     } catch (error) {
-      notify(error instanceof Error ? error.message : "No se pudieron cargar los datos.");
+      notify(error instanceof Error ? error.message : "No se pudieron cargar los datos.", "error");
     } finally {
       setLoading(false);
     }
@@ -576,7 +575,7 @@ function AdminPage() {
       await loadAll();
       return true;
     } catch (err) {
-      notify(err instanceof Error ? err.message : "No se pudo completar la acción.");
+      notify(err instanceof Error ? err.message : "No se pudo completar la acción.", "error");
       return false;
     }
   };
@@ -1223,6 +1222,7 @@ function AdminPage() {
           kits={kits}
           onClose={closeModal}
           notify={notify}
+          onKitCreado={kit => setKits(actual => [...actual, kit])}
           onSave={data => run(
             () => editing
               ? apiFetch(`/eventos/${editing.id}`, { method: "PUT", body: JSON.stringify(data) })
@@ -1296,7 +1296,7 @@ function AdminPage() {
         />
       )}
 
-      {toast && <div className="admin-toast"><Check size={17} />{toast}</div>}
+      {avisos}
       {dialogo}
     </div>
   );
@@ -1306,13 +1306,40 @@ function AdminPage() {
    EVENTOS
 ================================================================ */
 
-function EventoModal({ item, kits, onClose, onSave, notify }: {
+function EventoModal({ item, kits, onClose, onSave, notify, onKitCreado }: {
   item?: Evento | null;
   kits: Kit[];
   onClose: () => void;
   onSave: (data: any) => Promise<boolean>;
-  notify: (message: string) => void;
+  notify: Avisar;
+  /** Un kit creado desde este formulario: se agrega a la lista del panel. */
+  onKitCreado: (kit: Kit) => void;
 }) {
+  const [creandoKit, setCreandoKit] = useState(false);
+
+  // El kit se guarda ya (sin evento) y queda elegido; al guardar el evento se le asigna.
+  const crearKit = async (datos: Record<string, unknown>) => {
+    try {
+      const { id_e: _sinEvento, ...kit } = datos;
+      const respuesta = await apiFetch("/kits", { method: "POST", body: JSON.stringify(kit) });
+      onKitCreado(respuesta.kit);
+      set("id_k", String(respuesta.kit.id_k));
+      try {
+        Object.keys(sessionStorage)
+          .filter(k => k.startsWith(DRAFT_PREFIX) && k.endsWith(`:${KIT_DESDE_EVENTO}`))
+          .forEach(k => sessionStorage.removeItem(k));
+      } catch {
+        // sin almacenamiento: no hay borrador que limpiar
+      }
+      notify("Kit creado y elegido para este evento. También aparece en la sección Kits.");
+      setCreandoKit(false);
+      return true;
+    } catch (err) {
+      notify(err instanceof Error ? err.message : "No se pudo crear el kit.", "error");
+      return false;
+    }
+  };
+
   const [form, setForm] = usePersistentState(`${DRAFT_PREFIX}evento:${item?.id ?? "nuevo"}`, {
     nombre_e: item?.nombre ?? "",
     categoria_e: item?.categoria ?? "ruta",
@@ -1355,7 +1382,8 @@ function EventoModal({ item, kits, onClose, onSave, notify }: {
     setSaving(false);
   };
 
-  return <Modal title={item ? "Editar evento" : "Nuevo evento deportivo"} subtitle="Se publica en SKYED Deportivo apenas quede activo." onClose={onClose} closeOnBackdrop={false}>
+  return <>
+  <Modal title={item ? "Editar evento" : "Nuevo evento deportivo"} subtitle="Se publica en SKYED Deportivo apenas quede activo." onClose={onClose} closeOnBackdrop={false}>
     <form className="modal-form" onSubmit={submit}>
       <div className="form-grid">
         <Field label="Nombre">
@@ -1399,13 +1427,18 @@ function EventoModal({ item, kits, onClose, onSave, notify }: {
         </Field>
 
         <Field label="Kit (opcional)">
+          <div className="kit-fila">
+            <select value={form.id_k} onChange={e => set("id_k", e.target.value)}>
+              <option value="">Sin kit</option>
+              {kits
+                .filter(k => !k.eventos?.length || k.eventos.some(e => e.id_e === item?.id))
+                .map(k => <option key={k.id_k} value={k.id_k}>{k.nombre_k} · {moneda(k.precio_k)}</option>)}
+            </select>
+            <button title="Crear un kit nuevo para este evento sin salir de aquí" type="button" className="crear-kit-btn" onClick={() => setCreandoKit(true)}>
+              <Plus size={15} /> Crear kit
+            </button>
+          </div>
           <small className="field-hint">Solo aparecen los kits sin evento asignado. Cada kit es de un solo evento.</small>
-          <select value={form.id_k} onChange={e => set("id_k", e.target.value)}>
-            <option value="">Sin kit</option>
-            {kits
-              .filter(k => !k.eventos?.length || k.eventos.some(e => e.id_e === item?.id))
-              .map(k => <option key={k.id_k} value={k.id_k}>{k.nombre_k} · {moneda(k.precio_k)}</option>)}
-          </select>
         </Field>
       </div>
 
@@ -1433,10 +1466,15 @@ function EventoModal({ item, kits, onClose, onSave, notify }: {
         <button title={saving ? 'Guardando…' : 'Guardar los cambios'} className="primary-btn" disabled={saving}>{saving ? "Guardando…" : "Guardar"}</button>
       </div>
     </form>
-  </Modal>;
+  </Modal>
+
+  {creandoKit && (
+    <KitModal desdeEvento eventos={[]} notify={notify} onClose={() => setCreandoKit(false)} onSave={crearKit} />
+  )}
+  </>;
 }
 
-function CategoriasModal({ evento, onClose, notify, confirmar }: { evento: Evento; onClose: () => void; notify: (message: string) => void; confirmar: Confirmar }) {
+function CategoriasModal({ evento, onClose, notify, confirmar }: { evento: Evento; onClose: () => void; notify: Avisar; confirmar: Confirmar }) {
   const vacio = { nombre_cc: "", edad_minima_cc: "", edad_maxima_cc: "", genero_cc: "mixto", distancia_cc: "", descripcion_cc: "" };
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -1449,7 +1487,7 @@ function CategoriasModal({ evento, onClose, notify, confirmar }: { evento: Event
       const res = await apiFetch(`/eventos/${evento.id}/categorias?per_page=100`);
       setCategorias(res.categorias ?? []);
     } catch (err) {
-      notify(err instanceof Error ? err.message : "No se pudieron cargar las categorías.");
+      notify(err instanceof Error ? err.message : "No se pudieron cargar las categorías.", "error");
     } finally {
       setCargando(false);
     }
@@ -1480,7 +1518,7 @@ function CategoriasModal({ evento, onClose, notify, confirmar }: { evento: Event
       setForm(vacio);
       await cargar();
     } catch (err) {
-      notify(err instanceof Error ? err.message : "No se pudo agregar la categoría.");
+      notify(err instanceof Error ? err.message : "No se pudo agregar la categoría.", "error");
     } finally {
       setSaving(false);
     }
@@ -1493,7 +1531,7 @@ function CategoriasModal({ evento, onClose, notify, confirmar }: { evento: Event
       notify("Categoría eliminada");
       await cargar();
     } catch (err) {
-      notify(err instanceof Error ? err.message : "No se pudo eliminar la categoría.");
+      notify(err instanceof Error ? err.message : "No se pudo eliminar la categoría.", "error");
     }
   };
 
@@ -1640,7 +1678,7 @@ function PagoModal({ item, onClose, onCambiar }: { item: Pago; onClose: () => vo
    CONTROL DE ACCESO (QR)
 ================================================================ */
 
-function ControlAcceso({ notify, onValidado }: { notify: (message: string) => void; onValidado: () => void }) {
+function ControlAcceso({ notify, onValidado }: { notify: Avisar; onValidado: () => void }) {
   const [codigo, setCodigo] = useState("");
   const [validando, setValidando] = useState(false);
   const [resultado, setResultado] = useState<Ingreso | null>(null);
@@ -1834,7 +1872,7 @@ function ResultadoModal({ item, eventos, onClose, onSave, notify }: {
   eventos: Evento[];
   onClose: () => void;
   onSave: (data: any) => Promise<boolean>;
-  notify: (message: string) => void;
+  notify: Avisar;
 }) {
   const [eventoId, setEventoId] = usePersistentState(`${DRAFT_PREFIX}resultado-evento:${item?.id_r ?? "nuevo"}`, item?.inscripcion?.evento?.id_e ? String(item.inscripcion.evento.id_e) : "");
   const [inscripciones, setInscripciones] = useState<InscripcionOpcion[]>([]);
@@ -1863,7 +1901,7 @@ function ResultadoModal({ item, eventos, onClose, onSave, notify }: {
         setInscripciones((ins.inscripciones ?? []).filter((i: InscripcionOpcion) => i.estado === "confirmada"));
         setCategorias(cats.categorias ?? []);
       })
-      .catch(err => notify(err instanceof Error ? err.message : "No se pudieron cargar los inscritos."));
+      .catch(err => notify(err instanceof Error ? err.message : "No se pudieron cargar los inscritos.", "error"));
     return () => { cancelado = true; };
   }, [eventoId]);
 
@@ -2143,10 +2181,20 @@ function EventoPicker({ eventos, value, onChange, obligatorio }: {
   );
 }
 
-function KitModal({ item, eventos, onClose, onSave, notify }: { item?: Kit | null; eventos: Evento[]; onClose: () => void; onSave: (data: any) => Promise<boolean>; notify: (m: string) => void }) {
+function KitModal({ item, eventos, onClose, onSave, notify, desdeEvento = false }: {
+  item?: Kit | null;
+  eventos: Evento[];
+  onClose: () => void;
+  onSave: (data: any) => Promise<boolean>;
+  notify: (m: string) => void;
+  /** Se abre desde el formulario del evento: el kit queda asignado a ese evento al guardarlo, así que no se elige aquí. */
+  desdeEvento?: boolean;
+}) {
   // Eventos que pueden recibir este kit: los que no tienen kit, o el que ya lo tiene asignado.
   const eventosDisponibles = eventos.filter(e => !e.kit || e.kit.id === item?.id_k);
-  const [form, setForm] = usePersistentState(`${DRAFT_PREFIX}kit:${item?.id_k ?? "nuevo"}`, {
+  // Borrador aparte del de la sección Kits, para no mezclar lo escrito en uno y otro.
+  const borrador = item?.id_k ?? (desdeEvento ? KIT_DESDE_EVENTO : "nuevo");
+  const [form, setForm] = usePersistentState(`${DRAFT_PREFIX}kit:${borrador}`, {
     id_e: item?.eventos?.[0]?.id_e ? String(item.eventos[0].id_e) : "",
     nombre_k: item?.nombre_k ?? "",
     precio_k: item?.precio_k != null ? String(Math.round(Number(item.precio_k))) : "",
@@ -2157,10 +2205,10 @@ function KitModal({ item, eventos, onClose, onSave, notify }: { item?: Kit | nul
   });
   // Al editar, una talla que ya existía puede quedar en 0 (agotada); una talla nueva siempre debe tener al menos 1.
   const tallasGuardadas = item?.tallas?.map(t => t.talla_kt.toUpperCase()) ?? [];
-  const [tallas, setTallas] = usePersistentState<FilaTalla[]>(`${DRAFT_PREFIX}kit-tallas:${item?.id_k ?? "nuevo"}`,
+  const [tallas, setTallas] = usePersistentState<FilaTalla[]>(`${DRAFT_PREFIX}kit-tallas:${borrador}`,
     item?.tallas?.map(t => ({ talla: t.talla_kt, cantidad: String(t.cantidad_kt) })) ?? []
   );
-  const [preview, setPreview] = usePersistentState(`${DRAFT_PREFIX}kit-img:${item?.id_k ?? "nuevo"}`, item?.imagen_url ?? "");
+  const [preview, setPreview] = usePersistentState(`${DRAFT_PREFIX}kit-img:${borrador}`, item?.imagen_url ?? "");
   const [saving, setSaving] = useState(false);
   const set = (campo: keyof typeof form, valor: string) => setForm(f => ({ ...f, [campo]: valor }));
   // Al crear un kit todos los datos son obligatorios; al editar solo se cambia lo que se quiera.
@@ -2170,7 +2218,7 @@ function KitModal({ item, eventos, onClose, onSave, notify }: { item?: Kit | nul
     e.preventDefault();
 
     if (esNuevo) {
-      if (!form.id_e) { notify("Selecciona el evento al que pertenece el kit."); return; }
+      if (!form.id_e && !desdeEvento) { notify("Selecciona el evento al que pertenece el kit."); return; }
       if (!form.imagen_k) { notify("Sube la imagen del kit."); return; }
       if (![form.nombre_k, form.lugar_entrega_k, form.contenido_k].every(v => v.trim())) {
         notify("Completa todos los datos del kit.");
@@ -2214,7 +2262,12 @@ function KitModal({ item, eventos, onClose, onSave, notify }: { item?: Kit | nul
     setSaving(false);
   };
 
-  return <Modal title={item ? "Editar kit" : "Nuevo kit"} subtitle="Cada kit es individual: se asigna a un solo evento." onClose={onClose} closeOnBackdrop={false}>
+  return <Modal
+    title={item ? "Editar kit" : "Nuevo kit"}
+    subtitle={desdeEvento ? "Queda asignado al evento que estás creando o editando." : "Cada kit es individual: se asigna a un solo evento."}
+    onClose={onClose}
+    closeOnBackdrop={false}
+  >
     <form className="modal-form" onSubmit={submit}>
       <div className="form-grid">
         <Field label="Nombre">
@@ -2232,7 +2285,7 @@ function KitModal({ item, eventos, onClose, onSave, notify }: { item?: Kit | nul
         </Field>
       </div>
       <TallasTabla filas={tallas} onChange={setTallas} obligatorio={esNuevo} legacy={!esNuevo} existentes={tallasGuardadas} />
-      <EventoPicker eventos={eventosDisponibles} value={form.id_e} onChange={id => set("id_e", id)} obligatorio={esNuevo} />
+      {!desdeEvento && <EventoPicker eventos={eventosDisponibles} value={form.id_e} onChange={id => set("id_e", id)} obligatorio={esNuevo} />}
       <Field label={esNuevo ? "Imagen del kit (obligatoria)" : "Imagen del kit"}>
         <ImageUploadField
           path={form.imagen_k}

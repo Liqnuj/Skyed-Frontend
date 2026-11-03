@@ -1761,31 +1761,7 @@
   color: #fff;
 }
 
-/* =========================================================
-   13. AVISO (TOAST)
-   ========================================================= */
-
-.social-admin .admin-toast {
-  position: fixed;
-  right: 22px;
-  bottom: 24px;
-  z-index: 60000;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 18px;
-  border: 1px solid rgba(232, 201, 122, 0.4);
-  border-radius: 999px;
-  background: linear-gradient(135deg, #2d1454, #1a0a2e);
-  box-shadow: 0 18px 36px -14px rgba(26, 10, 46, 0.8);
-  color: #fff;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.social-admin .admin-toast svg {
-  color: var(--sk-gold-light);
-}
+/* 13. Avisos: ahora en styles/shared/avisos.css (components/shared/Avisos.tsx) */
 
 /* =========================================================
    14. PANEL DE ACCESIBILIDAD
