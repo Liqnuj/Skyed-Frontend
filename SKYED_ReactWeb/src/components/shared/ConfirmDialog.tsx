@@ -8,6 +8,8 @@ export type OpcionesConfirmacion = {
   confirmar?: string;
   /** "peligro" (eliminar, rechazar) se pinta en rojo; "normal" con el color del panel. */
   tipo?: "peligro" | "normal";
+  /** Si se indica, hay que escribirla para poder confirmar (acciones muy delicadas). */
+  palabra?: string;
 };
 
 type Pendiente = OpcionesConfirmacion & { resolver: (ok: boolean) => void };
@@ -48,15 +50,20 @@ function ConfirmDialog({
   mensaje,
   confirmar = "Confirmar",
   tipo = "normal",
+  palabra,
   onCerrar,
 }: OpcionesConfirmacion & { onCerrar: (ok: boolean) => void }) {
   const cancelarRef = useRef<HTMLButtonElement>(null);
   const aceptarRef = useRef<HTMLButtonElement>(null);
+  const palabraRef = useRef<HTMLInputElement>(null);
+  const [escrito, setEscrito] = useState("");
+  const bloqueado = Boolean(palabra) && escrito !== palabra;
 
   // Foco inicial: en acciones peligrosas, "Cancelar" (para no borrar con un
   // Enter accidental); en las normales, el botón de acción.
   useEffect(() => {
-    (tipo === "peligro" ? cancelarRef : aceptarRef).current?.focus();
+    if (palabra) palabraRef.current?.focus();
+    else (tipo === "peligro" ? cancelarRef : aceptarRef).current?.focus();
     const alPresionarTecla = (e: KeyboardEvent) => {
       if (e.key === "Escape") onCerrar(false);
     };
@@ -81,11 +88,25 @@ function ConfirmDialog({
         </div>
         <h2 id="cd-titulo">{titulo}</h2>
         <p id="cd-mensaje">{mensaje}</p>
+        {palabra && (
+          <label className="cd-palabra">
+            Escribe <strong>{palabra}</strong> para confirmar
+            <input
+              ref={palabraRef}
+              type="text"
+              value={escrito}
+              autoComplete="off"
+              spellCheck={false}
+              onChange={(e) => setEscrito(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && !bloqueado) onCerrar(true); }}
+            />
+          </label>
+        )}
         <div className="cd-actions">
           <button title="Cancelar y cerrar esta ventana" ref={cancelarRef} type="button" className="cd-btn cd-btn-cancel" onClick={() => onCerrar(false)}>
             Cancelar
           </button>
-          <button title={confirmar} ref={aceptarRef} type="button" className="cd-btn cd-btn-ok" onClick={() => onCerrar(true)}>
+          <button title={confirmar} ref={aceptarRef} type="button" className="cd-btn cd-btn-ok" disabled={bloqueado} onClick={() => onCerrar(true)}>
             {confirmar}
           </button>
         </div>

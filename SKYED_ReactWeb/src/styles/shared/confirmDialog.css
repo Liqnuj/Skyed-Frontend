@@ -111,6 +111,47 @@
   filter: brightness(1.05);
 }
 
+.cd-backdrop .cd-btn-ok:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  filter: none;
+}
+
+.cd-backdrop .cd-palabra {
+  display: block;
+  margin: 0 0 20px;
+  font-size: 13px;
+  color: #5b6475;
+}
+
+.cd-backdrop .cd-palabra strong {
+  color: #172033;
+}
+
+.cd-backdrop .cd-palabra input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid #d5dbe5;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #172033;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: .08em;
+}
+
+.cd-backdrop .cd-palabra input:focus {
+  outline: 2px solid var(--admin-accent, #2c9caf);
+  outline-offset: 1px;
+}
+
 /* Modo oscuro de los paneles */
 .dark .cd-backdrop {
   background: rgba(0, 0, 0, .6);
@@ -124,6 +165,20 @@
 
 .dark .cd-backdrop .cd-card p {
   color: #a3b0c2;
+}
+
+.dark .cd-backdrop .cd-palabra {
+  color: #a3b0c2;
+}
+
+.dark .cd-backdrop .cd-palabra strong {
+  color: #f2f5f8;
+}
+
+.dark .cd-backdrop .cd-palabra input {
+  border-color: rgba(255, 255, 255, .16);
+  background: rgba(255, 255, 255, .06);
+  color: #f2f5f8;
 }
 
 .dark .cd-backdrop .cd-btn-cancel {

@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import type { ReactNode, CSSProperties } from 'react';
 import AccessibilityWidget from '../shared/AccessibilityWidget';
 import { useAccessibility } from '../../context/AccessibilityContext';
@@ -10,7 +9,6 @@ import { setSiteContext } from '../../utils/siteContext';
 const DEFAULT_ACCENT = '#2c9caf'; // color de marca SkyedDeportivo
 
 export default function SportWrapper({ children }: { children: ReactNode }) {
-  const [panelOpen, setPanelOpen] = useState(false);
   useEffect(() => {
     setSiteContext('deportivo');
   }, []);
@@ -41,8 +39,6 @@ export default function SportWrapper({ children }: { children: ReactNode }) {
       {children}
       <SportFooter />
       <AccessibilityWidget
-        open={panelOpen}
-        onToggleOpen={() => setPanelOpen((o) => !o)}
         fontSize={fontSize}
         onFontSize={setFontSize}
         dyslexia={dyslexia}
