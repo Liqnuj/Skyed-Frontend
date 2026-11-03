@@ -98,7 +98,7 @@
 /* Celular: centrado y en dos líneas */
 @media (max-width: 650px) {
   :is(.deportivo-admin, .social-admin) main.admin-main {
-    padding-bottom: 150px !important;
+    padding-bottom: 96px !important;
   }
 
   :is(.deportivo-admin, .social-admin) .admin-footer {
@@ -109,7 +109,7 @@
     justify-content: center;
     text-align: center;
     gap: 8px;
-    bottom: 76px; /* por encima de los botones flotantes */
+    bottom: 18px; /* pegado al final; los botones flotantes quedan a los lados del texto centrado */
   }
 }
 

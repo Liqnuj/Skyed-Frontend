@@ -95,6 +95,42 @@
 .mod-social.dark-mode .nb-text small,
 .mod-social.dark-mode .nb-empty { color: rgba(255, 255, 255, .5); }
 
+/* Modo claro: el panel usa el morado de acento del módulo, y la campana, su
+   círculo, los íconos y el enlace conservan el dorado del logo (igual que en
+   modo oscuro). Sobre fondo claro se usa un dorado más profundo para que se vea. */
+.mod-social:not(.dark-mode) {
+  --nb-oro-tinta: #9a7616;
+}
+.mod-social:not(.dark-mode) .nb-btn {
+  background: var(--white);
+  border: 1.5px solid var(--gold);
+  box-sizing: border-box;
+  color: var(--nb-oro-tinta);
+}
+.mod-social:not(.dark-mode) .nb-btn:hover {
+  background: var(--gold-pale);
+}
+.mod-social:not(.dark-mode) .nb-panel {
+  border-color: color-mix(in srgb, var(--gold) 45%, var(--border));
+}
+.mod-social:not(.dark-mode) .nb-head {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+}
+.mod-social:not(.dark-mode) .nb-link { color: var(--gold-light); }
+.mod-social:not(.dark-mode) .nb-item:hover,
+.mod-social:not(.dark-mode) .nb-item:focus-visible {
+  background: color-mix(in srgb, var(--accent) 12%, var(--white));
+}
+.mod-social:not(.dark-mode) .nb-item.unread {
+  background: color-mix(in srgb, var(--accent) 7%, var(--white));
+}
+.mod-social:not(.dark-mode) .nb-icon {
+  background: var(--gold-pale);
+  border: 1.5px solid var(--gold);
+  box-sizing: border-box;
+  color: var(--nb-oro-tinta);
+}
+
 /* Celular: el panel ocupa el ancho de la pantalla */
 @media (max-width: 768px) {
   .mod-social .nb-panel { position: fixed; top: 72px; left: 12px; right: 12px; width: auto; max-width: none; }
