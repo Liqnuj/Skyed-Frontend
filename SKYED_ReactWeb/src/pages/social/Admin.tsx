@@ -39,6 +39,7 @@ import AdminAjustes from "../../components/shared/AdminAjustes";
 import CopiasSeguridad from "../../components/shared/CopiasSeguridad";
 import { apiFetch } from "../../services/api";
 import { useConfirmacion } from "../../components/shared/ConfirmDialog";
+import { useAvisos, type Avisar } from "../../components/shared/Avisos";
 import { CargandoPanel, NumeroAnimado } from "../../components/shared/AdminMotion";
 import AdminFooter from "../../components/shared/AdminFooter";
 import type { EstadoPqr, Pqr } from "../../services/socialService";
@@ -472,7 +473,8 @@ function AdminPage() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [toast, setToast] = useState<string | null>(null);
+  // Avisos arriba a la derecha (verde si salió bien, rojo si no)
+  const { avisar: notify, avisos } = useAvisos();
   const [loading, setLoading] = useState(true); // true desde el inicio: sin "flash" de tarjetas en cero
   // true después de la primera carga: las recargas no vuelven a mostrar la pantalla de carga.
   const [cargoUnaVez, setCargoUnaVez] = useState(false);
@@ -493,11 +495,6 @@ function AdminPage() {
     saved.modal && saved.editId == null && saved.modal !== "pqr" ? saved.modal : null
   );
   const [editing, setEditing] = useState<any>(null);
-
-  const notify = (message: string) => {
-    setToast(message);
-    window.setTimeout(() => setToast(null), 2400);
-  };
 
   const loadAll = async () => {
     setLoading(true);
@@ -532,7 +529,7 @@ function AdminPage() {
       }
       return { ambientes: a.data ?? [], servicios: s.data ?? [], eventos: e.data ?? [], pqrs: p.data ?? [] };
     } catch (error) {
-      setToast(error instanceof Error ? error.message : "No se pudieron cargar los datos.");
+      notify(error instanceof Error ? error.message : "No se pudieron cargar los datos.", "error");
     } finally {
       setLoading(false);
       setCargoUnaVez(true);
@@ -718,7 +715,7 @@ function AdminPage() {
       notify("Reserva oculta");
       await loadAll();
     } catch (error) {
-      notify(error instanceof Error ? error.message : "No se pudo ocultar la reserva.");
+      notify(error instanceof Error ? error.message : "No se pudo ocultar la reserva.", "error");
     }
   };
 
@@ -1137,7 +1134,7 @@ function AdminPage() {
         />
       )}
 
-      {toast && <div className="admin-toast"><Check size={17} />{toast}</div>}
+      {avisos}
       {dialogo}
     </div>
   );
@@ -1153,7 +1150,7 @@ function Kpi({ icon, label, value, compact, formato }: { icon: React.ReactNode; 
   return <div className="kpi-card"><div className="kpi-icon">{icon}</div><span>{label}</span><strong className={compact ? "compact" : ""}>{contenido}</strong></div>;
 }
 
-function AmbienteModal({ item, onClose, onSave, notify }: { item?: Ambiente; onClose: () => void; onSave: (data: any) => Promise<void>; notify: (message: string) => void }) {
+function AmbienteModal({ item, onClose, onSave, notify }: { item?: Ambiente; onClose: () => void; onSave: (data: any) => Promise<void>; notify: Avisar }) {
   const [form, setForm] = useState({
     nombre_a: item?.nombre_a ?? "",
     descripcion_a: item?.descripcion_a ?? "",
@@ -1317,7 +1314,7 @@ function ServicioModal({ item, onClose, onSave }: { item?: Servicio; onClose: ()
   </Modal>;
 }
 
-function EventoModal({ item, ambientes, tipos, onClose, onSave, notify }: { item?: EventoSocial; ambientes: Ambiente[]; tipos: TipoEvento[]; onClose: () => void; onSave: (data: any) => Promise<void>; notify: (message: string) => void }) {
+function EventoModal({ item, ambientes, tipos, onClose, onSave, notify }: { item?: EventoSocial; ambientes: Ambiente[]; tipos: TipoEvento[]; onClose: () => void; onSave: (data: any) => Promise<void>; notify: Avisar }) {
   const [form, setForm] = useState({
     nombre_er: item?.nombre_er ?? "",
     descripcion_er: item?.descripcion_er ?? "",
@@ -1510,7 +1507,7 @@ function AdminPqrManager({
   total: number;
   search: string;
   onChanged: () => Promise<unknown>;
-  notify: (message: string) => void;
+  notify: Avisar;
   confirmar: ReturnType<typeof useConfirmacion>["confirmar"];
 }) {
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -1542,7 +1539,7 @@ function AdminPqrManager({
         const res = await apiFetch(`/pqr/${selectedKey}`);
         if (!cancelled) setDetail(res.pqr ?? null);
       } catch (error) {
-        if (!cancelled) notify(error instanceof Error ? error.message : "No se pudo cargar el historial.");
+        if (!cancelled) notify(error instanceof Error ? error.message : "No se pudo cargar el historial.", "error");
       }
     })();
     return () => { cancelled = true; };
@@ -1566,7 +1563,7 @@ function AdminPqrManager({
       notify("Solicitud oculta");
       await onChanged();
     } catch (error) {
-      notify(error instanceof Error ? error.message : "No se pudo ocultar la solicitud.");
+      notify(error instanceof Error ? error.message : "No se pudo ocultar la solicitud.", "error");
     }
   };
   const manualOpciones = [
@@ -1603,7 +1600,7 @@ function AdminPqrManager({
       notify("Respuesta enviada");
       await onChanged();
     } catch (error) {
-      notify(error instanceof Error ? error.message : "No se pudo enviar la respuesta.");
+      notify(error instanceof Error ? error.message : "No se pudo enviar la respuesta.", "error");
     } finally {
       setSending(false);
     }

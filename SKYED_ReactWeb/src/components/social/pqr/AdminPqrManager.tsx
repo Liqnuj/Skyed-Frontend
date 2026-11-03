@@ -14,6 +14,7 @@ import {
 } from '../../../utils/pqr';
 import { PqrEstadoPill, PqrPlazoChip, PqrStepper, PqrTimeline } from './PqrTracker';
 import ExportMenu from '../../shared/ExportMenu';
+import type { Avisar } from '../../shared/Avisos';
 
 
 type Filtro = EstadoPqr | 'todas' | 'vencidas';
@@ -26,7 +27,7 @@ interface Props {
   search: string;
   /** Vuelve a cargar la lista del panel después de un cambio. */
   onChanged: () => Promise<void> | void;
-  notify: (mensaje: string) => void;
+  notify: Avisar;
 }
 
 const color = (estado: EstadoPqr) => ({ '--fase': ESTADO_COLOR[estado] }) as CSSProperties;
@@ -225,7 +226,7 @@ function CasoPqr({
   id: number;
   onClose: () => void;
   onChanged: () => Promise<unknown> | void;
-  notify: (mensaje: string) => void;
+  notify: Avisar;
 }) {
   const [pqr, setPqr] = useState<Pqr | null>(null);
   const [errorCarga, setErrorCarga] = useState<string | null>(null);

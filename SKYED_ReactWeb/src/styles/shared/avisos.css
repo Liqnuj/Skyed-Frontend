@@ -1,0 +1,158 @@
+/* =========================================================
+   Avisos flotantes (components/shared/Avisos.tsx)
+   Arriba a la derecha, debajo del encabezado de los paneles (64 px) y
+   encima de las ventanas de edición, para que se vean al guardar.
+   Los selectores llevan dos clases: los paneles tienen reglas generales
+   (con !important en Deportivo) que si no los pisaban.
+   ========================================================= */
+
+.avisos.avisos {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  /* Encima de las ventanas (50000) y debajo de la de confirmar (70000) */
+  z-index: 65000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(380px, calc(100vw - 32px));
+  pointer-events: none;
+}
+
+.avisos .aviso {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 14px 18px 18px;
+  overflow: hidden;
+  border-left: 4px solid var(--aviso-color);
+  border-radius: 10px;
+  background: #ffffff;
+  color: #1e293b;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.18), 0 2px 6px rgba(15, 23, 42, 0.08);
+  pointer-events: auto;
+  animation: aviso-entrar 0.3s ease-out;
+}
+
+.avisos .aviso-ok {
+  --aviso-color: #16a34a;
+}
+
+.avisos .aviso-error {
+  --aviso-color: #dc2626;
+}
+
+.avisos .aviso-icono {
+  flex-shrink: 0;
+  margin-top: 1px;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--aviso-color);
+}
+
+.avisos .aviso-texto {
+  flex: 1;
+  min-width: 0;
+  margin: 2px 0 0;
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: inherit;
+  overflow-wrap: anywhere;
+}
+
+.avisos .aviso-cerrar {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin: -4px -4px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #64748b;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.avisos .aviso-cerrar:hover {
+  background: rgba(100, 116, 139, 0.14);
+  color: #1e293b;
+}
+
+.avisos .aviso-cerrar:focus-visible {
+  outline: 2px solid var(--aviso-color);
+  outline-offset: 1px;
+}
+
+/* Barra de tiempo: se vacía mientras el aviso está abierto */
+.avisos .aviso-barra {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 4px;
+  width: 100%;
+  background: var(--aviso-color);
+  transform-origin: left;
+  animation: aviso-tiempo var(--aviso-duracion, 4s) linear forwards;
+}
+
+.avisos .aviso.is-pausado .aviso-barra {
+  animation-play-state: paused;
+}
+
+@keyframes aviso-entrar {
+  from { opacity: 0; transform: translateX(40px); }
+}
+
+@keyframes aviso-tiempo {
+  to { transform: scaleX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avisos .aviso {
+    animation: none;
+  }
+}
+
+/* Modo oscuro de los paneles */
+.dark .avisos .aviso {
+  background: #1b2433;
+  color: #f1f5f9;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5);
+}
+
+.dark .avisos .aviso-ok {
+  --aviso-color: #4ade80;
+}
+
+.dark .avisos .aviso-error {
+  --aviso-color: #f87171;
+}
+
+.dark .avisos .aviso-cerrar {
+  color: #94a3b8;
+}
+
+.dark .avisos .aviso-cerrar:hover {
+  background: rgba(148, 163, 184, 0.16);
+  color: #f1f5f9;
+}
+
+/* Alto contraste (accesibilidad) */
+.ax-contraste .avisos .aviso {
+  border: 2px solid currentColor;
+  border-left-width: 6px;
+}
+
+@media (max-width: 560px) {
+  .avisos.avisos {
+    top: 72px;
+    right: 16px;
+    left: 16px;
+    width: auto;
+  }
+}

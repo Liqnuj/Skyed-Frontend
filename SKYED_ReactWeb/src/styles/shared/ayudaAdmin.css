@@ -23,9 +23,6 @@
 .ayadm .ay-adm-volver { display: inline-flex; gap: .4rem; align-items: center; margin-bottom: 1rem; color: var(--ad-link); font-weight: 700; text-decoration: none; min-height: 40px; }
 .ayadm .ay-adm-volver:hover { text-decoration: underline; }
 
-.ayadm .ay-adm-aviso { margin: 1rem 0 0; padding: .75rem 1rem; border-radius: 12px; font-weight: 600; border: 1px solid transparent; }
-.ayadm .ay-adm-aviso--ok { background: var(--ad-ok-bg); color: var(--ad-ok); border-color: var(--ad-ok); }
-.ayadm .ay-adm-aviso--error { background: var(--ad-off-bg); color: var(--ad-error); border-color: var(--ad-error); }
 
 .ayadm .ay-adm-tabs { display: flex; gap: .4rem; margin: 1.5rem 0 1rem; border-bottom: 2px solid var(--ad-border); overflow-x: auto; }
 .ayadm .ay-adm-tab {

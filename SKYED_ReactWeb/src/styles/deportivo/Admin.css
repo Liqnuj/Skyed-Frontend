@@ -1796,36 +1796,6 @@
 }
 
 /* =========================================================
-   TOAST
-   ========================================================= */
-
-.deportivo-admin .admin-toast {
-  position: fixed !important;
-
-  right: 22px !important;
-  bottom: 24px !important;
-
-  display: flex !important;
-  align-items: center !important;
-
-  gap: 8px !important;
-
-  padding: 11px 15px !important;
-
-  background: var(--admin-sidebar) !important;
-  color: white !important;
-
-  border-radius: 11px !important;
-
-  font-size: 12px !important;
-  font-weight: 700 !important;
-
-  box-shadow: 0 12px 35px rgba(0,0,0,.22) !important;
-
-  z-index: 60000 !important;
-}
-
-/* =========================================================
    RESPONSIVE
    ========================================================= */
 
@@ -2022,6 +1992,46 @@
   font-size: 9px;
   font-variant-numeric: tabular-nums;
   line-height: 1.3;
+}
+
+/* Selector de kit y botón "Crear kit" en el formulario del evento:
+   en una sola fila para que quede a la altura de los demás campos. */
+.deportivo-admin .kit-fila {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.deportivo-admin .kit-fila select {
+  flex: 1;
+  min-width: 0;
+}
+
+.deportivo-admin .crear-kit-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 12px;
+  white-space: nowrap;
+  border: 1px dashed var(--admin-accent);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--admin-accent);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.deportivo-admin .crear-kit-btn:hover {
+  border-style: solid;
+  background: color-mix(in srgb, var(--admin-accent) 10%, transparent);
+}
+
+.deportivo-admin .crear-kit-btn:focus-visible {
+  outline: 2px solid var(--admin-accent);
+  outline-offset: 2px;
 }
 
 .deportivo-admin .field-hint-warn {
