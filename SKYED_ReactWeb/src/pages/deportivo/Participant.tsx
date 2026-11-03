@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import QRCode from 'qrcode';
 import Protected from '../../components/Protected';
 import SportWrapper from '../../components/deportivo/SportWrapper';
 import { useAuth } from '../../context/AuthContext';
@@ -72,9 +73,17 @@ interface InvitadoInsc {
   talla_kit?: string | null;
 }
 
+// Estado de entrega de un kit (el del participante o el de su invitado).
+interface EntregaKitEstado {
+  estado: 'pendiente' | 'entregado' | 'devolucion' | string;
+  fecha_entrega_real?: string | null;
+}
+
 interface Inscripcion {
   id: number;
   estado: string;
+  entrega_kit?: EntregaKitEstado | null;
+  entrega_kit_invitado?: EntregaKitEstado | null;
   fecha: string;
   precio_pagado: number | null;
   talla_camiseta?: string | null;
@@ -143,6 +152,36 @@ function estadoPagoLabel(estado: string | null | undefined) {
   if (!estado) return '—';
   const map: Record<string, string> = { pendiente: 'Pendiente de verificación', cancelado: 'Cancelado' };
   return map[estado] || estado.charAt(0).toUpperCase() + estado.slice(1);
+}
+
+function estadoEntregaKit(e: EntregaKitEstado | null | undefined) {
+  if (!e) return null;
+  if (e.estado === 'entregado') {
+    return { cls: 'ok', txt: e.fecha_entrega_real ? `Entregado · ${fmtFechaLarga(e.fecha_entrega_real)}` : 'Entregado' };
+  }
+  if (e.estado === 'devolucion') return { cls: 'warn', txt: 'Devuelto' };
+  return { cls: 'pending', txt: 'Pendiente de entrega' };
+}
+
+// Dibuja el QR en el propio navegador (sin servicios externos, así carga siempre
+// y el código de entrada no sale de la aplicación).
+function QrImagen({ codigo }: { codigo: string }) {
+  const [src, setSrc] = useState('');
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    let activo = true;
+    setSrc('');
+    setError(false);
+    QRCode.toDataURL(codigo, { width: 260, margin: 1, errorCorrectionLevel: 'M' })
+      .then((url) => { if (activo) setSrc(url); })
+      .catch(() => { if (activo) setError(true); });
+    return () => { activo = false; };
+  }, [codigo]);
+
+  if (error) return <p style={{ color: '#111', padding: '1rem', margin: 0 }}>No se pudo generar el QR. Usa el código de abajo.</p>;
+  if (!src) return <div style={{ width: 230, height: 230 }} aria-busy="true" />;
+  return <img src={src} alt="Código QR de la inscripción" width={230} height={230} />;
 }
 
 function estadoPill(estado: string) {
@@ -987,6 +1026,16 @@ function DetalleInscripcion({
   const precioKit = Number(insc.desglose_precios?.kit) || 0;
   const precioKitInvitado = Number(insc.desglose_precios?.kit_invitado) || 0;
   const inv = insc.invitado;
+  // Si pidió kit y la inscripción está confirmada pero aún no hay fila de entrega,
+  // se muestra como pendiente (así el invitado no queda sin etiqueta).
+  const kitPendiente: EntregaKitEstado = { estado: 'pendiente', fecha_entrega_real: null };
+  const confirmada = insc.estado === 'confirmada';
+  const entregaTitular = estadoEntregaKit(
+    insc.entrega_kit ?? (confirmada && insc.desea_kit ? kitPendiente : null)
+  );
+  const entregaInvitado = estadoEntregaKit(
+    insc.entrega_kit_invitado ?? (confirmada && inv?.desea_kit ? kitPendiente : null)
+  );
 
   return (
     <div className="part-card part-detail-card part-detail-anim">
@@ -1079,6 +1128,11 @@ function DetalleInscripcion({
                   {insc.talla_camiseta ? ` · Talla ${insc.talla_camiseta}` : ''}
                 </strong>
                 {precioKit > 0 && <span className="part-label"> {fmtMoney(precioKit)}</span>}
+                {entregaTitular && (
+                  <div style={{ marginTop: '.35rem' }}>
+                    <span className={`part-status-pill ${entregaTitular.cls}`}>{entregaTitular.txt}</span>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1118,6 +1172,11 @@ function DetalleInscripcion({
                   <span className="part-label">Kit del invitado</span>
                   <strong>{inv.desea_kit ? `Talla ${inv.talla_kit ?? '—'}` : 'Sin kit'}</strong>
                   {inv.desea_kit && precioKitInvitado > 0 && <span className="part-label"> {fmtMoney(precioKitInvitado)}</span>}
+                  {inv.desea_kit && entregaInvitado && (
+                    <div style={{ marginTop: '.35rem' }}>
+                      <span className={`part-status-pill ${entregaInvitado.cls}`}>{entregaInvitado.txt}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1176,12 +1235,7 @@ function DetalleInscripcion({
                 <i className="ti ti-x" aria-hidden="true" />
               </button>
               <div className="part-qr-glow">
-                <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(insc.qr.codigo)}`}
-                  alt="Código QR de la inscripción"
-                  width={230}
-                  height={240}
-                />
+                <QrImagen codigo={insc.qr.codigo} />
               </div>
               <div className="part-qr-code-text">{insc.qr.codigo}</div>
               <p className="part-qr-hint">
