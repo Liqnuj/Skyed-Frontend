@@ -1,0 +1,160 @@
+/* =========================================================
+   Verificación "No soy un robot" (components/shared/Captcha.tsx)
+   Los selectores llevan dos clases a propósito: ".mod-principal *" borra
+   márgenes y rellenos de todo y, con una sola clase, ganaba.
+   ========================================================= */
+
+fieldset.captcha {
+  margin: 0.6rem 0 1.4rem;
+  padding: 0.9rem 1rem 1rem;
+  border: 1px solid rgba(124, 58, 237, 0.28);
+  border-radius: 14px;
+  background: rgba(124, 58, 237, 0.04);
+  min-width: 0;
+}
+
+.captcha legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 6px;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.captcha legend .ti {
+  font-size: 1.05rem;
+  color: #7c3aed;
+}
+
+.captcha .req {
+  color: #ef4444;
+}
+
+.captcha .captcha-ayuda {
+  margin: 0 0 0.6rem;
+  font-size: 0.8rem;
+  opacity: 0.75;
+}
+
+.captcha .captcha-fila {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 0.6rem;
+}
+
+.captcha .captcha-imagen {
+  flex: 1;
+  min-width: 0;
+  max-width: 220px;
+  aspect-ratio: 220 / 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.captcha .captcha-imagen img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+}
+
+.captcha .captcha-estado {
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.captcha .captcha-otra {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #7c3aed;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.captcha .captcha-otra .ti {
+  font-size: 1.3rem;
+}
+
+.captcha .captcha-otra:hover:not(:disabled) {
+  background: rgba(124, 58, 237, 0.1);
+}
+
+.captcha .captcha-otra:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.captcha .captcha-otra:focus-visible,
+.captcha .captcha-campo:focus-visible {
+  outline: 2px solid #7c3aed;
+  outline-offset: 2px;
+}
+
+.captcha .captcha-campo {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.75rem 1rem;
+  border: 1.5px solid #c4b5fd;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #1e1b2e;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+
+.captcha .captcha-campo::placeholder {
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  color: #94a3b8;
+}
+
+.captcha .captcha-girando {
+  animation: captcha-girar 0.9s linear infinite;
+}
+
+@keyframes captcha-girar {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .captcha .captcha-girando {
+    animation: none;
+  }
+}
+
+/* Modo oscuro del sitio principal */
+.mod-principal.dark-mode fieldset.captcha {
+  border-color: rgba(167, 139, 250, 0.3);
+  background: rgba(167, 139, 250, 0.06);
+}
+
+.mod-principal.dark-mode .captcha legend .ti,
+.mod-principal.dark-mode .captcha .captcha-otra {
+  color: #c4b5fd;
+}
+
+.mod-principal.dark-mode .captcha .captcha-campo {
+  border-color: rgba(167, 139, 250, 0.45);
+  background: rgba(255, 255, 255, 0.04);
+  color: #f5f3ff;
+}

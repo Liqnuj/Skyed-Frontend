@@ -29,6 +29,7 @@ import {
 } from "../../utils/validaciones";
 import type { useConfirmacion } from "../shared/ConfirmDialog";
 import "../../styles/deportivo/AdminUsuarios.css";
+import type { Avisar } from "../shared/Avisos";
 
 type Confirmar = ReturnType<typeof useConfirmacion>["confirmar"];
 
@@ -213,7 +214,7 @@ export function RolesModal({ users, inicialId, yoId, onClose, onCambio, notify, 
   onClose: () => void;
   /** Se llama tras asignar o quitar un rol para que el panel recargue la lista. */
   onCambio: () => Promise<void>;
-  notify: (mensaje: string) => void;
+  notify: Avisar;
   confirmar: Confirmar;
 }) {
   const [selId, setSelId] = useState<number | null>(inicialId);
@@ -245,7 +246,7 @@ export function RolesModal({ users, inicialId, yoId, onClose, onCambio, notify, 
       notify(`Rol ${rolInfo(rol).etiqueta} asignado a ${nombreCompleto(sel)}`);
       await onCambio();
     } catch (err) {
-      notify(err instanceof Error ? err.message : "No se pudo asignar el rol.");
+      notify(err instanceof Error ? err.message : "No se pudo asignar el rol.", "error");
     } finally {
       setOcupado(false);
     }
@@ -266,7 +267,7 @@ export function RolesModal({ users, inicialId, yoId, onClose, onCambio, notify, 
       notify(`Rol ${rolInfo(nombreRol).etiqueta} quitado`);
       await onCambio();
     } catch (err) {
-      notify(err instanceof Error ? err.message : "No se pudo quitar el rol.");
+      notify(err instanceof Error ? err.message : "No se pudo quitar el rol.", "error");
     } finally {
       setOcupado(false);
     }
@@ -488,7 +489,7 @@ export function UsuarioModal({ modulo = "deportivo", existentes = [], onClose, o
   onClose: () => void;
   /** Se llama cuando la cuenta ya se creó (el panel cierra el modal y recarga). */
   onCreado: () => Promise<void> | void;
-  notify: (mensaje: string) => void;
+  notify: Avisar;
 }) {
   const esSocial = modulo === "social";
   const contextoBase: Contexto = esSocial ? "social" : "deportivo";

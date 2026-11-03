@@ -7,6 +7,7 @@ import {
   errorContrasena, errorDocumento, errorTelefono, ayudaDocumento, maxDocumento, soloLetras, soloDigitos,
 } from '../../utils/validaciones';
 import '../../styles/shared/adminAjustes.css';
+import type { Avisar } from './Avisos';
 
 /**
  * Sección "Ajustes" de los paneles de administración (Social y Deportivo).
@@ -27,7 +28,7 @@ interface Props {
   /** Avisos propios de cada panel (se guardan por administrador). */
   avisos: Aviso[];
   /** Muestra un mensaje en el toast del panel. */
-  notify: (message: string) => void;
+  notify: Avisar;
 }
 
 const TIPOS_DOC = [
@@ -90,7 +91,7 @@ export default function AdminAjustes({ avisos, notify }: Props) {
       notify('Foto de perfil actualizada');
     } catch (err) {
       setFotoUrl(anterior);
-      notify(err instanceof Error ? err.message : 'No se pudo subir la foto.');
+      notify(err instanceof Error ? err.message : 'No se pudo subir la foto.', "error");
     } finally {
       setSubiendoFoto(false);
     }

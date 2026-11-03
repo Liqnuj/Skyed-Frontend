@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { CSSProperties, KeyboardEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -12,6 +12,7 @@ import MetricasPanel from '../../components/ayuda/admin/MetricasPanel';
 import { mensajeDeError } from '../../components/ayuda/admin/tipos';
 import type { Avisar } from '../../components/ayuda/admin/tipos';
 import '../../styles/shared/ayudaAdmin.css';
+import { useAvisos } from '../../components/shared/Avisos';
 
 type Pestana = 'articulos' | 'categorias' | 'metricas';
 
@@ -34,9 +35,8 @@ export default function AyudaAdmin() {
   const [articulos, setArticulos] = useState<ArticuloAdmin[] | null>(null);
   const [categorias, setCategorias] = useState<CategoriaAdmin[]>([]);
   const [errorCarga, setErrorCarga] = useState('');
-  const [aviso, setAviso] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null);
+  const { avisar: avisarFlotante, avisos } = useAvisos();
   const [abrirId, setAbrirId] = useState<number | null>(null);
-  const temporizador = useRef<number | undefined>(undefined);
 
   const esSocial = user?.roles.includes('adminSocial') ?? false;
   const estilo = {
@@ -46,11 +46,7 @@ export default function AyudaAdmin() {
     '--fs-scale': (parseInt(fontSize, 10) || 16) / 16,
   } as CSSProperties;
 
-  const avisar: Avisar = useCallback((tipo, texto) => {
-    setAviso({ tipo, texto });
-    window.clearTimeout(temporizador.current);
-    temporizador.current = window.setTimeout(() => setAviso(null), 5000);
-  }, []);
+  const avisar: Avisar = useCallback((tipo, texto) => avisarFlotante(texto, tipo), [avisarFlotante]);
 
   const cargar = useCallback(async () => {
     try {
@@ -70,7 +66,6 @@ export default function AyudaAdmin() {
 
   useEffect(() => {
     void cargar();
-    return () => window.clearTimeout(temporizador.current);
   }, [cargar]);
 
   const limpiarAbrir = useCallback(() => setAbrirId(null), []);
@@ -104,11 +99,6 @@ export default function AyudaAdmin() {
           </p>
         </header>
 
-        {aviso && (
-          <div className={`ay-adm-aviso ay-adm-aviso--${aviso.tipo}`} role={aviso.tipo === 'error' ? 'alert' : 'status'}>
-            {aviso.texto}
-          </div>
-        )}
 
         {errorCarga ? (
           <div className="ay-adm-vacio" role="alert">

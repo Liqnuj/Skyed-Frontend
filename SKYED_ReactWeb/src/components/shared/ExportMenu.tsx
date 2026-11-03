@@ -3,6 +3,7 @@ import { ChevronDown, Download, FileSpreadsheet, FileText, Loader2 } from "lucid
 import { apiDownload } from "../../services/api";
 import type { ParamsDescarga } from "../../services/api";
 import "../../styles/shared/exportMenu.css";
+import type { Avisar } from "./Avisos";
 
 /** Filtro extra que se elige dentro del menú (solo los que existen como columna real). */
 export type ExportFiltro =
@@ -19,7 +20,7 @@ type Props = {
   /** Filtros adicionales que se eligen dentro del menú. */
   filtros?: ExportFiltro[];
   /** Para mostrar avisos (el panel usa un "toast"). */
-  onMensaje?: (mensaje: string) => void;
+  onMensaje?: Avisar;
 };
 
 const sello = () => {
@@ -65,7 +66,7 @@ export default function ExportMenu({ ruta, archivo, params = {}, filtros = [], o
       setAbierto(false);
     } catch (error) {
       const mensaje = error instanceof Error ? error.message : "No se pudo generar el reporte.";
-      if (onMensaje) onMensaje(mensaje);
+      if (onMensaje) onMensaje(mensaje, "error");
       else window.alert(mensaje);
     } finally {
       setCargando(null);

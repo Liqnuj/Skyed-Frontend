@@ -4,6 +4,7 @@ import { apiConfig, apiFetch, getToken, SESION_INVALIDA } from "../../services/a
 import type { OpcionesConfirmacion } from "./ConfirmDialog";
 import { CargandoPanel } from "./AdminMotion";
 import "../../styles/shared/copiasSeguridad.css";
+import type { Avisar } from "./Avisos";
 
 /**
  * Sección "Copias de seguridad" de los paneles de administración. El servidor
@@ -40,7 +41,7 @@ interface Copia {
 interface Props {
   /** Panel donde se muestra: sus datos salen primero. */
   modulo: "social" | "deportivo";
-  notify: (message: string) => void;
+  notify: Avisar;
   confirmar: (opciones: OpcionesConfirmacion) => Promise<boolean>;
 }
 
@@ -138,7 +139,7 @@ export default function CopiasSeguridad({ modulo, notify, confirmar }: Props) {
       setElegidos([]);
       notify("Copia creada y descargada");
     } catch (err) {
-      notify(err instanceof Error ? err.message : "No se pudo crear la copia.");
+      notify(err instanceof Error ? err.message : "No se pudo crear la copia.", "error");
     } finally {
       setCreando(false);
       await cargar();
@@ -150,7 +151,7 @@ export default function CopiasSeguridad({ modulo, notify, confirmar }: Props) {
     try {
       await descargarArchivo(copia);
     } catch (err) {
-      notify(err instanceof Error ? err.message : "No se pudo descargar la copia.");
+      notify(err instanceof Error ? err.message : "No se pudo descargar la copia.", "error");
     } finally {
       setOcupada(null);
     }
@@ -176,7 +177,7 @@ export default function CopiasSeguridad({ modulo, notify, confirmar }: Props) {
       });
       notify(data.message);
     } catch (err) {
-      notify(err instanceof Error ? err.message : "No se pudo restaurar la copia.");
+      notify(err instanceof Error ? err.message : "No se pudo restaurar la copia.", "error");
     } finally {
       setOcupada(null);
       await cargar();
@@ -198,7 +199,7 @@ export default function CopiasSeguridad({ modulo, notify, confirmar }: Props) {
       notify("Copia eliminada");
       await cargar();
     } catch (err) {
-      notify(err instanceof Error ? err.message : "No se pudo eliminar la copia.");
+      notify(err instanceof Error ? err.message : "No se pudo eliminar la copia.", "error");
     } finally {
       setOcupada(null);
     }
