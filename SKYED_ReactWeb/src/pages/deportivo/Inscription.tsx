@@ -1230,6 +1230,8 @@ function InscriptionWizard() {
                             <div className="part-form-group" style={{ marginTop: '1rem', marginBottom: 0 }}>
                               <label htmlFor="inv-dorsal">Número de dorsal preferido del invitado (opcional, sujeto a disponibilidad)</label>
                               <input id="inv-dorsal" placeholder="Ej: 43" inputMode="numeric" value={invDorsal} onChange={(e) => setInvDorsal(e.target.value.replace(/\D/g, ''))} />
+                              <br></br>
+                              <br></br>
                               <div className="part-form-hint" style={{ marginBottom: 0 }}>Si el número ya está tomado, se asignará uno automáticamente.</div>
                             </div>
                             </>
