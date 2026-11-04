@@ -87,7 +87,7 @@ export default function AyudaAdmin() {
   return (
     <div className={`ayadm${darkMode ? ' dark dark-mode' : ''}`} style={estilo}>
       <div className="ay-adm-wrap">
-        <header className="ay-adm-cab">
+        {/* <header className="ay-adm-cab">
           <Link className="ay-adm-volver" to="/admin">
             <i className="ti ti-arrow-left" aria-hidden="true" /> Volver a mi panel
           </Link>
@@ -97,7 +97,7 @@ export default function AyudaAdmin() {
             Crea y mantén las guías que ven los usuarios.
             {opciones && <> Puedes gestionar contenido de: <strong>{opciones.modulos.map((m) => MODULO[m] ?? m).join(', ')}</strong>.</>}
           </p>
-        </header>
+        </header> */}
 
 
         {errorCarga ? (

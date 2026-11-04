@@ -9,17 +9,18 @@ import {
   AyudaCargando,
   AyudaEstado,
   AyudaHero,
+  AyudaInsignia,
   AyudaMigas,
   AyudaSoporte,
   fechaLarga,
 } from '../../components/ayuda/AyudaPartes';
 import type { Miga } from '../../components/ayuda/AyudaPartes';
-import { rutaAyuda } from '../../components/ayuda/rutas';
+import { rutaAyuda, rutaInicio } from '../../components/ayuda/rutas';
 import { useAyudaDatos } from '../../hooks/useAyudaDatos';
 import { ayudaService, registrarVisita } from '../../services/ayudaService';
-import type { ModuloAyuda } from '../../services/ayudaService';
+import type { EspacioAyuda } from '../../services/ayudaService';
 
-export default function AyudaArticuloPage({ modulo }: { modulo: ModuloAyuda }) {
+export default function AyudaArticuloPage({ modulo }: { modulo: EspacioAyuda }) {
   const { slug = '' } = useParams();
   const base = rutaAyuda(modulo);
   const estado = useAyudaDatos(() => ayudaService.articulo(slug), [slug]);
@@ -35,7 +36,7 @@ export default function AyudaArticuloPage({ modulo }: { modulo: ModuloAyuda }) {
 
 
   const migas: Miga[] = [
-    { texto: 'Inicio', a: `/${modulo}` },
+    { texto: 'Inicio', a: rutaInicio(modulo) },
     { texto: 'Ayuda', a: base },
   ];
   if (articulo?.categoria) {
@@ -76,6 +77,7 @@ export default function AyudaArticuloPage({ modulo }: { modulo: ModuloAyuda }) {
           </div>
         ) : (
           <>
+            {modulo === 'principal' && <AyudaInsignia modulo={articulo.modulo} />}
             <h1>{articulo.titulo}</h1>
             {articulo.resumen && <p className="ay-lead">{articulo.resumen}</p>}
             {articulo.actualizado_en && (

@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { PermisosProvider } from './context/PermisosContext';
 import { AccessibilityProvider } from './context/AccessibilityContext';
@@ -41,7 +41,7 @@ import AyudaAdmin from './pages/admin/AyudaAdmin';
 import SkaiWidget from './components/shared/SkaiWidget';
 import AdminProtectedRoute from './components/AdminProtectedRoute';
 import SoloUsuarios from './components/SoloUsuarios';
-import AyudaRedirect from './pages/ayuda/AyudaRedirect';
+import AyudaPrincipalInicioPage from './pages/ayuda/AyudaPrincipalInicioPage';
 import AyudaInicioPage from './pages/ayuda/AyudaInicioPage';
 import AyudaCategoriaPage from './pages/ayuda/AyudaCategoriaPage';
 import AyudaArticuloPage from './pages/ayuda/AyudaArticuloPage';
@@ -101,7 +101,11 @@ function App(){
 
 
                         {/* Centro de Ayuda: público (visitantes, usuarios y administradores) */}
-            <Route path="/ayuda/*" element={<AyudaRedirect/>}/>
+            {/* Centro de Ayuda de la página principal: reúne la ayuda de Deportivo, Social y la general */}
+            <Route path="/ayuda" element={<AyudaPrincipalInicioPage/>}/>
+            <Route path="/ayuda/categoria/:slug" element={<AyudaCategoriaPage modulo="principal"/>}/>
+            <Route path="/ayuda/articulo/:slug" element={<AyudaArticuloPage modulo="principal"/>}/>
+            <Route path="/ayuda/*" element={<Navigate to="/ayuda" replace/>}/>
             <Route path="/social/ayuda" element={<AyudaInicioPage modulo="social"/>}/>
             <Route path="/social/ayuda/categoria/:slug" element={<AyudaCategoriaPage modulo="social"/>}/>
             <Route path="/social/ayuda/articulo/:slug" element={<AyudaArticuloPage modulo="social"/>}/>
