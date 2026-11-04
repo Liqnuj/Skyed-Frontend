@@ -159,6 +159,123 @@ export interface Reserva {
   seguimientos?: SeguimientoReserva[];
 }
 
+
+
+/* ---- Gestión administrativa de reservas (Administrador Social) ---- */
+
+export type EstadoRese = 'pendiente' | 'confirmada' | 'cancelada' | 'completada';
+
+/** Etapa interna de gestión: solo la ve el administrador. */
+export type EtapaGestion =
+  | 'nueva'
+  | 'en_revision'
+  | 'contactando_usuario'
+  | 'pendiente_informacion'
+  | 'en_planificacion'
+  | 'pendiente_confirmacion'
+  | 'reprogramada'
+  | 'en_ejecucion';
+
+/** Estado "visual" que el backend calcula para colorear lista y calendario. */
+export type EstadoVisualReserva =
+  | 'nueva'
+  | 'en_planificacion'
+  | 'confirmada'
+  | 'reprogramada'
+  | 'cancelada'
+  | 'finalizada';
+
+/** De dónde sale la fecha que se muestra: confirmada > propuesta > solicitada por el cliente. */
+export type FechaTipoReserva = 'confirmada' | 'propuesta' | 'solicitada';
+
+export interface ReservaAlerta {
+  tipo: 'sin_revisar' | 'contacto_vencido' | 'preparacion_vencida' | 'preparacion_proxima';
+  nivel: 'alta' | 'media';
+  id_rese: number;
+  mensaje: string;
+}
+
+export interface ReservaProximo {
+  id_rese: number;
+  titulo: string;
+  fecha_inicio: string;
+  fecha_tipo: FechaTipoReserva;
+  estado_rese: EstadoRese;
+  estado_visual: EstadoVisualReserva;
+}
+
+/** KPIs reales del panel (GET /reservas/resumen). */
+export interface ResumenReservas {
+  nuevas: number;
+  por_contactar: number;
+  eventos_hoy: number;
+  eventos_semana: number;
+  confirmadas: number;
+  en_planificacion: number;
+  por_estado: Partial<Record<EstadoRese, number>>;
+  proximos: ReservaProximo[];
+  alertas: ReservaAlerta[];
+}
+
+/** Evento del calendario (GET /reservas/calendario). */
+export interface EventoCalendario {
+  id_rese: number;
+  titulo: string;
+  fecha_inicio: string;
+  fecha_fin: string;
+  fecha_tipo: FechaTipoReserva;
+  aproximada: boolean;
+  hora_inicio: string | null;
+  hora_fin: string | null;
+  estado_rese: EstadoRese;
+  etapa_gestion: EtapaGestion | null;
+  estado_visual: EstadoVisualReserva;
+  tipo_evento: { id_tipo_eves: number; nombre: string } | null;
+  lugar: string | null;
+  usuario: string;
+  invitados: number | null;
+  responsable: string | null;
+}
+
+/** Filtros del listado del administrador (GET /reservas). */
+export interface FiltrosReservasAdmin {
+  q?: string;
+  estado?: EstadoRese | '';
+  etapa?: EtapaGestion | '';
+  id_tipo_eves?: number | '';
+  id_responsable?: number | '';
+  id_a?: number | '';
+  lugar?: string;
+  desde?: string;
+  hasta?: string;
+  orden?: 'recientes' | 'fecha' | 'fecha_desc' | 'estado';
+  page?: number;
+  per_page?: number;
+  ocultas?: boolean;
+}
+
+/** Fila del listado del administrador: la reserva con su ficha de gestión. */
+export interface ReservaAdmin extends Reserva {
+  usuario?: { id_u?: number; nombre_u?: string; apellido_u?: string; correo_u?: string };
+  tipo_evento?: { id_tipo_eves: number; nombre_tipo_eves: string } | null;
+  gestion?: {
+    etapa_gestion: EtapaGestion;
+    fecha_propuesta: string | null;
+    fecha_confirmada: string | null;
+    hora_inicio: string | null;
+    hora_fin: string | null;
+    contactado: boolean;
+    responsable?: { id_u: number; nombre_u: string; apellido_u: string } | null;
+    ambiente?: { id_a: number; nombre_a: string; capacidad_a?: number | null } | null;
+  } | null;
+}
+
+export interface ResponsableReserva {
+  id_u: number;
+  nombre_u: string;
+  apellido_u: string;
+}
+
 export interface CrearReservaPayload {
   nombre_rese?: string;
   fecha_evento_rese: string;
@@ -200,7 +317,61 @@ export const reservaService = {
     });
     return data.reserva;
   },
-  
+
+  /* ---- Panel del Administrador Social ---- */
+
+  /** Listado con búsqueda y filtros. Los filtros vacíos no se envían. */
+  async listarAdmin(filtros: FiltrosReservasAdmin = {}): Promise<Paginated<ReservaAdmin>> {
+    const qs = new URLSearchParams();
+    Object.entries(filtros).forEach(([k, v]) => {
+      if (v === undefined || v === null || v === '' || v === false) return;
+      qs.set(k, v === true ? '1' : String(v));
+    });
+    const texto = qs.toString();
+    return apiFetch(`/reservas${texto ? `?${texto}` : ''}`);
+  },
+
+  /** KPIs, próximos eventos y alertas del inicio del panel. */
+  async resumen(): Promise<ResumenReservas> {
+    const data = await apiFetch('/reservas/resumen');
+    return data.resumen;
+  },
+
+  /** Eventos que tocan el rango (máx. 100 días). Fechas en formato Y-m-d. */
+  async calendario(
+    desde: string,
+    hasta: string,
+    extra: { estado?: EstadoRese; id_tipo_eves?: number } = {},
+  ): Promise<EventoCalendario[]> {
+    const qs = new URLSearchParams({ desde, hasta });
+    if (extra.estado) qs.set('estado', extra.estado);
+    if (extra.id_tipo_eves) qs.set('id_tipo_eves', String(extra.id_tipo_eves));
+    const data = await apiFetch(`/reservas/calendario?${qs.toString()}`);
+    return data.eventos ?? [];
+  },
+
+  /** Administradores sociales a quienes se puede asignar una reserva. */
+  async responsables(): Promise<ResponsableReserva[]> {
+    const data = await apiFetch('/reservas/responsables');
+    return data.responsables ?? data.data ?? [];
+  },
+
+  /** El admin abre la reserva: si era "nueva" pasa a "en revisión". */
+  async abrir(id: number): Promise<void> {
+    await apiFetch(`/reservas/${id}/abrir`, { method: 'POST' });
+  },
+
+  /** Cambia el estado oficial respetando las transiciones del backend. */
+  async cambiarEstadoAdmin(
+    id: number,
+    estado: 'confirmada' | 'completada' | 'cancelada',
+    comentarios: { comentario_publico?: string; nota_interna?: string } = {},
+  ): Promise<void> {
+    await apiFetch(`/reservas/${id}/estado`, {
+      method: 'POST',
+      body: JSON.stringify({ estado, ...comentarios }),
+    });
+  },
 };
 
 /* ---------------------------------------------------------------- */

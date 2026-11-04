@@ -1,0 +1,120 @@
+/* Listado de reservas del Administrador Social (reusa los tokens del panel). */
+.social-admin .admin-badge.nueva { --b: #2563eb; }
+.social-admin .admin-badge.en_planificacion { --b: #d97706; }
+.social-admin .admin-badge.reprogramada { --b: #0d9488; }
+.social-admin .admin-badge.finalizada { --b: #7c4dcc; }
+
+.social-admin .resx-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+
+.social-admin .resx-busqueda {
+  flex: 1 1 280px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--admin-line);
+  border-radius: 999px;
+  background: var(--admin-surface);
+  color: var(--admin-muted);
+}
+
+.social-admin .resx-busqueda input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--admin-text);
+  font-size: 13px;
+}
+
+.social-admin .resx-fecha {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--admin-muted);
+}
+
+.social-admin .resx-fecha input {
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--admin-line);
+  border-radius: 10px;
+  background: var(--admin-surface);
+  color: var(--admin-text);
+}
+
+.social-admin .resx-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--admin-muted);
+}
+
+.social-admin .resx-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--admin-muted);
+}
+
+.social-admin .resx-tipo-confirmada { color: #16a34a; font-weight: 700; }
+.social-admin .resx-tipo-propuesta { color: #d97706; font-weight: 700; }
+.social-admin .resx-tipo-solicitada { color: var(--admin-muted); }
+
+.social-admin .resx-acciones {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.social-admin .resx-mini { height: 32px; font-size: 12px; padding: 0 10px; }
+
+.social-admin .resx-error { color: #e11d48; font-size: 12px; margin: 0; }
+
+.social-admin .resx-pie {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--admin-line);
+  font-size: 13px;
+  color: var(--admin-muted);
+}
+
+.social-admin .resx-spin { animation: resx-giro 0.9s linear infinite; vertical-align: -2px; }
+@keyframes resx-giro { to { transform: rotate(360deg); } }
+
+/* Alertas del inicio */
+.social-admin .resx-alertas { display: grid; gap: 8px; }
+.social-admin .resx-alerta {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--b) 35%, var(--admin-line));
+  background: color-mix(in srgb, var(--b) 8%, var(--admin-surface));
+  font-size: 13px;
+  --b: #d97706;
+}
+.social-admin .resx-alerta.alta { --b: #e11d48; }
+
+@media (max-width: 720px) {
+  .social-admin .resx-fecha { flex: 1 1 140px; }
+  .social-admin .resx-fecha input { flex: 1; }
+}

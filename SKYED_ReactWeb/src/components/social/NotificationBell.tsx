@@ -16,6 +16,7 @@ interface Notificacion {
 const ICONO: Record<string, string> = {
   pqr: 'ti-message-report',
   reserva: 'ti-calendar-event',
+  reserva_admin: 'ti-calendar-event',
   pago: 'ti-credit-card',
   inscripcion: 'ti-ticket',
 };
@@ -24,6 +25,8 @@ const ICONO: Record<string, string> = {
 const DESTINO: Record<string, string> = {
   pqr: '/social/perfil?tab=pqr',
   reserva: '/social/perfil?tab=reservas',
+    // Aviso para el Administrador Social: abre su panel en Reservas.
+  reserva_admin: '/social/admin?seccion=reservas',
 };
 
 export default function NotificationBell() {
