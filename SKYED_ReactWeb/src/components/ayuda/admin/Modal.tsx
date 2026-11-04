@@ -68,7 +68,7 @@ export default function Modal({ titulo, onCerrar, bloqueado = false, ancho = 760
       >
         <div className="ay-adm-modal-cab">
           <h2 id={idTitulo}>{titulo}</h2>
-          <button type="button" className="ay-adm-icono" onClick={onCerrar} disabled={bloqueado} aria-label="Cerrar">
+          <button type="button" className="ay-adm-icono" onClick={onCerrar} disabled={bloqueado} aria-label="Cerrar" title="Cerrar la ventana">
             <i className="ti ti-x" aria-hidden="true" />
           </button>
         </div>

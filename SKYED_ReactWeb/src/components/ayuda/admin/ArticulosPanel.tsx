@@ -145,7 +145,7 @@ export default function ArticulosPanel({ articulos, opciones, recargar, avisar, 
             ))}
           </select>
         </div>
-        <button type="button" className="ay-adm-btn ay-adm-btn--primario" onClick={() => setEditando('nuevo')}>
+        <button type="button" className="ay-adm-btn ay-adm-btn--primario" title="Crear un artículo nuevo" onClick={() => setEditando('nuevo')}>
           <i className="ti ti-plus" aria-hidden="true" /> Nuevo artículo
         </button>
       </div>
@@ -185,7 +185,7 @@ export default function ArticulosPanel({ articulos, opciones, recargar, avisar, 
                 return (
                   <tr key={a.id} className={bloqueado ? 'ay-adm-fila--ocupada' : undefined}>
                     <td>
-                      <button type="button" className="ay-adm-enlace" onClick={() => setEditando(a)}>
+                      <button type="button" className="ay-adm-enlace" title={`Editar el artículo ${a.titulo}`} onClick={() => setEditando(a)}>
                         {a.titulo}
                       </button>
                       <span className="ay-adm-slug">/{a.slug}</span>

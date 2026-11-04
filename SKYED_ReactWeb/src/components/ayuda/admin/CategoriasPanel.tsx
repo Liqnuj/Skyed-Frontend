@@ -82,7 +82,7 @@ export default function CategoriasPanel({ categorias, opciones, recargar, avisar
   return (
     <>
       <div className="ay-adm-barra ay-adm-barra--fin">
-        <button type="button" className="ay-adm-btn ay-adm-btn--primario" onClick={() => setEditando('nueva')}>
+        <button type="button" className="ay-adm-btn ay-adm-btn--primario" title="Crear una categoría nueva" onClick={() => setEditando('nueva')}>
           <i className="ti ti-plus" aria-hidden="true" /> Nueva categoría
         </button>
       </div>
@@ -112,7 +112,7 @@ export default function CategoriasPanel({ categorias, opciones, recargar, avisar
                       <span className="ay-adm-cat-icono" aria-hidden="true">
                         <i className={`ti ${c.icono}`} />
                       </span>{' '}
-                      <button type="button" className="ay-adm-enlace" onClick={() => setEditando(c)}>
+                      <button type="button" className="ay-adm-enlace" title={`Editar la categoría ${c.nombre}`} onClick={() => setEditando(c)}>
                         {c.nombre}
                       </button>
                       <span className="ay-adm-slug">/{c.slug}</span>
@@ -283,10 +283,10 @@ function CategoriaFormulario({
         </div>
 
         <div className="ay-adm-modal-pie">
-          <button type="button" className="ay-adm-btn ay-adm-btn--suave" onClick={onCerrar} disabled={guardando}>
+          <button type="button" className="ay-adm-btn ay-adm-btn--suave" title="Cancelar y cerrar el formulario" onClick={onCerrar} disabled={guardando}>
             Cancelar
           </button>
-          <button type="submit" className="ay-adm-btn ay-adm-btn--primario" disabled={guardando}>
+          <button type="submit" className="ay-adm-btn ay-adm-btn--primario" title={guardando ? 'Guardando categoría' : categoria ? 'Guardar los cambios de la categoría' : 'Crear categoría'} disabled={guardando}>
             {guardando ? 'Guardando…' : categoria ? 'Guardar cambios' : 'Crear categoría'}
           </button>
         </div>
