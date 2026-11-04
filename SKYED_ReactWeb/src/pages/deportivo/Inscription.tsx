@@ -257,6 +257,11 @@ function InscriptionWizard() {
   const [invRh, setInvRh] = useState('O+');
   const [invTelefono, setInvTelefono] = useState('');
   const [errorInvTelefono, setErrorInvTelefono] = useState('');
+  const [errorInvFechaNac, setErrorInvFechaNac] = useState('');
+  const [errorInvTalla, setErrorInvTalla] = useState('');
+  const [errorCategoria, setErrorCategoria] = useState('');
+  const [errorKit, setErrorKit] = useState('');
+  const [errorTalla, setErrorTalla] = useState('');
   const [invFechaNacimiento, setInvFechaNacimiento] = useState('');
   const [invCorreo, setInvCorreo] = useState('');
   const [invDeseaKit, setInvDeseaKit] = useState(false);
@@ -598,43 +603,48 @@ function InscriptionWizard() {
     e.preventDefault();
     if (!evento) return;
 
-    let faltaAlgo = false;
+    // Campos que faltan: se marcan en rojo, cada uno con su mensaje.
+    const faltantes: Array<{ id: string; etiqueta: string }> = [];
+    const falta = (id: string, etiqueta: string) => { faltantes.push({ id, etiqueta }); };
 
-    if (!documento) { setErrorDocumento('Este campo es obligatorio.'); faltaAlgo = true; }
-    if (!rh) { setErrorRh('Selecciona tu tipo de sangre.'); faltaAlgo = true; }
-    if (!telefonoContacto) { setErrorTelefonoContacto('Este campo es obligatorio.'); faltaAlgo = true; }
-    if (!fechaNacimiento) { setErrorFechaNacimiento('Este campo es obligatorio.'); faltaAlgo = true; }
+    if (!documento) { setErrorDocumento('Este campo es obligatorio.'); falta('documento', 'Documento'); }
+    if (!rh) { setErrorRh('Selecciona tu tipo de sangre.'); falta('rh', 'Tipo de sangre'); }
+    if (!telefonoContacto) { setErrorTelefonoContacto('Este campo es obligatorio.'); falta('tel-contacto', 'Teléfono de contacto'); }
+    if (!fechaNacimiento) { setErrorFechaNacimiento('Este campo es obligatorio.'); falta('fecha-nac', 'Fecha de nacimiento'); }
     if (!contactoEmergenciaNombre) {
       setErrorNombreContacto('Este campo es obligatorio.');
-      faltaAlgo = true;
+      falta('c-nombre', 'Nombre del contacto de emergencia');
     } else if (contactoEmergenciaNombre.trim().split(/\s+/).filter(Boolean).length < 2) {
       setErrorNombreContacto('Escribe el nombre completo (nombre y apellido).');
-      faltaAlgo = true;
+      falta('c-nombre', 'Nombre completo del contacto de emergencia');
     } else {
       setErrorNombreContacto('');
     }
-    if (!contactoEmergenciaTelefono) { setErrorTelefonoEmergencia('Este campo es obligatorio.'); faltaAlgo = true; }
-    if (!parentesco) { setErrorParentesco('Selecciona el parentesco.'); faltaAlgo = true; }
-    if (!categoriaId) { faltaAlgo = true; }
-    if (evento?.kit && deseaJersey === null) { faltaAlgo = true; }
-    if (evento?.kit && deseaJersey === true && !tallaKit) {
-      faltaAlgo = true;
-      mostrarMsg('error', 'Selecciona la talla del kit.');
-    }
+    if (!contactoEmergenciaTelefono) { setErrorTelefonoEmergencia('Este campo es obligatorio.'); falta('c-telefono', 'Teléfono del contacto de emergencia'); }
+    if (!parentesco) { setErrorParentesco('Selecciona el parentesco.'); falta('c-parentesco', 'Parentesco'); }
+    if (!categoriaId) { setErrorCategoria('Selecciona una categoría de competencia.'); falta('grupo-categoria', 'Categoría de competencia'); }
+    if (evento?.kit && deseaJersey === null) { setErrorKit('Indica si deseas adquirir el kit.'); falta('grupo-kit', 'Kit'); }
+    if (evento?.kit && deseaJersey === true && !tallaKit) { setErrorTalla('Selecciona la talla del kit.'); falta('grupo-talla', 'Talla del kit'); }
 
     if (mostrarInvitado) {
-      if (!invDocumento) { setErrorInvDocumento('Este campo es obligatorio.'); faltaAlgo = true; }
-      if (!invNombre) { setErrorInvNombre('Este campo es obligatorio.'); faltaAlgo = true; }
-      if (!invApellido) { setErrorInvApellido('Este campo es obligatorio.'); faltaAlgo = true; }
-      if (!invTelefono) { setErrorInvTelefono('Este campo es obligatorio.'); faltaAlgo = true; }
-      if (invDeseaKit && !invTallaKit) {
-        faltaAlgo = true;
-        mostrarMsg('error', 'Selecciona la talla del kit del invitado.');
-      }
+      if (!invDocumento) { setErrorInvDocumento('Este campo es obligatorio.'); falta('i-documento', 'Documento del invitado'); }
+      if (!invNombre) { setErrorInvNombre('Este campo es obligatorio.'); falta('i-nombre', 'Nombre del invitado'); }
+      if (!invApellido) { setErrorInvApellido('Este campo es obligatorio.'); falta('i-apellido', 'Apellido del invitado'); }
+      if (!invTelefono) { setErrorInvTelefono('Este campo es obligatorio.'); falta('i-telefono', 'Teléfono del invitado'); }
+      if (!invFechaNacimiento) { setErrorInvFechaNac('Este campo es obligatorio.'); falta('i-fecha-nac', 'Fecha de nacimiento del invitado'); }
+      if (invDeseaKit && !invTallaKit) { setErrorInvTalla('Selecciona la talla del kit del invitado.'); falta('grupo-inv-talla', 'Talla del kit del invitado'); }
     }
 
-    if (faltaAlgo) {
-      mostrarMsg('error', 'Completa todos los campos obligatorios antes de continuar.');
+    if (faltantes.length) {
+      const nombres = faltantes.map(f => f.etiqueta);
+      const lista = nombres.length <= 4 ? nombres.join(', ') : `${nombres.slice(0, 4).join(', ')} y ${nombres.length - 4} más`;
+      mostrarMsg('error', `Faltan datos por completar: ${lista}. Revisa los campos marcados en rojo.`);
+      // Lleva la vista al primer campo con error (sin enfocar los bloqueados del perfil).
+      const el = document.getElementById(faltantes[0].id);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (!el.hasAttribute('readonly')) el.focus({ preventScroll: true });
+      }
       return;
     }
 
@@ -869,17 +879,19 @@ function InscriptionWizard() {
                         id="documento"
                         required
                         readOnly
-                        className="part-input-locked"
+                        className={`part-input-locked${errorDocumento ? ' part-input-error' : ''}`}
+                        aria-invalid={!!errorDocumento}
                         value={documento}
                         onFocus={(e) => {
                           e.target.blur();
                           mostrarMsg('error', 'Para modificar tu número de documento, ve a Ajustes de tu perfil.');
                         }}
                       />
+                      {errorDocumento && <p className="part-form-error">{errorDocumento}</p>}
                     </div>
                     <div className="part-form-group">
                       <label htmlFor="rh">Tipo de sangre (RH) *</label>
-                      <select id="rh" required value={rh} onChange={(e) => { setRh(e.target.value); setErrorRh(''); }}>
+                      <select id="rh" required className={errorRh ? 'part-input-error' : undefined} aria-invalid={!!errorRh} value={rh} onChange={(e) => { setRh(e.target.value); setErrorRh(''); }}>
                         <option value="">Seleccionar…</option>
                         {RH_OPCIONES.map((o) => <option key={o} value={o}>{o}</option>)}
                       </select>
@@ -892,13 +904,15 @@ function InscriptionWizard() {
                         type="tel"
                         required
                         readOnly
-                        className="part-input-locked"
+                        className={`part-input-locked${errorTelefonoContacto ? ' part-input-error' : ''}`}
+                        aria-invalid={!!errorTelefonoContacto}
                         value={telefonoContacto}
                         onFocus={(e) => {
                           e.target.blur();
                           mostrarMsg('error', 'Para modificar tu teléfono, ve a Ajustes de tu perfil.');
                         }}
                       />
+                      {errorTelefonoContacto && <p className="part-form-error">{errorTelefonoContacto}</p>}
                     </div>
                     <div className="part-form-group">
                       <label htmlFor="fecha-nac">Fecha de nacimiento *</label>
@@ -907,13 +921,15 @@ function InscriptionWizard() {
                         type="date"
                         required
                         readOnly
-                        className="part-input-locked"
+                        className={`part-input-locked${errorFechaNacimiento ? ' part-input-error' : ''}`}
+                        aria-invalid={!!errorFechaNacimiento}
                         value={fechaNacimiento}
                         onFocus={(e) => {
                           e.target.blur();
                           mostrarMsg('error', 'Para modificar tu fecha de nacimiento, ve a Ajustes de tu perfil.');
                         }}
                       />
+                      {errorFechaNacimiento && <p className="part-form-error">{errorFechaNacimiento}</p>}
                     </div>
                   </div>
                 </div>
@@ -932,6 +948,8 @@ function InscriptionWizard() {
                       <input
                         id="c-nombre"
                         required
+                        className={errorNombreContacto ? 'part-input-error' : undefined}
+                        aria-invalid={!!errorNombreContacto}
                         value={contactoEmergenciaNombre}
                         onChange={(e) => {
                           const raw = e.target.value;
@@ -948,6 +966,8 @@ function InscriptionWizard() {
                         id="c-telefono"
                         type="tel"
                         required
+                        className={errorTelefonoEmergencia ? 'part-input-error' : undefined}
+                        aria-invalid={!!errorTelefonoEmergencia}
                         value={contactoEmergenciaTelefono}
                         onChange={(e) => {
                           const raw = e.target.value;
@@ -960,7 +980,7 @@ function InscriptionWizard() {
                     </div>
                     <div className="part-form-group" style={{ gridColumn: '1 / -1' }}>
                       <label htmlFor="c-parentesco">Parentesco *</label>
-                      <select id="c-parentesco" required value={parentesco} onChange={(e) => setParentesco(e.target.value)}>
+                      <select id="c-parentesco" required className={errorParentesco ? 'part-input-error' : undefined} aria-invalid={!!errorParentesco} value={parentesco} onChange={(e) => { setParentesco(e.target.value); setErrorParentesco(''); }}>
                         <option value="">Seleccionar…</option>
                         <option value="madre">Madre</option>
                         <option value="padre">Padre</option>
@@ -969,6 +989,7 @@ function InscriptionWizard() {
                         <option value="amigo_a">Amigo/a</option>
                         <option value="otro">Otro</option>
                       </select>
+                      {errorParentesco && <p className="part-form-error">{errorParentesco}</p>}
                     </div>
                   </div>
                 </div>
@@ -981,19 +1002,21 @@ function InscriptionWizard() {
                   <h3>Categoría de competencia</h3>
                 </div>
                 <div className="part-card-body">
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.75rem' }}>
+                  <div id="grupo-categoria" tabIndex={-1} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.75rem' }}>
                     {categorias.length === 0 && <div className="part-form-hint">Este evento no tiene categorías configuradas.</div>}
                     {categorias.map((cat) => (
                       <label
                         key={cat.id}
                         style={{
                           display: 'flex', alignItems: 'center', gap: '.6rem', padding: '.75rem',
-                          border: `1px solid ${categoriaId === cat.id ? 'var(--accent)' : 'var(--border, #e5e7eb)'}`,
+                          border: `${errorCategoria && categoriaId !== cat.id ? 2 : 1}px solid ${categoriaId === cat.id ? 'var(--accent)' : errorCategoria ? 'var(--part-err, #d92d2d)' : 'var(--border, #e5e7eb)'}`,
                           borderRadius: 10, cursor: 'pointer',
-                          background: categoriaId === cat.id ? 'color-mix(in srgb, var(--accent) 8%, transparent)' : 'transparent',
+                          background: categoriaId === cat.id
+                            ? 'color-mix(in srgb, var(--accent) 8%, transparent)'
+                            : errorCategoria ? 'var(--part-err-soft, rgba(217, 45, 45, 0.1))' : 'transparent',
                         }}
                       >
-                        <input type="radio" name="categoria" style={{ width: 'auto' }} checked={categoriaId === cat.id} onChange={() => setCategoriaId(cat.id)} />
+                        <input type="radio" name="categoria" style={{ width: 'auto' }} checked={categoriaId === cat.id} onChange={() => { setCategoriaId(cat.id); setErrorCategoria(''); }} />
                         <div>
                           <div style={{ fontWeight: 700, fontSize: '.85rem' }}>{cat.nombre}</div>
                           {cat.descripcion && <div className="part-form-hint" style={{ margin: 0 }}>{cat.descripcion}</div>}
@@ -1001,6 +1024,7 @@ function InscriptionWizard() {
                       </label>
                     ))}
                   </div>
+                  {errorCategoria && <p className="part-form-error">{errorCategoria}</p>}
                 </div>
               </div>
 
@@ -1041,13 +1065,16 @@ function InscriptionWizard() {
                       <p className="part-form-hint" style={{ marginTop: '0rem' }}>
                         El kit incluye jersey, pantaloneta y medias. Al adquirirlo se sumarán {fmtMoney(evento.kit.precio)} al valor de la inscripción.
                       </p>
-                      <OpcionSiNo valor={deseaJersey} onSi={() => setDeseaJersey(true)} onNo={() => setDeseaJersey(false)} />
+                      <div id="grupo-kit" tabIndex={-1} className={errorKit ? 'part-group-error' : undefined} style={{ display: 'inline-block' }}>
+                        <OpcionSiNo valor={deseaJersey} onSi={() => { setDeseaJersey(true); setErrorKit(''); }} onNo={() => { setDeseaJersey(false); setErrorKit(''); setErrorTalla(''); }} />
+                      </div>
+                      {errorKit && <p className="part-form-error">{errorKit}</p>}
                     </div>
                     {deseaJersey === true && (
                       <>
                         <div className="part-form-group">
                           <label>Talla del kit *</label>
-                          <div role="radiogroup" aria-label="Talla del kit" className="kit-rejilla">
+                          <div id="grupo-talla" tabIndex={-1} role="radiogroup" aria-label="Talla del kit" className={`kit-rejilla${errorTalla ? ' part-group-error' : ''}`}>
                             {opcionesTalla.map((t, idx) => (
                               <TallaOpcion
                                 key={t}
@@ -1056,10 +1083,11 @@ function InscriptionWizard() {
                                 quedan={quedan(t, 'titular')}
                                 controlado={kitConTallas}
                                 activa={tallaKit === t}
-                                onClick={() => setTallaKit(t)}
+                                onClick={() => { setTallaKit(t); setErrorTalla(''); }}
                               />
                             ))}
                           </div>
+                          {errorTalla && <p className="part-form-error">{errorTalla}</p>}
                         </div>
                         <div className="part-form-group" style={{ marginBottom: 0 }}>
                           <label htmlFor="dorsal">Número de dorsal preferido (opcional, sujeto a disponibilidad)</label>
@@ -1128,6 +1156,8 @@ function InscriptionWizard() {
                           <input
                             id="i-documento"
                             required
+                            className={errorInvDocumento ? 'part-input-error' : undefined}
+                            aria-invalid={!!errorInvDocumento}
                             inputMode="numeric"
                             value={invDocumento}
                             onChange={(e) => {
@@ -1144,6 +1174,8 @@ function InscriptionWizard() {
                           <input
                             id="i-nombre"
                             required
+                            className={errorInvNombre ? 'part-input-error' : undefined}
+                            aria-invalid={!!errorInvNombre}
                             value={invNombre}
                             onChange={(e) => {
                               const raw = e.target.value;
@@ -1159,6 +1191,8 @@ function InscriptionWizard() {
                           <input
                             id="i-apellido"
                             required
+                            className={errorInvApellido ? 'part-input-error' : undefined}
+                            aria-invalid={!!errorInvApellido}
                             value={invApellido}
                             onChange={(e) => {
                               const raw = e.target.value;
@@ -1181,6 +1215,8 @@ function InscriptionWizard() {
                             id="i-telefono"
                             type="tel"
                             required
+                            className={errorInvTelefono ? 'part-input-error' : undefined}
+                            aria-invalid={!!errorInvTelefono}
                             value={invTelefono}
                             onChange={(e) => {
                               const raw = e.target.value;
@@ -1193,7 +1229,8 @@ function InscriptionWizard() {
                         </div>
                         <div className="part-form-group">
                           <label htmlFor="i-fecha-nac">Fecha de nacimiento</label>
-                          <input id="i-fecha-nac" type="date" required value={invFechaNacimiento} onChange={(e) => setInvFechaNacimiento(e.target.value)} />
+                          <input id="i-fecha-nac" type="date" required className={errorInvFechaNac ? 'part-input-error' : undefined} aria-invalid={!!errorInvFechaNac} value={invFechaNacimiento} onChange={(e) => { setInvFechaNacimiento(e.target.value); setErrorInvFechaNac(''); }} />
+                          {errorInvFechaNac && <p className="part-form-error">{errorInvFechaNac}</p>}
                         </div>
                         <div className="part-form-group">
                           <label htmlFor="i-correo">Correo (opcional)</label>
@@ -1211,10 +1248,10 @@ function InscriptionWizard() {
                           <p className="part-form-hint" style={{ marginTop: 0 }}>
                             Si lo pide, se suman {fmtMoney(evento.kit.precio)} al total.
                           </p>
-                          <OpcionSiNo valor={invDeseaKit} onSi={() => setInvDeseaKit(true)} onNo={() => { setInvDeseaKit(false); setInvTallaKit(''); setInvDorsal(''); }} />
+                          <OpcionSiNo valor={invDeseaKit} onSi={() => setInvDeseaKit(true)} onNo={() => { setInvDeseaKit(false); setInvTallaKit(''); setInvDorsal(''); setErrorInvTalla(''); }} />
                           {invDeseaKit && (
                             <>
-                            <div role="radiogroup" aria-label="Talla del kit del invitado" className="kit-rejilla">
+                            <div id="grupo-inv-talla" tabIndex={-1} role="radiogroup" aria-label="Talla del kit del invitado" className={`kit-rejilla${errorInvTalla ? ' part-group-error' : ''}`}>
                               {opcionesTalla.map((t, idx) => (
                                 <TallaOpcion
                                   key={t}
@@ -1223,10 +1260,11 @@ function InscriptionWizard() {
                                   quedan={quedan(t, 'invitado')}
                                   controlado={kitConTallas}
                                   activa={invTallaKit === t}
-                                  onClick={() => setInvTallaKit(t)}
+                                  onClick={() => { setInvTallaKit(t); setErrorInvTalla(''); }}
                                 />
                               ))}
                             </div>
+                            {errorInvTalla && <p className="part-form-error">{errorInvTalla}</p>}
                             <div className="part-form-group" style={{ marginTop: '1rem', marginBottom: 0 }}>
                               <label htmlFor="inv-dorsal">Número de dorsal preferido del invitado (opcional, sujeto a disponibilidad)</label>
                               <input id="inv-dorsal" placeholder="Ej: 43" inputMode="numeric" value={invDorsal} onChange={(e) => setInvDorsal(e.target.value.replace(/\D/g, ''))} />
