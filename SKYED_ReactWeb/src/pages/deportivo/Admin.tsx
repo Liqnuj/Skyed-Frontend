@@ -35,6 +35,7 @@ import {
   UserPlus,
   Wallet,
   X,
+  LifeBuoy,
 } from "lucide-react";
 
 import Protected from "../../components/Protected";
@@ -54,6 +55,7 @@ import { RolesModal, RolesDeUsuario, UsuarioModal, EditarUsuarioModal, puedeEdit
 import AsistentesPanel from "../../features/asistentes/AsistentesPanel";
 import { usePermisos } from "../../context/PermisosContext";
 import { primeraSeccionPermitida } from "../../types/permisos";
+import AyudaAdmin from "../../pages/admin/AyudaAdmin";
 
 type Confirmar = ReturnType<typeof useConfirmacion>["confirmar"];
 // Base del panel: mismo diseño del panel social con la paleta deportiva
@@ -71,9 +73,10 @@ type Section =
   | "usuarios"
   | "asistentes"
   | "copias"
-  | "ajustes";
+  | "ajustes"
+  | "ayuda";
 
-const SECCIONES: Section[] = ["inicio", "eventos", "inscripciones", "acceso", "resultados", "kits", "usuarios", "copias", "asistentes", "ajustes"];
+const SECCIONES: Section[] = ["inicio", "eventos", "inscripciones", "acceso", "resultados", "kits", "usuarios", "copias", "asistentes", "ajustes", "ayuda"];
 
 type Categoria = {
   id: number;
@@ -280,7 +283,7 @@ const clearDrafts = () => {
 };
 
 const SECTION_KEY = "admin_section";
-const SECTIONS_VALIDAS = ["inicio", "eventos", "inscripciones", "acceso", "resultados", "kits", "usuarios", "copias", "asistentes", "ajustes"];
+const SECTIONS_VALIDAS = ["inicio", "eventos", "inscripciones", "acceso", "resultados", "kits", "usuarios", "copias", "asistentes", "ajustes", "ayuda"];
 type ModalKind = "evento" | "categorias" | "kit" | "pago" | "resultado" | "roles" | "usuario" | "editar-usuario" | null;
 
 /** "1:05" → "01:05:00"; acepta HH:MM o HH:MM:SS del input type="time". */
@@ -762,6 +765,7 @@ function AdminPage() {
     asistentes: { label: "Asistentes", icon: UserPlus },
     copias: { label: "Copias de seguridad", icon: DatabaseBackup },
     ajustes: { label: "Ajustes", icon: Settings },
+    ayuda: { label: "Administrar ayuda", icon: LifeBuoy },
   };
 
   const accent = "#2c9caf";
@@ -1312,6 +1316,9 @@ function AdminPage() {
               {!visibleUsers.length && <tr><td colSpan={5}>{usersVisibles.length ? "No hay usuarios con estos filtros." : "La API de usuarios no devolvió registros."}</td></tr>}
             </tbody>
           </SectionTable>
+        )}
+        {section === "ayuda" && (
+          <AyudaAdmin />
         )}
 
         <AdminFooter modulo="deportivo" />

@@ -2,7 +2,7 @@ import { useContext, useId, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import type { AyudaArticuloResumen, AyudaCategoria, ModuloAyuda } from '../../services/ayudaService';
+import type { AyudaArticuloResumen, AyudaCategoria, EspacioAyuda } from '../../services/ayudaService';
 import CanvasParticles from '../social/CanvasParticles';
 import { ModuloAyudaContext } from './ayudaContext';
 import { rutaAyuda } from './rutas';
@@ -51,6 +51,23 @@ export function AyudaHero({
       <i className={`ti ${icono}`} />
     </span>
   ) : null;
+
+  // Página principal: mismo look claro del inicio (ilustración + título Playfair con palabra en degradado).
+  if (modulo === 'principal') {
+    return (
+      <section className={`ay-cabecera ay-cabecera--principal${compacto ? ' ay-cabecera--compacto' : ''}`}>
+        <div className="ay-hero-fondo" aria-hidden="true" />
+        <div className="ay-hero-inner">
+          <Titulo className={comoH1 ? undefined : 'ay-titulo'}>
+            {iconoNodo}
+            {conEnfasis(titulo)}
+          </Titulo>
+          {texto && <p className="ay-hero-texto">{texto}</p>}
+          {children}
+        </div>
+      </section>
+    );
+  }
 
   if (social) {
     return (
@@ -110,15 +127,40 @@ export function AyudaMigas({ migas }: { migas: Miga[] }) {
   );
 }
 
-/* ---------- Tarjetas ---------- */
-export function AyudaCategoriaCard({ categoria, modulo }: { categoria: AyudaCategoria; modulo: ModuloAyuda }) {
-  const total = categoria.total_articulos ?? 0;
+/* ---------- Insignia del espacio (solo en el Centro de Ayuda de la página principal) ----------
+   Indica a qué parte de SKYED pertenece cada categoría o artículo. */
+export const ESPACIOS_AYUDA: Record<string, { nombre: string; icono: string }> = {
+  general: { nombre: 'Cuenta y general', icono: 'ti-user-circle' },
+  deportivo: { nombre: 'SKYED Deportivo', icono: 'ti-bike' },
+  social: { nombre: 'SkyedSocial', icono: 'ti-confetti' },
+};
+
+export function AyudaInsignia({ modulo, esquina = false }: { modulo: string; esquina?: boolean }) {
+  const espacio = ESPACIOS_AYUDA[modulo] ?? ESPACIOS_AYUDA.general;
 
   return (
-    <Link className="ay-card" to={`${rutaAyuda(modulo)}/categoria/${categoria.slug}`}>
+    <span className={`ay-insignia${esquina ? ' ay-insignia--esquina' : ''}`} data-modulo={modulo}>
+      <i className={`ti ${espacio.icono}`} aria-hidden="true" />
+      {espacio.nombre}
+    </span>
+  );
+}
+
+/* ---------- Tarjetas ---------- */
+export function AyudaCategoriaCard({ categoria, modulo }: { categoria: AyudaCategoria; modulo: EspacioAyuda }) {
+  const total = categoria.total_articulos ?? 0;
+  const enPrincipal = modulo === 'principal';
+
+  return (
+    <Link
+      className="ay-card"
+      data-modulo={enPrincipal ? categoria.modulo : undefined}
+      to={`${rutaAyuda(modulo)}/categoria/${categoria.slug}`}
+    >
       <span className="ay-card-icono" aria-hidden="true">
         <i className={`ti ${categoria.icono}`} />
       </span>
+      {enPrincipal && <AyudaInsignia modulo={categoria.modulo} esquina />}
       <h3>{categoria.nombre}</h3>
       {categoria.descripcion && <p>{categoria.descripcion}</p>}
       <span className="ay-card-meta">
@@ -134,12 +176,27 @@ export function AyudaArticuloCard({
   conCategoria = true,
 }: {
   articulo: AyudaArticuloResumen;
-  modulo: ModuloAyuda;
+  modulo: EspacioAyuda;
   conCategoria?: boolean;
 }) {
+  const etiqueta =
+    conCategoria && articulo.categoria ? <span className="ay-etiqueta">{articulo.categoria.nombre}</span> : null;
+  const enPrincipal = modulo === 'principal';
+
   return (
-    <Link className="ay-card" to={`${rutaAyuda(modulo)}/articulo/${articulo.slug}`}>
-      {conCategoria && articulo.categoria && <span className="ay-etiqueta">{articulo.categoria.nombre}</span>}
+    <Link
+      className="ay-card"
+      data-modulo={enPrincipal ? articulo.modulo : undefined}
+      to={`${rutaAyuda(modulo)}/articulo/${articulo.slug}`}
+    >
+      {enPrincipal ? (
+        <div className="ay-card-etiquetas">
+          <AyudaInsignia modulo={articulo.modulo} />
+          {etiqueta}
+        </div>
+      ) : (
+        etiqueta
+      )}
       <h3>{articulo.titulo}</h3>
       {articulo.resumen && <p>{articulo.resumen}</p>}
       <span className="ay-card-meta">
@@ -150,7 +207,7 @@ export function AyudaArticuloCard({
 }
 
 /* ---------- Preguntas frecuentes (acordeón accesible) ---------- */
-export function AyudaFaq({ items, modulo }: { items: AyudaArticuloResumen[]; modulo: ModuloAyuda }) {
+export function AyudaFaq({ items, modulo }: { items: AyudaArticuloResumen[]; modulo: EspacioAyuda }) {
   const [abierto, setAbierto] = useState<number | null>(null);
   const prefijo = useId();
 
@@ -182,6 +239,7 @@ export function AyudaFaq({ items, modulo }: { items: AyudaArticuloResumen[]; mod
               <Link className="ay-enlace" to={`${rutaAyuda(modulo)}/articulo/${a.slug}`}>
                 Ver paso a paso →
               </Link>
+              {modulo === 'principal' && <AyudaInsignia modulo={a.modulo} />}
             </div>
           </div>
         );

@@ -1,0 +1,186 @@
+/* Centro de Ayuda de la página principal (/ayuda).
+   Reutiliza las clases de ayuda.css; aquí solo va lo propio de .ay-principal:
+   paleta morada/cian del inicio, cabecera clara con la ilustración, filtro por espacio,
+   insignias de módulo y tarjetas de acceso a la ayuda de cada plataforma. */
+
+/* ---------- Paleta ---------- */
+.ayuda.ay-principal {
+  --ay-strong: #8827f0;
+  --ay-strong-2: #4a1196;
+  --ay-glow: #2c9caf;
+  --ay-tint: #f1e8fd;
+  --ay-link: #6d1fc4;
+  --ay-focus: #6d1fc4;
+}
+.dark-mode .ayuda.ay-principal { --ay-tint: #261538; --ay-link: #caa8f7; --ay-focus: #caa8f7; }
+
+/* Cada tarjeta / insignia / botón toma los colores de su módulo (data-modulo) */
+.ay-principal [data-modulo="deportivo"] { --ay-strong: #0b6f82; --ay-strong-2: #07172e; --ay-glow: #45c7dc; --ay-tint: #e3f4f7; --ay-link: #0b6f82; }
+.ay-principal [data-modulo="social"]    { --ay-strong: #9c02ae; --ay-strong-2: #4b0058; --ay-glow: #e07bf0; --ay-tint: #f8eafb; --ay-link: #9c02ae; }
+.dark-mode .ay-principal [data-modulo="deportivo"] { --ay-tint: #10303a; --ay-link: #6fd0e0; }
+.dark-mode .ay-principal [data-modulo="social"]    { --ay-tint: #2a1030; --ay-link: #e3a9ee; }
+
+/* Títulos de sección con la tipografía serif del inicio */
+.ayuda.ay-principal .ay-seccion h2,
+.ayuda.ay-principal .ay-articulo h1,
+.ayuda.ay-principal .ay-soporte h2 { font-family: 'Playfair Display', serif; }
+
+/* ---------- Cabecera (misma ilustración y velo del hero del inicio) ---------- */
+.ayuda.ay-principal .ay-cabecera--principal {
+  position: relative; isolation: isolate; overflow: hidden; text-align: center;
+  padding: 4.25rem 0 3.25rem; color: #0e0d0d; background-color: var(--ay-bg);
+}
+.dark-mode .ayuda.ay-principal .ay-cabecera--principal { color: #fff; }
+
+.ayuda.ay-principal .ay-hero-fondo {
+  position: absolute; inset: 0; z-index: -2;
+  background: url('/assets/principal/hero.png') center / cover no-repeat;
+}
+.dark-mode .ayuda.ay-principal .ay-hero-fondo { mix-blend-mode: screen; }
+/* Velo: asegura el contraste y funde la cabecera con el fondo de la página */
+.ayuda.ay-principal .ay-cabecera--principal::before {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .25) 0%, rgba(255, 255, 255, .62) 55%, var(--ay-bg) 100%);
+}
+.dark-mode .ayuda.ay-principal .ay-cabecera--principal::before {
+  background: linear-gradient(180deg, rgba(13, 10, 26, .15) 0%, rgba(13, 10, 26, .55) 55%, var(--ay-bg) 100%);
+}
+
+.ayuda.ay-principal .ay-hero-badge {
+  display: inline-flex; align-items: center; gap: 8px; margin: 0 auto 1.4rem; padding: 6px 18px;
+  border: 2px solid var(--ay-strong); border-radius: 999px; background: rgba(255, 255, 255, .55);
+  font-size: calc(11px * var(--fs-scale, 1)); font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+  color: rgba(3, 3, 3, .72); animation: nos-fade-up 1s cubic-bezier(.22, 1, .36, 1) .1s both;
+}
+.dark-mode .ayuda.ay-principal .ay-hero-badge { color: rgba(255, 255, 255, .85); background: rgba(255, 255, 255, .06); }
+.ayuda.ay-principal .ay-hero-pulso { width: 7px; height: 7px; border-radius: 50%; background: var(--ay-strong); animation: ay-pulso 2s infinite; flex: none; }
+@keyframes ay-pulso { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .4; transform: scale(.75); } }
+
+.ayuda.ay-principal .ay-cabecera--principal :is(h1, p.ay-titulo) {
+  font-family: 'Playfair Display', serif; font-weight: 700; line-height: 1.1; color: inherit;
+  font-size: calc(clamp(2.3rem, 5.5vw, 3.8rem) * var(--fs-scale, 1)); margin-bottom: .7rem;
+  animation: nos-fade-up 1s cubic-bezier(.22, 1, .36, 1) .2s both;
+}
+/* La última palabra va en degradado morado → cian, como los acentos del inicio */
+.ayuda.ay-principal .ay-cabecera--principal :is(h1, p.ay-titulo) em {
+  font-style: normal;
+  background: linear-gradient(100deg, #680991 0%, #8827f0 45%, #2c9caf 100%);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent;
+  padding-right: .06em;
+}
+.dark-mode .ayuda.ay-principal .ay-cabecera--principal :is(h1, p.ay-titulo) em {
+  background-image: linear-gradient(100deg, #c9a6f5 0%, #a56af5 45%, #6fd0e0 100%);
+}
+.ayuda.ay-principal .ay-hero-texto {
+  font-family: Arial, sans-serif; font-size: calc(1.1rem * var(--fs-scale, 1)); color: #333; margin-bottom: 1.75rem;
+  animation: nos-fade-up 1s cubic-bezier(.22, 1, .36, 1) .4s both;
+}
+.dark-mode .ayuda.ay-principal .ay-hero-texto { color: rgba(255, 255, 255, .7); }
+
+/* Buscador sobre fondo claro: borde y sombra moradas en lugar del halo blanco */
+.ayuda.ay-principal .ay-buscador-caja {
+  border: 1px solid color-mix(in srgb, var(--ay-strong) 30%, #fff);
+  box-shadow: 0 14px 36px rgba(104, 9, 145, .16), 0 0 0 6px rgba(136, 39, 240, .08);
+}
+.ayuda.ay-principal .ay-buscador-caja:focus-within {
+  outline: 3px solid var(--ay-focus); outline-offset: 3px; box-shadow: 0 18px 44px rgba(104, 9, 145, .24), 0 0 0 8px rgba(136, 39, 240, .12);
+}
+.ayuda.ay-principal .ay-chip {
+  background: rgba(255, 255, 255, .78); color: var(--ay-link); font-weight: 600;
+  border: 1px solid color-mix(in srgb, var(--ay-strong) 35%, transparent);
+}
+.ayuda.ay-principal .ay-chip:hover { background: var(--ay-tint); }
+.dark-mode .ayuda.ay-principal .ay-chip { background: rgba(255, 255, 255, .08); }
+.ayuda.ay-principal .ay-aviso { background: #fdecea; color: #b3261e; border: 1px solid #f3b8b3; }
+
+/* Variante compacta (categorías y artículos): alineada a la izquierda y sin insignia */
+.ayuda.ay-principal .ay-cabecera--compacto { text-align: left; padding: 3rem 0 2.25rem; }
+.ayuda.ay-principal .ay-cabecera--compacto :is(h1, p.ay-titulo) { font-size: calc(clamp(1.9rem, 4vw, 2.7rem) * var(--fs-scale, 1)); }
+.ayuda.ay-principal .ay-cabecera--compacto .ay-hero-texto { margin-bottom: 1.25rem; }
+.ayuda.ay-principal .ay-cabecera--compacto .ay-hero-icono { background: var(--ay-tint); border-color: color-mix(in srgb, var(--ay-strong) 25%, transparent); color: var(--ay-link); box-shadow: none; }
+
+/* ---------- Filtro por espacio ---------- */
+.ayuda.ay-principal .ay-espacios { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .9rem; }
+.ayuda.ay-principal .ay-espacio {
+  display: flex; align-items: center; gap: .8rem; width: 100%; text-align: left; font: inherit; color: var(--ay-text);
+  background: var(--ay-surface); border: 2px solid var(--ay-border); border-radius: 18px; padding: .95rem 1rem;
+  cursor: pointer; box-shadow: var(--ay-shadow); min-height: 72px;
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, background .18s ease;
+}
+.ayuda.ay-principal .ay-espacio:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--ay-strong) 45%, var(--ay-border)); }
+.ayuda.ay-principal .ay-espacio[aria-pressed="true"] {
+  border-color: var(--ay-strong); background: linear-gradient(135deg, var(--ay-tint), var(--ay-surface));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ay-strong) 16%, transparent), var(--ay-shadow-hover);
+}
+.ayuda.ay-principal .ay-espacio-icono {
+  width: 44px; height: 44px; border-radius: 14px; flex: none; display: grid; place-items: center; font-size: 1.4rem;
+  background: var(--ay-tint); color: var(--ay-link); transition: background .18s, color .18s;
+}
+.ayuda.ay-principal .ay-espacio[aria-pressed="true"] .ay-espacio-icono { background: linear-gradient(135deg, var(--ay-strong), var(--ay-strong-2)); color: #fff; }
+.ayuda.ay-principal .ay-espacio-texto { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+.ayuda.ay-principal .ay-espacio-texto strong { font-size: calc(.98rem * var(--fs-scale, 1)); }
+.ayuda.ay-principal .ay-espacio-texto small { color: var(--ay-muted); font-size: calc(.8rem * var(--fs-scale, 1)); }
+.ayuda.ay-principal .ay-espacio-n {
+  margin-left: auto; flex: none; min-width: 1.9rem; text-align: center; padding: .1rem .55rem; border-radius: 999px;
+  background: var(--ay-tint); color: var(--ay-link); font-weight: 800; font-size: calc(.82rem * var(--fs-scale, 1));
+}
+
+/* ---------- Insignias de módulo ---------- */
+.ayuda.ay-principal .ay-insignia {
+  display: inline-flex; align-items: center; gap: .3rem; align-self: flex-start; white-space: nowrap;
+  background: var(--ay-tint); color: var(--ay-link); font-weight: 700; font-size: calc(.74rem * var(--fs-scale, 1));
+  padding: .2rem .65rem; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--ay-strong) 20%, transparent);
+}
+.ayuda.ay-principal .ay-insignia--esquina { position: absolute; top: 1.2rem; right: 1.2rem; }
+.ayuda.ay-principal .ay-card-etiquetas { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+.ayuda.ay-principal .ay-faq-panel { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1rem; }
+.ayuda.ay-principal .ay-faq-panel[hidden] { display: none; }
+.ayuda.ay-principal .ay-faq-panel p { flex: 1 1 100%; margin: 0; }
+.ayuda.ay-principal .ay-articulo > .ay-insignia { margin-top: 1rem; }
+.ayuda.ay-principal .ay-articulo > .ay-insignia + h1 { margin-top: .6rem; }
+.ayuda.ay-principal .ay-top a { justify-content: space-between; }
+.ayuda.ay-principal .ay-top-titulo { flex: 1; min-width: 0; }
+.ayuda.ay-principal .ay-top a::before { align-self: center; }
+.ayuda.ay-principal .ay-top .ay-insignia { align-self: center; }
+
+/* ---------- Ayuda por plataforma ---------- */
+.ayuda.ay-principal .ay-plataformas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.1rem; }
+.ayuda.ay-principal .ay-plataforma {
+  position: relative; overflow: hidden; display: flex; align-items: center; gap: 1rem; padding: 1.4rem 1.5rem;
+  border-radius: var(--ay-radio); text-decoration: none; color: #fff;
+  background: linear-gradient(135deg, var(--ay-strong), var(--ay-strong-2));
+  box-shadow: var(--ay-shadow); transition: transform .2s ease, box-shadow .2s ease;
+}
+.ayuda.ay-principal .ay-plataforma::after {
+  content: ""; position: absolute; right: -40px; top: -50px; width: 170px; height: 170px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, color-mix(in srgb, var(--ay-glow) 45%, transparent), transparent 70%);
+}
+.ayuda.ay-principal .ay-plataforma:hover { transform: translateY(-4px); box-shadow: var(--ay-shadow-hover); }
+.ayuda.ay-principal .ay-plataforma > * { position: relative; z-index: 1; }
+.ayuda.ay-principal .ay-plataforma-icono {
+  width: 54px; height: 54px; border-radius: 16px; flex: none; display: grid; place-items: center; font-size: 1.7rem;
+  background: rgba(255, 255, 255, .18); border: 1px solid rgba(255, 255, 255, .35);
+}
+.ayuda.ay-principal .ay-plataforma-texto { display: flex; flex-direction: column; min-width: 0; line-height: 1.3; }
+.ayuda.ay-principal .ay-plataforma-texto strong { font-size: calc(1.15rem * var(--fs-scale, 1)); }
+.ayuda.ay-principal .ay-plataforma-texto small { opacity: .88; font-size: calc(.88rem * var(--fs-scale, 1)); }
+.ayuda.ay-principal .ay-plataforma-go { margin-left: auto; font-size: 1.4rem; transition: transform .2s; }
+.ayuda.ay-principal .ay-plataforma:hover .ay-plataforma-go { transform: translateX(5px); }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 960px) {
+  .ayuda.ay-principal .ay-espacios { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .ayuda.ay-principal .ay-cabecera--principal { padding: 3rem 0 2.5rem; }
+  .ayuda.ay-principal .ay-cabecera--compacto { padding: 2.25rem 0 1.75rem; }
+  .ayuda.ay-principal .ay-espacios, .ayuda.ay-principal .ay-plataformas { grid-template-columns: 1fr; }
+  .ayuda.ay-principal .ay-hero-badge { letter-spacing: 1px; }
+  /* "Lo más consultado": la insignia baja bajo el título para que este no se apriete */
+  .ayuda.ay-principal .ay-top a { flex-wrap: wrap; row-gap: .3rem; }
+  .ayuda.ay-principal .ay-top .ay-insignia { margin-left: 3.1rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ayuda.ay-principal .ay-hero-pulso { animation: none; }
+  .ayuda.ay-principal .ay-espacio:hover, .ayuda.ay-principal .ay-plataforma:hover { transform: none; }
+}

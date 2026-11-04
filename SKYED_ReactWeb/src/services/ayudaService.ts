@@ -2,6 +2,13 @@ import { apiConfig, getToken } from './api';
 
 export type ModuloAyuda = 'social' | 'deportivo';
 
+/** Dónde se muestra el Centro de Ayuda: dentro de un módulo o en la página principal (todo el contenido). */
+export type EspacioAyuda = ModuloAyuda | 'principal';
+
+/** El backend filtra solo por social / deportivo; sin `modulo` devuelve la ayuda de todos los espacios. */
+const moduloParaApi = (espacio: EspacioAyuda): ModuloAyuda | undefined =>
+  espacio === 'principal' ? undefined : espacio;
+
 export interface AyudaCategoria {
   id: number;
   slug: string;
@@ -185,7 +192,7 @@ export function registrarVisita(slug: string): void {
 
 
 export const ayudaService = {
-  inicio: (modulo: ModuloAyuda) => ayudaGet<RespuestaInicio>('', { modulo }),
+  inicio: (modulo: EspacioAyuda) => ayudaGet<RespuestaInicio>('', { modulo: moduloParaApi(modulo) }),
 
   categoria: (slug: string) =>
     ayudaGet<{ categoria: AyudaCategoria; articulos: AyudaArticuloResumen[] }>(
@@ -200,5 +207,6 @@ export const ayudaService = {
       { util, comentario: util ? undefined : comentario?.trim() || undefined },
     ),
 
-  buscar: (q: string, modulo: ModuloAyuda) => ayudaGet<RespuestaBusqueda>('/buscar', { q, modulo }),
+  buscar: (q: string, modulo: EspacioAyuda) =>
+    ayudaGet<RespuestaBusqueda>('/buscar', { q, modulo: moduloParaApi(modulo) }),
 };

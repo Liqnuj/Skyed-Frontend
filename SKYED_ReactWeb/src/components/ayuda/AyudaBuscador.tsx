@@ -1,11 +1,11 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { ModuloAyuda } from '../../services/ayudaService';
+import type { EspacioAyuda } from '../../services/ayudaService';
 import { rutaAyuda } from './rutas';
 
 interface Props {
-  modulo: ModuloAyuda;
+  modulo: EspacioAyuda;
   valorInicial?: string;
   /** Busca mientras se escribe (portada). Si no, solo al enviar. */
   enVivo?: boolean;

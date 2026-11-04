@@ -9,12 +9,12 @@ import {
   AyudaMigas,
   AyudaSoporte,
 } from '../../components/ayuda/AyudaPartes';
-import { rutaAyuda } from '../../components/ayuda/rutas';
+import { rutaAyuda, rutaInicio } from '../../components/ayuda/rutas';
 import { useAyudaDatos } from '../../hooks/useAyudaDatos';
 import { ayudaService } from '../../services/ayudaService';
-import type { ModuloAyuda } from '../../services/ayudaService';
+import type { EspacioAyuda } from '../../services/ayudaService';
 
-export default function AyudaCategoriaPage({ modulo }: { modulo: ModuloAyuda }) {
+export default function AyudaCategoriaPage({ modulo }: { modulo: EspacioAyuda }) {
   const { slug = '' } = useParams();
   const base = rutaAyuda(modulo);
   const estado = useAyudaDatos(() => ayudaService.categoria(slug), [slug]);
@@ -36,7 +36,7 @@ export default function AyudaCategoriaPage({ modulo }: { modulo: ModuloAyuda }) 
       <div className="ay-wrap">
         <AyudaMigas
           migas={[
-            { texto: 'Inicio', a: `/${modulo}` },
+            { texto: 'Inicio', a: rutaInicio(modulo) },
             { texto: 'Ayuda', a: base },
             { texto: categoria?.nombre ?? 'Categoría' },
           ]}
