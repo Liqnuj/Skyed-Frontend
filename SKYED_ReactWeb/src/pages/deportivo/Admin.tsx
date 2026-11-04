@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate, useSearchParams } from "react-router-dom";
 import jsQR from "jsqr";
+import ExportMenu from "../../components/shared/ExportMenu";
 import {
   ArrowLeft,
   Bike,
@@ -43,8 +44,6 @@ import AccessibilityWidget from "../../components/shared/AccessibilityWidget";
 import AdminAjustes from "../../components/shared/AdminAjustes";
 import CopiasSeguridad from "../../components/shared/CopiasSeguridad";
 import { apiFetch } from "../../services/api";
-import ExportMenu from "../../components/shared/ExportMenu";
-import type { ExportFiltro } from "../../components/shared/ExportMenu";
 import { prepararImagen } from "../../utils/prepararImagen";
 import { EstadoPagos, InscritosPorEvento, TendenciaMensual } from "../../components/deportivo/GraficosAdmin";
 import { useConfirmacion } from "../../components/shared/ConfirmDialog";
@@ -182,7 +181,7 @@ type KitEntrega = {
   id_i: number;
   id_inv: number | null;
   nombre: string;
-  estado: string; // pendiente | entregado | devolucion
+  estado: string; // pendiente | entregado
   fecha_entrega?: string | null;
 };
 
@@ -460,6 +459,7 @@ function SectionTable({
   action?: string;
   onAction?: () => void;
   toolbar?: React.ReactNode;
+  /** Botón de exportar (PDF / Excel) que se muestra junto a la acción principal. */
   exportar?: React.ReactNode;
   children: React.ReactNode;
 }) {
@@ -469,11 +469,11 @@ function SectionTable({
         <div>
           <span className="card-kicker">GESTIÓN</span>
         </div>
-        {(action || exportar) && (
-          <div className="export-actions">
+        {(exportar || action) && (
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             {exportar}
             {action && (
-              <button className="primary-btn" onClick={onAction}>
+              <button title={action} className="primary-btn" onClick={onAction}>
                 <Plus size={16} /> {action}
               </button>
             )}
@@ -495,12 +495,6 @@ function Kpi({ icon, label, value, compact, formato }: { icon: React.ReactNode; 
   const contenido = typeof value === "number" ? <NumeroAnimado valor={value} formato={formato} /> : value;
   return <div className="kpi-card"><div className="kpi-icon">{icon}</div><span>{label}</span><strong className={compact ? "compact" : ""}>{contenido}</strong></div>;
 }
-
-// Rango de fechas que se elige dentro del menú Exportar (los demás filtros se envían desde la pantalla).
-const FILTROS_FECHA: ExportFiltro[] = [
-  { clave: "fecha_desde", etiqueta: "Desde", tipo: "fecha" },
-  { clave: "fecha_hasta", etiqueta: "Hasta", tipo: "fecha" },
-];
 
 function AdminPage() {
   const { user, logout } = useAuth();
@@ -554,6 +548,7 @@ function AdminPage() {
   const [filtroEstadoResultado, setFiltroEstadoResultado] = useState("");
   const [filtroStockKit, setFiltroStockKit] = useState(""); // con | bajo | agotado
   const [filtroLugarKit, setFiltroLugarKit] = useState("");
+  const [kitsTab, setKitsTab] = useState<"catalogo" | "entregas">("catalogo");
   const [filtroRolUsuario, setFiltroRolUsuario] = useState("");
   const [filtroEstadoUsuario, setFiltroEstadoUsuario] = useState("");
 
@@ -1025,7 +1020,6 @@ function AdminPage() {
             title="Gestión de eventos deportivos"
             action={puedeEditar("eventos") ? "Nuevo evento" : undefined}
             onAction={() => { setEditing(null); setModal("evento"); }}
-            exportar={<ExportMenu ruta="deportivo/eventos" archivo="skyed-deportivo-eventos" params={{ q: search, estado: filtroEstadoEvento || undefined, categoria: filtroCategoriaEvento || undefined, cuando: filtroFechaEvento || undefined, cupos: filtroCuposEvento || undefined }} filtros={FILTROS_FECHA} onMensaje={notify} />}
             toolbar={<>
               {filtroSelect(filtroCategoriaEvento, setFiltroCategoriaEvento, "Filtrar por categoría", "Todas las categorías", CATEGORIAS_EVENTO)}
               {filtroSelect(filtroEstadoEvento, setFiltroEstadoEvento, "Filtrar por estado", "Todos los estados", [
@@ -1091,7 +1085,6 @@ function AdminPage() {
         {section === "inscripciones" && (
           <SectionTable
             title="Inscripciones y pagos"
-            exportar={<ExportMenu ruta="deportivo/inscripciones-pagos" archivo="skyed-deportivo-inscripciones-pagos" params={{ q: search, estado: filtroPago === "todos" ? undefined : filtroPago, evento: filtroEvento || undefined, metodo: filtroMetodoPago || undefined }} filtros={FILTROS_FECHA} onMensaje={notify} />}
             toolbar={<>
               <select className="admin-select" value={filtroPago} onChange={e => setFiltroPago(e.target.value as typeof filtroPago)} aria-label="Filtrar por estado del pago">
                 <option value="pendiente">Pagos por validar</option>
@@ -1146,7 +1139,6 @@ function AdminPage() {
             title="Resultados oficiales"
             action={puedeEditar("resultados") ? "Registrar resultado" : undefined}
             onAction={() => { setEditing(null); setModal("resultado"); }}
-            exportar={<ExportMenu ruta="deportivo/resultados" archivo="skyed-deportivo-resultados" params={{ q: search, evento: filtroEvento || undefined, estado: filtroEstadoResultado || undefined }} onMensaje={notify} />}
             toolbar={<>
               {filtroEventoSelect}
               {filtroSelect(filtroEstadoResultado, setFiltroEstadoResultado, "Filtrar por estado del resultado", "Todos los estados", [
@@ -1182,11 +1174,22 @@ function AdminPage() {
         )}
 
         {section === "kits" && (
+          <>
+          <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }} role="tablist" aria-label="Vistas de kits">
+            <button type="button" role="tab" title= "Catalogo kits" aria-selected={kitsTab === "catalogo"} className={kitsTab === "catalogo" ? "primary-btn" : "secondary-btn"} onClick={() => setKitsTab("catalogo")}>
+              <Package size={15} /> Catálogo
+            </button>
+            <button type="button" role="tab" title= "Entregas kits" aria-selected={kitsTab === "entregas"} className={kitsTab === "entregas" ? "primary-btn" : "secondary-btn"} onClick={() => setKitsTab("entregas")}>
+              <ClipboardList size={15} /> Entregas
+            </button>
+          </div>
+          {kitsTab === "entregas" ? (
+            <EntregasKit eventos={eventos} search={search} notify={notify} />
+          ) : (
           <SectionTable
             title="Kits del participante"
             action={puedeEditar("kits") ? "Nuevo kit" : undefined}
             onAction={() => { setEditing(null); setModal("kit"); }}
-            exportar={<ExportMenu ruta="deportivo/kits" archivo="skyed-deportivo-kits" params={{ q: search, stock: filtroStockKit || undefined, lugar: filtroLugarKit || undefined }} onMensaje={notify} />}
             toolbar={<>
               {filtroSelect(filtroStockKit, setFiltroStockKit, "Filtrar por stock", "Todo el stock", [
                 { value: "con", label: "Con stock" },
@@ -1234,6 +1237,8 @@ function AdminPage() {
               {!visibleKits.length && <tr><td colSpan={9}>{kits.length ? "No hay kits con estos filtros." : "No hay kits registrados."}</td></tr>}
             </tbody>
           </SectionTable>
+          )}
+          </>
         )}
 
         {section === "copias" && (
@@ -1805,6 +1810,152 @@ function PagoModal({ item, onClose, onCambiar, permitirCambiar }: {
 }
 
 /* ================================================================
+   ENTREGAS DE KITS (a quién, de qué evento y en qué estado)
+================================================================ */
+
+type EntregaFila = {
+  id_ek: number;
+  id_i: number | null;
+  id_inv: number | null;
+  rol: "titular" | "invitado";
+  nombre?: string | null;
+  documento?: string | number | null;
+  titular?: string | null;
+  evento?: { id: number; nombre: string } | null;
+  kit?: string | null;
+  talla?: string | null;
+  estado: string; // pendiente | entregado
+  fecha_entrega?: string | null;
+  entregado_por?: string | null;
+};
+
+const ESTADO_ENTREGA: Record<string, string> = { pendiente: "Pendiente", entregado: "Entregado" };
+
+const fechaHoraEntrega = (f?: string | null) => {
+  if (!f) return "—";
+  const d = new Date(String(f).replace(" ", "T"));
+  return Number.isNaN(d.getTime())
+    ? "—"
+    : d.toLocaleString("es-CO", { day: "2-digit", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" });
+};
+
+function EntregasKit({ eventos, search, notify }: { eventos: Evento[]; search: string; notify: Avisar }) {
+  const [filas, setFilas] = useState<EntregaFila[]>([]);
+  const [resumen, setResumen] = useState({ pendiente: 0, entregado: 0 });
+  const [total, setTotal] = useState(0);
+  const [pagina, setPagina] = useState(1);
+  const [ultima, setUltima] = useState(1);
+  const [cargando, setCargando] = useState(true);
+  const [estado, setEstado] = useState("");
+  const [evento, setEvento] = useState("");
+  const [rol, setRol] = useState("");
+  const [q, setQ] = useState("");
+
+  // La búsqueda del encabezado se aplica con una pequeña espera para no pedir en cada tecla.
+  useEffect(() => {
+    const t = setTimeout(() => setQ(search.trim()), 350);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  useEffect(() => { setPagina(1); }, [q, estado, evento, rol]);
+
+  useEffect(() => {
+    let activo = true;
+    setCargando(true);
+    const params = new URLSearchParams({ page: String(pagina), per_page: "25" });
+    if (q) params.set("q", q);
+    if (estado) params.set("estado", estado);
+    if (evento) params.set("id_e", evento);
+    if (rol) params.set("rol", rol);
+
+    apiFetch(`/entregas-kit?${params.toString()}`)
+      .then(res => {
+        if (!activo) return;
+        const e = res?.entregas;
+        setFilas(e?.data ?? []);
+        setTotal(e?.total ?? 0);
+        setUltima(e?.last_page ?? 1);
+        setResumen({
+          pendiente: res?.resumen?.pendiente ?? 0,
+          entregado: res?.resumen?.entregado ?? 0,
+        });
+      })
+      .catch(err => { if (activo) notify(err instanceof Error ? err.message : "No se pudieron cargar las entregas."); })
+      .finally(() => { if (activo) setCargando(false); });
+
+    return () => { activo = false; };
+  }, [pagina, q, estado, evento, rol]);
+
+  const hayFiltros = !!(estado || evento || rol);
+
+  return (
+    <>
+      <div className="kpi-grid" style={{ marginBottom: 16 }}>
+        <Kpi icon={<Check size={19} />} label="Entregados" value={resumen.entregado} />
+        <Kpi icon={<Package size={19} />} label="Pendientes" value={resumen.pendiente} />
+      </div>
+
+      <SectionTable
+        title="Entrega de kits"
+        toolbar={<>
+          <select className="admin-select" value={estado} onChange={e => setEstado(e.target.value)} aria-label="Filtrar por estado">
+            <option value="">Todos los estados</option>
+            <option value="pendiente">Pendientes</option>
+            <option value="entregado">Entregados</option>
+          </select>
+          <select className="admin-select" value={evento} onChange={e => setEvento(e.target.value)} aria-label="Filtrar por evento">
+            <option value="">Todos los eventos</option>
+            {eventos.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+          </select>
+          <select className="admin-select" value={rol} onChange={e => setRol(e.target.value)} aria-label="Filtrar por persona">
+            <option value="">Titulares e invitados</option>
+            <option value="titular">Solo titulares</option>
+            <option value="invitado">Solo invitados</option>
+          </select>
+          {hayFiltros && (
+            <button title="Quitar todos los filtros aplicados" type="button" className="secondary-btn filter-clear" onClick={() => { setEstado(""); setEvento(""); setRol(""); }}>
+              <X size={14} /> Limpiar filtros
+            </button>
+          )}
+          <span className="filter-count">{total} {total === 1 ? "kit" : "kits"}</span>
+        </>}
+      >
+        <thead><tr><th>Persona</th><th>Documento</th><th>Evento</th><th>Kit</th><th>Estado</th><th>Fecha de entrega</th><th>Entregado por</th></tr></thead>
+        <tbody>
+          {filas.map(f => (
+            <tr key={f.id_ek}>
+              <td>
+                <strong>{f.nombre || "—"}</strong>
+                <small style={{ display: "block", opacity: .75 }}>
+                  {f.rol === "invitado" ? `Invitado${f.titular ? ` de ${f.titular}` : ""}` : "Titular"}
+                </small>
+              </td>
+              <td>{f.documento ?? "—"}</td>
+              <td>{f.evento?.nombre ?? "—"}</td>
+              <td>{f.kit ?? "—"}{f.talla ? <small style={{ display: "block", opacity: .75 }}>Talla {f.talla}</small> : null}</td>
+              <td><span className={`admin-badge ${f.estado}`}>{ESTADO_ENTREGA[f.estado] ?? f.estado}</span></td>
+              <td>{f.estado === "entregado" ? fechaHoraEntrega(f.fecha_entrega) : "—"}</td>
+              <td>{f.estado === "entregado" ? (f.entregado_por || "—") : "—"}</td>
+            </tr>
+          ))}
+          {!filas.length && (
+            <tr><td colSpan={7}>{cargando ? "Cargando entregas…" : (q || hayFiltros ? "No hay entregas con estos filtros." : "Aún no hay kits por entregar.")}</td></tr>
+          )}
+        </tbody>
+      </SectionTable>
+
+      {ultima > 1 && (
+        <div style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "center", marginTop: 14 }}>
+          <button type="button" className="secondary-btn" disabled={pagina <= 1 || cargando} onClick={() => setPagina(p => Math.max(1, p - 1))}>Anterior</button>
+          <span className="filter-count">Página {pagina} de {ultima}</span>
+          <button type="button" className="secondary-btn" disabled={pagina >= ultima || cargando} onClick={() => setPagina(p => Math.min(ultima, p + 1))}>Siguiente</button>
+        </div>
+      )}
+    </>
+  );
+}
+
+/* ================================================================
    CONTROL DE ACCESO (QR)
 ================================================================ */
 
@@ -2004,7 +2155,7 @@ function ControlAcceso({ notify, onValidado }: { notify: Avisar; onValidado: () 
                           <span>
                             {k.estado === "entregado"
                               ? `Entregado${fechaKit(k.fecha_entrega) ? ` · ${fechaKit(k.fecha_entrega)}` : ""}`
-                              : k.estado === "devolucion" ? "Devuelto" : "Pendiente de entrega"}
+                              : "Pendiente de entrega"}
                           </span>
                         </div>
                         {k.estado !== "entregado" && (
