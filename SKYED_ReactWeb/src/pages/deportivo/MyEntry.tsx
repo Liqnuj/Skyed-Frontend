@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import QRCode from 'qrcode';
 import Protected from '../../components/Protected';
 import SportWrapper from '../../components/deportivo/SportWrapper';
 import { apiFetch } from '../../services/api';
@@ -33,6 +34,27 @@ function fmtFechaLarga(iso: string | null | undefined) {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return iso;
   return d.toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+// Dibuja el QR en el propio navegador (sin servicios externos, así carga siempre
+// y el código de entrada no sale de la aplicación).
+function QrImagen({ codigo }: { codigo: string }) {
+  const [src, setSrc] = useState('');
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    let activo = true;
+    setSrc('');
+    setError(false);
+    QRCode.toDataURL(codigo, { width: 260, margin: 1, errorCorrectionLevel: 'M' })
+      .then((url) => { if (activo) setSrc(url); })
+      .catch(() => { if (activo) setError(true); });
+    return () => { activo = false; };
+  }, [codigo]);
+
+  if (error) return <p style={{ color: '#111', padding: '1rem', margin: 0 }}>No se pudo generar el QR. Usa el código de abajo.</p>;
+  if (!src) return <div style={{ width: 230, height: 230 }} aria-busy="true" />;
+  return <img src={src} alt="Código QR de tu entrada" width={230} height={230} />;
 }
 
 export default function MyEntry() {
@@ -124,12 +146,7 @@ function MyEntryContent() {
           {qr?.codigo ? (
             <div className="part-qr-block">
               <div className="part-qr-glow">
-                <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(qr.codigo)}`}
-                  alt="Código QR de tu entrada"
-                  width={230}
-                  height={230}
-                />
+                <QrImagen codigo={qr.codigo} />
               </div>
               <div className="part-qr-code-text">{qr.codigo}</div>
               <p className="part-qr-hint">Muestra este código en el punto de control el día del evento.</p>
