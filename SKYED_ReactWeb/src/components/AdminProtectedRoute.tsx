@@ -1,5 +1,6 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import type { Modulo } from '../types/permisos';
 
 interface Props {
     /**
@@ -8,6 +9,7 @@ interface Props {
      * Así el admin social no entra al panel deportivo y viceversa.
      */
     rol?: 'adminDeportivo' | 'adminSocial';
+    modulo?: Modulo;
 }
 
 /**
@@ -17,7 +19,7 @@ interface Props {
  * servidor (GET /me), así que un valor alterado no pasa. Ojo: esto solo
  * protege la pantalla; lo que protege los datos es el middleware de la API.
  */
-const AdminProtectedRoute = ({ rol }: Props) => {
+const AdminProtectedRoute = ({ rol, modulo }: Props) => {
     const { user, verificando } = useAuth();
 
     if (verificando) return null;
@@ -26,12 +28,14 @@ const AdminProtectedRoute = ({ rol }: Props) => {
         return <Navigate to="/login" replace />;
     }
 
-    if (user.role !== 'admin') {
-        return <Navigate to="/" replace />;
-    }
+    const esAsistenteDelModulo = user.roles.includes('asistente') && !!modulo && user.moduloAsistente === modulo;
+    const esAdminDelModulo = !!rol && user.roles.includes(rol);
+    const esAdminCualquiera = user.roles.includes('adminSocial') || user.roles.includes('adminDeportivo');
+    const autorizado = rol
+        ? esAdminDelModulo || esAsistenteDelModulo
+        : esAdminCualquiera;
 
-    // /admin lo lleva a su propio panel (AdminRedirect).
-    if (rol && !(user.roles ?? []).includes(rol)) {
+    if (!autorizado) {
         return <Navigate to="/admin" replace />;
     }
 

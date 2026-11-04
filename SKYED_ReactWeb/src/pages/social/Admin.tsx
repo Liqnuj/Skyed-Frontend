@@ -1,3 +1,4 @@
+import AsistentesPanel from "../../features/asistentes/AsistentesPanel";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate, useSearchParams } from "react-router-dom";
 import {
@@ -25,6 +26,7 @@ import {
   EyeOff,
   Upload,
   Users,
+  UserPlus,
   Wrench,
   X,
 } from "lucide-react";
@@ -45,6 +47,8 @@ import AdminFooter from "../../components/shared/AdminFooter";
 import type { EstadoPqr, Pqr } from "../../services/socialService";
 import PqrGestion from "../../components/social/pqr/AdminPqrManager";
 import { UsuarioModal, RolesDeUsuario, Avatar, type UsuarioFila } from "../../components/deportivo/UsuariosAdmin";
+import { usePermisos } from "../../context/PermisosContext";
+import { primeraSeccionPermitida } from "../../types/permisos";
 import "../../styles/social/Admin.css";
 
 type Section =
@@ -56,9 +60,10 @@ type Section =
   | "lugares"
   | "servicios"
   | "copias"
+  | "asistentes"
   | "ajustes";
 
-const SECCIONES: Section[] = ["inicio", "eventos", "reservas", "usuarios", "pqr", "lugares", "servicios", "copias", "ajustes"];
+const SECCIONES: Section[] = ["inicio", "eventos", "reservas", "usuarios", "pqr", "lugares", "servicios", "copias", "asistentes", "ajustes"];
 
 /* ---------- Persistencia de la vista (sección + formulario abierto) ----------
    Al recargar la página se vuelve a la misma sección y al mismo formulario.
@@ -67,7 +72,7 @@ type ModalKind = "ambiente" | "servicio" | "evento" | "reserva" | "pqr" | "usuar
 type SavedView = { section: Section; modal: ModalKind | null; editId: number | string | null };
 
 const VIEW_KEY = "skyed_admin_social_view";
-const SECTION_IDS: Section[] = ["inicio", "eventos", "reservas", "usuarios", "pqr", "lugares", "servicios", "ajustes"];
+const SECTION_IDS: Section[] = ["inicio", "eventos", "reservas", "usuarios", "pqr", "lugares", "servicios", "copias", "asistentes", "ajustes"];
 const MODAL_KINDS: ModalKind[] = ["ambiente", "servicio", "evento", "reserva", "pqr"];
 
 function readSavedView(): SavedView {
@@ -439,6 +444,9 @@ const FILTROS_FECHA: ExportFiltro[] = [
 
 function AdminPage() {
   const { user, logout } = useAuth();
+  const controlPermisos = usePermisos();
+  const puedeEditar = (seccion: string) => controlPermisos.puede(seccion, "editar");
+  const puedeEliminar = (seccion: string) => controlPermisos.puede(seccion, "eliminar");
   // Ventana de confirmación con el diseño del panel (reemplaza window.confirm).
   const { confirmar, dialogo } = useConfirmacion();
   const {
@@ -492,7 +500,7 @@ function AdminPage() {
   // Los formularios de "crear" se restauran de inmediato; los de "editar"
   // esperan a que lleguen los datos (ver restauración tras loadAll).
   const [modal, setModal] = useState<ModalKind | null>(
-    saved.modal && saved.editId == null && saved.modal !== "pqr" ? saved.modal : null
+    !controlPermisos.esAsistente && saved.modal && saved.editId == null && saved.modal !== "pqr" ? saved.modal : null
   );
   const [editing, setEditing] = useState<any>(null);
 
@@ -500,15 +508,15 @@ function AdminPage() {
     setLoading(true);
     try {
       const [a, s, e, r, p, t] = await Promise.all([
-        apiFetch("/ambientes"),
-        apiFetch("/servicios"),
-        apiFetch("/eventos-sociales"),
-        apiFetch("/reservas"),
+        controlPermisos.puedeVerSeccion("lugares") ? apiFetch("/ambientes") : Promise.resolve({ data: [] }),
+        controlPermisos.puedeVerSeccion("servicios") ? apiFetch("/servicios") : Promise.resolve({ data: [] }),
+        controlPermisos.puedeVerSeccion("eventos") ? apiFetch("/eventos-sociales") : Promise.resolve({ data: [] }),
+        controlPermisos.puedeVerSeccion("reservas") ? apiFetch("/reservas") : Promise.resolve({ data: [] }),
 
         // El backend pagina de 15 en 15; el panel pide hasta 100 de una vez.
-        apiFetch("/pqr?per_page=100"),        // Filtramos por módulo en el backend; igual filtramos otra vez abajo
+        controlPermisos.puedeVerSeccion("pqr") ? apiFetch("/pqr?per_page=100") : Promise.resolve({ data: [], resumen: {}, total: 0 }), // Filtramos por módulo en el backend; igual filtramos otra vez abajo
         // por si el backend todavía no tiene la migración de modulo_tipo_eves.
-        apiFetch("/tipos-evento?modulo=social"),
+        controlPermisos.puedeVerSeccion("eventos") ? apiFetch("/tipos-evento?modulo=social") : Promise.resolve({ data: [] }),
       ]);
       setAmbientes(a.data ?? []);
       setServicios(s.data ?? []);
@@ -522,10 +530,15 @@ function AdminPage() {
       // en el selector de "Tipo de evento" de un evento social.
       setTipos((t.data ?? []).filter((tipo: TipoEvento) => tipo.modulo_tipo_eves !== "deportivo"));
       try {
+        if (!controlPermisos.puedeVerSeccion("usuarios")) {
+          setUsers([]);
+          return { ambientes: a.data ?? [], servicios: s.data ?? [], eventos: e.data ?? [], pqrs: p.data ?? [] };
+        }
         const u = await apiFetch("/users?per_page=200");
         setUsers(u.data ?? u.users ?? []);
-      } catch {
-        // El módulo social funciona aunque la API de usuarios no esté expuesta.
+      } catch (error) {
+        setUsers([]);
+        notify(error instanceof Error ? error.message : "No se pudieron cargar los usuarios.", "error");
       }
       return { ambientes: a.data ?? [], servicios: s.data ?? [], eventos: e.data ?? [], pqrs: p.data ?? [] };
     } catch (error) {
@@ -537,10 +550,11 @@ function AdminPage() {
   };
 
   useEffect(() => {
+    if (controlPermisos.cargando) return;
     loadAll().then(data => {
       // Si se recargó con un formulario de "editar" abierto, se vuelve a abrir
       // con el registro correspondiente (ya cargado desde la API).
-      if (data && saved.modal && saved.editId != null) {
+      if (!controlPermisos.esAsistente && data && saved.modal && saved.editId != null) {
         const lista: any[] | undefined = {
           ambiente: data.ambientes,
           servicio: data.servicios,
@@ -562,7 +576,7 @@ function AdminPage() {
       if (saved.editId != null) writeSavedView({ section: saved.section, modal: null, editId: null });
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [controlPermisos.cargando, controlPermisos.permisos]);
 
   // Guarda la vista cada vez que cambia la sección o el formulario abierto.
   useEffect(() => {
@@ -575,6 +589,15 @@ function AdminPage() {
     setSearch("");
     setMobileOpen(false);
   };
+
+  useEffect(() => {
+    if (!controlPermisos.cargando && controlPermisos.esAsistente &&
+      !controlPermisos.puedeVerSeccion(section)) {
+      const primera = controlPermisos.primeraSeccion ?? primeraSeccionPermitida("social", controlPermisos.permisos);
+      const primeraDelPanel = SECCIONES.find((key) => key === primera);
+      if (primeraDelPanel) selectSection(primeraDelPanel);
+    }
+  }, [controlPermisos.cargando, controlPermisos.esAsistente, controlPermisos.permisos, section]);
 
   // Un enlace (p. ej. un botón de SKAI) puede abrir una sección directo:
   // ?seccion=kits. Luego se limpia la URL para que recargar no la fuerce.
@@ -615,9 +638,28 @@ function AdminPage() {
       .reduce((sum, r) => sum + Number(r.total_rese || 0), 0),
   }), [users, eventos, reservas, pqrs]);
 
-  if (!user || !user.roles.includes("adminSocial")) return <Navigate to="/social" replace />;
+  const autorizadoEnModulo = !!user && (
+    user.roles.includes("adminSocial") ||
+    (controlPermisos.esAsistente && controlPermisos.modulo === "social")
+  );
+  if (!autorizadoEnModulo) return <Navigate to="/social" replace />;
+  if (controlPermisos.cargando) return <CargandoPanel modulo="social" />;
+  if (controlPermisos.errorCarga) {
+    return <main className="social-admin"><section className="admin-card" role="alert"><h1>No se pudieron cargar tus permisos</h1><p>{controlPermisos.errorCarga}</p><button className="primary-btn" onClick={() => void controlPermisos.refrescar()}>Reintentar</button></section></main>;
+  }
+  if (controlPermisos.esAsistente && !controlPermisos.primeraSeccion) {
+    return <main className="social-admin"><section className="admin-card"><h1>Sin secciones habilitadas</h1><p>Solicita al administrador que te asigne al menos una sección.</p><button className="primary-btn" onClick={logout}>Cerrar sesión</button></section></main>;
+  }
+  if (controlPermisos.esAsistente &&
+    (section === "asistentes" || section === "copias" || section === "ajustes" || !controlPermisos.puedeVerSeccion(section))) {
+    return <CargandoPanel modulo="social" />;
+  }
+  const seccionesPanel = controlPermisos.esAsistente
+    ? SECCIONES.filter((key) => key !== "asistentes" && key !== "copias" && key !== "ajustes" && controlPermisos.puedeVerSeccion(key))
+    : SECCIONES;
 
   const sectionMeta: Record<Section, { label: string; icon: any }> = {
+    asistentes: { label: "Asistentes", icon: UserPlus },
     inicio: { label: "Inicio", icon: LayoutDashboard },
     eventos: { label: "Eventos", icon: CalendarDays },
     reservas: { label: "Reservas", icon: CalendarCheck2 },
@@ -772,7 +814,7 @@ function AdminPage() {
 
         <nav className="sidebar-nav">
           <p className="nav-caption">GESTIÓN</p>
-          {(Object.keys(sectionMeta) as Section[]).filter(key => key !== "ajustes").map(key => {
+          {seccionesPanel.filter(key => key !== "ajustes" && key !== "asistentes").map(key => {
             const Icon = sectionMeta[key].icon;
             return (
               <button
@@ -786,15 +828,25 @@ function AdminPage() {
               </button>
             );
           })}
-          <p className="nav-caption">CUENTA</p>
-          <button
-            className={`admin-nav-item ${section === "ajustes" ? "active" : ""}`}
-            onClick={() => selectSection("ajustes")}
-            title={sectionMeta.ajustes.label}
-          >
-            <Settings size={18} />
-            <span>{sectionMeta.ajustes.label}</span>
-          </button>
+          {!controlPermisos.esAsistente && <>
+            <p className="nav-caption">CUENTA</p>
+            <button
+              className={`admin-nav-item ${section === "asistentes" ? "active" : ""}`}
+              onClick={() => selectSection("asistentes")}
+              title={sectionMeta.asistentes.label}
+            >
+              <UserPlus size={18} />
+              <span>{sectionMeta.asistentes.label}</span>
+            </button>
+            <button
+              className={`admin-nav-item ${section === "ajustes" ? "active" : ""}`}
+              onClick={() => selectSection("ajustes")}
+              title={sectionMeta.ajustes.label}
+            >
+              <Settings size={18} />
+              <span>{sectionMeta.ajustes.label}</span>
+            </button>
+          </>}
         </nav>
 
         <div className="sidebar-footer">
@@ -836,19 +888,31 @@ function AdminPage() {
             (así la pantalla no salta). */}
         {loading && !cargoUnaVez && <CargandoPanel modulo="social" />}
 
+        {section === "asistentes" && (
+          <AsistentesPanel
+            modulo="social"
+            search={search}
+            notify={notify}
+            correoAdmin={user.email}
+            confirmar={confirmar}
+          />
+        )}
+
         {section === "inicio" && (
           <section className="dashboard-content">
             <div className="kpi-grid">
-              <Kpi icon={<Users size={19} />} label="Usuarios" value={stats.users} />
-              <Kpi icon={<CalendarDays size={19} />} label="Eventos" value={stats.events} />
-              <Kpi icon={<CalendarCheck2 size={19} />} label="Reservas" value={stats.reservations} />
-              <Kpi icon={<MessageSquareText size={19} />} label="PQR pendientes" value={stats.pqrs} />
-              <Kpi icon={<Check size={19} />} label="Reservas pendientes" value={stats.pending} />
-              <Kpi icon={<Wrench size={19} />} label="Ingresos confirmados" value={stats.income} formato={money} compact />
+              {controlPermisos.puedeVerSeccion("usuarios") && <Kpi icon={<Users size={19} />} label="Usuarios" value={stats.users} />}
+              {controlPermisos.puedeVerSeccion("eventos") && <Kpi icon={<CalendarDays size={19} />} label="Eventos" value={stats.events} />}
+              {controlPermisos.puedeVerSeccion("reservas") && <>
+                <Kpi icon={<CalendarCheck2 size={19} />} label="Reservas" value={stats.reservations} />
+                <Kpi icon={<Check size={19} />} label="Reservas pendientes" value={stats.pending} />
+                <Kpi icon={<Wrench size={19} />} label="Ingresos confirmados" value={stats.income} formato={money} compact />
+              </>}
+              {controlPermisos.puedeVerSeccion("pqr") && <Kpi icon={<MessageSquareText size={19} />} label="PQR pendientes" value={stats.pqrs} />}
             </div>
 
             <div className="dashboard-grid-main">
-              <section className="admin-card upcoming-card">
+              {controlPermisos.puedeVerSeccion("reservas") && <section className="admin-card upcoming-card">
                 <div className="card-head">
                   <div>
                     <span className="card-kicker">ACTIVIDAD</span>
@@ -872,9 +936,9 @@ function AdminPage() {
                   ))}
                   {!reservas.length && <p>No hay reservas todavía.</p>}
                 </div>
-              </section>
+              </section>}
 
-              <section className="admin-card upcoming-card">
+              {(controlPermisos.puedeVerSeccion("lugares") || controlPermisos.puedeVerSeccion("servicios") || controlPermisos.puedeVerSeccion("eventos")) && <section className="admin-card upcoming-card">
                 <div className="card-head">
                   <div>
                     <span className="card-kicker">CATÁLOGO</span>
@@ -882,20 +946,20 @@ function AdminPage() {
                   </div>
                 </div>
                 <div className="resource-list">
-                  <div className="resource-item">
+                  {controlPermisos.puedeVerSeccion("lugares") && <div className="resource-item">
                     <div className="resource-icon"><Building2 size={18} /></div>
                     <div className="resource-main"><strong>Ambientes </strong><span>  {ambientes.length} registrados</span></div>
-                  </div>
-                  <div className="resource-item">
+                  </div>}
+                  {controlPermisos.puedeVerSeccion("servicios") && <div className="resource-item">
                     <div className="resource-icon"><Wrench size={18} /></div>
                     <div className="resource-main"><strong>Servicios </strong><span>  {servicios.length} registrados</span></div>
-                  </div>
-                  <div className="resource-item">
+                  </div>}
+                  {controlPermisos.puedeVerSeccion("eventos") && <div className="resource-item">
                     <div className="resource-icon"><CalendarDays size={18} /></div>
                     <div className="resource-main"><strong>Eventos sociales </strong><span>  {eventos.filter(e => e.estado_er === "activo").length} activos</span></div>
-                  </div>
+                  </div>}
                 </div>
-              </section>
+              </section>}
             </div>
           </section>
         )}
@@ -903,7 +967,7 @@ function AdminPage() {
         {section === "lugares" && (
 <SectionTable
             title="Gestión de ambientes"
-            action="Nuevo ambiente"
+            action={puedeEditar("lugares") ? "Nuevo ambiente" : undefined}
             onAction={() => { setEditing(null); setModal("ambiente"); }}
             exportar={<ExportMenu ruta="social/ambientes" archivo="skyed-social-ambientes" params={{ q: search }} onMensaje={notify} />}
           >
@@ -920,8 +984,8 @@ function AdminPage() {
                   <td>#{a.id_a}</td><td><strong>{a.nombre_a}</strong></td><td>{a.capacidad_a}</td>
                   <td>{money(a.precio_referencia_a)}</td>
                   <td><div className="row-actions">
-                    <button title="Editar este ambiente" className="table-action" onClick={() => { setEditing(a); setModal("ambiente"); }}><Pencil size={15} /></button>
-                    <button title="Eliminar este ambiente" className="table-action danger" onClick={() => deleteAmbiente(a.id_a)}><Trash2 size={15} /></button>
+                    {puedeEditar("lugares") && <button title="Editar este ambiente" className="table-action" onClick={() => { setEditing(a); setModal("ambiente"); }}><Pencil size={15} /></button>}
+                    {puedeEliminar("lugares") && <button title="Eliminar este ambiente" className="table-action danger" onClick={() => deleteAmbiente(a.id_a)}><Trash2 size={15} /></button>}
                   </div></td>
                 </tr>
               ))}
@@ -933,7 +997,7 @@ function AdminPage() {
         {section === "servicios" && (
 <SectionTable
             title="Gestión de servicios"
-            action="Nuevo servicio"
+            action={puedeEditar("servicios") ? "Nuevo servicio" : undefined}
             onAction={() => { setEditing(null); setModal("servicio"); }}
             exportar={<ExportMenu ruta="social/servicios" archivo="skyed-social-servicios" params={{ q: search }} onMensaje={notify} />}
           >
@@ -947,8 +1011,8 @@ function AdminPage() {
                   <td>{s.descripcion ?? s.descripcion_s ?? "—"}</td>
                   <td>{s.ambientes?.length ?? 0}</td>
                   <td><div className="row-actions">
-                    <button title="Editar este servicio" className="table-action" onClick={() => { setEditing(s); setModal("servicio"); }}><Pencil size={15} /></button>
-                    <button title="Eliminar este servicio" className="table-action danger" onClick={() => deleteServicio(id)}><Trash2 size={15} /></button>
+                    {puedeEditar("servicios") && <button title="Editar este servicio" className="table-action" onClick={() => { setEditing(s); setModal("servicio"); }}><Pencil size={15} /></button>}
+                    {puedeEliminar("servicios") && <button title="Eliminar este servicio" className="table-action danger" onClick={() => deleteServicio(id)}><Trash2 size={15} /></button>}
                   </div></td>
                 </tr>;
               })}
@@ -960,7 +1024,7 @@ function AdminPage() {
         {section === "eventos" && (
 <SectionTable
             title="Gestión de eventos sociales"
-            action="Nuevo evento"
+            action={puedeEditar("eventos") ? "Nuevo evento" : undefined}
             onAction={() => { setEditing(null); setModal("evento"); }}
             exportar={<ExportMenu ruta="social/eventos" archivo="skyed-social-eventos" params={{ q: search }} filtros={[FILTRO_ESTADO_EVENTO, ...FILTROS_FECHA]} onMensaje={notify} />}
           >
@@ -979,9 +1043,11 @@ function AdminPage() {
                     <td>#{e.id_er}</td><td><strong>{e.nombre_er}</strong></td><td>{formatDate(e.fecha_er)}</td>
                     <td><Badge value={e.estado_er} /></td>
                     <td><div className="row-actions">
-                      <button title="Editar este evento" className="table-action" onClick={() => { setEditing(e); setModal("evento"); }}><Pencil size={15} /></button>
-                      <button title={e.estado_er === "activo" ? 'Desactivar este evento' : 'Activar este evento'} className="table-action" onClick={() => toggleEvento(e)}>{e.estado_er === "activo" ? "Desactivar" : "Activar"}</button>
-                      <button title="Eliminar este evento" className="table-action danger" onClick={() => deleteEvento(e.id_er)}><Trash2 size={15} /></button>
+                      {puedeEditar("eventos") && <>
+                        <button title="Editar este evento" className="table-action" onClick={() => { setEditing(e); setModal("evento"); }}><Pencil size={15} /></button>
+                        <button title={e.estado_er === "activo" ? 'Desactivar este evento' : 'Activar este evento'} className="table-action" onClick={() => toggleEvento(e)}>{e.estado_er === "activo" ? "Desactivar" : "Activar"}</button>
+                      </>}
+                      {puedeEliminar("eventos") && <button title="Eliminar este evento" className="table-action danger" onClick={() => deleteEvento(e.id_er)}><Trash2 size={15} /></button>}
                     </div></td>
                   </tr>
                 );
@@ -1003,15 +1069,15 @@ function AdminPage() {
                   <td>#{r.id_rese}</td><td>{formatDate(r.fecha_evento_rese)}</td><td>{r.invitados_rese}</td>
                   <td>{money(r.total_rese)}</td>
                   <td>
-                    <select className="admin-select" value={r.estado_rese} onChange={e => updateReserva(r.id_rese, e.target.value as Reserva["estado_rese"])}>
+                    {puedeEditar("reservas") ? <select className="admin-select" value={r.estado_rese} onChange={e => updateReserva(r.id_rese, e.target.value as Reserva["estado_rese"])}>
                       <option value="pendiente">Pendiente</option>
                       <option value="confirmada">Confirmada</option>
                       <option value="cancelada">Cancelada</option>
                       <option value="completada">Completada</option>
-                    </select>
+                    </select> : <Badge value={r.estado_rese} />}
                   </td>
                   <td>
-                    {(r.estado_rese === "cancelada" || r.estado_rese === "completada") && (
+                    {puedeEditar("reservas") && (r.estado_rese === "cancelada" || r.estado_rese === "completada") && (
                       <button className="table-action" title="Ocultar de mi panel" onClick={() => hideReserva(r.id_rese)}><EyeOff size={15} /></button>
                     )}
                   </td>
@@ -1030,6 +1096,7 @@ function AdminPage() {
             search={search}
             onChanged={async () => { await loadAll(); }}
             notify={notify}
+            permitirGestion={puedeEditar("pqr")}
           />
         )}
 
@@ -1053,7 +1120,7 @@ function AdminPage() {
             title="Usuarios registrados"
             exportar={<ExportMenu ruta="social/usuarios" archivo="skyed-social-usuarios" params={{ q: search }} filtros={[FILTRO_ESTADO_USUARIO]} onMensaje={notify} />}
           
-            action="Nuevo usuario"
+            action={puedeEditar("usuarios") ? "Nuevo usuario" : undefined}
             onAction={() => { setEditing(null); setModal("usuario"); }}
           >
             <thead><tr><th>ID</th><th>Usuario</th><th>Roles</th><th>Estado</th></tr></thead>
@@ -1093,7 +1160,7 @@ function AdminPage() {
         onReset={reset}
       />
 
-      {modal === "ambiente" && (
+      {modal === "ambiente" && puedeEditar("lugares") && (
         <AmbienteModal
           item={editing}
           onClose={() => setModal(null)}
@@ -1102,7 +1169,7 @@ function AdminPage() {
         />
       )}
 
-      {modal === "servicio" && (
+      {modal === "servicio" && puedeEditar("servicios") && (
         <ServicioModal
           item={editing}
           onClose={() => setModal(null)}
@@ -1112,7 +1179,7 @@ function AdminPage() {
         />
       )}
 
-      {modal === "evento" && (
+      {modal === "evento" && puedeEditar("eventos") && (
         <EventoModal
           item={editing}
           ambientes={ambientes}
@@ -1124,7 +1191,7 @@ function AdminPage() {
       )}
 
 
-      {modal === "usuario" && (
+      {modal === "usuario" && puedeEditar("usuarios") && (
         <UsuarioModal
           modulo="social"
           existentes={users}

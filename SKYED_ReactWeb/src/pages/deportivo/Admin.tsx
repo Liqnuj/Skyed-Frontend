@@ -31,6 +31,7 @@ import {
   Trophy,
   Upload,
   Users,
+  UserPlus,
   Wallet,
   X,
 } from "lucide-react";
@@ -50,6 +51,9 @@ import { useConfirmacion } from "../../components/shared/ConfirmDialog";
 import { CargandoPanel, NumeroAnimado } from "../../components/shared/AdminMotion";
 import AdminFooter from "../../components/shared/AdminFooter";
 import { RolesModal, RolesDeUsuario, UsuarioModal, Avatar, esAdmin, esAdminSocial, type UsuarioFila } from "../../components/deportivo/UsuariosAdmin";
+import AsistentesPanel from "../../features/asistentes/AsistentesPanel";
+import { usePermisos } from "../../context/PermisosContext";
+import { primeraSeccionPermitida } from "../../types/permisos";
 
 type Confirmar = ReturnType<typeof useConfirmacion>["confirmar"];
 // Base del panel: mismo diseño del panel social con la paleta deportiva
@@ -65,10 +69,11 @@ type Section =
   | "resultados"
   | "kits"
   | "usuarios"
+  | "asistentes"
   | "copias"
   | "ajustes";
 
-const SECCIONES: Section[] = ["inicio", "eventos", "inscripciones", "acceso", "resultados", "kits", "usuarios", "copias", "ajustes"];
+const SECCIONES: Section[] = ["inicio", "eventos", "inscripciones", "acceso", "resultados", "kits", "usuarios", "copias", "asistentes", "ajustes"];
 
 type Categoria = {
   id: number;
@@ -273,7 +278,7 @@ const clearDrafts = () => {
 };
 
 const SECTION_KEY = "admin_section";
-const SECTIONS_VALIDAS = ["inicio", "eventos", "inscripciones", "acceso", "resultados", "kits", "usuarios", "ajustes"];
+const SECTIONS_VALIDAS = ["inicio", "eventos", "inscripciones", "acceso", "resultados", "kits", "usuarios", "copias", "asistentes", "ajustes"];
 type ModalKind = "evento" | "categorias" | "kit" | "pago" | "resultado" | "roles" | "usuario" | null;
 
 /** "1:05" → "01:05:00"; acepta HH:MM o HH:MM:SS del input type="time". */
@@ -497,6 +502,9 @@ const FILTROS_FECHA: ExportFiltro[] = [
 
 function AdminPage() {
   const { user, logout } = useAuth();
+  const controlPermisos = usePermisos();
+  const puedeEditar = (seccion: string) => controlPermisos.puede(seccion, "editar");
+  const puedeEliminar = (seccion: string) => controlPermisos.puede(seccion, "eliminar");
   // Ventana de confirmación con el diseño del panel (reemplaza window.confirm).
   const { confirmar, dialogo } = useConfirmacion();
   const {
@@ -564,20 +572,25 @@ function AdminPage() {
     setLoading(true);
     try {
       const [e, k, p, r] = await Promise.all([
-        apiFetch("/eventos?per_page=200"),
-        apiFetch("/kits?per_page=200"),
-        apiFetch("/pagos?per_page=500"),
-        apiFetch("/resultados?per_page=500"),
+        controlPermisos.puedeVerSeccion("eventos") ? apiFetch("/eventos?per_page=200") : Promise.resolve(null),
+        controlPermisos.puedeVerSeccion("kits") ? apiFetch("/kits?per_page=200") : Promise.resolve(null),
+        controlPermisos.puedeVerSeccion("inscripciones") ? apiFetch("/pagos?per_page=500") : Promise.resolve(null),
+        controlPermisos.puedeVerSeccion("resultados") ? apiFetch("/resultados?per_page=500") : Promise.resolve(null),
       ]);
-      setEventos(e.data ?? []);
-      setKits(k.data ?? []);
-      setPagos(p.pagos?.data ?? []);
-      setResultados(r.resultados?.data ?? []);
+      setEventos(e?.data ?? []);
+      setKits(k?.data ?? []);
+      setPagos(p?.pagos?.data ?? []);
+      setResultados(r?.resultados?.data ?? []);
       try {
+        if (!controlPermisos.puedeVerSeccion("usuarios")) {
+          setUsers([]);
+          return;
+        }
         const u = await apiFetch("/users?per_page=200");
         setUsers(u.data ?? []);
-      } catch {
-        // El panel funciona aunque la API de usuarios no responda.
+      } catch (error) {
+        setUsers([]);
+        notify(error instanceof Error ? error.message : "No se pudieron cargar los usuarios.");
       }
     } catch (error) {
       notify(error instanceof Error ? error.message : "No se pudieron cargar los datos.");
@@ -587,8 +600,8 @@ function AdminPage() {
   };
 
   useEffect(() => {
-    loadAll();
-  }, []);
+    if (!controlPermisos.cargando) void loadAll();
+  }, [controlPermisos.cargando, controlPermisos.permisos]);
 
   /**
    * Ejecuta una acción contra la API, muestra el resultado y recarga.
@@ -623,6 +636,15 @@ function AdminPage() {
     setFiltroEstadoUsuario("");
     setMobileOpen(false);
   };
+
+  useEffect(() => {
+    if (!controlPermisos.cargando && controlPermisos.esAsistente &&
+      (!controlPermisos.puedeVerSeccion(section) || section === "asistentes" || section === "copias" || section === "ajustes")) {
+      const primera = controlPermisos.primeraSeccion ?? primeraSeccionPermitida("deportivo", controlPermisos.permisos);
+      const primeraDelPanel = SECCIONES.find((key) => key === primera);
+      if (primeraDelPanel) selectSection(primeraDelPanel);
+    }
+  }, [controlPermisos.cargando, controlPermisos.esAsistente, controlPermisos.permisos, section]);
 
   // Un enlace (p. ej. un botón de SKAI) puede abrir una sección directo:
   // ?seccion=kits. Luego se limpia la URL para que recargar no la fuerce.
@@ -716,7 +738,25 @@ function AdminPage() {
     [eventos]
   );
 
-  if (!user || !user.roles.includes("adminDeportivo")) return <Navigate to="/deportivo" replace />;
+  const autorizadoEnModulo = !!user && (
+    user.roles.includes("adminDeportivo") ||
+    (controlPermisos.esAsistente && controlPermisos.modulo === "deportivo")
+  );
+  if (!autorizadoEnModulo) return <Navigate to="/deportivo" replace />;
+  if (controlPermisos.cargando) return <CargandoPanel modulo="deportivo" />;
+  if (controlPermisos.errorCarga) {
+    return <main className="deportivo-admin"><section className="admin-card" role="alert"><h1>No se pudieron cargar tus permisos</h1><p>{controlPermisos.errorCarga}</p><button className="primary-btn" onClick={() => void controlPermisos.refrescar()}>Reintentar</button></section></main>;
+  }
+  if (controlPermisos.esAsistente && !controlPermisos.primeraSeccion) {
+    return <main className="deportivo-admin"><section className="admin-card"><h1>Sin secciones habilitadas</h1><p>Solicita al administrador que te asigne al menos una sección.</p><button className="primary-btn" onClick={logout}>Cerrar sesión</button></section></main>;
+  }
+  if (controlPermisos.esAsistente &&
+    (section === "asistentes" || section === "copias" || section === "ajustes" || !controlPermisos.puedeVerSeccion(section))) {
+    return <CargandoPanel modulo="deportivo" />;
+  }
+  const seccionesPanel = controlPermisos.esAsistente
+    ? SECCIONES.filter((key) => key !== "asistentes" && key !== "copias" && key !== "ajustes" && controlPermisos.puedeVerSeccion(key))
+    : SECCIONES;
 
   const sectionMeta: Record<Section, { label: string; icon: any }> = {
     inicio: { label: "Inicio", icon: LayoutDashboard },
@@ -726,6 +766,7 @@ function AdminPage() {
     resultados: { label: "Resultados", icon: Trophy },
     kits: { label: "Kits", icon: Package },
     usuarios: { label: "Usuarios", icon: Users },
+    asistentes: { label: "Asistentes", icon: UserPlus },
     copias: { label: "Copias de seguridad", icon: DatabaseBackup },
     ajustes: { label: "Ajustes", icon: Settings },
   };
@@ -847,7 +888,7 @@ function AdminPage() {
 
         <nav className="sidebar-nav">
           <p className="nav-caption">GESTIÓN</p>
-          {(Object.keys(sectionMeta) as Section[]).filter(key => key !== "ajustes").map(key => {
+          {seccionesPanel.filter(key => key !== "ajustes" && key !== "asistentes").map(key => {
             const Icon = sectionMeta[key].icon;
             return (
               <button
@@ -861,15 +902,25 @@ function AdminPage() {
               </button>
             );
           })}
-          <p className="nav-caption">CUENTA</p>
-          <button
-            className={`admin-nav-item ${section === "ajustes" ? "active" : ""}`}
-            onClick={() => selectSection("ajustes")}
-            title={sectionMeta.ajustes.label}
-          >
-            <Settings size={18} />
-            <span>{sectionMeta.ajustes.label}</span>
-          </button>
+          {!controlPermisos.esAsistente && <>
+            <p className="nav-caption">CUENTA</p>
+            <button
+              className={`admin-nav-item ${section === "asistentes" ? "active" : ""}`}
+              onClick={() => selectSection("asistentes")}
+              title={sectionMeta.asistentes.label}
+            >
+              <UserPlus size={18} />
+              <span>{sectionMeta.asistentes.label}</span>
+            </button>
+            <button
+              className={`admin-nav-item ${section === "ajustes" ? "active" : ""}`}
+              onClick={() => selectSection("ajustes")}
+              title={sectionMeta.ajustes.label}
+            >
+              <Settings size={18} />
+              <span>{sectionMeta.ajustes.label}</span>
+            </button>
+          </>}
         </nav>
 
         <div className="sidebar-footer">
@@ -913,21 +964,35 @@ function AdminPage() {
             muestra, para que la pantalla no salte (p. ej. al validar QR). */}
         {loading && !eventos.length && <CargandoPanel modulo="deportivo" />}
 
+        {section === "asistentes" && (
+          <AsistentesPanel
+            modulo="deportivo"
+            search={search}
+            notify={notify}
+            correoAdmin={user.email}
+            confirmar={confirmar}
+          />
+        )}
+
         {section === "inicio" && (
           <section className="dashboard-content">
             <div className="kpi-grid">
-              <Kpi icon={<CalendarDays size={19} />} label="Eventos activos" value={stats.activos} />
-              <Kpi icon={<ClipboardList size={19} />} label="Inscripciones" value={stats.inscripciones} />
-              <Kpi icon={<Wallet size={19} />} label="Pagos por validar" value={stats.pendientes} />
-              <Kpi icon={<Check size={19} />} label="Ingresos confirmados" value={stats.ingresos} formato={money} compact />
-              <Kpi icon={<Bike size={19} />} label="Cupos disponibles" value={stats.cupos} />
-              <Kpi icon={<Trophy size={19} />} label="Resultados publicados" value={stats.resultados} />
+              {controlPermisos.puedeVerSeccion("eventos") && <>
+                <Kpi icon={<CalendarDays size={19} />} label="Eventos activos" value={stats.activos} />
+                <Kpi icon={<Bike size={19} />} label="Cupos disponibles" value={stats.cupos} />
+              </>}
+              {controlPermisos.puedeVerSeccion("inscripciones") && <>
+                <Kpi icon={<ClipboardList size={19} />} label="Inscripciones" value={stats.inscripciones} />
+                <Kpi icon={<Wallet size={19} />} label="Pagos por validar" value={stats.pendientes} />
+                <Kpi icon={<Check size={19} />} label="Ingresos confirmados" value={stats.ingresos} formato={money} compact />
+              </>}
+              {controlPermisos.puedeVerSeccion("resultados") && <Kpi icon={<Trophy size={19} />} label="Resultados publicados" value={stats.resultados} />}
             </div>
 
             <div className="dashboard-grid-main">
-              <TendenciaMensual pagos={pagos} />
+              {controlPermisos.puedeVerSeccion("inscripciones") && <TendenciaMensual pagos={pagos} />}
 
-              <section className="admin-card upcoming-card">
+              {controlPermisos.puedeVerSeccion("eventos") && <section className="admin-card upcoming-card">
                 <div className="card-head">
                   <div>
                     <span className="card-kicker">CALENDARIO</span>
@@ -947,20 +1012,20 @@ function AdminPage() {
                   ))}
                   {!proximos.length && <p>No hay eventos activos próximos.</p>}
                 </div>
-              </section>
+              </section>}
             </div>
 
-            <div className="dashboard-grid-charts">
+            {controlPermisos.puedeVerSeccion("inscripciones") && <div className="dashboard-grid-charts">
               <InscritosPorEvento pagos={pagos} />
               <EstadoPagos pagos={pagos} onVerPendientes={() => { setFiltroPago("pendiente"); selectSection("inscripciones"); }} />
-            </div>
+            </div>}
           </section>
         )}
 
         {section === "eventos" && (
           <SectionTable
             title="Gestión de eventos deportivos"
-            action="Nuevo evento"
+            action={puedeEditar("eventos") ? "Nuevo evento" : undefined}
             onAction={() => { setEditing(null); setModal("evento"); }}
             exportar={<ExportMenu ruta="deportivo/eventos" archivo="skyed-deportivo-eventos" params={{ q: search, estado: filtroEstadoEvento || undefined, categoria: filtroCategoriaEvento || undefined, cuando: filtroFechaEvento || undefined, cupos: filtroCuposEvento || undefined }} filtros={FILTROS_FECHA} onMensaje={notify} />}
             toolbar={<>
@@ -1005,16 +1070,18 @@ function AdminPage() {
                   <td>{money(e.precio)}</td>
                   <td>{e.cupos_disponibles}</td>
                   <td>
-                    <select className="admin-select" value={e.estado} onChange={ev => cambiarEstadoEvento(e, ev.target.value as Evento["estado"])} aria-label="Estado del evento">
+                    {puedeEditar("eventos") ? <select className="admin-select" value={e.estado} onChange={ev => cambiarEstadoEvento(e, ev.target.value as Evento["estado"])} aria-label="Estado del evento">
                       <option value="activo">Activo</option>
                       <option value="inactivo">Inactivo</option>
                       <option value="inhabilitado">Inhabilitado</option>
-                    </select>
+                    </select> : <Badge value={e.estado} />}
                   </td>
                   <td><div className="row-actions">
-                    <button className="table-action" title="Editar" onClick={() => { setEditing(e); setModal("evento"); }}><Pencil size={15} /></button>
-                    <button className="table-action" title="Categorías" onClick={() => { setEditing(e); setModal("categorias"); }}><Tags size={15} /></button>
-                    <button className="table-action danger" title="Eliminar" onClick={() => eliminarEvento(e)}><Trash2 size={15} /></button>
+                    {puedeEditar("eventos") && <>
+                      <button className="table-action" title="Editar" onClick={() => { setEditing(e); setModal("evento"); }}><Pencil size={15} /></button>
+                    </>}
+                    {(puedeEditar("eventos") || puedeEliminar("eventos")) && <button className="table-action" title="Categorías" onClick={() => { setEditing(e); setModal("categorias"); }}><Tags size={15} /></button>}
+                    {puedeEliminar("eventos") && <button className="table-action danger" title="Eliminar" onClick={() => eliminarEvento(e)}><Trash2 size={15} /></button>}
                   </div></td>
                 </tr>
               ))}
@@ -1060,7 +1127,7 @@ function AdminPage() {
                   <td><Badge value={p.estado_p} /></td>
                   <td><div className="row-actions">
                     <button className="table-action" title="Ver detalle" onClick={() => { setEditing(p); setModal("pago"); }}><Eye size={15} /></button>
-                    {p.estado_p === "pendiente" && <>
+                    {puedeEditar("inscripciones") && p.estado_p === "pendiente" && <>
                       <button className="table-action" title="Confirmar pago" onClick={() => cambiarEstadoPago(p, "confirmado")}><Check size={15} /></button>
                       <button className="table-action danger" title="Rechazar pago" onClick={() => cambiarEstadoPago(p, "rechazado")}><X size={15} /></button>
                     </>}
@@ -1072,12 +1139,14 @@ function AdminPage() {
           </SectionTable>
         )}
 
-        {section === "acceso" && <ControlAcceso notify={notify} onValidado={loadAll} />}
+        {section === "acceso" && (puedeEditar("acceso")
+          ? <ControlAcceso notify={notify} onValidado={loadAll} />
+          : <section className="admin-card"><p>El control de acceso requiere permiso para editar.</p></section>)}
 
         {section === "resultados" && (
           <SectionTable
             title="Resultados oficiales"
-            action="Registrar resultado"
+            action={puedeEditar("resultados") ? "Registrar resultado" : undefined}
             onAction={() => { setEditing(null); setModal("resultado"); }}
             exportar={<ExportMenu ruta="deportivo/resultados" archivo="skyed-deportivo-resultados" params={{ q: search, evento: filtroEvento || undefined, estado: filtroEstadoResultado || undefined }} onMensaje={notify} />}
             toolbar={<>
@@ -1104,8 +1173,8 @@ function AdminPage() {
                   <td>{r.tiempo_final_r}</td>
                   <td><Badge value={r.estado_r} /></td>
                   <td><div className="row-actions">
-                    <button className="table-action" title="Editar" onClick={() => { setEditing(r); setModal("resultado"); }}><Pencil size={15} /></button>
-                    <button className="table-action danger" title="Eliminar" onClick={() => eliminarResultado(r)}><Trash2 size={15} /></button>
+                    {puedeEditar("resultados") && <button className="table-action" title="Editar" onClick={() => { setEditing(r); setModal("resultado"); }}><Pencil size={15} /></button>}
+                    {puedeEliminar("resultados") && <button className="table-action danger" title="Eliminar" onClick={() => eliminarResultado(r)}><Trash2 size={15} /></button>}
                   </div></td>
                 </tr>
               ))}
@@ -1117,7 +1186,7 @@ function AdminPage() {
         {section === "kits" && (
           <SectionTable
             title="Kits del participante"
-            action="Nuevo kit"
+            action={puedeEditar("kits") ? "Nuevo kit" : undefined}
             onAction={() => { setEditing(null); setModal("kit"); }}
             exportar={<ExportMenu ruta="deportivo/kits" archivo="skyed-deportivo-kits" params={{ q: search, stock: filtroStockKit || undefined, lugar: filtroLugarKit || undefined }} onMensaje={notify} />}
             toolbar={<>
@@ -1159,8 +1228,8 @@ function AdminPage() {
                   <td>{k.contenido_k ?? "—"}</td>
                   <td>{k.eventos?.length ? k.eventos.map(e => e.nombre_e).join(", ") : "Sin asignar"}</td>
                   <td><div className="row-actions">
-                    <button className="table-action" title="Editar" onClick={() => { setEditing(k); setModal("kit"); }}><Pencil size={15} /></button>
-                    <button className="table-action danger" title="Eliminar" onClick={() => eliminarKit(k)}><Trash2 size={15} /></button>
+                    {puedeEditar("kits") && <button className="table-action" title="Editar" onClick={() => { setEditing(k); setModal("kit"); }}><Pencil size={15} /></button>}
+                    {puedeEliminar("kits") && <button className="table-action danger" title="Eliminar" onClick={() => eliminarKit(k)}><Trash2 size={15} /></button>}
                   </div></td>
                 </tr>
               ))}
@@ -1188,10 +1257,12 @@ function AdminPage() {
           <SectionTable
             title="Usuarios registrados"
             exportar={<ExportMenu ruta="deportivo/usuarios" archivo="skyed-deportivo-usuarios" params={{ q: search, rol: filtroRolUsuario || undefined, estado: filtroEstadoUsuario || undefined }} onMensaje={notify} />}
+            action={puedeEditar("usuarios") ? "Nuevo usuario" : undefined}
+            onAction={() => { setEditing(null); setModal("usuario"); }}
             toolbar={<>
-              <button type="button" className="secondary-btn" title="Asignar o quitar roles a los usuarios" onClick={() => { setEditing(null); setModal("roles"); }}>
+              {puedeEditar("usuarios") && <button type="button" className="secondary-btn" title="Asignar o quitar roles a los usuarios" onClick={() => { setEditing(null); setModal("roles"); }}>
                 <ShieldCheck size={15} /> Gestionar roles
-              </button>
+              </button>}
               {filtroSelect(filtroRolUsuario, setFiltroRolUsuario, "Filtrar por rol", "Todos los roles",
                 rolesUsuario.map(r => ({ value: r, label: r })))}
               {filtroSelect(filtroEstadoUsuario, setFiltroEstadoUsuario, "Filtrar por estado", "Todos los estados", [
@@ -1222,9 +1293,11 @@ function AdminPage() {
                   <td><RolesDeUsuario usuario={u} /></td>
                   <td><Badge value={u.estado_u ?? "activo"} /></td>
                   <td>
+                    {puedeEditar("usuarios") && (
                     <button type="button" className="usr-btn-roles" title={esAdmin(u) && u.id_u !== user.id ? `Ver los roles de ${u.nombre_u} (es administrador)` : `Gestionar los roles de ${u.nombre_u}`} onClick={() => { setEditing({ id_u: u.id_u }); setModal("roles"); }}>
                       <ShieldCheck size={14} /> {esAdmin(u) && u.id_u !== user.id ? "Ver roles" : "Roles"}
                     </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -1246,7 +1319,7 @@ function AdminPage() {
         onReset={reset}
       />
 
-      {modal === "evento" && (
+      {modal === "evento" && puedeEditar("eventos") && (
         <EventoModal
           item={editing}
           kits={kits}
@@ -1261,11 +1334,11 @@ function AdminPage() {
         />
       )}
 
-      {modal === "categorias" && editing && (
-        <CategoriasModal evento={editing} onClose={() => { closeModal(); loadAll(); }} notify={notify} confirmar={confirmar} />
+      {modal === "categorias" && editing && (puedeEditar("eventos") || puedeEliminar("eventos")) && (
+        <CategoriasModal evento={editing} onClose={() => { closeModal(); loadAll(); }} notify={notify} confirmar={confirmar} permitirEditar={puedeEditar("eventos")} permitirEliminar={puedeEliminar("eventos")} />
       )}
 
-      {modal === "kit" && (
+      {modal === "kit" && puedeEditar("kits") && (
         <KitModal
           item={editing}
           eventos={eventos}
@@ -1285,10 +1358,11 @@ function AdminPage() {
           item={editing}
           onClose={closeModal}
           onCambiar={estado => cambiarEstadoPago(editing, estado)}
+          permitirCambiar={puedeEditar("inscripciones")}
         />
       )}
 
-      {modal === "resultado" && (
+      {modal === "resultado" && puedeEditar("resultados") && (
         <ResultadoModal
           item={editing}
           eventos={eventos}
@@ -1303,7 +1377,7 @@ function AdminPage() {
         />
       )}
 
-      {modal === "roles" && (
+      {modal === "roles" && puedeEditar("usuarios") && (
         <RolesModal
           users={users}
           inicialId={editing?.id_u ?? null}
@@ -1315,7 +1389,7 @@ function AdminPage() {
         />
       )}
 
-      {modal === "usuario" && (
+      {modal === "usuario" && puedeEditar("usuarios") && (
         <UsuarioModal
           modulo="deportivo"
           existentes={users}
@@ -1465,7 +1539,14 @@ function EventoModal({ item, kits, onClose, onSave, notify }: {
   </Modal>;
 }
 
-function CategoriasModal({ evento, onClose, notify, confirmar }: { evento: Evento; onClose: () => void; notify: (message: string) => void; confirmar: Confirmar }) {
+function CategoriasModal({ evento, onClose, notify, confirmar, permitirEditar, permitirEliminar }: {
+  evento: Evento;
+  onClose: () => void;
+  notify: (message: string) => void;
+  confirmar: Confirmar;
+  permitirEditar: boolean;
+  permitirEliminar: boolean;
+}) {
   const vacio = { nombre_cc: "", edad_minima_cc: "", edad_maxima_cc: "", genero_cc: "mixto", distancia_cc: "", descripcion_cc: "" };
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -1543,12 +1624,12 @@ function CategoriasModal({ evento, onClose, notify, confirmar }: { evento: Event
             <strong>{c.nombre}</strong>
             <span> · {rango(c)} · {human(c.genero ?? "mixto")}{c.distancia ? ` · ${c.distancia}` : ""}</span>
           </div>
-          <button type="button" className="table-action danger" title="Eliminar" onClick={() => eliminar(c)}><Trash2 size={15} /></button>
+          {permitirEliminar && <button type="button" className="table-action danger" title="Eliminar" onClick={() => eliminar(c)}><Trash2 size={15} /></button>}
         </div>
       ))}
     </div>
 
-    <form className="modal-form" onSubmit={agregar}>
+    {permitirEditar && <form className="modal-form" onSubmit={agregar}>
       <div className="form-grid">
         <Field label="Nombre de la categoría">
           <input required maxLength={50} value={form.nombre_cc} onChange={e => set("nombre_cc", capitalizeFirst(sanitizeText(e.target.value, 50)))} placeholder="Ej. Élite, Master A, Juvenil" />
@@ -1577,7 +1658,7 @@ function CategoriasModal({ evento, onClose, notify, confirmar }: { evento: Event
         <button title="Terminar y cerrar" type="button" className="secondary-btn" onClick={onClose}>Listo</button>
         <button title={saving ? 'Agregando…' : 'Agregar la categoría'} className="primary-btn" disabled={saving}><Plus size={15} /> {saving ? "Agregando…" : "Agregar categoría"}</button>
       </div>
-    </form>
+    </form>}
   </Modal>;
 }
 
@@ -1585,7 +1666,12 @@ function CategoriasModal({ evento, onClose, notify, confirmar }: { evento: Event
    PAGOS
 ================================================================ */
 
-function PagoModal({ item, onClose, onCambiar }: { item: Pago; onClose: () => void; onCambiar: (estado: "confirmado" | "rechazado") => void }) {
+function PagoModal({ item, onClose, onCambiar, permitirCambiar }: {
+  item: Pago;
+  onClose: () => void;
+  onCambiar: (estado: "confirmado" | "rechazado") => void;
+  permitirCambiar: boolean;
+}) {
   const ins = item.inscripcion;
   // Los pagos viejos solo guardaron el NOMBRE del archivo; los nuevos guardan la imagen en "comprobantes/...".
   const tieneImagen = !!item.comprobante_p?.startsWith("comprobantes/");
@@ -1656,7 +1742,7 @@ function PagoModal({ item, onClose, onCambiar }: { item: Pago; onClose: () => vo
       </div>
       <div className="modal-actions">
         <button title="Cerrar esta ventana" type="button" className="secondary-btn" onClick={onClose}>Cerrar</button>
-        {item.estado_p === "pendiente" && <>
+        {permitirCambiar && item.estado_p === "pendiente" && <>
           <button title="Rechazar el pago" type="button" className="secondary-btn danger" onClick={() => onCambiar("rechazado")}><X size={15} /> Rechazar</button>
           <button title="Confirmar el pago" type="button" className="primary-btn" onClick={() => onCambiar("confirmado")}><Check size={15} /> Confirmar pago</button>
         </>}

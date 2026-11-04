@@ -28,6 +28,7 @@ interface Props {
   /** Vuelve a cargar la lista del panel después de un cambio. */
   onChanged: () => Promise<void> | void;
   notify: Avisar;
+  permitirGestion: boolean;
 }
 
 const color = (estado: EstadoPqr) => ({ '--fase': ESTADO_COLOR[estado] }) as CSSProperties;
@@ -38,7 +39,7 @@ const iniciales = (nombre?: string, apellido?: string) =>
 const nombreCompleto = (p: Pqr) =>
   `${p.usuario?.nombre_u ?? ''} ${p.usuario?.apellido_u ?? ''}`.trim() || 'Usuario';
 
-export default function AdminPqrManager({ pqrs, resumen, total, search, onChanged, notify }: Props) {
+export default function AdminPqrManager({ pqrs, resumen, total, search, onChanged, notify, permitirGestion }: Props) {
   const [filtro, setFiltro] = useState<Filtro>('todas');
   const [tipo, setTipo] = useState<TipoPqr | ''>('');
   const [abierta, setAbierta] = useState<number | null>(null);
@@ -204,6 +205,7 @@ export default function AdminPqrManager({ pqrs, resumen, total, search, onChange
           onClose={() => setAbierta(null)}
           onChanged={onChanged}
           notify={notify}
+          permitirGestion={permitirGestion}
         />
       )}
     </section>
@@ -222,11 +224,13 @@ function CasoPqr({
   onClose,
   onChanged,
   notify,
+  permitirGestion,
 }: {
   id: number;
   onClose: () => void;
   onChanged: () => Promise<unknown> | void;
   notify: Avisar;
+  permitirGestion: boolean;
 }) {
   const [pqr, setPqr] = useState<Pqr | null>(null);
   const [errorCarga, setErrorCarga] = useState<string | null>(null);
@@ -245,10 +249,14 @@ function CasoPqr({
   // el backend la pasa a "En revisión" y guarda el cambio.
   useEffect(() => {
     let vivo = true;
-    pqrService
-      .abrir(id)
-      .then(({ pqr: p, cambio }) => {
-        if (cambio) void onChanged();
+    const cargar = permitirGestion
+      ? pqrService.abrir(id).then(({ pqr: p, cambio }) => {
+          if (cambio) void onChanged();
+          return p;
+        })
+      : pqrService.obtener(id);
+    cargar
+      .then((p) => {
         if (vivo) setPqr(p);
       })
       .catch((e) => {
@@ -257,7 +265,7 @@ function CasoPqr({
     return () => {
       vivo = false;
     };
-  }, [id]);
+  }, [id, permitirGestion]);
 
   useEffect(() => {
     cerrarRef.current?.focus();
@@ -439,7 +447,9 @@ function CasoPqr({
                   <h3 id="pqrx-gestion-title">Gestión y respuesta</h3>
                 </div>
                 <div className="pqrx-panel-body">
-                  {estado === 'en_revision' && (
+                  {!permitirGestion && <p>Esta sección está en modo de solo lectura.</p>}
+
+                  {permitirGestion && estado === 'en_revision' && (
                     <div className="pqrx-cta">
                       <p>
                         Esta solicitud está <b>en revisión</b>. Cuando hayas revisado el caso, comienza la
@@ -461,7 +471,7 @@ function CasoPqr({
                     </div>
                   )}
 
-                  {estado === 'en_proceso' && (
+                  {permitirGestion && estado === 'en_proceso' && (
                     <form className="pqrx-reply" onSubmit={enviarRespuesta} noValidate>
                       <label className="pqrx-field">
                         <span>Respuesta para el usuario</span>

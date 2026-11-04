@@ -106,3 +106,33 @@ export function errorFechaNacimiento(fecha: string, edadMinima = 10): string | n
   if (edad > 120) return 'Revisa la fecha de nacimiento: la edad no puede superar los 120 años.';
   return null;
 }
+
+/* ================================================================
+   ASISTENTES (mismas reglas que app/Support/ReglasAsistente.php)
+================================================================ */
+
+/**
+ * Nombre / apellido: letras (con tildes y ñ), espacios, guiones y apóstrofes.
+ * Es el `sanitizeName` del panel, ahora compartido. Nota: el filtro global de
+ * `seguridadTexto.ts` ya quita el apóstrofe al escribir; se acepta aquí para
+ * que el backend y el frontend digan lo mismo si algún día se relaja.
+ */
+export const sanitizeName = (value: string, maxLength = 50) =>
+  value
+    .replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñÜü\s'’-]/g, '')
+    .replace(/^\s+/, '')
+    .replace(/\s{2,}/g, ' ')
+    .slice(0, maxLength);
+
+/** Teléfono de asistente: solo dígitos, 7 a 15. Vacío NO es válido (aquí es obligatorio). */
+export function errorTelefonoObligatorio(tel: string): string | null {
+  if (!tel) return 'Escribe el teléfono.';
+  if (!/^\d+$/.test(tel)) return 'El teléfono solo puede tener dígitos.';
+  return errorTelefono(tel);
+}
+
+/** La confirmación debe coincidir con la contraseña. */
+export function errorConfirmacion(clave: string, confirmacion: string): string | null {
+  if (!confirmacion) return 'Confirma la contraseña.';
+  return clave === confirmacion ? null : 'Las contraseñas no coinciden.';
+}
