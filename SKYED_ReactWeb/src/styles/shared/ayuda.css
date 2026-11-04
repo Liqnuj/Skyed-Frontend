@@ -37,53 +37,59 @@ div.ayuda :is(h1, h2, h3) { color: inherit; }
 .ayuda :focus-visible { outline: 3px solid var(--ay-focus); outline-offset: 2px; border-radius: 6px; }
 .ay-sr { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-/* ---------- Cabecera ---------- */
-.ayuda .ay-hero {
-  position: relative; isolation: isolate; overflow: hidden;
-  background:
-    radial-gradient(60% 90% at 85% 0%, color-mix(in srgb, var(--ay-glow) 55%, transparent), transparent 70%),
-    radial-gradient(50% 80% at 5% 100%, color-mix(in srgb, var(--ay-glow) 30%, transparent), transparent 70%),
-    linear-gradient(135deg, var(--ay-strong), var(--ay-strong-2));
-  color: #fff; text-align: center; padding: 7.5rem 1.25rem 4.5rem;
-}
-/* Trama de puntos muy suave, se desvanece hacia abajo */
-.ayuda .ay-hero::before {
-  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
-  background-image: radial-gradient(rgba(255, 255, 255, .22) 1.2px, transparent 1.4px);
-  background-size: 22px 22px;
-  -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 85%);
-  mask-image: linear-gradient(to bottom, #000 0%, transparent 85%);
-}
-/* Curva que enlaza la cabecera con el contenido */
-.ayuda .ay-hero::after {
-  content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 34px; z-index: -1;
-  background: var(--ay-bg); border-radius: 34px 34px 0 0 / 34px 34px 0 0;
-}
-.ayuda .ay-hero--compacto { text-align: left; padding: 7rem 1.25rem 3.25rem; }
-.ayuda .ay-eyebrow {
-  display: inline-flex; align-items: center; gap: .45rem; font-size: calc(.8rem * var(--fs-scale, 1));
-  letter-spacing: .04em; font-weight: 700; margin-bottom: .9rem;
-  padding: .3rem .85rem; border-radius: 999px; background: rgba(255, 255, 255, .16);
-  border: 1px solid rgba(255, 255, 255, .3); backdrop-filter: blur(6px);
-}
-.ayuda .ay-hero-titulo {
-  display: flex; align-items: center; justify-content: center; gap: .85rem;
-  font-size: calc(clamp(2.1rem, 5vw, 3.4rem) * var(--fs-scale, 1));
-  font-weight: 800; line-height: 1.1; letter-spacing: -.02em; color: #fff; margin-bottom: .6rem;
-  text-shadow: 0 2px 24px rgba(0, 0, 0, .18);
-}
-.ayuda .ay-hero--compacto .ay-hero-titulo { justify-content: flex-start; font-size: calc(clamp(1.7rem, 3.8vw, 2.5rem) * var(--fs-scale, 1)); }
+/* ---------- Cabecera ----------
+   Es el mismo encabezado de Eventos / Lugares / Nosotros de cada módulo (ver AyudaHero):
+   - Social:    .page-hero  -> fondo ciruela + partículas + título Playfair con <em> morado (social.css)
+   - Deportivo: .page-header -> degradado azul + ruedas girando (deportivo.css + nosotrosMotion.css)
+   El fondo, los colores y las animaciones vienen de esas clases. Aquí solo se ajusta lo propio
+   del Centro de Ayuda: buscador dentro del encabezado, altura automática y variante compacta. */
+.ayuda .ay-cabecera { color: #fff; }
+.ayuda .ay-hero-inner { position: relative; z-index: 2; width: 100%; max-width: 1100px; margin: 0 auto; padding: 0 1.25rem; }
 .ayuda .ay-hero-icono {
-  width: 58px; height: 58px; border-radius: 18px; flex: none; display: grid; place-items: center; font-size: 1.8rem;
+  width: 58px; height: 58px; border-radius: 18px; flex: none; display: inline-grid; place-items: center; font-size: 1.8rem;
+  vertical-align: middle; margin-right: .85rem;
   background: linear-gradient(145deg, rgba(255, 255, 255, .3), rgba(255, 255, 255, .08));
   border: 1px solid rgba(255, 255, 255, .35); box-shadow: 0 10px 24px rgba(0, 0, 0, .2);
 }
-.ayuda .ay-hero-texto { color: rgba(255, 255, 255, .94); font-size: calc(1.1rem * var(--fs-scale, 1)); max-width: 640px; margin: 0 auto 1.75rem; }
-.ayuda .ay-hero--compacto .ay-hero-texto { margin: 0 0 1.25rem; }
+
+/* Social: .page-hero trae height:380px; con buscador y chips necesita crecer */
+.mod-social .ayuda .ay-cabecera { height: auto; min-height: 380px; padding: 8rem 0 3.5rem; }
+.mod-social .ayuda .ay-cabecera--compacto { min-height: 0; padding: 7rem 0 2.75rem; text-align: left; }
+.mod-social .ayuda .ay-cabecera .page-hero-sub { margin-bottom: 1.75rem; }
+.mod-social .ayuda .ay-cabecera--compacto .page-hero-sub { margin: 0 0 1.25rem; }
+.mod-social .ayuda .ay-cabecera--compacto .page-hero-title { font-size: calc(clamp(1.9rem, 4vw, 2.8rem) * var(--fs-scale, 1)); }
+
+/* Deportivo: .page-header ya trae el degradado, las ruedas y el padding */
+.mod-deportivo .ayuda .ay-cabecera .ay-hero-texto { margin-bottom: 1.75rem; }
+.mod-deportivo .ayuda .ay-cabecera--compacto { padding: 7rem 1.25rem 2.75rem; text-align: left; }
+.mod-deportivo .ayuda .ay-cabecera--compacto .ay-hero-texto { margin: 0 0 1.25rem; }
+.mod-deportivo .ayuda .ay-cabecera--compacto h1 { font-size: calc(clamp(1.9rem, 4vw, 2.8rem) * var(--fs-scale, 1)); }
+/* Título "falso h1" (página de artículo): se ve igual que el h1 de Eventos */
+.mod-deportivo .ayuda .ay-cabecera p.ay-titulo {
+  font-size: calc(clamp(2.4rem, 5vw, 3.6rem) * var(--fs-scale, 1)); font-weight: 900; line-height: 1.15;
+  margin: 0 0 .5rem; max-width: none; color: #fff;
+}
+.mod-deportivo .ayuda .ay-cabecera--compacto p.ay-titulo { font-size: calc(clamp(1.9rem, 4vw, 2.8rem) * var(--fs-scale, 1)); }
+/* El aviso del buscador es un <p>: que no herede el estilo de los párrafos del encabezado */
+.mod-deportivo .ayuda .ay-cabecera .ay-aviso { margin: .7rem 0 0; max-width: none; color: #fff; }
+
+/* Animaciones de entrada (mismas curvas que Nosotros) */
+.ayuda .ay-cabecera .ay-buscador   { animation: nos-fade-up 1s cubic-bezier(.22, 1, .36, 1) .5s both; }
+.ayuda .ay-cabecera .ay-sugerencias { animation: nos-fade-up 1s cubic-bezier(.22, 1, .36, 1) .7s both; }
+.mod-social .ayuda .ay-cabecera .page-hero-title { animation: nos-fade-up 1s cubic-bezier(.22, 1, .36, 1) .2s both; }
+.mod-social .ayuda .ay-cabecera .page-hero-sub   { animation: nos-fade-up 1s cubic-bezier(.22, 1, .36, 1) .4s both; }
+/* La palabra destacada brilla con un barrido de luz, como en "Sobre nosotros" */
+.mod-social .ayuda .ay-cabecera .page-hero-title em {
+  background-image: linear-gradient(100deg, var(--accent) 0%, var(--accent) 35%, color-mix(in srgb, var(--accent) 35%, #ffffff) 50%, var(--accent) 65%, var(--accent) 100%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  animation: nos-shimmer 6s linear 1.2s infinite;
+}
 
 /* ---------- Buscador ---------- */
 .ayuda .ay-buscador { max-width: 700px; margin: 0 auto; }
-.ayuda .ay-hero--compacto .ay-buscador { margin: 0; }
+.ayuda .ay-cabecera--compacto .ay-buscador { margin: 0; }
 .ayuda .ay-buscador-caja {
   display: flex; align-items: center; gap: .25rem; background: #fff; border-radius: 999px;
   padding: .4rem .4rem .4rem 1.25rem; box-shadow: 0 18px 44px rgba(0, 0, 0, .28), 0 0 0 6px rgba(255, 255, 255, .14);
@@ -311,8 +317,10 @@ div.ayuda :is(h1, h2, h3) { color: inherit; }
 
 /* ---------- Responsive y accesibilidad ---------- */
 @media (max-width: 640px) {
-  .ayuda .ay-hero { padding: 6.5rem 1rem 3.5rem; }
-  .ayuda .ay-hero--compacto { padding: 6.25rem 1rem 2.5rem; }
+  .mod-social .ayuda .ay-cabecera { padding: 7rem 0 3rem; }
+  .mod-social .ayuda .ay-cabecera--compacto { padding: 6.25rem 0 2.5rem; }
+  .mod-deportivo .ayuda .ay-cabecera { padding: 6.5rem 1rem 3rem; }
+  .mod-deportivo .ayuda .ay-cabecera--compacto { padding: 6.25rem 1rem 2.5rem; }
   .ayuda .ay-hero-icono { width: 46px; height: 46px; font-size: 1.5rem; border-radius: 14px; }
   .ayuda .ay-buscador-caja { padding-left: .9rem; }
   .ayuda .ay-buscar-btn { padding: .7rem 1.1rem; }
