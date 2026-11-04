@@ -27,6 +27,15 @@ export interface NuevoUsuario {
   contexto: 'deportivo' | 'social';
 }
 
+/** Datos completos de un usuario (GET /users/{id}). */
+export interface UsuarioDetalle extends UserWithRoles {
+  tipo_documento_u?: string | null;
+  documento_u?: number | string | null;
+  telefono_u?: string | null;
+  fecha_nacimiento_u?: string | null;
+  rh_u?: string | null;
+}
+
 export const userService = {
   async listar(page = 1): Promise<Paginated<UserWithRoles>> {
     return apiFetch(`/users?page=${page}`);
@@ -42,6 +51,15 @@ export const userService = {
       method: 'POST',
       body: JSON.stringify({ ...datos, contrasena_u_confirmation: datos.contrasena_u }),
     });
+  },
+
+  async obtener(userId: number): Promise<{ user: UsuarioDetalle }> {
+    return apiFetch(`/users/${userId}`);
+  },
+
+  /** Solo se envían los campos que cambiaron. */
+  async actualizar(userId: number, datos: Record<string, unknown>) {
+    return apiFetch(`/users/${userId}`, { method: 'PUT', body: JSON.stringify(datos) });
   },
 
   async asignarRol(userId: number, nombre_rol: string, contexto: string) {

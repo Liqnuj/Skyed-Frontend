@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bike,
   Check,
@@ -8,6 +8,8 @@ import {
   KeyRound,
   Loader2,
   Lock,
+  Pencil,
+  Save,
   Search,
   Shield,
   ShieldCheck,
@@ -850,6 +852,269 @@ export function UsuarioModal({ modulo = "deportivo", existentes = [], onClose, o
           </button>
         </div>
       </form>
+    </ModalBase>
+  );
+}
+
+/* ================================================================
+   EDITAR USUARIO
+================================================================ */
+
+const RH = ["O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-"];
+
+/** Super administrador: rol propio o los dos roles de administrador a la vez (igual que el backend). */
+export const esSuperAdminRoles = (roles: string[]) => {
+  const r = roles.map((x) => x.toLowerCase());
+  return r.some((x) => ["superadmin", "super_admin", "super admin", "admin", "administrador"].includes(x))
+    || (r.includes("adminsocial") && r.includes("admindeportivo"));
+};
+
+/**
+ * ¿Puede editar los datos de este usuario? A otros administradores solo los
+ * edita el super administrador (el backend lo verifica igual).
+ */
+export function puedeEditarUsuario(u: UsuarioFila, yo: { id: number; roles: string[] }) {
+  return u.id_u === yo.id || !esAdmin(u) || esSuperAdminRoles(yo.roles);
+}
+
+type CampoEdicion = "tipo" | "documento" | "nombre" | "apellido" | "correo" | "telefono" | "fecha";
+const ORDEN_EDICION: CampoEdicion[] = ["tipo", "documento", "nombre", "apellido", "correo", "telefono", "fecha"];
+
+interface FormEdicion {
+  tipo: string;
+  documento: string;
+  nombre: string;
+  apellido: string;
+  correo: string;
+  telefono: string;
+  fecha: string;
+  rh: string;
+  estado: string;
+}
+
+export function EditarUsuarioModal({ usuarioId, yoId, existentes = [], onClose, onGuardado, notify }: {
+  usuarioId: number;
+  /** El administrador que edita: no puede desactivarse a sí mismo. */
+  yoId: number;
+  existentes?: Array<{ id_u: number; correo_u: string }>;
+  onClose: () => void;
+  /** Se llama cuando los cambios ya se guardaron (el panel cierra y recarga). */
+  onGuardado: () => Promise<void> | void;
+  notify: Avisar;
+}) {
+  const [original, setOriginal] = useState<FormEdicion | null>(null);
+  const [form, setForm] = useState<FormEdicion | null>(null);
+  const [errorCarga, setErrorCarga] = useState<string | null>(null);
+  const [tocados, setTocados] = useState<Partial<Record<CampoEdicion, boolean>>>({});
+  const [errorApi, setErrorApi] = useState<string | null>(null);
+  const [guardando, setGuardando] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const esYo = usuarioId === yoId;
+
+  // La lista del panel no trae todos los datos (documento, teléfono, fecha...): se piden aquí.
+  useEffect(() => {
+    let activo = true;
+    userService.obtener(usuarioId)
+      .then(({ user: u }) => {
+        if (!activo) return;
+        const datos: FormEdicion = {
+          tipo: u.tipo_documento_u ?? "",
+          documento: u.documento_u != null ? String(u.documento_u) : "",
+          nombre: u.nombre_u ?? "",
+          apellido: u.apellido_u ?? "",
+          correo: u.correo_u ?? "",
+          telefono: u.telefono_u ?? "",
+          fecha: (u.fecha_nacimiento_u ?? "").slice(0, 10),
+          rh: u.rh_u ?? "N/A",
+          estado: u.estado_u ?? "activo",
+        };
+        setOriginal(datos);
+        setForm(datos);
+      })
+      .catch((err) => { if (activo) setErrorCarga(err instanceof Error ? err.message : "No se pudieron cargar los datos del usuario."); });
+    return () => { activo = false; };
+  }, [usuarioId]);
+
+  const { fechaMaxima, fechaMinima } = useMemo(() => {
+    const d = new Date();
+    const iso = (x: Date) => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`;
+    return {
+      fechaMaxima: iso(new Date(d.getFullYear() - 10, d.getMonth(), d.getDate())),
+      fechaMinima: iso(new Date(d.getFullYear() - 120, d.getMonth(), d.getDate())),
+    };
+  }, []);
+
+  const correosDeOtros = useMemo(
+    () => new Set(existentes.filter((u) => u.id_u !== usuarioId).map((u) => normalizarCorreo(u.correo_u ?? ""))),
+    [existentes, usuarioId],
+  );
+
+  const errores: Record<CampoEdicion, string | null> = useMemo(() => {
+    if (!form) return { tipo: null, documento: null, nombre: null, apellido: null, correo: null, telefono: null, fecha: null };
+    const doc = form.documento;
+    const correo = form.correo.trim();
+    return {
+      tipo: form.tipo ? null : "Selecciona el tipo de documento.",
+      documento: !doc
+        ? "Escribe el número de documento."
+        : doc.length < 5 || doc.length > 12
+          ? "El número de documento debe tener entre 5 y 12 dígitos."
+          : /^0+$/.test(doc) ? "El número de documento no es válido." : null,
+      nombre: errorNombrePersona(form.nombre, "nombre"),
+      apellido: errorNombrePersona(form.apellido, "apellido"),
+      correo: errorCorreo(correo) ?? (correosDeOtros.has(normalizarCorreo(correo)) ? "Ya existe otro usuario con este correo." : null),
+      telefono: !form.telefono
+        ? "Escribe el teléfono."
+        : form.telefono.length < 7 || form.telefono.length > 15 ? "El teléfono debe tener entre 7 y 15 dígitos." : null,
+      fecha: errorFechaNacimiento(form.fecha, 10),
+    };
+  }, [form, correosDeOtros]);
+
+  const set = (campo: keyof FormEdicion, valor: string) => {
+    setErrorApi(null);
+    setForm((f) => (f ? { ...f, [campo]: valor } : f));
+  };
+  const tocar = (campo: CampoEdicion) => setTocados((t) => (t[campo] ? t : { ...t, [campo]: true }));
+  const visible = (c: CampoEdicion) => (tocados[c] ? errores[c] : null);
+  const claseCampo = (c: CampoEdicion) => (visible(c) ? "usr-invalido" : "");
+  const ariaCampo = (c: CampoEdicion) => ({
+    "aria-invalid": visible(c) ? true : undefined,
+    "aria-describedby": visible(c) ? `usr-ed-err-${c}` : undefined,
+  });
+
+  // Solo se envía lo que cambió.
+  const cambios = useMemo(() => {
+    if (!form || !original) return {};
+    const datos: Record<string, unknown> = {};
+    if (form.tipo !== original.tipo) datos.tipo_documento_u = form.tipo;
+    if (form.documento !== original.documento) datos.documento_u = parseInt(form.documento, 10);
+    if (form.nombre.trim() !== original.nombre) datos.nombre_u = form.nombre.trim().replace(/\s{2,}/g, " ");
+    if (form.apellido.trim() !== original.apellido) datos.apellido_u = form.apellido.trim().replace(/\s{2,}/g, " ");
+    if (normalizarCorreo(form.correo) !== normalizarCorreo(original.correo)) datos.correo_u = normalizarCorreo(form.correo);
+    if (form.telefono !== original.telefono) datos.telefono_u = form.telefono;
+    if (form.fecha !== original.fecha) datos.fecha_nacimiento_u = form.fecha;
+    if (form.rh !== original.rh) datos.rh_u = form.rh;
+    if (form.estado !== original.estado) datos.estado_u = form.estado;
+    return datos;
+  }, [form, original]);
+  const hayCambios = Object.keys(cambios).length > 0;
+
+  const enviar = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (guardando || !form) return;
+
+    const primerError = ORDEN_EDICION.find((c) => errores[c]);
+    if (primerError) {
+      setTocados(Object.fromEntries(ORDEN_EDICION.map((c) => [c, true])));
+      notify("Revisa los campos marcados en rojo.", "error");
+      formRef.current?.querySelector<HTMLElement>(`[data-campo="${primerError}"]`)?.focus();
+      return;
+    }
+    if (!hayCambios) {
+      notify("No hay cambios para guardar.", "error");
+      return;
+    }
+
+    setGuardando(true);
+    setErrorApi(null);
+    try {
+      await userService.actualizar(usuarioId, cambios);
+      notify(cambios.estado_u === "inactivo"
+        ? `Datos de ${form.nombre.trim()} guardados. La cuenta quedó inactiva y se cerraron sus sesiones.`
+        : `Datos de ${form.nombre.trim()} guardados.`);
+      await onGuardado();
+    } catch (err) {
+      const mensaje = err instanceof Error ? err.message : "No se pudieron guardar los cambios.";
+      setErrorApi(mensaje);
+      notify(mensaje, "error");
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  return (
+    <ModalBase
+      titulo="Editar usuario"
+      subtitulo="Corrige los datos de la cuenta. La contraseña no se cambia aquí: la persona usa «¿Olvidaste tu contraseña?»."
+      onClose={onClose}
+      cerrarFuera={false}
+    >
+      {!form ? (
+        <div className="usr-cargando-edicion" role={errorCarga ? "alert" : "status"}>
+          {errorCarga ?? <><Loader2 size={18} className="usr-girar" /> Cargando datos del usuario…</>}
+        </div>
+      ) : (
+        <form ref={formRef} className="modal-form" onSubmit={enviar} autoComplete="off" noValidate>
+          <div className="form-grid">
+            <label className={`admin-field ${claseCampo("tipo")}`}>
+              <span>Tipo de documento</span>
+              <select data-campo="tipo" value={form.tipo} onChange={(e) => { set("tipo", e.target.value); tocar("tipo"); }} onBlur={() => tocar("tipo")} {...ariaCampo("tipo")}>
+                <option value="">Selecciona</option>
+                {TIPOS_DOCUMENTO.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                {form.tipo && !TIPOS_DOCUMENTO.some((t) => t.value === form.tipo) && <option value={form.tipo}>{form.tipo}</option>}
+              </select>
+              <ErrorCampo id="usr-ed-err-tipo" texto={visible("tipo")} />
+            </label>
+            <label className={`admin-field ${claseCampo("documento")}`}>
+              <span>Número de documento</span>
+              <input data-campo="documento" inputMode="numeric" maxLength={12} value={form.documento} onChange={(e) => set("documento", soloDigitos(e.target.value, 12))} onBlur={() => tocar("documento")} {...ariaCampo("documento")} />
+              <ErrorCampo id="usr-ed-err-documento" texto={visible("documento")} />
+            </label>
+            <label className={`admin-field ${claseCampo("nombre")}`}>
+              <span>Nombres</span>
+              <input data-campo="nombre" maxLength={50} value={form.nombre} onChange={(e) => set("nombre", soloLetras(e.target.value, 50).replace(/^\s+/, "").replace(/\s{2,}/g, " "))} onBlur={() => tocar("nombre")} {...ariaCampo("nombre")} />
+              <ErrorCampo id="usr-ed-err-nombre" texto={visible("nombre")} />
+            </label>
+            <label className={`admin-field ${claseCampo("apellido")}`}>
+              <span>Apellidos</span>
+              <input data-campo="apellido" maxLength={50} value={form.apellido} onChange={(e) => set("apellido", soloLetras(e.target.value, 50).replace(/^\s+/, "").replace(/\s{2,}/g, " "))} onBlur={() => tocar("apellido")} {...ariaCampo("apellido")} />
+              <ErrorCampo id="usr-ed-err-apellido" texto={visible("apellido")} />
+            </label>
+            <label className={`admin-field ${claseCampo("correo")}`}>
+              <span>Correo electrónico</span>
+              <input data-campo="correo" type="email" maxLength={80} value={form.correo} onChange={(e) => set("correo", e.target.value.replace(/\s/g, ""))} onBlur={() => tocar("correo")} {...ariaCampo("correo")} />
+              <ErrorCampo id="usr-ed-err-correo" texto={visible("correo")} />
+            </label>
+            <label className={`admin-field ${claseCampo("telefono")}`}>
+              <span>Teléfono</span>
+              <input data-campo="telefono" inputMode="tel" maxLength={15} value={form.telefono} onChange={(e) => set("telefono", soloDigitos(e.target.value, 15))} onBlur={() => tocar("telefono")} {...ariaCampo("telefono")} />
+              <ErrorCampo id="usr-ed-err-telefono" texto={visible("telefono")} />
+            </label>
+            <label className={`admin-field ${claseCampo("fecha")}`}>
+              <span>Fecha de nacimiento</span>
+              <input data-campo="fecha" type="date" min={fechaMinima} max={fechaMaxima} value={form.fecha} onChange={(e) => set("fecha", e.target.value)} onBlur={() => tocar("fecha")} {...ariaCampo("fecha")} />
+              <ErrorCampo id="usr-ed-err-fecha" texto={visible("fecha")} />
+            </label>
+            <label className="admin-field">
+              <span>Tipo de sangre (RH)</span>
+              <select value={form.rh} onChange={(e) => set("rh", e.target.value)}>
+                <option value="N/A">Sin registrar</option>
+                {RH.map((r) => <option key={r} value={r}>{r}</option>)}
+              </select>
+            </label>
+            <label className="admin-field">
+              <span>Estado de la cuenta</span>
+              <select value={form.estado} disabled={esYo} onChange={(e) => set("estado", e.target.value)} title={esYo ? "No puedes desactivar tu propia cuenta" : "Activa o desactiva la cuenta"}>
+                <option value="activo">Activo</option>
+                <option value="inactivo">Inactivo</option>
+              </select>
+              {form.estado === "inactivo" && original?.estado !== "inactivo" && (
+                <small className="usr-ayuda">No podrá iniciar sesión y se cerrarán sus sesiones abiertas.</small>
+              )}
+            </label>
+          </div>
+
+          {errorApi && <p className="usr-aviso alerta usr-error-api" role="alert">{errorApi}</p>}
+
+          <div className="modal-actions">
+            <button type="button" className="secondary-btn" title="Cerrar sin guardar" onClick={onClose}>Cancelar</button>
+            <button type="submit" className="primary-btn" title="Guardar los cambios del usuario" disabled={guardando || !hayCambios}>
+              {guardando ? <Loader2 size={16} className="usr-girar" /> : <Save size={16} />}
+              {guardando ? "Guardando..." : "Guardar cambios"}
+            </button>
+          </div>
+        </form>
+      )}
     </ModalBase>
   );
 }
