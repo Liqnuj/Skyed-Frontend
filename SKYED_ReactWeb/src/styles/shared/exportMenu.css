@@ -105,3 +105,39 @@
 @keyframes export-spin {
   to { transform: rotate(360deg); }
 }
+
+/* Uso fuera de un panel (p. ej. /admin/usuarios): define las variables de color
+   y el estilo del botón, que en los paneles ya vienen de su propio CSS. */
+.export-standalone {
+  --admin-surface: #ffffff;
+  --admin-line: #e8e0f0;
+  --admin-text: #1a0a2e;
+  --admin-muted: #6b5d7c;
+  --admin-accent: #7a1fa2;
+}
+
+.export-standalone .secondary-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--admin-line);
+  border-radius: 999px;
+  background: var(--admin-surface);
+  color: var(--admin-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.export-standalone .secondary-btn:hover {
+  border-color: var(--admin-accent);
+}
+
+/* Aquí el botón queda a la izquierda de la página: el panel se abre hacia la derecha. */
+.export-standalone .export-panel {
+  right: auto;
+  left: 0;
+}

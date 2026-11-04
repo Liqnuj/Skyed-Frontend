@@ -1,9 +1,16 @@
 import { useEffect, useState } from 'react';
 import { userService, type UserWithRoles } from '../../services/userRoleService';
 import Protected from '../../components/Protected';
+import ExportMenu from '../../components/shared/ExportMenu';
+import type { ExportFiltro } from '../../components/shared/ExportMenu';
 
 const ROLES_DISPONIBLES = ['cliente', 'participante', 'adminSocial', 'adminDeportivo'];
 const CONTEXTOS_DISPONIBLES = ['social', 'deportivo', 'general'];
+
+const FILTROS_EXPORTAR: ExportFiltro[] = [
+  { clave: 'rol', etiqueta: 'Rol', tipo: 'select', opciones: ROLES_DISPONIBLES.map((r) => ({ value: r, label: r })) },
+  { clave: 'contexto', etiqueta: 'Contexto', tipo: 'select', opciones: CONTEXTOS_DISPONIBLES.map((c) => ({ value: c, label: c })) },
+];
 
 function UsersRolesContent() {
   const [users, setUsers] = useState<UserWithRoles[]>([]);
@@ -65,6 +72,11 @@ function UsersRolesContent() {
           <div>
             <span className="eyebrow social">ADMINISTRACIÓN</span>
             <h1>Usuarios y roles</h1>
+
+                      <div className="export-actions export-standalone">
+            <ExportMenu ruta="administracion/usuarios-roles" archivo="skyed-usuarios-roles" filtros={FILTROS_EXPORTAR} onMensaje={setError} />
+          </div>
+          
           </div>
         </div>
 
