@@ -75,11 +75,10 @@ export default function AdminPqrManager({ pqrs, resumen, total, search, onChange
   ];
 
   return (
-    <section className="section-view pqrx">
+    <section className="section-view pqrx" aria-label="Gestión de PQRS">
       <div className="section-header">
         <div>
           <span className="card-kicker">GESTIÓN</span>
-          <h2>Gestión de PQRS</h2>
         </div>
         <div className="export-actions">
           {/* Se envían los mismos filtros que se ven en pantalla: fase, tipo, vencidas y búsqueda. */}

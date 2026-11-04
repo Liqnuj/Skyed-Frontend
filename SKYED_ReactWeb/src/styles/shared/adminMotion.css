@@ -215,7 +215,7 @@
   100% { background-position: 0% 0%,     100% 100%, 50% 50%; }
 }
 
-.deportivo-admin .admin-main::before {
+.deportivo-admin.dark .admin-main::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -232,7 +232,7 @@
 
 /* ---------- Fondo animado del panel de Social ----------
    Mismo movimiento que Deportivo, con la paleta morada y dorada de Social. */
-.social-admin .admin-main::before {
+.social-admin.dark .admin-main::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -245,6 +245,23 @@
   background-size: 70% 70%, 55% 55%, 45% 45%;
   background-repeat: no-repeat;
   animation: am-fondo 26s ease-in-out infinite;
+}
+
+/* ---------- Fondo del modo claro ----------
+   Una cuadrícula de puntos del color del panel, solo en la parte de arriba y
+   desvaneciéndose, sobre un tono suave. Quieta: no distrae al trabajar. */
+:is(.deportivo-admin, .social-admin):not(.dark) .admin-main::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 420px;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle, color-mix(in srgb, var(--admin-accent) 22%, transparent) 1px, transparent 1.6px) 0 0 / 22px 22px,
+    linear-gradient(180deg, color-mix(in srgb, var(--admin-accent) 6%, transparent), transparent);
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, .55) 45%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, .55) 45%, transparent 100%);
 }
 
 @media (prefers-reduced-motion: reduce) {

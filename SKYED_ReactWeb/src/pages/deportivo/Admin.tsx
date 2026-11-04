@@ -464,11 +464,10 @@ function SectionTable({
   children: React.ReactNode;
 }) {
   return (
-    <section className="section-view">
+    <section className="section-view" aria-label={title}>
       <div className="section-header">
         <div>
           <span className="card-kicker">GESTIÓN</span>
-          <h2>{title}</h2>
         </div>
         {(action || exportar) && (
           <div className="export-actions">

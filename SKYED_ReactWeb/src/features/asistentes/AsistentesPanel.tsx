@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 import type { Avisar } from '../../components/shared/Avisos';
 import type { OpcionesConfirmacion } from '../../components/shared/ConfirmDialog';
@@ -26,6 +27,13 @@ export default function AsistentesPanel({ modulo, search, notify, correoAdmin, c
   const [cargando, setCargando] = useState(true);
   const [modoDemo, setModoDemo] = useState(false);
   const [modalAbierto, setModalAbierto] = useState(false);
+  // La ventana se dibuja en la raíz del panel y no dentro de <main>: <main> tiene
+  // su propia capa (z-index 1) y el encabezado y la barra lateral la tapaban.
+  const seccionRef = useRef<HTMLElement>(null);
+  const [raizPanel, setRaizPanel] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    setRaizPanel(seccionRef.current?.closest<HTMLElement>('.social-admin, .deportivo-admin') ?? null);
+  }, []);
   const [editando, setEditando] = useState<Asistente | null>(null);
   const [filtroEstado, setFiltroEstado] = useState<'todos' | 'activo' | 'inactivo'>('todos');
 
@@ -203,7 +211,7 @@ export default function AsistentesPanel({ modulo, search, notify, correoAdmin, c
 
   return (
     <>
-      <section className="section-view asistentes-panel">
+      <section ref={seccionRef} className="section-view asistentes-panel" aria-label="Asistentes">
         {modoDemo && (
           <div className="asist-banner aviso" role="status">
             No se pudo cargar la API de asistentes. Estás viendo datos de demostración; los cambios no se guardan en el servidor.
@@ -213,7 +221,6 @@ export default function AsistentesPanel({ modulo, search, notify, correoAdmin, c
         <div className="section-header">
           <div>
             <span className="card-kicker">GESTIÓN</span>
-            <h2>Asistentes</h2>
           </div>
           <button type="button" className="primary-btn" onClick={abrirNuevo} disabled={asistentes.length >= limite}>
             <Plus size={16} /> Agregar asistente
@@ -316,11 +323,11 @@ export default function AsistentesPanel({ modulo, search, notify, correoAdmin, c
                       </td>
                       <td>
                         <div className="row-actions asist-acciones">
-                          <button type="button" className="action-success asist-action-edit" title="Editar asistente" aria-label={`Editar a ${asistente.nombre}`}
+                          <button type="button" className="asist-accion" title="Editar asistente" aria-label={`Editar a ${asistente.nombre}`}
                             onClick={() => abrirEdicion(asistente)}>
                             <Pencil size={15} />
                           </button>
-                          <button type="button" className="action-danger" title="Dar de baja" aria-label={`Dar de baja a ${asistente.nombre}`}
+                          <button type="button" className="asist-accion peligro" title="Dar de baja" aria-label={`Dar de baja a ${asistente.nombre}`}
                             onClick={() => void eliminar(asistente)}>
                             <Trash2 size={15} />
                           </button>
@@ -335,16 +342,19 @@ export default function AsistentesPanel({ modulo, search, notify, correoAdmin, c
         </div>
       </section>
 
-      {modalAbierto && (
-        <AsistenteModal
-          modulo={modulo}
-          item={editando}
-          correoAdmin={correoAdmin}
-          correosExistentes={correosExistentes}
-          onClose={() => { setModalAbierto(false); setEditando(null); }}
-          onGuardar={guardar}
-        />
-      )}
+      {modalAbierto && (() => {
+        const ventana = (
+          <AsistenteModal
+            modulo={modulo}
+            item={editando}
+            correoAdmin={correoAdmin}
+            correosExistentes={correosExistentes}
+            onClose={() => { setModalAbierto(false); setEditando(null); }}
+            onGuardar={guardar}
+          />
+        );
+        return raizPanel ? createPortal(ventana, raizPanel) : ventana;
+      })()}
     </>
   );
 }
