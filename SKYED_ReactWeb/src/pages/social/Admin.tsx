@@ -44,7 +44,10 @@ import { useConfirmacion } from "../../components/shared/ConfirmDialog";
 import { useAvisos, type Avisar } from "../../components/shared/Avisos";
 import { CargandoPanel, NumeroAnimado } from "../../components/shared/AdminMotion";
 import AdminFooter from "../../components/shared/AdminFooter";
-import type { EstadoPqr, Pqr } from "../../services/socialService";
+import type { EstadoPqr, Pqr, ResumenReservas } from "../../services/socialService";
+import { reservaService } from "../../services/socialService";
+import AdminReservasLista from "../../components/social/reservas/AdminReservasLista";
+import { ESTADO_VISUAL_LABEL, FECHA_TIPO_LABEL, fechaCorta } from "../../utils/reservasAdmin";
 import PqrGestion from "../../components/social/pqr/AdminPqrManager";
 import { UsuarioModal, EditarUsuarioModal, puedeEditarUsuario, RolesDeUsuario, Avatar, type UsuarioFila } from "../../components/deportivo/UsuariosAdmin";
 import { usePermisos } from "../../context/PermisosContext";
@@ -490,6 +493,8 @@ function AdminPage() {
   const [servicios, setServicios] = useState<Servicio[]>([]);
   const [eventos, setEventos] = useState<EventoSocial[]>([]);
   const [reservas, setReservas] = useState<Reserva[]>([]);
+  // KPIs reales del módulo de reservas (GET /reservas/resumen).
+  const [resumenReservas, setResumenReservas] = useState<ResumenReservas | null>(null);
   const [pqrs, setPqrs] = useState<Pqr[]>([]);
   const [pqrResumen, setPqrResumen] = useState<Partial<Record<EstadoPqr, number>>>({});
   const [pqrTotal, setPqrTotal] = useState(0);
@@ -510,7 +515,7 @@ function AdminPage() {
         controlPermisos.puedeVerSeccion("lugares") ? apiFetch("/ambientes") : Promise.resolve({ data: [] }),
         controlPermisos.puedeVerSeccion("servicios") ? apiFetch("/servicios") : Promise.resolve({ data: [] }),
         controlPermisos.puedeVerSeccion("eventos") ? apiFetch("/eventos-sociales") : Promise.resolve({ data: [] }),
-        controlPermisos.puedeVerSeccion("reservas") ? apiFetch("/reservas") : Promise.resolve({ data: [] }),
+        controlPermisos.puedeVerSeccion("reservas") ?         apiFetch("/reservas?per_page=100") : Promise.resolve({ data: [] }),
 
         // El backend pagina de 15 en 15; el panel pide hasta 100 de una vez.
         controlPermisos.puedeVerSeccion("pqr") ? apiFetch("/pqr?per_page=100") : Promise.resolve({ data: [], resumen: {}, total: 0 }), // Filtramos por módulo en el backend; igual filtramos otra vez abajo
@@ -521,6 +526,12 @@ function AdminPage() {
       setServicios(s.data ?? []);
       setEventos(e.data ?? []);
       setReservas(r.data ?? []);
+      // Si el resumen falla, el resto del panel sigue funcionando.
+      try {
+        setResumenReservas(await reservaService.resumen());
+      } catch {
+        setResumenReservas(null);
+      }
       setPqrs(p.data ?? []);
 
       setPqrResumen(p.resumen ?? {});
@@ -911,8 +922,65 @@ function AdminPage() {
               {controlPermisos.puedeVerSeccion("pqr") && <Kpi icon={<MessageSquareText size={19} />} label="PQR pendientes" value={stats.pqrs} />}
             </div>
 
+            {resumenReservas && (
+              <>
+                <div className="kpi-grid">
+                  <Kpi icon={<CalendarCheck2 size={19} />} label="Reservas nuevas" value={resumenReservas.nuevas} />
+                  <Kpi icon={<MessageSquareText size={19} />} label="Por contactar" value={resumenReservas.por_contactar} />
+                  <Kpi icon={<CalendarDays size={19} />} label="Eventos hoy" value={resumenReservas.eventos_hoy} />
+                  <Kpi icon={<CalendarDays size={19} />} label="Eventos esta semana" value={resumenReservas.eventos_semana} />
+                  <Kpi icon={<Check size={19} />} label="Confirmadas" value={resumenReservas.confirmadas} />
+                  <Kpi icon={<Wrench size={19} />} label="En planificación" value={resumenReservas.en_planificacion} />
+                </div>
+
+                <div className="dashboard-grid-main">
+                  <section className="admin-card upcoming-card">
+                    <div className="card-head">
+                      <div>
+                        <span className="card-kicker">AGENDA</span>
+                        <h2>Próximos eventos</h2>
+                      </div>
+                      <button className="link-button" onClick={() => selectSection("reservas")}>Ver reservas →</button>
+                    </div>
+                    <div className="reservation-list">
+                      {resumenReservas.proximos.map((p) => (
+                        <div className="reservation-item" key={p.id_rese}>
+                          <div className="mini-avatar">R{p.id_rese}</div>
+                          <div className="reservation-main">
+                            <strong>{p.titulo}</strong>
+                            <span>{fechaCorta(p.fecha_inicio)} · {FECHA_TIPO_LABEL[p.fecha_tipo]}</span>
+                          </div>
+                          <div className="reservation-side">
+                            <span className={`admin-badge ${p.estado_visual}`}>{ESTADO_VISUAL_LABEL[p.estado_visual]}</span>
+                          </div>
+                        </div>
+                      ))}
+                      {!resumenReservas.proximos.length && <p>No hay eventos próximos.</p>}
+                    </div>
+                  </section>
+
+                  <section className="admin-card upcoming-card">
+                    <div className="card-head">
+                      <div>
+                        <span className="card-kicker">ATENCIÓN</span>
+                        <h2>Alertas</h2>
+                      </div>
+                    </div>
+                    <div className="resx-alertas">
+                      {resumenReservas.alertas.map((a, i) => (
+                        <div className={`resx-alerta ${a.nivel}`} key={`${a.tipo}-${a.id_rese}-${i}`}>
+                          <span>{a.mensaje}</span>
+                        </div>
+                      ))}
+                      {!resumenReservas.alertas.length && <p>Todo al día. No hay alertas.</p>}
+                    </div>
+                  </section>
+                </div>
+              </>
+            )}
+
             <div className="dashboard-grid-main">
-              {controlPermisos.puedeVerSeccion("reservas") && <section className="admin-card upcoming-card">
+              <section className="admin-card upcoming-card">
                 <div className="card-head">
                   <div>
                     <span className="card-kicker">ACTIVIDAD</span>
@@ -936,7 +1004,7 @@ function AdminPage() {
                   ))}
                   {!reservas.length && <p>No hay reservas todavía.</p>}
                 </div>
-              </section>}
+              </section>
 
               {(controlPermisos.puedeVerSeccion("lugares") || controlPermisos.puedeVerSeccion("servicios") || controlPermisos.puedeVerSeccion("eventos")) && <section className="admin-card upcoming-card">
                 <div className="card-head">
@@ -1058,34 +1126,13 @@ function AdminPage() {
         )}
 
         {section === "reservas" && (
-<SectionTable
-            title="Gestión de reservas"
-            exportar={<ExportMenu ruta="social/reservas" archivo="skyed-social-reservas" params={{ q: search }} filtros={[FILTRO_ESTADO_RESERVA, ...FILTROS_FECHA]} onMensaje={notify} />}
-          >
-            <thead><tr><th>ID</th><th>Fecha</th><th>Invitados</th><th>Total</th><th>Estado</th><th></th></tr></thead>
-            <tbody>
-              {visibleReservas.map(r => (
-                <tr key={r.id_rese}>
-                  <td>#{r.id_rese}</td><td>{formatDate(r.fecha_evento_rese)}</td><td>{r.invitados_rese}</td>
-                  <td>{money(r.total_rese)}</td>
-                  <td>
-                    {puedeEditar("reservas") ? <select className="admin-select" value={r.estado_rese} onChange={e => updateReserva(r.id_rese, e.target.value as Reserva["estado_rese"])}>
-                      <option value="pendiente">Pendiente</option>
-                      <option value="confirmada">Confirmada</option>
-                      <option value="cancelada">Cancelada</option>
-                      <option value="completada">Completada</option>
-                    </select> : <Badge value={r.estado_rese} />}
-                  </td>
-                  <td>
-                    {puedeEditar("reservas") && (r.estado_rese === "cancelada" || r.estado_rese === "completada") && (
-                      <button className="table-action" title="Ocultar de mi panel" onClick={() => hideReserva(r.id_rese)}><EyeOff size={15} /></button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-              {!visibleReservas.length && <tr><td colSpan={6}>No hay reservas.</td></tr>}
-            </tbody>
-          </SectionTable>
+          <AdminReservasLista
+            tipos={tipos.map((t) => ({ id: t.id_tipo_eves, nombre: t.nombre_tipo_eves }))}
+            ambientes={ambientes.map((x) => ({ id: x.id_a, nombre: x.nombre_a }))}
+            onChanged={async () => { await loadAll(); }}
+            notify={notify}
+            confirmar={confirmar}
+          />
         )}
 
         {section === "pqr" && (
