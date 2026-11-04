@@ -79,9 +79,20 @@ interface EntregaKitEstado {
   fecha_entrega_real?: string | null;
 }
 
+// Resultado oficial del participante en el evento (si ya se publicó).
+interface ResultadoInsc {
+  tiempo_final: string | null;
+  posicion_general: number | null;
+  estado: string | null;
+  posicion_categoria: number | null;
+  estado_categoria?: string | null;
+  premios: Array<{ nombre: string; descripcion?: string | null; posicion: number; valor?: number | string | null }>;
+}
+
 interface Inscripcion {
   id: number;
   estado: string;
+  resultado?: ResultadoInsc | null;
   entrega_kit?: EntregaKitEstado | null;
   entrega_kit_invitado?: EntregaKitEstado | null;
   fecha: string;
@@ -139,6 +150,13 @@ function tipoDocumentoCodigo(tipo: string | null | undefined) {
     cedula_ciudadania: 'CC', tarjeta_identidad: 'TI', cedula_extranjeria: 'CE', pasaporte: 'PA',
   };
   return tipo ? (map[tipo] || tipo) : '';
+}
+
+function estadoResultadoLabel(estado: string | null | undefined) {
+  const map: Record<string, string> = {
+    oficial: 'Oficial', 'en revision': 'En revisión', descalificado: 'Descalificado',
+  };
+  return estado ? (map[estado] || estado) : '—';
 }
 
 function estadoQrLabel(estado: string | null | undefined) {
@@ -1030,6 +1048,7 @@ function DetalleInscripcion({
   // se muestra como pendiente (así el invitado no queda sin etiqueta).
   const kitPendiente: EntregaKitEstado = { estado: 'pendiente', fecha_entrega_real: null };
   const confirmada = insc.estado === 'confirmada';
+  const res = insc.resultado;
   const entregaTitular = estadoEntregaKit(
     insc.entrega_kit ?? (confirmada && insc.desea_kit ? kitPendiente : null)
   );
@@ -1137,6 +1156,57 @@ function DetalleInscripcion({
             </div>
           )}
         </div>
+        {res && (
+          <>
+            <h3 style={{ margin: '1.5rem 0 .75rem', fontSize: '1rem' }}>Mi resultado</h3>
+            <div className="part-detail-info-grid">
+              {res.tiempo_final && (
+                <div className="part-detail-info-item">
+                  <span className="part-detail-icon"><i className="ti ti-clock" aria-hidden="true" /></span>
+                  <div>
+                    <span className="part-label">Tiempo final</span>
+                    <strong>{res.tiempo_final}</strong>
+                  </div>
+                </div>
+              )}
+              {res.posicion_general != null && (
+                <div className="part-detail-info-item">
+                  <span className="part-detail-icon"><i className="ti ti-medal" aria-hidden="true" /></span>
+                  <div>
+                    <span className="part-label">Posición general</span>
+                    <strong>{res.posicion_general}.º</strong>
+                  </div>
+                </div>
+              )}
+              {res.posicion_categoria != null && (
+                <div className="part-detail-info-item">
+                  <span className="part-detail-icon"><i className="ti ti-trophy" aria-hidden="true" /></span>
+                  <div>
+                    <span className="part-label">Posición en {insc.categoria?.nombre || 'tu categoría'}</span>
+                    <strong>{res.posicion_categoria}.º</strong>
+                  </div>
+                </div>
+              )}
+              <div className="part-detail-info-item">
+                <span className="part-detail-icon"><i className="ti ti-shield-check" aria-hidden="true" /></span>
+                <div>
+                  <span className="part-label">Estado del resultado</span>
+                  <strong>{estadoResultadoLabel(res.estado)}</strong>
+                </div>
+              </div>
+              {res.premios.map((p, i) => (
+                <div className="part-detail-info-item" key={`${p.posicion}-${i}`}>
+                  <span className="part-detail-icon"><i className="ti ti-award" aria-hidden="true" /></span>
+                  <div>
+                    <span className="part-label">Premio · puesto {p.posicion}</span>
+                    <strong>{p.nombre}</strong>
+                    {p.valor != null && Number(p.valor) > 0 && <span className="part-label"> {fmtMoney(Number(p.valor))}</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
         {inv && (
           <>
             <h3 style={{ margin: '1.5rem 0 .75rem', fontSize: '1rem' }}>Invitado</h3>
