@@ -206,7 +206,7 @@ export default function ArticuloFormulario({ articulo, opciones, onCerrar, onGua
                   <li>Deja una línea en blanco para separar párrafos y listas.</li>
                 </ul>
               </details>
-              <button type="button" className="ay-adm-btn ay-adm-btn--suave" aria-expanded={verPrevia} onClick={() => setVerPrevia((v) => !v)}>
+              <button type="button" className="ay-adm-btn ay-adm-btn--suave" title={verPrevia ? 'Ocultar la vista previa' : 'Mostrar la vista previa'} aria-expanded={verPrevia} onClick={() => setVerPrevia((v) => !v)}>
                 <i className={`ti ${verPrevia ? 'ti-eye-off' : 'ti-eye'}`} aria-hidden="true" /> {verPrevia ? 'Ocultar vista previa' : 'Vista previa'}
               </button>
               {verPrevia && (
@@ -292,10 +292,10 @@ export default function ArticuloFormulario({ articulo, opciones, onCerrar, onGua
         </div>
 
         <div className="ay-adm-modal-pie">
-          <button type="button" className="ay-adm-btn ay-adm-btn--suave" onClick={onCerrar} disabled={guardando}>
+          <button type="button" className="ay-adm-btn ay-adm-btn--suave" title="Cancelar y cerrar el formulario" onClick={onCerrar} disabled={guardando}>
             Cancelar
           </button>
-          <button type="submit" className="ay-adm-btn ay-adm-btn--primario" disabled={guardando}>
+          <button type="submit" className="ay-adm-btn ay-adm-btn--primario" title={guardando ? 'Guardando artículo' : articulo ? 'Guardar los cambios del artículo' : 'Crear artículo'} disabled={guardando}>
             {guardando ? 'Guardando…' : articulo ? 'Guardar cambios' : 'Crear artículo'}
           </button>
         </div>

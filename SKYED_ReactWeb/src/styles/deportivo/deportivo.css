@@ -141,7 +141,7 @@
 .mod-deportivo .event-card .desc{color:var(--text);font-size: calc(.95rem * var(--fs-scale, 1));margin-bottom:1rem;flex:1}
 .mod-deportivo .event-card .price{color:var(--accent);font-weight:800;font-size: calc(1.1rem * var(--fs-scale, 1));}
 
-@media (max-width:860px){.events-grid{grid-template-columns:1fr}}
+@media (max-width:860px){.mod-deportivo .events-grid{grid-template-columns:minmax(0,1fr)}}
 
 /* CTA */
 .mod-deportivo .cta-banner{
@@ -354,6 +354,12 @@
     margin: 0 0 16px;
     letter-spacing: -0.5px;
   }
+
+@media (max-width: 600px) {
+  .mod-deportivo .skyed-features__title {
+   font-size: calc(clamp(1.5rem, 7vw, 2.75rem) * var(--fs-scale, 1));
+  }
+}
 
 .mod-deportivo.dark-mode .skyed-features__title{
     color: #ffffff;

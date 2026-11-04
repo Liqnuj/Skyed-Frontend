@@ -103,7 +103,7 @@ export default function AyudaAdmin() {
         {errorCarga ? (
           <div className="ay-adm-vacio" role="alert">
             <p>{errorCarga}</p>
-            <button type="button" className="ay-adm-btn ay-adm-btn--primario" onClick={() => void cargar()}>
+            <button type="button" className="ay-adm-btn ay-adm-btn--primario" title="Volver a cargar el Centro de Ayuda" onClick={() => void cargar()}>
               Reintentar
             </button>
           </div>
@@ -124,6 +124,7 @@ export default function AyudaAdmin() {
                   aria-controls={`ay-adm-panel-${p.id}`}
                   tabIndex={pestana === p.id ? 0 : -1}
                   className={`ay-adm-tab${pestana === p.id ? ' ay-adm-tab--activa' : ''}`}
+                  title={`Abrir la sección ${p.texto.toLowerCase()}`}
                   onClick={() => setPestana(p.id)}
                 >
                   <i className={`ti ${p.icono}`} aria-hidden="true" /> {p.texto}

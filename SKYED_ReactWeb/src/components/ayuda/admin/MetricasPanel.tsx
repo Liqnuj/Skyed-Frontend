@@ -21,7 +21,7 @@ export default function MetricasPanel({ onRevisar }: { onRevisar: (id: number) =
     return (
       <div className="ay-adm-vacio" role="alert">
         <p>{error}</p>
-        <button type="button" className="ay-adm-btn ay-adm-btn--primario" onClick={cargar}>
+        <button type="button" className="ay-adm-btn ay-adm-btn--primario" title="Volver a cargar las métricas" onClick={cargar}>
           Reintentar
         </button>
       </div>
@@ -93,7 +93,7 @@ export default function MetricasPanel({ onRevisar }: { onRevisar: (id: number) =
                       {f.no_utiles} de {f.utiles + f.no_utiles} opiniones dicen que no fue útil ({f.porcentaje_no_util} %)
                     </span>
                   </span>
-                  <button type="button" className="ay-adm-btn ay-adm-btn--suave ay-adm-btn--chico" onClick={() => onRevisar(f.id)}>
+                  <button type="button" className="ay-adm-btn ay-adm-btn--suave ay-adm-btn--chico" title={`Revisar el artículo ${f.titulo}`} onClick={() => onRevisar(f.id)}>
                     Revisar
                   </button>
                 </li>
