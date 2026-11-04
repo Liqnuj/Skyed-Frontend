@@ -113,6 +113,34 @@
   transform: translateY(-1px);
 }
 
+/* ---------- Editar usuario ---------- */
+
+.deportivo-admin .usr-acciones,
+.social-admin .usr-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.deportivo-admin .usr-btn-editar:disabled,
+.social-admin .usr-btn-editar:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.deportivo-admin .usr-cargando-edicion,
+.social-admin .usr-cargando-edicion {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 36px 16px;
+  color: var(--admin-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
 /* ---------- Etiquetas de rol ---------- */
 
 .deportivo-admin .usr-chips,

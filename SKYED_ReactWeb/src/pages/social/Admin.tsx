@@ -46,7 +46,7 @@ import { CargandoPanel, NumeroAnimado } from "../../components/shared/AdminMotio
 import AdminFooter from "../../components/shared/AdminFooter";
 import type { EstadoPqr, Pqr } from "../../services/socialService";
 import PqrGestion from "../../components/social/pqr/AdminPqrManager";
-import { UsuarioModal, RolesDeUsuario, Avatar, type UsuarioFila } from "../../components/deportivo/UsuariosAdmin";
+import { UsuarioModal, EditarUsuarioModal, puedeEditarUsuario, RolesDeUsuario, Avatar, type UsuarioFila } from "../../components/deportivo/UsuariosAdmin";
 import { usePermisos } from "../../context/PermisosContext";
 import { primeraSeccionPermitida } from "../../types/permisos";
 import "../../styles/social/Admin.css";
@@ -68,7 +68,7 @@ const SECCIONES: Section[] = ["inicio", "eventos", "reservas", "usuarios", "pqr"
 /* ---------- Persistencia de la vista (sección + formulario abierto) ----------
    Al recargar la página se vuelve a la misma sección y al mismo formulario.
    Se guarda en sessionStorage: sobrevive al F5 pero no a cerrar la pestaña. */
-type ModalKind = "ambiente" | "servicio" | "evento" | "reserva" | "pqr" | "usuario";
+type ModalKind = "ambiente" | "servicio" | "evento" | "reserva" | "pqr" | "usuario" | "editar-usuario";
 type SavedView = { section: Section; modal: ModalKind | null; editId: number | string | null };
 
 const VIEW_KEY = "skyed_admin_social_view";
@@ -562,6 +562,7 @@ function AdminPage() {
           pqr: data.pqrs,
           reserva: undefined,
           usuario: undefined, // el formulario de usuario nunca se restaura (lleva contraseña)
+          "editar-usuario": undefined, // se vuelve a abrir desde la tabla, con los datos del servidor
         }[saved.modal];
         const item = lista?.find(x => String(editIdOf(saved.modal, x)) === String(saved.editId));
         if (item) {
@@ -1123,7 +1124,7 @@ function AdminPage() {
             action={puedeEditar("usuarios") ? "Nuevo usuario" : undefined}
             onAction={() => { setEditing(null); setModal("usuario"); }}
           >
-            <thead><tr><th>ID</th><th>Usuario</th><th>Roles</th><th>Estado</th></tr></thead>
+            <thead><tr><th>ID</th><th>Usuario</th><th>Roles</th><th>Estado</th>{puedeEditar("usuarios") && <th>Acciones</th>}</tr></thead>
             <tbody>
               {users.filter(u => filtered(`${u.nombre_u} ${u.apellido_u ?? ""} ${u.correo_u}`)).map(u => (
                 <tr key={u.id_u}>
@@ -1139,10 +1140,17 @@ function AdminPage() {
                   </td>
                   <td><RolesDeUsuario usuario={u} /></td>
                   <td><Badge value={u.estado_u ?? "activo"} /></td>
+                  {puedeEditar("usuarios") && (
+                    <td>
+                      <button type="button" className="usr-btn-roles usr-btn-editar" disabled={!puedeEditarUsuario(u, user)} title={puedeEditarUsuario(u, user) ? `Editar los datos de ${u.nombre_u}` : "Solo el super administrador puede editar a otro administrador"} onClick={() => { setEditing({ id_u: u.id_u }); setModal("editar-usuario"); }}>
+                        <Pencil size={14} /> Editar
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
-              {!users.length && <tr><td colSpan={4}>La API de usuarios no devolvió registros.</td></tr>}
-              {!!users.length && !users.some(u => filtered(`${u.nombre_u} ${u.apellido_u ?? ""} ${u.correo_u}`)) && <tr><td colSpan={4}>Ningún usuario coincide con la búsqueda.</td></tr>}
+              {!users.length && <tr><td colSpan={puedeEditar("usuarios") ? 5 : 4}>La API de usuarios no devolvió registros.</td></tr>}
+              {!!users.length && !users.some(u => filtered(`${u.nombre_u} ${u.apellido_u ?? ""} ${u.correo_u}`)) && <tr><td colSpan={puedeEditar("usuarios") ? 5 : 4}>Ningún usuario coincide con la búsqueda.</td></tr>}
             </tbody>
           </SectionTable>
         )}
@@ -1190,6 +1198,17 @@ function AdminPage() {
         />
       )}
 
+
+      {modal === "editar-usuario" && editing?.id_u && puedeEditar("usuarios") && (
+        <EditarUsuarioModal
+          usuarioId={editing.id_u}
+          yoId={user.id}
+          existentes={users}
+          onClose={() => setModal(null)}
+          notify={notify}
+          onGuardado={async () => { setModal(null); await loadAll(); }}
+        />
+      )}
 
       {modal === "usuario" && puedeEditar("usuarios") && (
         <UsuarioModal
