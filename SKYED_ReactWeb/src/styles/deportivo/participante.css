@@ -1053,10 +1053,85 @@
   cursor: pointer;
 }
 
-.part-form-error {
-  margin: 4px 0 0;
-  font-size: 12px;
-  color: #e24b4a;
+/* ---------- Campos que faltan o están mal ---------- */
+.mod-deportivo { --part-err: #d92d2d; --part-err-soft: rgba(217, 45, 45, 0.1); }
+.mod-deportivo.dark-mode { --part-err: #ff6b6b; --part-err-soft: rgba(255, 107, 107, 0.12); }
+
+@keyframes partErrorIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@keyframes partShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-5px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
+}
+
+/* Mensaje bajo el campo, con un pequeño "!" en círculo. */
+.part-form-error,
+.mod-deportivo .part-form-error {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  margin: .45rem 0 0;
+  font-size: calc(.8rem * var(--fs-scale, 1));
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--part-err, #d92d2d);
+  animation: partErrorIn .25s ease-out both;
+}
+.part-form-error::before,
+.mod-deportivo .part-form-error::before {
+  content: "!";
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--part-err, #d92d2d);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+/* Campo vacío: borde rojo, fondo con un tinte y un leve temblor al aparecer. */
+.mod-deportivo .part-form-group input.part-input-error,
+.mod-deportivo .part-form-group select.part-input-error,
+.mod-deportivo.dark-mode .part-form-group input.part-input-error,
+.mod-deportivo.dark-mode .part-form-group select.part-input-error {
+  border: 1.5px solid var(--part-err);
+  background-color: var(--part-err-soft);
+  box-shadow: 0 0 0 4px var(--part-err-soft);
+  animation: partShake .35s ease-in-out;
+}
+.mod-deportivo .part-form-group input.part-input-error:focus,
+.mod-deportivo .part-form-group select.part-input-error:focus {
+  outline: none;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--part-err) 28%, transparent);
+}
+
+/* La etiqueta del campo con error también se pone roja. */
+.mod-deportivo .part-form-group:has(.part-input-error) > label,
+.mod-deportivo .part-form-group:has(.part-group-error) > label {
+  color: var(--part-err);
+}
+
+/* Grupos de opciones sin elegir (categoría, kit, talla): borde y fondo rojizo.
+   El borde va por dentro del espacio del grupo, así no se sale de la tarjeta. */
+.part-group-error {
+  box-sizing: border-box;
+  border: 2px solid var(--part-err, #d92d2d);
+  border-radius: 12px;
+  padding: .5rem;
+  background: var(--part-err-soft, rgba(217, 45, 45, 0.1));
+  animation: partShake .35s ease-in-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .part-form-error,
+  .part-input-error,
+  .part-group-error { animation: none !important; }
 }
 
 .part-input-locked {
