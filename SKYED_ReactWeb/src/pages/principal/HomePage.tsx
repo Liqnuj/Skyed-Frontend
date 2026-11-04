@@ -1,3 +1,6 @@
+import { useState } from 'react';
+import { Link, Navigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import PrincipalWrapper from '../../components/principal/PrincipalWrapper';
 import PrincipalNav from '../../components/principal/PrincipalNav';
 import PrincipalFooter from '../../components/principal/PrincipalFooter';
@@ -16,6 +19,15 @@ const TICKER_ITEMS: [string, string, string][] = [
 ];
 
 export default function HomePage() {
+  const { user, verificando } = useAuth();
+  const [esperandoVerificacion, setEsperandoVerificacion] = useState(false);
+  const esAdmin = user?.roles.some((rol) => rol === 'adminDeportivo' || rol === 'adminSocial') ?? false;
+  const destino = !user ? '/login' : esAdmin ? '/admin' : '/perfil';
+
+  if (esperandoVerificacion && !verificando) {
+    return <Navigate to={destino} replace />;
+  }
+
   return (
     <PrincipalWrapper>
       <PrincipalNav />
@@ -225,12 +237,22 @@ export default function HomePage() {
           </span>
           <h2 className="cta-title">¿Listo para tu <span className="cta-highlight">próximo evento</span>?</h2>
           <p className="cta-subtitle">Únete a miles de personas que ya están encontrando y disfrutando eventos con SKYED.</p>
-          <a href="/login" className="cta-btn" title="Crear tu cuenta o iniciar sesión en SKYED">
+          <Link
+            to={destino}
+            className="cta-btn"
+            title="Crear tu cuenta o iniciar sesión en SKYED"
+            onClick={(event) => {
+              if (verificando) {
+                event.preventDefault();
+                setEsperandoVerificacion(true);
+              }
+            }}
+          >
             Comenzar gratis
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M5 12h14M12 5l7 7-7 7" />
             </svg>
-          </a>
+          </Link>
         </div>
       </section>
 

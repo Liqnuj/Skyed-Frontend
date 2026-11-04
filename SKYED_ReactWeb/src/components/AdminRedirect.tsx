@@ -12,6 +12,9 @@ export default function AdminRedirect() {
   if (verificando) return null;
 
   if (!user) return <Navigate to="/login" replace />;
+  if (user.roles.includes('asistente') && user.moduloAsistente) {
+    return <Navigate to={`/${user.moduloAsistente}/admin`} replace />;
+  }
   if (user.roles.includes('adminDeportivo')) return <Navigate to="/deportivo/admin" replace />;
   if (user.roles.includes('adminSocial')) return <Navigate to="/social/admin" replace />;
 

@@ -55,18 +55,18 @@ export default function LoginPage() {
 
     try {
       // Pasamos los dos campos al AuthContext
-      const success = await login(identificacion, password);
-
-      if (!success) {
-        throw new Error('Credenciales incorrectas. Verifica tus datos.');
-      }
+      const loggedUser = await login(identificacion, password);
 
       guardarRecordado(remember ? identificacion : null);
 
       setSuccessMsg('¡Inicio de sesión exitoso! Redirigiendo...');
       const queryParams = new URLSearchParams(location.search);
       const redirectUrl = queryParams.get('redirect');
-      const finalDestination = redirectUrl ? redirectUrl : from;
+      const finalDestination = loggedUser.roles.includes('asistente')
+        ? `/${loggedUser.moduloAsistente ?? 'deportivo'}/admin`
+        : loggedUser.roles.some((role) => role === 'adminSocial' || role === 'adminDeportivo')
+          ? '/admin'
+          : redirectUrl || from;
 
       // Redirige mientras la animación muestra "¡Hola, …!"; al desvanecerse
       // ya se ve la página de destino (ver TransicionSesion).

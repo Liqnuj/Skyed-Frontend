@@ -35,7 +35,7 @@ interface AuthContextValue {
   user: User | null;
   /** true mientras se confirma con el servidor que la sesión guardada es real. */
   verificando: boolean;
-  login: (identificacion: string, password: string) => Promise<boolean>;
+  login: (identificacion: string, password: string) => Promise<User>;
   register: (userData: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   deleteAccount: () => Promise<void>;
@@ -58,9 +58,13 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 const STORAGE_KEY = 'skyed_user';
 
 function buildUser(apiUser: any): User {
-  const nombresRoles: User['roles'] = apiUser.roles.map(
+  const roles = Array.isArray(apiUser.roles) ? apiUser.roles : [];
+  const nombresRoles: User['roles'] = roles.map(
     (r: { nombre_rol: string }) => r.nombre_rol
   );
+  const contextoAsistente = roles.find(
+    (r: { nombre_rol: string }) => r.nombre_rol === 'asistente'
+  )?.contexto;
   return {
     id: apiUser.id_u,
     name: `${apiUser.nombre_u} ${apiUser.apellido_u}`,
@@ -72,8 +76,9 @@ function buildUser(apiUser: any): User {
     documento: apiUser.documento_u != null ? String(apiUser.documento_u) : '',
     rh: apiUser.rh_u ?? '',
     fecha_nacimiento: apiUser.fecha_nacimiento_u ?? null,
-    role: nombresRoles.some((r) => r.toLowerCase().startsWith('admin')) ? 'admin' : 'participante',
+    role: nombresRoles.some((r) => r.toLowerCase().startsWith('admin') || r === 'asistente') ? 'admin' : 'participante',
     roles: nombresRoles,
+    moduloAsistente: contextoAsistente === 'social' || contextoAsistente === 'deportivo' ? contextoAsistente : null,
   };
 }
 
@@ -175,7 +180,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(nuevo);
       terminarTransicion(nuevo);
 
-      return true;
+      return nuevo;
     },
 
     async register(userData) {

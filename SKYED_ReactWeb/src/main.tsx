@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { PermisosProvider } from './context/PermisosContext';
 import { AccessibilityProvider } from './context/AccessibilityContext';
 import ScrollToTop from './components/ScrollToTop';
 import HomePage from './pages/principal/HomePage';
@@ -49,6 +50,7 @@ function App(){
   return (
     <AccessibilityProvider>
       <AuthProvider>
+        <PermisosProvider>
         <BrowserRouter>
           <ScrollToTop/>
           <Routes>
@@ -86,10 +88,10 @@ function App(){
 
             {/* Cada panel exige su propio rol de administrador. */}
             <Route path="/admin" element={<AdminRedirect/>}/>
-            <Route element={<AdminProtectedRoute rol="adminSocial" />}>
+            <Route element={<AdminProtectedRoute rol="adminSocial" modulo="social" />}>
               <Route path="/social/admin" element={<Admin/>}/>
             </Route>
-            <Route element={<AdminProtectedRoute rol="adminDeportivo" />}>
+            <Route element={<AdminProtectedRoute rol="adminDeportivo" modulo="deportivo" />}>
               <Route path="/deportivo/admin" element={<AdminDeportivo/>}/>
             </Route>
             <Route element={<AdminProtectedRoute />}>
@@ -113,6 +115,7 @@ function App(){
           </Routes>
           <SkaiWidget/>
         </BrowserRouter>
+        </PermisosProvider>
       </AuthProvider>
     </AccessibilityProvider>
   );

@@ -11,6 +11,13 @@ export function getToken() {
 /** Evento que avisa a la app que el servidor rechazó el token (sesión vencida o alterada). */
 export const SESION_INVALIDA = 'skyed:sesion-invalida';
 
+/**
+ * Evento que avisa que el servidor respondió 403 (p. ej. el administrador le
+ * quitó un permiso al asistente mientras estaba conectado). El detalle trae
+ * el mensaje; PermisosProvider lo escucha para refrescar los permisos.
+ */
+export const PERMISO_DENEGADO = 'skyed:permiso-denegado';
+
 export function setToken(token: string | null) {
   if (token) localStorage.setItem(TOKEN_KEY, token);
   else localStorage.removeItem(TOKEN_KEY);
@@ -57,6 +64,9 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
   // clave errónea) no se toca nada.
   if (res.status === 401 && token) {
     window.dispatchEvent(new Event(SESION_INVALIDA));
+  }
+  if (res.status === 403 && token) {
+    window.dispatchEvent(new CustomEvent(PERMISO_DENEGADO, { detail: { mensaje: data.message } }));
   }
   if (!res.ok) {
     // Laravel responde "Too Many Attempts." en inglés cuando se pasa el

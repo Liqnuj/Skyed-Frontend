@@ -48,4 +48,5 @@ export interface User {
   fecha_nacimiento: string | null;
   role: 'admin' | 'participante';
   roles: string[];
+  moduloAsistente: 'social' | 'deportivo' | null;
 }
