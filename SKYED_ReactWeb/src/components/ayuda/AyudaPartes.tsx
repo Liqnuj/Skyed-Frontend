@@ -1,18 +1,35 @@
-import { useId, useState } from 'react';
+import { useContext, useId, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import type { AyudaArticuloResumen, AyudaCategoria, ModuloAyuda } from '../../services/ayudaService';
+import CanvasParticles from '../social/CanvasParticles';
+import { ModuloAyudaContext } from './ayudaContext';
 import { rutaAyuda } from './rutas';
 
-/* ---------- Cabecera ---------- */
+/* ---------- Cabecera ----------
+   Usa el MISMO encabezado que Eventos / Lugares / Nosotros de cada módulo:
+   - Social:    <section class="page-hero"> con partículas (CanvasParticles) y título con <em> morado.
+   - Deportivo: <section class="page-header"> con degradado azul y ruedas girando.
+   Así, si se cambia ese encabezado, la ayuda lo hereda. */
+function conEnfasis(texto: string): ReactNode {
+  const limpio = texto.trim();
+  const i = limpio.lastIndexOf(' ');
+  if (i < 0) return limpio;
+  return (
+    <>
+      {limpio.slice(0, i + 1)}
+      <em>{limpio.slice(i + 1)}</em>
+    </>
+  );
+}
+
 export function AyudaHero({
   titulo,
   texto,
   icono,
   compacto = false,
   comoH1 = true,
-  etiqueta,
   children,
 }: {
   titulo: string;
@@ -21,27 +38,48 @@ export function AyudaHero({
   compacto?: boolean;
   /** En la página de artículo el h1 es el título del artículo, no el de la cabecera. */
   comoH1?: boolean;
+  /** Ya no se muestra: los encabezados de Eventos/Lugares/Nosotros no llevan etiqueta. */
   etiqueta?: string;
   children?: ReactNode;
 }) {
+  const modulo = useContext(ModuloAyudaContext);
   const Titulo = comoH1 ? 'h1' : 'p';
+  const social = modulo === 'social';
+
+  const iconoNodo = icono ? (
+    <span className="ay-hero-icono" aria-hidden="true">
+      <i className={`ti ${icono}`} />
+    </span>
+  ) : null;
+
+  if (social) {
+    return (
+      <section className={`page-hero ay-cabecera ay-cabecera--social${compacto ? ' ay-cabecera--compacto' : ''}`}>
+        <CanvasParticles id="pageParticles" />
+        <div className="hero-overlay" />
+        <div className="ay-hero-inner">
+          <Titulo className="page-hero-title">
+            {iconoNodo}
+            {conEnfasis(titulo)}
+          </Titulo>
+          {texto && <p className="page-hero-sub ay-hero-texto">{texto}</p>}
+          {children}
+        </div>
+      </section>
+    );
+  }
 
   return (
-    <div className={`ay-hero${compacto ? ' ay-hero--compacto' : ''}`}>
-      <div className="ay-wrap">
-        {etiqueta && <span className="ay-eyebrow">{etiqueta}</span>}
-        <Titulo className="ay-hero-titulo">
-          {icono && (
-            <span className="ay-hero-icono" aria-hidden="true">
-              <i className={`ti ${icono}`} />
-            </span>
-          )}
+    <section className={`page-header ay-cabecera ay-cabecera--deportivo${compacto ? ' ay-cabecera--compacto' : ''}`}>
+      <div className="ay-hero-inner">
+        <Titulo className={comoH1 ? undefined : 'ay-titulo'}>
+          {iconoNodo}
           {titulo}
         </Titulo>
         {texto && <p className="ay-hero-texto">{texto}</p>}
         {children}
       </div>
-    </div>
+    </section>
   );
 }
 
