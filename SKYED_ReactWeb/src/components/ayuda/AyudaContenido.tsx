@@ -9,6 +9,18 @@ type Bloque =
 const TOKENS = /(\*\*[^*]+\*\*|\[\[[^\]|]+\|[^\]\s]+\]\])/;
 const ENLACE = /^\[\[([^\]|]+)\|([^\]\s]+)\]\]$/;
 
+function esRutaInterna(destino: string): boolean {
+  if (!destino.startsWith('/') || destino.startsWith('//') || destino.includes('\\')) {
+    return false;
+  }
+
+  try {
+    return new URL(destino, window.location.origin).origin === window.location.origin;
+  } catch {
+    return false;
+  }
+}
+
 function enLinea(texto: string, clave: string): ReactNode[] {
   return texto
     .split(TOKENS)
@@ -24,7 +36,7 @@ function enLinea(texto: string, clave: string): ReactNode[] {
       if (enlace) {
         const [, etiqueta, destino] = enlace;
         // Solo rutas internas de la app; cualquier otra cosa se muestra como texto.
-        if (destino.startsWith('/') && !destino.startsWith('//')) {
+        if (esRutaInterna(destino)) {
           return (
             <Link key={key} className="ay-enlace" to={destino}>
               {etiqueta}
