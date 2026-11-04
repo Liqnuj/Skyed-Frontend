@@ -75,7 +75,7 @@
   .asist-personalizar { margin-left: auto; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .asist-switch, .asist-switch-perilla, .asist-perm-fila { transition: none; }
+  .asist-switch, .asist-switch-perilla, .asist-perm-fila, .asistentes-panel .asist-accion { transition: none; }
 }
 
 .asist-banner {
@@ -106,8 +106,24 @@
   background: color-mix(in srgb, var(--admin-accent) 16%, var(--admin-surface));
 }
 .asist-avatar img { width: 100%; height: 100%; object-fit: cover; }
-.asistentes-panel .asist-filter-row { align-items: center; }
-.asistentes-panel .asist-table { min-width: 900px; }
+/* Fila de filtros: el panel Social no trae estilos para .filter-row y quedaba pegada a la tabla. */
+.asistentes-panel .asist-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0 16px;
+}
+.asistentes-panel .asist-filter-row .admin-select { min-width: 180px; }
+.asistentes-panel .filter-count {
+  margin-left: auto;
+  color: var(--admin-muted);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+/* Lo justo para sus 5 columnas: con 900 px la columna de acciones quedaba oculta en pantallas medianas. */
+.asistentes-panel .asist-table { min-width: 780px; }
 .asistentes-panel .asist-table th:first-child,
 .asistentes-panel .asist-table td:first-child { width: 72px; }
 .asistentes-panel .asist-table th:last-child,
@@ -129,7 +145,36 @@
   line-height: 1.35;
   padding: 4px 8px;
 }
-.asistentes-panel .asist-action-edit:hover { background: color-mix(in srgb, var(--admin-accent) 12%, var(--admin-surface)) !important; }
+/* Editar y dar de baja. Clases propias (y !important por las reglas
+   generales de botones del panel Deportivo) para verse igual en los dos. */
+.asistentes-panel .asist-accion {
+  display: inline-grid !important;
+  place-items: center !important;
+  width: 34px !important;
+  height: 34px !important;
+  padding: 0 !important;
+  border: 1px solid var(--admin-line) !important;
+  border-radius: 10px !important;
+  background: var(--admin-surface) !important;
+  color: var(--admin-ink, var(--admin-accent)) !important;
+  cursor: pointer !important;
+  transition: background .15s ease, border-color .15s ease, transform .15s ease;
+}
+.asistentes-panel .asist-accion:hover {
+  border-color: var(--admin-accent) !important;
+  background: color-mix(in srgb, var(--admin-accent) 12%, var(--admin-surface)) !important;
+  transform: translateY(-1px);
+}
+.asistentes-panel .asist-accion.peligro { color: #dc2626 !important; }
+.asistentes-panel .asist-accion.peligro:hover {
+  border-color: #dc2626 !important;
+  background: color-mix(in srgb, #dc2626 12%, var(--admin-surface)) !important;
+}
+.dark .asistentes-panel .asist-accion.peligro { color: #f87171 !important; }
+.asistentes-panel .asist-accion:focus-visible {
+  outline: 2px solid var(--admin-accent) !important;
+  outline-offset: 2px;
+}
 .asistentes-panel .asist-cargando,
 .asistentes-panel .asist-vacio { min-height: 120px; }
 .asist-cargando, .asist-vacio {

@@ -484,10 +484,7 @@
   min-height: 100vh;
   margin-left: 244px;
   padding: 92px 28px 100px; /* deja espacio para el botón flotante de accesibilidad */
-  background:
-    radial-gradient(820px 340px at 100% -140px, rgba(156, 2, 174, 0.1), transparent 70%),
-    radial-gradient(640px 280px at 0 -100px, rgba(201, 168, 76, 0.12), transparent 70%),
-    var(--admin-bg);
+  background: var(--admin-bg);
   transition: margin-left 0.25s ease;
 }
 

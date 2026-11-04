@@ -45,6 +45,8 @@ export type UsuarioFila = {
   apellido_u?: string;
   correo_u: string;
   estado_u?: string;
+  /** Foto de perfil (la API la manda en la lista de usuarios). */
+  foto_url?: string | null;
   roles?: Array<{
     id_rol?: number;
     nombre_rol: string;
@@ -114,9 +116,14 @@ const iniciales = (u: UsuarioFila) =>
 ================================================================ */
 
 export function Avatar({ usuario, grande }: { usuario: UsuarioFila; grande?: boolean }) {
+  // Si la foto no carga (borrada o sin conexión), se vuelve a las iniciales.
+  const [fallo, setFallo] = useState<string | null>(null);
+  const foto = usuario.foto_url && usuario.foto_url !== fallo ? usuario.foto_url : null;
   return (
-    <span className={`usr-avatar usr-av-${usuario.id_u % 5} ${grande ? "grande" : ""}`} aria-hidden="true">
-      {iniciales(usuario)}
+    <span className={`usr-avatar usr-av-${usuario.id_u % 5} ${grande ? "grande" : ""} ${foto ? "con-foto" : ""}`} aria-hidden="true">
+      {foto
+        ? <img src={foto} alt="" draggable={false} onError={() => setFallo(foto)} />
+        : iniciales(usuario)}
     </span>
   );
 }
