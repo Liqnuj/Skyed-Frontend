@@ -2,8 +2,11 @@ import { useCallback, useEffect, useState } from 'react';
 import type { CSSProperties, KeyboardEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { getSiteContext } from '../../utils/siteContext';
+import type { SiteContext } from '../../utils/siteContext';
 import { useAccessibility } from '../../context/AccessibilityContext';
 import { useConfirmacion } from '../../components/shared/ConfirmDialog';
+import { CargandoPanel } from '../../components/shared/AdminMotion';
 import { ayudaAdminService } from '../../services/ayudaAdminService';
 import type { ArticuloAdmin, CategoriaAdmin, OpcionesAyuda } from '../../services/ayudaAdminService';
 import ArticulosPanel from '../../components/ayuda/admin/ArticulosPanel';
@@ -25,7 +28,7 @@ const PESTANAS: { id: Pestana; texto: string; icono: string }[] = [
 const MODULO: Record<string, string> = { general: 'General', social: 'Social', deportivo: 'Deportivo' };
 
 /** /admin/ayuda: administración del contenido del Centro de Ayuda (la ruta ya exige ser administrador). */
-export default function AyudaAdmin() {
+export default function AyudaAdmin({ modulo }: { modulo?: SiteContext }) {
   const { user } = useAuth();
   const { darkMode, fontSize } = useAccessibility();
   const { confirmar, dialogo } = useConfirmacion();
@@ -38,13 +41,31 @@ export default function AyudaAdmin() {
   const { avisar: avisarFlotante, avisos } = useAvisos();
   const [abrirId, setAbrirId] = useState<number | null>(null);
 
-  const esSocial = user?.roles.includes('adminSocial') ?? false;
-  const estilo = {
-    '--ay-adm-acento': esSocial ? '#9c02ae' : '#0b6f82',
-    '--ay-adm-claro': esSocial ? '#e3a9ee' : '#6fd0e0',
-    '--admin-accent': esSocial ? '#9c02ae' : '#0b6f82',
-    '--fs-scale': (parseInt(fontSize, 10) || 16) / 16,
-  } as CSSProperties;
+  // Paleta según el módulo desde el que se entra. Un superadmin tiene los dos roles,
+  // así que el rol solo decide cuando la cuenta administra un único módulo; si tiene
+  // ambos, manda el módulo indicado o, en su defecto, el último que visitó.
+  const tieneSocial = user?.roles.includes('adminSocial') ?? false;
+  const tieneDeportivo = user?.roles.includes('adminDeportivo') ?? false;
+  const moduloActivo: SiteContext =
+    tieneSocial && !tieneDeportivo ? 'social'
+    : tieneDeportivo && !tieneSocial ? 'deportivo'
+    : modulo ?? getSiteContext();
+  const esSocial = moduloActivo === 'social';
+  // Dentro del panel hereda su acento (--admin-accent) y su escala (el panel ya usa zoom),
+  // para verse igual que Kits, Usuarios, etc. Suelta (/admin/ayuda) conserva su propia paleta.
+  const variables: Record<string, string | number> = modulo
+    ? {
+        '--ay-adm-acento': 'var(--admin-accent)',
+        '--ay-adm-claro': esSocial ? '#e3a9ee' : '#6fd0e0',
+        '--fs-scale': 1,
+      }
+    : {
+        '--ay-adm-acento': esSocial ? '#9c02ae' : '#0b6f82',
+        '--ay-adm-claro': esSocial ? '#e3a9ee' : '#6fd0e0',
+        '--admin-accent': esSocial ? '#9c02ae' : '#0b6f82',
+        '--fs-scale': (parseInt(fontSize, 10) || 16) / 16,
+      };
+  const estilo = variables as CSSProperties;
 
   const avisar: Avisar = useCallback((tipo, texto) => avisarFlotante(texto, tipo), [avisarFlotante]);
 
@@ -84,8 +105,15 @@ export default function AyudaAdmin() {
     document.getElementById(`ay-adm-tab-${siguiente.id}`)?.focus();
   };
 
+  // Dentro del panel: mismo cargador que Copias de seguridad (esqueletos + orbe de SKAI).
+  // Al terminar, el contenido se monta de nuevo y entra con la animación del panel.
+  const cargandoInicial = !errorCarga && (!opciones || !articulos);
+  if (modulo && cargandoInicial) {
+    return <CargandoPanel modulo={moduloActivo} texto="Cargando centro de ayuda…" />;
+  }
+
   return (
-    <div className={`ayadm${darkMode ? ' dark dark-mode' : ''}`} style={estilo}>
+    <div className={`ayadm${modulo ? ' ayadm--embebido' : ''}${darkMode ? ' dark dark-mode' : ''}`} style={estilo}>
       <div className="ay-adm-wrap">
         {/* <header className="ay-adm-cab">
           <Link className="ay-adm-volver" to="/admin">
