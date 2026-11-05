@@ -20,6 +20,19 @@
 .ayadm :focus-visible { outline: 3px solid var(--ad-focus); outline-offset: 2px; border-radius: 6px; }
 .ayadm .ay-sr { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
+/* Dentro de un panel (Deportivo): sin fondo propio, se ve el fondo del panel. */
+.ayadm.ayadm--embebido { background: transparent; min-height: 0; }
+.ayadm.ayadm--embebido .ay-adm-wrap { max-width: none; padding: 0 0 2rem; }
+
+/* Entrada escalonada del contenido (misma animación am-entra de los demás módulos).
+   Al cambiar de pestaña el panel se vuelve a montar y entra de nuevo. */
+@media (prefers-reduced-motion: no-preference) {
+  .ayadm.ayadm--embebido .ay-adm-tabs { animation: am-entra .45s cubic-bezier(.22,.8,.3,1) backwards; }
+  .ayadm.ayadm--embebido [role="tabpanel"] > * { animation: am-entra .5s cubic-bezier(.22,.8,.3,1) .08s backwards; }
+  .ayadm.ayadm--embebido [role="tabpanel"] > *:nth-child(2) { animation-delay: .15s; }
+  .ayadm.ayadm--embebido [role="tabpanel"] > *:nth-child(3) { animation-delay: .22s; }
+}
+
 .ayadm .ay-adm-wrap { max-width: 1240px; margin: 0 auto; padding: 1.5rem 1.25rem 4rem; }
 
 /* ---------- Cabecera tipo banner ---------- */
@@ -211,4 +224,109 @@
 @media (prefers-reduced-motion: reduce) {
   .ayadm *, .ayadm *::before, .ayadm *::after { transition: none !important; animation: none !important; }
   .ayadm .ay-adm-kpi:hover, .ayadm .ay-adm-ranking li:hover, .ayadm .ay-adm-volver:hover { transform: none; }
+}
+
+/* =========================================================
+   Integrado al panel de administración (Deportivo / Social)
+   Misma piel que Kits, Usuarios, Resultados…: tarjetas con borde de acento,
+   botones, filtros, tabla, insignias y ventanas del panel. Solo aplica cuando
+   la vista va dentro del panel (clase ayadm--embebido).
+   ========================================================= */
+.ayadm.ayadm--embebido {
+  --ad-surface: var(--admin-surface);
+  --ad-soft: var(--admin-surface-2);
+  --ad-text: var(--admin-text);
+  --ad-muted: var(--admin-muted);
+  --ad-border: var(--admin-line);
+  --ad-acento: var(--admin-accent);
+  --ad-acento-2: color-mix(in srgb, var(--admin-accent) 78%, #091d36);
+  --ad-sombra: 0 5px 18px rgba(24, 34, 54, .04);
+  font-family: inherit; font-size: 13px; line-height: 1.5;
+}
+
+/* Pestañas: botones como los de Kits (activo = primary-btn, resto = secondary-btn) */
+.ayadm.ayadm--embebido .ay-adm-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; padding: 0; background: none; border: 0; border-radius: 0; box-shadow: none; overflow: visible; }
+.ayadm.ayadm--embebido .ay-adm-tab { min-height: 0; gap: 6px; padding: 9px 15px; border: 1px solid var(--admin-accent); border-radius: 10px; background: var(--admin-surface); color: var(--admin-text); font-size: 12px; font-weight: 700; }
+.ayadm.ayadm--embebido .ay-adm-tab:hover { background: var(--admin-surface-2); color: var(--admin-text); transform: translateY(-1px); }
+.ayadm.ayadm--embebido .ay-adm-tab--activa, .ayadm.ayadm--embebido .ay-adm-tab--activa:hover {
+  border-color: transparent; background: linear-gradient(135deg, var(--ad-acento), var(--ad-acento-2)); color: #fff; font-weight: 800;
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--admin-accent) 35%, transparent);
+}
+
+/* Filtros: fila plana como .filter-row (sin tarjeta), botón de acción a la derecha */
+.ayadm.ayadm--embebido .ay-adm-barra { gap: 10px; padding: 0; margin-bottom: 12px; background: none; border: 0; box-shadow: none; }
+.ayadm.ayadm--embebido .ay-adm-barra > .ay-adm-btn { margin-left: auto; }
+.ayadm.ayadm--embebido .ay-adm-campo { min-width: 140px; gap: 4px; }
+.ayadm.ayadm--embebido .ay-adm-campo label { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .09em; color: var(--admin-muted); }
+.ayadm.ayadm--embebido .ay-adm-nota { margin: 0 0 12px; font-size: 11px; color: var(--admin-muted); }
+
+/* Campos: como .admin-select (borde de acento en los filtros, de línea en las ventanas) */
+.ayadm.ayadm--embebido input[type="text"], .ayadm.ayadm--embebido input[type="search"], .ayadm.ayadm--embebido input[type="number"],
+.ayadm.ayadm--embebido input:not([type]), .ayadm.ayadm--embebido select, .ayadm.ayadm--embebido textarea {
+  min-height: 0; padding: 8px 10px; border-radius: 9px; font-size: 11px; background: var(--admin-surface); color: var(--admin-text); border-color: var(--admin-line);
+}
+.ayadm.ayadm--embebido .ay-adm-barra input, .ayadm.ayadm--embebido .ay-adm-barra select { border-color: var(--admin-accent); }
+.ayadm.ayadm--embebido input:focus, .ayadm.ayadm--embebido select:focus, .ayadm.ayadm--embebido textarea:focus {
+  border-color: var(--admin-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--admin-accent) 18%, transparent);
+}
+.ayadm.ayadm--embebido .ay-adm-modal .ay-adm-campo input, .ayadm.ayadm--embebido .ay-adm-modal .ay-adm-campo select, .ayadm.ayadm--embebido .ay-adm-modal .ay-adm-campo textarea { font-size: 12px; }
+
+/* Botones: primary-btn / secondary-btn del panel */
+.ayadm.ayadm--embebido .ay-adm-btn { min-height: 0; gap: 6px; padding: 8px 13px; border: 1px solid var(--admin-accent); border-radius: 10px; font-size: 12px; font-weight: 700; }
+.ayadm.ayadm--embebido .ay-adm-btn--primario {
+  padding: 10px 16px; border: 0; font-weight: 800; letter-spacing: .01em; color: #fff;
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--admin-accent) 35%, transparent);
+}
+.ayadm.ayadm--embebido .ay-adm-btn--primario:hover:not([disabled]) { box-shadow: 0 10px 22px color-mix(in srgb, var(--admin-accent) 45%, transparent); filter: brightness(1.04); }
+.ayadm.ayadm--embebido .ay-adm-btn--suave { background: var(--admin-surface); color: var(--admin-text); border-color: var(--admin-accent); }
+.ayadm.ayadm--embebido .ay-adm-btn--suave:hover:not([disabled]) { background: var(--admin-surface-2); transform: translateY(-1px); }
+.ayadm.ayadm--embebido .ay-adm-btn--chico { padding: 6px 10px; font-size: 11px; }
+.ayadm.ayadm--embebido .ay-adm-icono { width: 32px; height: 32px; border-radius: 9px; font-size: 1rem; border-color: var(--admin-line); }
+.ayadm.ayadm--embebido .ay-adm-icono:hover:not([disabled]), .ayadm.ayadm--embebido .ay-adm-icono[aria-pressed="true"] { border-color: var(--admin-accent); color: var(--admin-accent); background: var(--admin-surface-2); }
+.ayadm.ayadm--embebido .ay-adm-enlace { color: var(--admin-accent); }
+
+/* Tabla: .admin-card.table-card + .admin-table */
+.ayadm.ayadm--embebido .ay-adm-tabla-wrap { background: var(--admin-surface); border: 1px solid var(--admin-accent); border-radius: 16px; box-shadow: var(--ad-sombra); }
+.ayadm.ayadm--embebido .ay-adm-tabla { min-width: 820px; }
+.ayadm.ayadm--embebido .ay-adm-tabla th { padding: 12px 14px; font-size: 9px; font-weight: 800; letter-spacing: .09em; background: var(--admin-surface-2); border-bottom: 0; }
+.ayadm.ayadm--embebido .ay-adm-tabla td { padding: 12px 14px; font-size: 11px; border-bottom: 0; border-top: 1px solid var(--admin-line); }
+.ayadm.ayadm--embebido .ay-adm-tabla tbody tr:hover td { background: color-mix(in srgb, var(--admin-accent) 5%, var(--admin-surface)); }
+.ayadm.ayadm--embebido .ay-adm-tabla strong { font-size: 11px; }
+.ayadm.ayadm--embebido .ay-adm-slug { font-size: 10px; }
+.ayadm.ayadm--embebido .ay-adm-cat-icono { width: 28px; height: 28px; border-radius: 9px; }
+.ayadm.ayadm--embebido .ay-adm-vacio { padding: 2.2rem 1rem; font-size: 12px; background: var(--admin-surface); border: 1px dashed var(--admin-line); border-radius: 16px; }
+
+/* Estados: insignias como .admin-badge */
+.ayadm.ayadm--embebido .ay-adm-estado { gap: 0; padding: 4px 8px; border: 0; font-size: 9px; font-weight: 900; }
+.ayadm.ayadm--embebido .ay-adm-estado::before { display: none; }
+.ayadm.ayadm--embebido .ay-adm-estado--boton { min-height: 0; font-size: 9px; }
+
+/* Métricas: .kpi-card y .admin-card */
+.ayadm.ayadm--embebido .ay-adm-kpis { gap: 14px; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+.ayadm.ayadm--embebido .ay-adm-kpi { padding: 15px; border: 1px solid var(--admin-accent); border-radius: 15px; }
+.ayadm.ayadm--embebido .ay-adm-kpi::before { display: none; }
+.ayadm.ayadm--embebido .ay-adm-kpi:hover { transform: translateY(-2px); box-shadow: 0 10px 24px color-mix(in srgb, var(--admin-accent) 16%, transparent); }
+.ayadm.ayadm--embebido .ay-adm-kpi-nombre { order: -1; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .07em; color: var(--admin-muted); }
+.ayadm.ayadm--embebido .ay-adm-kpi-valor { font-size: 24px; letter-spacing: -.03em; color: var(--admin-text); }
+.ayadm.ayadm--embebido .ay-adm-kpi-nota { font-size: 11px; }
+.ayadm.ayadm--embebido .ay-adm-dos { gap: 14px; margin-bottom: 14px; }
+.ayadm.ayadm--embebido .ay-adm-tarjeta { padding: 18px 20px; border: 1px solid var(--admin-accent); border-radius: 16px; }
+.ayadm.ayadm--embebido .ay-adm-tarjeta h2 { font-size: 14px; margin-bottom: 12px; }
+.ayadm.ayadm--embebido .ay-adm-ranking li { border-radius: 10px; font-size: 11px; }
+.ayadm.ayadm--embebido .ay-adm-ranking li > span:first-child::before { color: var(--admin-accent); }
+.ayadm.ayadm--embebido .ay-adm-barras li { font-size: 11px; }
+.ayadm.ayadm--embebido .ay-adm-barra-relleno { background: linear-gradient(90deg, var(--ad-acento), var(--ad-acento-2)); }
+
+/* Ventanas: .admin-modal-backdrop / .admin-modal / .admin-modal-head */
+.ayadm.ayadm--embebido .ay-adm-fondo { z-index: 50000; padding: 20px; align-items: center; background: rgba(8, 12, 20, .68); backdrop-filter: blur(5px); }
+.ayadm.ayadm--embebido .ay-adm-modal { border-radius: 20px; border: 1px solid var(--admin-line); box-shadow: 0 25px 80px rgba(0, 0, 0, .32), 0 2px 0 color-mix(in srgb, var(--admin-accent) 25%, transparent); }
+.ayadm.ayadm--embebido .ay-adm-modal-cab { padding: 20px 22px; background: linear-gradient(135deg, color-mix(in srgb, var(--admin-accent) 16%, var(--admin-surface)), var(--admin-surface) 65%); border-bottom: 1px solid var(--admin-line); }
+.ayadm.ayadm--embebido .ay-adm-modal-cab h2 { font-size: 18px; }
+.ayadm.ayadm--embebido .ay-adm-modal-cuerpo { padding: 22px; }
+.ayadm.ayadm--embebido .ay-adm-modal-pie { gap: 8px; padding: 16px 22px; background: var(--admin-surface); border-top: 1px solid var(--admin-line); }
+.ayadm.ayadm--embebido .ay-adm-opiniones { border-radius: 12px; border-left-color: var(--admin-accent); font-size: 12px; }
+@media (max-width: 720px) {
+  .ayadm.ayadm--embebido .ay-adm-fondo { padding: 10px; }
+  .ayadm.ayadm--embebido .ay-adm-modal { min-height: 0; border-radius: 20px; }
+  .ayadm.ayadm--embebido .ay-adm-barra > .ay-adm-btn { margin-left: 0; }
 }

@@ -1318,7 +1318,7 @@ function AdminPage() {
           </SectionTable>
         )}
         {section === "ayuda" && (
-          <AyudaAdmin />
+          <AyudaAdmin modulo="deportivo" />
         )}
 
         <AdminFooter modulo="deportivo" />
