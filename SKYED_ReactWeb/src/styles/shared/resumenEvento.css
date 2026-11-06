@@ -1,0 +1,148 @@
+/* =========================================================
+   Resumen de un evento (components/shared/ResumenEvento.tsx)
+   Usa las variables --admin-* de cada panel: toma sus colores y su modo oscuro.
+   ========================================================= */
+
+.admin-modal.resumen-evento {
+  width: min(720px, 100%);
+  max-height: 90vh;
+  overflow: auto;
+}
+
+.resumen-evento .rev-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 16px 22px 22px;
+}
+
+.resumen-evento .rev-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--admin-line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--admin-accent) 4%, var(--admin-surface));
+}
+
+.resumen-evento .rev-card.ancho {
+  grid-column: 1 / -1;
+}
+
+.resumen-evento .rev-titulo {
+  color: var(--admin-muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.resumen-evento .rev-valor {
+  color: var(--admin-text);
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+.resumen-evento .rev-detalle {
+  margin: 0;
+  color: var(--admin-muted);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.resumen-evento .rev-barra {
+  height: 8px;
+  margin-top: 4px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--admin-muted) 20%, transparent);
+}
+
+.resumen-evento .rev-barra span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--admin-accent);
+  transition: width .4s ease;
+}
+
+.resumen-evento .rev-lista {
+  display: grid;
+  gap: 6px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.resumen-evento .rev-lista li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed var(--admin-line);
+  font-size: 13px;
+}
+
+.resumen-evento .rev-lista li:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.resumen-evento .rev-lista li span {
+  color: var(--admin-muted);
+}
+
+.resumen-evento .rev-lista li strong {
+  color: var(--admin-text);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.resumen-evento .rev-lista li.destacado strong {
+  color: #b45309;
+}
+
+.dark .resumen-evento .rev-lista li.destacado strong {
+  color: #fbbf24;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .resumen-evento .rev-barra span {
+    transition: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .resumen-evento .rev-grid {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 12px 14px 16px;
+  }
+}
+
+/* Columna "Cupos" de la tabla de eventos de Deportivo: ocupados de total, con barra */
+.deportivo-admin .evt-cupos {
+  min-width: 96px;
+}
+
+.deportivo-admin .evt-cupos .evt-barra {
+  height: 5px;
+  margin-top: 5px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--admin-muted) 20%, transparent);
+}
+
+.deportivo-admin .evt-cupos .evt-barra span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--admin-accent);
+}
+
+.deportivo-admin .evt-cupos .evt-barra span.lleno {
+  background: #dc2626;
+}

@@ -36,7 +36,9 @@ import {
   Wallet,
   X,
   LifeBuoy,
+  BarChart3,
 } from "lucide-react";
+import { ResumenEventoModal, Indicador, BarraProgreso, ListaValores } from "../../components/shared/ResumenEvento";
 
 import Protected from "../../components/Protected";
 import { useAuth } from "../../context/AuthContext";
@@ -175,17 +177,6 @@ type Ingreso = {
   nombre?: string;
   evento?: string;
   entrada?: string;
-  // Kits de la inscripción (titular e invitado) para entregarlos al validar.
-  kits?: KitEntrega[];
-};
-
-type KitEntrega = {
-  rol: "titular" | "invitado";
-  id_i: number;
-  id_inv: number | null;
-  nombre: string;
-  estado: string; // pendiente | entregado
-  fecha_entrega?: string | null;
 };
 
 const CATEGORIAS_EVENTO: Array<{ value: string; label: string }> = [
@@ -292,6 +283,97 @@ const normalizarTiempo = (value: string) => {
   while (partes.length < 3) partes.push("00");
   return partes.slice(0, 3).join(":");
 };
+
+/** "1 confirmado", "2 confirmados". */
+const plural = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno : varios}`;
+
+type CifrasEventoDeportivo = {
+  inscritos: number; confirmadas: number; pendientes: number; invitados: number; cupos_ocupados: number;
+  recaudado: number; por_validar: number;
+  desglose: { inscripciones: number; kits: number; invitados: number };
+  asistencia: { esperados: number; asistieron: number };
+  kits: { pedidos: number; entregados: number };
+};
+
+const CIFRAS_VACIAS: CifrasEventoDeportivo = {
+  inscritos: 0, confirmadas: 0, pendientes: 0, invitados: 0, cupos_ocupados: 0, recaudado: 0, por_validar: 0,
+  desglose: { inscripciones: 0, kits: 0, invitados: 0 }, asistencia: { esperados: 0, asistieron: 0 }, kits: { pedidos: 0, entregados: 0 },
+};
+
+/** Cupos: ocupados de total, con una barrita (roja si ya no quedan). */
+function CeldaCupos({ disponibles, ocupados }: { disponibles: number; ocupados: number }) {
+  const total = Number(disponibles || 0) + ocupados;
+  const porcentaje = total > 0 ? Math.min(100, Math.round((ocupados / total) * 100)) : 0;
+  return (
+    <td className="evt-cifra evt-cupos" title={`${disponibles} cupos libres`}>
+      <strong>{ocupados} / {total}</strong>
+      <div className="evt-barra" aria-hidden="true"><span className={disponibles <= 0 ? "lleno" : ""} style={{ width: `${porcentaje}%` }} /></div>
+      <small>{porcentaje} % ocupado</small>
+    </td>
+  );
+}
+
+/** Resumen completo de un evento deportivo. */
+function ResumenDeportivo({ evento, cifras, onClose }: { evento: Evento; cifras?: CifrasEventoDeportivo; onClose: () => void }) {
+  const c = cifras ?? CIFRAS_VACIAS;
+  const totalCupos = Number(evento.cupos_disponibles || 0) + c.cupos_ocupados;
+  const yaPaso = !!evento.fecha && new Date(`${evento.fecha.slice(0, 10)}T23:59:59`) < new Date();
+  const faltanKits = Math.max(0, c.kits.pedidos - c.kits.entregados);
+  return (
+    <ResumenEventoModal titulo={evento.nombre} subtitulo={`Resumen del evento · ${formatDate(evento.fecha)}`} onClose={onClose}>
+      <Indicador
+        titulo="Inscritos"
+        valor={c.inscritos}
+        detalle={`${plural(c.confirmadas, "confirmado", "confirmados")} · ${c.pendientes} con el pago por validar${c.invitados ? ` · ${c.invitados} con invitado` : ""}`}
+      />
+      <Indicador titulo="Ocupación de cupos" valor={`${c.cupos_ocupados} de ${totalCupos}`} detalle={evento.cupos_disponibles === 1 ? "Queda 1 cupo libre." : `Quedan ${evento.cupos_disponibles} cupos libres.`}>
+        <BarraProgreso actual={c.cupos_ocupados} total={totalCupos} etiqueta="Cupos ocupados" />
+      </Indicador>
+      <Indicador titulo="Dinero recaudado" valor={money(c.recaudado)} detalle="Solo pagos confirmados." ancho>
+        <ListaValores filas={[
+          { nombre: "Inscripciones", valor: money(c.desglose.inscripciones) },
+          { nombre: "Kits", valor: money(c.desglose.kits) },
+          { nombre: "Invitados", valor: money(c.desglose.invitados) },
+          ...(c.por_validar > 0 ? [{ nombre: "Por validar (aún no cuenta)", valor: money(c.por_validar), destacado: true }] : []),
+        ]} />
+      </Indicador>
+      <Indicador
+        titulo="Asistencia con QR"
+        valor={`${c.asistencia.asistieron} de ${c.asistencia.esperados}`}
+        detalle={yaPaso || c.asistencia.asistieron > 0
+          ? "Personas que entraron con su QR, frente a las inscritas con el pago confirmado (incluye invitados)."
+          : "Se cuenta el día del evento, al escanear los QR en Control de acceso."}
+      >
+        <BarraProgreso actual={c.asistencia.asistieron} total={c.asistencia.esperados} etiqueta="Asistencia" />
+      </Indicador>
+      <Indicador
+        titulo="Kits"
+        valor={`${c.kits.entregados} de ${c.kits.pedidos} entregados`}
+        detalle={c.kits.pedidos
+          ? `${faltanKits ? `Faltan ${faltanKits} por entregar. ` : ""}Se entregan antes del evento, en Kits → Entregas kits.`
+          : "Nadie ha pedido kit en este evento."}
+      >
+        <BarraProgreso actual={c.kits.entregados} total={c.kits.pedidos} etiqueta="Kits entregados" />
+      </Indicador>
+    </ResumenEventoModal>
+  );
+}
+
+/** Inscritos y dinero recaudado de un evento, con el detalle de lo pendiente debajo. */
+function CeldasCifrasEvento({ cifras }: { cifras?: CifrasEventoDeportivo }) {
+  const c = cifras ?? CIFRAS_VACIAS;
+  return <>
+    <td className="evt-cifra" title={`${c.confirmadas} confirmadas · ${c.pendientes} con el pago por validar`}>
+      <strong>{c.inscritos}</strong>
+      {c.invitados > 0 && <small>+{c.invitados} {c.invitados === 1 ? "invitado" : "invitados"}</small>}
+      {c.pendientes > 0 && <small className="evt-pendiente">{c.pendientes} por confirmar</small>}
+    </td>
+    <td className="evt-cifra" title="Solo cuenta los pagos confirmados">
+      <strong>{money(c.recaudado)}</strong>
+      {c.por_validar > 0 && <small className="evt-pendiente">{money(c.por_validar)} por validar</small>}
+    </td>
+  </>;
+}
 
 function Badge({ value }: { value: string }) {
   return <span className={`admin-badge ${value}`}>{human(value)}</span>;
@@ -535,6 +617,10 @@ function AdminPage() {
   const [loading, setLoading] = useState(true); // true desde el inicio: sin "flash" de tarjetas en cero
 
   const [eventos, setEventos] = useState<Evento[]>([]);
+  // Inscritos y dinero por evento (GET /estadisticas/eventos-deportivos, solo admins).
+  const [cifrasEventos, setCifrasEventos] = useState<Record<number, CifrasEventoDeportivo>>({});
+  // Evento cuyo resumen (cifras completas) está abierto.
+  const [resumenEvento, setResumenEvento] = useState<Evento | null>(null);
   const [kits, setKits] = useState<Kit[]>([]);
   const [pagos, setPagos] = useState<Pago[]>([]);
   const [resultados, setResultados] = useState<Resultado[]>([]);
@@ -1065,6 +1151,8 @@ function AdminPage() {
                   <td>{formatDate(e.fecha)}</td>
                   <td>{money(e.precio)}</td>
                   <td>{e.cupos_disponibles}</td>
+                  <CeldaCupos disponibles={e.cupos_disponibles} ocupados={cifrasEventos[e.id]?.cupos_ocupados ?? 0} />
+                  <CeldasCifrasEvento cifras={cifrasEventos[e.id]} />
                   <td>
                     {puedeEditar("eventos") ? <select className="admin-select" value={e.estado} onChange={ev => cambiarEstadoEvento(e, ev.target.value as Evento["estado"])} aria-label="Estado del evento">
                       <option value="activo">Activo</option>
@@ -1073,6 +1161,7 @@ function AdminPage() {
                     </select> : <Badge value={e.estado} />}
                   </td>
                   <td><div className="row-actions">
+                    <button className="table-action" title="Ver el resumen: inscritos, dinero, asistencia y kits" onClick={() => setResumenEvento(e)}><BarChart3 size={15} /></button>
                     {puedeEditar("eventos") && <>
                       <button className="table-action" title="Editar" onClick={() => { setEditing(e); setModal("evento"); }}><Pencil size={15} /></button>
                     </>}
@@ -1348,6 +1437,10 @@ function AdminPage() {
             editing ? "Evento actualizado" : "Evento creado. Ahora agrégale sus categorías.",
           )}
         />
+      )}
+
+      {resumenEvento && (
+        <ResumenDeportivo evento={resumenEvento} cifras={cifrasEventos[resumenEvento.id]} onClose={() => setResumenEvento(null)} />
       )}
 
       {modal === "categorias" && editing && (puedeEditar("eventos") || puedeEliminar("eventos")) && (
@@ -1972,7 +2065,6 @@ function ControlAcceso({ notify, onValidado }: { notify: Avisar; onValidado: () 
   const [resultado, setResultado] = useState<Ingreso | null>(null);
   const [historial, setHistorial] = useState<Ingreso[]>([]);
   const [camara, setCamara] = useState(false);
-  const [entregando, setEntregando] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const frameRef = useRef<number | null>(null);
@@ -2025,7 +2117,6 @@ function ControlAcceso({ notify, onValidado }: { notify: Avisar; onValidado: () 
         nombre: nombreTitular,
         evento: nombreEvento,
         entrada,
-        kits: acceso?.kits ?? [],
       };
       onValidado();
     } catch (err) {
@@ -2043,34 +2134,8 @@ function ControlAcceso({ notify, onValidado }: { notify: Avisar; onValidado: () 
     setValidando(false);
   };
 
-  const claveKit = (k: KitEntrega) => `${k.id_i}-${k.id_inv ?? 0}`;
-
-  const fechaKit = (f?: string | null) => {
-    if (!f) return "";
-    const d = new Date(String(f).replace(" ", "T"));
-    return isNaN(d.getTime()) ? "" : d.toLocaleString("es-CO", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
-  };
-
-  // Marca el kit como entregado (POST /entregas-kit) y actualiza la fila en pantalla.
-  const entregarKit = async (k: KitEntrega) => {
-    if (entregando) return;
-    setEntregando(claveKit(k));
-    try {
-      const res = await apiFetch("/entregas-kit", {
-        method: "POST",
-        body: JSON.stringify({ id_i: k.id_i, id_inv: k.id_inv }),
-      });
-      const fecha: string = res?.entrega?.fecha_entrega_real_ek ?? new Date().toISOString();
-      setResultado(r => r?.kits
-        ? { ...r, kits: r.kits.map(x => claveKit(x) === claveKit(k) ? { ...x, estado: "entregado", fecha_entrega: fecha } : x) }
-        : r);
-      notify("Kit entregado.");
-    } catch (err) {
-      notify(err instanceof Error ? err.message : "No se pudo entregar el kit.");
-    } finally {
-      setEntregando(null);
-    }
-  };
+  // El QR es solo para la asistencia: los kits se entregan días antes,
+  // desde Kits → Entregas kits.
 
   const iniciarCamara = async () => {
     if (!navigator.mediaDevices?.getUserMedia) {
@@ -2150,37 +2215,6 @@ function ControlAcceso({ notify, onValidado }: { notify: Avisar; onValidado: () 
             <div className={`qr-result ${resultado.ok ? "ok" : "error"}`} role="status">
               <strong>{resultado.ok ? "✓" : "✕"} {resultado.titulo}</strong>
               {resultado.detalle.map((d, i) => <p key={i}>{d}</p>)}
-              {resultado.ok && !!resultado.kits?.length && (
-                <div style={{ marginTop: 14 }}>
-                  <span className="card-kicker">KIT</span>
-                  <div className="resource-list">
-                    {resultado.kits.map(k => (
-                      <div className="resource-item" key={claveKit(k)}>
-                        <div className="resource-icon"><Package size={16} /></div>
-                        <div className="resource-main">
-                          <strong>{k.rol === "invitado" ? "Invitado" : "Titular"}: {k.nombre}</strong>
-                          <span>
-                            {k.estado === "entregado"
-                              ? `Entregado${fechaKit(k.fecha_entrega) ? ` · ${fechaKit(k.fecha_entrega)}` : ""}`
-                              : "Pendiente de entrega"}
-                          </span>
-                        </div>
-                        {k.estado !== "entregado" && (
-                          <button
-                            type="button"
-                            className="primary-btn"
-                            title="Marcar el kit como entregado"
-                            disabled={!!entregando}
-                            onClick={() => entregarKit(k)}
-                          >
-                            {entregando === claveKit(k) ? <Loader2 size={16} className="admin-spin" /> : <Package size={16} />} Entregar
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           ) : (
             <div className="qr-result" role="status">
