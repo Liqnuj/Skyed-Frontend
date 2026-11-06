@@ -14,7 +14,7 @@ import '../../styles/shared/nosotrosMotion.css';
 import { createPortal } from 'react-dom';
 
 
-type TabId = 'resumen' | 'historial' | 'inscripciones' | 'ajustes';
+type TabId = 'resumen' | 'historial' | 'inscripciones' | 'resultados' | 'ajustes';
 
 interface EventoInscrito {
   id: number;
@@ -144,6 +144,45 @@ function fmtMoney(n: number | null | undefined) {
   return '$' + (Number(n) || 0).toLocaleString('es-CO');
 }
 
+const EDAD_MINIMA = 10;
+const EDAD_MAXIMA = 100;
+
+/** Fecha local (no UTC) en formato YYYY-MM-DD. */
+function fechaLocalISO(d: Date) {
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
+
+/** Fecha máxima de nacimiento permitida: hoy menos EDAD_MINIMA años. */
+function maxFechaNacimiento() {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - EDAD_MINIMA);
+  return fechaLocalISO(d);
+}
+
+/** Fecha mínima de nacimiento permitida: hoy menos EDAD_MAXIMA años. */
+function minFechaNacimiento() {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - EDAD_MAXIMA);
+  return fechaLocalISO(d);
+}
+
+/** Devuelve el mensaje de error si la fecha de nacimiento no es válida, o null si está bien. */
+function validarFechaNacimiento(valor: string) {
+  if (!valor) return null;
+  if (valor > fechaLocalISO(new Date())) {
+    return 'La fecha de nacimiento no puede ser posterior a hoy.';
+  }
+  if (valor > maxFechaNacimiento()) {
+    return `Debes tener al menos ${EDAD_MINIMA} años para usar la plataforma.`;
+  }
+  if (valor < minFechaNacimiento()) {
+    return `La fecha de nacimiento no puede ser de hace más de ${EDAD_MAXIMA} años.`;
+  }
+  return null;
+}
+
 /** Normaliza el tipo de documento que llega de la base ("cedula_ciudadania" -> "CC"). */
 function tipoDocumentoCodigo(tipo: string | null | undefined) {
   const map: Record<string, string> = {
@@ -257,6 +296,22 @@ const RANGOS_HIST: { value: RangoFecha; label: string }[] = [
   { value: 'todas', label: 'Todas las fechas' },
   { value: '7d', label: 'Últimos 7 días' },
   { value: '30d', label: 'Últimos 30 días' },
+  { value: 'mes', label: 'Este mes' },
+  { value: 'anio', label: 'Este año' },
+  { value: 'custom', label: 'Rango personalizado' },
+];
+
+const FILTROS_RES: Filtros = { q: '', rango: 'todas', desde: '', hasta: '', orden: 'recientes', estado: 'todos' };
+
+const ESTADOS_RES = [
+  { value: 'todos', label: 'Todos' },
+  { value: 'oficial', label: 'Oficial' },
+  { value: 'en revision', label: 'En revisión' },
+  { value: 'descalificado', label: 'Descalificado' },
+];
+
+const RANGOS_RES: { value: RangoFecha; label: string }[] = [
+  { value: 'todas', label: 'Todas las fechas' },
   { value: 'mes', label: 'Este mes' },
   { value: 'anio', label: 'Este año' },
   { value: 'custom', label: 'Rango personalizado' },
@@ -465,7 +520,7 @@ export default function Participant() {
   );
 }
 
-const TABS: TabId[] = ['resumen', 'historial', 'inscripciones', 'ajustes'];
+const TABS: TabId[] = ['resumen', 'historial', 'inscripciones', 'resultados', 'ajustes'];
 
 function ParticipantPanel() {
   const { user, updateFotoUrl } = useAuth();
@@ -489,6 +544,8 @@ function ParticipantPanel() {
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [filtrosInsc, setFiltrosInsc] = useState<Filtros>(FILTROS_INSC);
   const [filtrosHist, setFiltrosHist] = useState<Filtros>(FILTROS_HIST);
+  const [filtrosRes, setFiltrosRes] = useState<Filtros>(FILTROS_RES);
+  const [soloPremio, setSoloPremio] = useState(false);
 
   const [infoOpen, setInfoOpen] = useState(false);
 
@@ -607,6 +664,26 @@ useEffect(() => {
     [filasHist, filtrosHist],
   );
 
+  // ----- Resultados: inscripciones que ya tienen resultado publicado -----
+  const filasRes = useMemo(
+    () => (inscripciones ?? []).filter((i) => !!i.resultado),
+    [inscripciones],
+  );
+  const textoRes = (i: Inscripcion) =>
+    `${i.evento?.nombre ?? ''} ${i.evento?.categoria ?? ''} ${i.evento?.ubicacion ?? ''} ${estadoResultadoLabel(i.resultado?.estado)} ${(i.resultado?.premios ?? []).map((p) => p.nombre).join(' ')}`;
+  const conteosRes = useMemo(() => contarPor(filasRes, (i) => i.resultado?.estado ?? ''), [filasRes]);
+  const filasResFiltradas = useMemo(
+    () =>
+      filtrarLista(filasRes, filtrosRes, (i) => i.evento?.fecha, textoRes, (i) => i.resultado?.estado ?? '')
+        .filter((i) => !soloPremio || (i.resultado?.premios.length ?? 0) > 0),
+    [filasRes, filtrosRes, soloPremio],
+  );
+  const mejorPosicion = filasRes.reduce<number | null>((min, i) => {
+    const p = i.resultado?.posicion_general;
+    return p != null && (min === null || p < min) ? p : min;
+  }, null);
+  const totalPremios = filasRes.reduce((n, i) => n + (i.resultado?.premios.length ?? 0), 0);
+
   const initials = (user?.name || 'SK').split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
 
 const fileInputRef = useRef<HTMLInputElement>(null);
@@ -724,14 +801,14 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         </div>
 
         <div className="part-tabs" role="tablist">
-          {(['resumen', 'historial', 'inscripciones', 'ajustes'] as TabId[]).map((t) => (
-            <button title={t === 'resumen' ? 'Ver el resumen' : t === 'historial' ? 'Ver el historial' : t === 'inscripciones' ? 'Ver mis inscripciones' : 'Ver los ajustes de tu cuenta'}
+          {(['resumen', 'historial', 'inscripciones', 'resultados', 'ajustes'] as TabId[]).map((t) => (
+            <button title={t === 'resumen' ? 'Ver el resumen' : t === 'historial' ? 'Ver el historial' : t === 'inscripciones' ? 'Ver mis inscripciones' : t === 'resultados' ? 'Ver mis resultados' : 'Ver los ajustes de tu cuenta'}
               key={t}
               role="tab"
               className={`part-tab-btn${tab === t ? ' active' : ''}`}
               onClick={() => setTab(t)}
             >
-              {t === 'resumen' ? 'Resumen' : t === 'historial' ? 'Historial' : t === 'inscripciones' ? 'Inscripciones' : 'Ajustes'}
+              {t === 'resumen' ? 'Resumen' : t === 'historial' ? 'Historial' : t === 'inscripciones' ? 'Inscripciones' : t === 'resultados' ? 'Resultados' : 'Ajustes'}
             </button>
           ))}
         </div>
@@ -846,6 +923,99 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
                 ) : (
                   <EventRow key={f.key} insc={f.insc!} onVerDetalle={() => abrirDetalle(f.insc!)} />
                 ),
+              )}
+            </>
+          )}
+
+          {tab === 'resultados' && (
+            <>
+              <p className="part-section-label">Mis resultados</p>
+              {!inscripciones && !loadError && <div className="part-empty-row">Cargando resultados…</div>}
+              {loadError && <div className="part-empty-row">{loadError}</div>}
+              {inscripciones && filasRes.length === 0 && (
+                <div className="part-empty-row">
+                  Todavía no tienes resultados publicados. Cuando termine un evento en el que participaste, tu tiempo y tu posición aparecerán aquí.
+                </div>
+              )}
+              {filasRes.length > 0 && (
+                <>
+                  <div className="part-detail-info-grid" style={{ marginBottom: '1rem' }}>
+                    <div className="part-detail-info-item">
+                      <span className="part-detail-icon"><i className="ti ti-flag-check" aria-hidden="true" /></span>
+                      <div>
+                        <span className="part-label">Eventos con resultado</span>
+                        <strong>{filasRes.length}</strong>
+                      </div>
+                    </div>
+                    <div className="part-detail-info-item">
+                      <span className="part-detail-icon"><i className="ti ti-medal" aria-hidden="true" /></span>
+                      <div>
+                        <span className="part-label">Mejor posición general</span>
+                        <strong>{mejorPosicion != null ? `${mejorPosicion}.º` : '—'}</strong>
+                      </div>
+                    </div>
+                    <div className="part-detail-info-item">
+                      <span className="part-detail-icon"><i className="ti ti-award" aria-hidden="true" /></span>
+                      <div>
+                        <span className="part-label">Premios obtenidos</span>
+                        <strong>{totalPremios}</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <ListToolbar
+                    filtros={filtrosRes}
+                    base={FILTROS_RES}
+                    onChange={setFiltrosRes}
+                    rangos={RANGOS_RES}
+                    estados={ESTADOS_RES}
+                    conteos={conteosRes}
+                    placeholder="Buscar por evento, lugar, categoría o premio"
+                    ordenLabels={{ recientes: 'Más recientes primero', antiguos: 'Más antiguos primero' }}
+                    total={filasRes.length}
+                    mostrando={filasResFiltradas.length}
+                    singular="resultado"
+                    plural="resultados"
+                  />
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: '.5rem', margin: '.25rem 0 1rem', cursor: 'pointer' }}>
+                    <input type="checkbox" checked={soloPremio} onChange={(e) => setSoloPremio(e.target.checked)} />
+                    Solo los que tuvieron premio
+                  </label>
+                  {filasResFiltradas.length === 0 && (
+                    <div className="part-empty-row">
+                      No encontramos resultados con estos filtros.{' '}
+                      <button title="Quitar todos los filtros" type="button" className="part-tool-clear" onClick={() => { setFiltrosRes({ ...FILTROS_RES, orden: filtrosRes.orden }); setSoloPremio(false); }}>
+                        Limpiar filtros
+                      </button>
+                    </div>
+                  )}
+                  {filasResFiltradas.map((i) => {
+                    const r = i.resultado!;
+                    const pillCls = r.estado === 'oficial' ? 'ok' : r.estado === 'descalificado' ? 'warn' : 'pending';
+                    const bg = i.evento?.imagen_url ? { backgroundImage: `url(${i.evento.imagen_url})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined;
+                    return (
+                      <div className="part-event-row" key={i.id}>
+                        <div className="part-event-row-img" style={bg}>{!i.evento?.imagen_url && (i.evento?.nombre || '?')[0].toUpperCase()}</div>
+                        <div className="part-event-row-info">
+                          <h4>{i.evento?.nombre || 'Evento'}</h4>
+                          <div className="part-event-meta">
+                            <span>{fmtFechaLarga(i.evento?.fecha)}</span>
+                            {i.evento?.ubicacion && <span>{i.evento.ubicacion}</span>}
+                            {i.categoria?.nombre && <span>{i.categoria.nombre}</span>}
+                          </div>
+                          <div className="part-event-meta">
+                            {r.tiempo_final && <span><i className="ti ti-clock" aria-hidden="true" /> {r.tiempo_final}</span>}
+                            {r.posicion_general != null && <span>{r.posicion_general}.º general</span>}
+                            {r.posicion_categoria != null && <span>{r.posicion_categoria}.º en {i.categoria?.nombre || 'categoría'}</span>}
+                            {r.premios.length > 0 && <span><i className="ti ti-award" aria-hidden="true" /> {r.premios.map((p) => p.nombre).join(', ')}</span>}
+                          </div>
+                          <button title="Ver los detalles de la inscripción" className="part-btn-link-detail" onClick={() => abrirDetalle(i)}>Ver detalles</button>
+                        </div>
+                        <span className={`part-status-pill ${pillCls}`}>{estadoResultadoLabel(r.estado)}</span>
+                      </div>
+                    );
+                  })}
+                </>
               )}
             </>
           )}
@@ -1441,6 +1611,11 @@ function AjustesTab() {
   const submitDatosPersonales = async (e: React.FormEvent) => {
     e.preventDefault();
     setDatosMsg(null);
+    const errorFecha = validarFechaNacimiento(fechaNacimiento);
+    if (errorFecha) {
+      setDatosMsg({ tipo: 'error', texto: errorFecha, id: Date.now() });
+      return;
+    }
     setGuardandoDatos(true);
     try {
       await updateProfile({
@@ -1631,7 +1806,7 @@ function AjustesTab() {
                 </div>
                 <div className="part-form-group">
                   <label htmlFor="d-fecha-nac">Fecha de nacimiento</label>
-                  <input id="d-fecha-nac" type="date" value={fechaNacimiento} onChange={(e) => setFechaNacimiento(e.target.value)} />
+                  <input id="d-fecha-nac" type="date" min={minFechaNacimiento()} max={maxFechaNacimiento()} value={fechaNacimiento} onChange={(e) => setFechaNacimiento(e.target.value)} />
                 </div>
                 <div className="part-form-group">
                   <label htmlFor="d-ciudad">Ciudad</label>
