@@ -1,0 +1,118 @@
+/* Detalle de una reserva (Administrador Social). Reusa los tokens del panel. */
+.social-admin .det { display: grid; gap: 16px; padding-bottom: 90px; }
+
+.social-admin .det-estado { display: grid; gap: 12px; justify-items: start; padding: 32px 4px; color: var(--admin-muted); }
+
+.social-admin .det-top { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+.social-admin .det-titulo { flex: 1 1 320px; min-width: 0; }
+.social-admin .det-titulo h2 { margin: 2px 0 8px; font-size: 24px; color: var(--admin-text); overflow-wrap: anywhere; }
+
+.social-admin .det-chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.social-admin .det-chip {
+  padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700;
+  border: 1px solid var(--admin-line); background: var(--admin-surface-2); color: var(--admin-muted);
+}
+.social-admin .det-chip.fecha-confirmada { color: #16a34a; border-color: color-mix(in srgb, #16a34a 35%, var(--admin-line)); }
+.social-admin .det-chip.fecha-propuesta { color: #d97706; border-color: color-mix(in srgb, #d97706 35%, var(--admin-line)); }
+
+.social-admin .det-aviso {
+  padding: 12px 14px; border-radius: 12px; font-size: 13px;
+  border: 1px solid color-mix(in srgb, #d97706 35%, var(--admin-line));
+  background: color-mix(in srgb, #d97706 8%, var(--admin-surface)); color: var(--admin-text);
+}
+
+.social-admin .det-acciones { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; padding: 14px 16px; }
+.social-admin .det-botones { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
+.social-admin .det-panel { flex: 1 1 100%; display: grid; gap: 10px; padding-top: 12px; border-top: 1px dashed var(--admin-line); }
+.social-admin .det-panel p { margin: 0; font-size: 13px; color: var(--admin-muted); }
+
+.social-admin .det-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.social-admin .det-col { display: grid; gap: 16px; min-width: 0; }
+.social-admin .det-fieldset { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; gap: 16px; }
+.social-admin .det-fieldset:disabled { opacity: 0.85; }
+
+.social-admin .det-card { padding: 16px; display: grid; gap: 12px; }
+.social-admin .det-card-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.social-admin .det-card-head h3 { margin: 0; font-size: 16px; color: var(--admin-text); text-transform: capitalize; }
+
+.social-admin .det-tag {
+  display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 999px;
+  font-size: 11px; font-weight: 800; letter-spacing: 0.02em;
+  background: var(--admin-surface-2); color: var(--admin-muted); border: 1px solid var(--admin-line);
+}
+.social-admin .det-tag.cliente { color: #2563eb; border-color: color-mix(in srgb, #2563eb 30%, var(--admin-line)); background: color-mix(in srgb, #2563eb 8%, var(--admin-surface)); }
+.social-admin .det-tag.admin { color: var(--admin-ink); border-color: color-mix(in srgb, var(--admin-accent) 30%, var(--admin-line)); background: color-mix(in srgb, var(--admin-accent) 8%, var(--admin-surface)); }
+.social-admin .det-tag.interno { color: #b45309; border-color: color-mix(in srgb, #d97706 35%, var(--admin-line)); background: color-mix(in srgb, #d97706 10%, var(--admin-surface)); }
+
+.social-admin .det-datos { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px 16px; }
+.social-admin .det-dato { display: grid; gap: 2px; min-width: 0; }
+.social-admin .det-dato span { font-size: 11px; font-weight: 700; color: var(--admin-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.social-admin .det-dato strong { font-size: 14px; color: var(--admin-text); overflow-wrap: anywhere; }
+.social-admin .det-texto { margin: 0; font-size: 13px; color: var(--admin-text); overflow-wrap: anywhere; }
+.social-admin .det-nota { color: var(--admin-muted); font-size: 12px; }
+
+.social-admin .det-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.social-admin .det-form.una { grid-template-columns: 1fr; }
+.social-admin .det-campo { display: grid; gap: 4px; font-size: 12px; font-weight: 700; color: var(--admin-muted); min-width: 0; }
+.social-admin .det-campo.ancho { grid-column: 1 / -1; }
+.social-admin .det-campo.inline { min-width: 220px; }
+.social-admin .det-campo small { font-weight: 500; font-size: 11px; }
+
+.social-admin .det-campo input,
+.social-admin .det-campo select,
+.social-admin .det-campo textarea,
+.social-admin .det-form > textarea {
+  width: 100%; box-sizing: border-box; padding: 9px 12px; border-radius: 10px; font: inherit; font-size: 13px; font-weight: 500;
+  border: 1px solid var(--admin-line); background: var(--admin-surface); color: var(--admin-text); outline: 0;
+}
+.social-admin .det-form > textarea { resize: vertical; }
+.social-admin .det-campo input:focus,
+.social-admin .det-campo select:focus,
+.social-admin .det-campo textarea:focus,
+.social-admin .det-form > textarea:focus {
+  border-color: var(--admin-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--admin-accent) 18%, transparent);
+}
+.social-admin .det-campo textarea { resize: vertical; }
+
+.social-admin .det-check { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--admin-text); }
+
+.social-admin .det-servicios { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.social-admin .det-servicios li { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--admin-line); border-radius: 12px; }
+.social-admin .det-servicios li > div { flex: 1; min-width: 0; }
+.social-admin .det-servicios strong { display: block; font-size: 13px; overflow-wrap: anywhere; }
+.social-admin .det-servicios small { color: var(--admin-muted); font-size: 11px; }
+.social-admin .det-vacio { color: var(--admin-muted); font-size: 13px; }
+
+.social-admin .det-notas { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.social-admin .det-notas li { padding: 10px 12px; border-radius: 12px; border: 1px solid color-mix(in srgb, #d97706 30%, var(--admin-line)); background: color-mix(in srgb, #d97706 7%, var(--admin-surface)); }
+.social-admin .det-notas p { margin: 0 0 4px; font-size: 13px; overflow-wrap: anywhere; white-space: pre-wrap; }
+.social-admin .det-notas small { color: var(--admin-muted); font-size: 11px; }
+
+.social-admin .det-timeline { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.social-admin .det-timeline li { display: flex; gap: 10px; padding: 0 0 14px; position: relative; }
+.social-admin .det-timeline li:not(:last-child)::before {
+  content: ""; position: absolute; left: 13px; top: 28px; bottom: 0; width: 2px; background: var(--admin-line);
+}
+.social-admin .det-punto {
+  flex: 0 0 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
+  background: color-mix(in srgb, var(--admin-accent) 12%, var(--admin-surface)); color: var(--admin-ink);
+}
+.social-admin .det-timeline li.interno .det-punto { background: color-mix(in srgb, #d97706 14%, var(--admin-surface)); color: #b45309; }
+.social-admin .det-timeline p { margin: 2px 0 2px; font-size: 13px; overflow-wrap: anywhere; }
+.social-admin .det-timeline small { color: var(--admin-muted); font-size: 11px; }
+
+.social-admin .det-guardar {
+  position: sticky; bottom: 12px; z-index: 5; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 12px 16px; border-radius: 14px; border: 1px solid var(--admin-line);
+  background: var(--admin-surface); box-shadow: var(--sk-shadow);
+}
+.social-admin .det-guardar p { margin: 0; font-size: 13px; }
+
+@media (max-width: 1000px) {
+  .social-admin .det-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .social-admin .det-form { grid-template-columns: 1fr; }
+  .social-admin .det-botones { margin-left: 0; }
+}
