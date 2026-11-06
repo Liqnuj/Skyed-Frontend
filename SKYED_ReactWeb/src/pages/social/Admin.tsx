@@ -30,7 +30,9 @@ import {
   UserPlus,
   Wrench,
   X,
+  BarChart3,
 } from "lucide-react";
+import { ResumenEventoModal, Indicador, ListaValores } from "../../components/shared/ResumenEvento";
 
 import Protected from "../../components/Protected";
 import { useAuth } from "../../context/AuthContext";
@@ -187,11 +189,51 @@ type PqrSeg = {
 
 type UserRow = UsuarioFila;
 
-type CifrasEventoSocial = { reservas: number; confirmadas: number; pendientes: number; invitados: number; ingresos: number; por_confirmar: number };
+/** "1 confirmada", "2 confirmadas". */
+const plural = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno : varios}`;
+
+type CifrasEventoSocial = {
+  reservas: number; confirmadas: number; pendientes: number; invitados: number;
+  ingresos: number; por_confirmar: number; promedio: number;
+  servicios_top: Array<{ nombre: string; reservas: number }>;
+};
+
+const CIFRAS_SOCIAL_VACIAS: CifrasEventoSocial = {
+  reservas: 0, confirmadas: 0, pendientes: 0, invitados: 0, ingresos: 0, por_confirmar: 0, promedio: 0, servicios_top: [],
+};
+
+/** Resumen completo de un evento social. */
+function ResumenSocial({ evento, cifras, onClose }: { evento: EventoSocial; cifras?: CifrasEventoSocial; onClose: () => void }) {
+  const c = cifras ?? CIFRAS_SOCIAL_VACIAS;
+  return (
+    <ResumenEventoModal titulo={evento.nombre_er} subtitulo={`Resumen del evento · ${formatDate(evento.fecha_er)}`} onClose={onClose}>
+      <Indicador titulo="Reservas" valor={c.reservas} detalle={`${plural(c.confirmadas, "confirmada o completada", "confirmadas o completadas")} · ${plural(c.pendientes, "pendiente", "pendientes")}`} />
+      <Indicador titulo="Invitados" valor={c.invitados.toLocaleString("es-CO")} detalle="Suma de los invitados de todas las reservas no canceladas." />
+      <Indicador titulo="Ingresos" valor={money(c.ingresos)} detalle="Solo reservas confirmadas o completadas.">
+        {c.por_confirmar > 0 && <ListaValores filas={[{ nombre: "Por confirmar (aún no cuenta)", valor: money(c.por_confirmar), destacado: true }]} />}
+      </Indicador>
+      <Indicador
+        titulo="Valor promedio por reserva"
+        valor={money(c.promedio)}
+        detalle={c.confirmadas ? `Promedio de ${plural(c.confirmadas, "reserva confirmada o completada", "reservas confirmadas o completadas")}.` : "Aún no hay reservas confirmadas."}
+      />
+      <Indicador
+        titulo="Servicios más pedidos"
+        valor={c.servicios_top.length ? c.servicios_top[0].nombre : "Ninguno todavía"}
+        detalle={c.servicios_top.length ? undefined : "Aparecen cuando las reservas de este evento incluyan servicios."}
+        ancho
+      >
+        {c.servicios_top.length > 0 && (
+          <ListaValores filas={c.servicios_top.map((s) => ({ nombre: s.nombre, valor: `${s.reservas} ${s.reservas === 1 ? "reserva" : "reservas"}` }))} />
+        )}
+      </Indicador>
+    </ResumenEventoModal>
+  );
+}
 
 /** Reservas e ingresos de un evento, con el detalle de lo pendiente debajo. */
 function CeldasCifrasEventoSocial({ cifras }: { cifras?: CifrasEventoSocial }) {
-  const c = cifras ?? { reservas: 0, confirmadas: 0, pendientes: 0, invitados: 0, ingresos: 0, por_confirmar: 0 };
+  const c = cifras ?? CIFRAS_SOCIAL_VACIAS;
   return <>
     <td className="evt-cifra" title={`${c.confirmadas} confirmadas o completadas · ${c.pendientes} pendientes`}>
       <strong>{c.reservas}</strong>
@@ -523,6 +565,8 @@ function AdminPage() {
   const [eventos, setEventos] = useState<EventoSocial[]>([]);
   // Reservas e ingresos por evento (GET /estadisticas/eventos-sociales, solo admins).
   const [cifrasEventos, setCifrasEventos] = useState<Record<number, CifrasEventoSocial>>({});
+  // Evento cuyo resumen (cifras completas) está abierto.
+  const [resumenEvento, setResumenEvento] = useState<EventoSocial | null>(null);
   const [reservas, setReservas] = useState<Reserva[]>([]);
   // KPIs reales del módulo de reservas (GET /reservas/resumen).
   const [resumenReservas, setResumenReservas] = useState<ResumenReservas | null>(null);
@@ -1154,6 +1198,7 @@ function AdminPage() {
                     <CeldasCifrasEventoSocial cifras={cifrasEventos[e.id_er]} />
                     <td><Badge value={e.estado_er} /></td>
                     <td><div className="row-actions">
+                      <button title="Ver el resumen: reservas, ingresos y servicios más pedidos" className="table-action" onClick={() => setResumenEvento(e)}><BarChart3 size={15} /></button>
                       {puedeEditar("eventos") && <>
                         <button title="Editar este evento" className="table-action" onClick={() => { setEditing(e); setModal("evento"); }}><Pencil size={15} /></button>
                         <button title={e.estado_er === "activo" ? 'Desactivar este evento' : 'Activar este evento'} className="table-action" onClick={() => toggleEvento(e)}>{e.estado_er === "activo" ? "Desactivar" : "Activar"}</button>
@@ -1313,6 +1358,10 @@ function AdminPage() {
           notify={notify}
           onGuardado={async () => { setModal(null); await loadAll(); }}
         />
+      )}
+
+      {resumenEvento && (
+        <ResumenSocial evento={resumenEvento} cifras={cifrasEventos[resumenEvento.id_er]} onClose={() => setResumenEvento(null)} />
       )}
 
       {modal === "usuario" && puedeEditar("usuarios") && (
