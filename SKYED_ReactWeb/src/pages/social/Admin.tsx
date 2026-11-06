@@ -10,6 +10,8 @@ import {
   ChevronLeft,
   ChevronRight,
   DatabaseBackup,
+  Eye,
+  EyeOff,
   ImagePlus,
   LayoutDashboard,
   Loader2,
@@ -24,7 +26,6 @@ import {
   Search,
   Settings,
   Trash2,
-  EyeOff,
   Upload,
   Users,
   UserPlus,
@@ -33,6 +34,9 @@ import {
   BarChart3,
 } from "lucide-react";
 import { ResumenEventoModal, Indicador, ListaValores } from "../../components/shared/ResumenEvento";
+
+import { createPortal } from "react-dom";
+import { prepararImagen } from "../../utils/prepararImagen";
 
 import Protected from "../../components/Protected";
 import { useAuth } from "../../context/AuthContext";
@@ -508,9 +512,146 @@ const FILTROS_FECHA: ExportFiltro[] = [
   { clave: "fecha_hasta", etiqueta: "Hasta", tipo: "fecha" },
 ];
 
+function AdminFotoMenu({
+  fotoUrl,
+  nombre,
+  iniciales,
+  subiendo,
+  onCambiar,
+}: {
+  fotoUrl?: string | null;
+  nombre?: string;
+  iniciales?: string;
+  subiendo: boolean;
+  onCambiar: () => void;
+}) {
+  const [menu, setMenu] = useState(false);
+  const [viendo, setViendo] = useState(false);
+  const [pos, setPos] = useState<{ left: number; bottom: number } | null>(null);
+  const ref = useRef<HTMLDivElement>(null);
+  const listaRef = useRef<HTMLDivElement>(null);
+
+  const alternarMenu = () => {
+    const r = ref.current?.getBoundingClientRect();
+    if (r) setPos({ left: Math.max(8, r.left), bottom: window.innerHeight - r.top + 8 });
+    setMenu((abierto) => !abierto);
+  };
+
+  useEffect(() => {
+    if (!menu) return;
+    // El menú vive fuera del avatar (portal), por eso se revisan los dos contenedores.
+    const alClickFuera = (e: MouseEvent) => {
+      const objetivo = e.target as Node;
+      if (ref.current?.contains(objetivo) || listaRef.current?.contains(objetivo)) return;
+      setMenu(false);
+    };
+    const alTecla = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenu(false);
+    };
+    const cerrar = () => setMenu(false);
+    document.addEventListener("mousedown", alClickFuera);
+    document.addEventListener("keydown", alTecla);
+    window.addEventListener("resize", cerrar);
+    return () => {
+      document.removeEventListener("mousedown", alClickFuera);
+      document.removeEventListener("keydown", alTecla);
+      window.removeEventListener("resize", cerrar);
+    };
+  }, [menu]);
+
+  // Menú y visor se montan en .social-admin: fuera de la barra lateral (que recorta y tiene transform)
+  // y dentro del contenedor que trae el modo oscuro y las variables del admin.
+  const destino = document.querySelector(".social-admin") ?? document.body;
+
+  return (
+    <div className="admin-foto-menu" ref={ref}>
+      <div
+        className="admin-avatar admin-avatar-btn"
+        role="button"
+        tabIndex={0}
+        title="Foto de perfil"
+        aria-label="Opciones de foto de perfil"
+        aria-haspopup="menu"
+        aria-expanded={menu}
+        onClick={alternarMenu}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            alternarMenu();
+          }
+        }}
+      >
+        {subiendo ? (
+          <Loader2 size={16} className="admin-spin" />
+        ) : fotoUrl ? (
+          <img src={fotoUrl} alt="" />
+        ) : (
+          iniciales
+        )}
+      </div>
+
+      {menu && pos &&
+        createPortal(
+          <div
+            ref={listaRef}
+            className="admin-foto-list admin-card"
+            role="menu"
+            style={{ left: pos.left, bottom: pos.bottom }}
+          >
+            {fotoUrl && (
+              <button
+                type="button"
+                role="menuitem"
+                className="secondary-btn"
+                onClick={() => {
+                  setMenu(false);
+                  setViendo(true);
+                }}
+              >
+                <Eye size={14} /> Ver foto
+              </button>
+            )}
+            <button
+              type="button"
+              role="menuitem"
+              className="secondary-btn"
+              onClick={() => {
+                setMenu(false);
+                onCambiar();
+              }}
+            >
+              <Upload size={14} /> {fotoUrl ? "Cambiar foto" : "Subir foto"}
+            </button>
+          </div>,
+          destino,
+        )}
+
+      {viendo && fotoUrl &&
+        createPortal(
+          <Modal title="Foto de perfil" subtitle={nombre} onClose={() => setViendo(false)}>
+            <img className="admin-foto-visor" src={fotoUrl} alt={`Foto de perfil de ${nombre ?? "tu cuenta"}`} />
+            <div className="modal-actions">
+              <button type="button" className="secondary-btn" onClick={() => setViendo(false)}>Cerrar</button>
+              <button
+                type="button"
+                className="primary-btn"
+                onClick={() => {
+                  setViendo(false);
+                  onCambiar();
+                }}
+              >
+                <Upload size={14} /> Cambiar foto
+              </button>
+            </div>
+          </Modal>,
+          destino,
+        )}
+    </div>
+  );
+}
 
 function AdminPage() {
-  const { user, logout } = useAuth();
+  const { user, logout, updateFotoUrl } = useAuth();
   const controlPermisos = usePermisos();
   const puedeEditar = (seccion: string) => controlPermisos.puede(seccion, "editar");
   const puedeEliminar = (seccion: string) => controlPermisos.puede(seccion, "eliminar");
@@ -559,6 +700,37 @@ function AdminPage() {
   const [loading, setLoading] = useState(true); // true desde el inicio: sin "flash" de tarjetas en cero
   // true después de la primera carga: las recargas no vuelven a mostrar la pantalla de carga.
   const [cargoUnaVez, setCargoUnaVez] = useState(false);
+
+  const fotoInputRef = useRef<HTMLInputElement>(null);
+const [subiendoFoto, setSubiendoFoto] = useState(false);
+
+const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const original = e.target.files?.[0];
+  e.target.value = "";
+  if (!original) return;
+  if (!original.type.startsWith("image/")) {
+    notify("El archivo debe ser una imagen (JPG, PNG o WEBP).", "error");
+    return;
+  }
+
+  setSubiendoFoto(true);
+  try {
+    const file = await prepararImagen(original);
+    if (file.size > 3 * 1024 * 1024) {
+      notify("La imagen no debe superar 3 MB.", "error");
+      return;
+    }
+    const formData = new FormData();
+    formData.append("foto", file);
+    const data = await apiFetch("/perfil/foto", { method: "POST", body: formData });
+    if (data?.foto_url) updateFotoUrl(data.foto_url);
+    notify("Foto de perfil actualizada");
+  } catch (err) {
+    notify(err instanceof Error ? err.message : "No se pudo subir la foto.", "error");
+  } finally {
+    setSubiendoFoto(false);
+  }
+};
 
   const [ambientes, setAmbientes] = useState<Ambiente[]>([]);
   const [servicios, setServicios] = useState<Servicio[]>([]);
@@ -946,9 +1118,14 @@ function AdminPage() {
         </nav>
 
         <div className="sidebar-footer">
-          <div className="admin-avatar">
-            {user.name?.split(" ").map(x => x[0]).slice(0, 2).join("").toUpperCase()}
-          </div>
+          <AdminFotoMenu
+            fotoUrl={user.foto_url}
+            nombre={user.name}
+            iniciales={user.name?.split(" ").map(x => x[0]).slice(0, 2).join("").toUpperCase()}
+            subiendo={subiendoFoto}
+            onCambiar={() => fotoInputRef.current?.click()}
+          />
+          <input ref={fotoInputRef} type="file" accept="image/*" hidden onChange={handleFotoChange} />
           <div className="admin-user">
             <strong>{user.name}</strong>
             <span>{user.email}</span>

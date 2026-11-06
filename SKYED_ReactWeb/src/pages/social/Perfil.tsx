@@ -1220,6 +1220,113 @@ export default function Perfil() {
   );
 }
 
+function FotoMenu({
+  fotoUrl,
+  nombre,
+  subiendo,
+  onCambiar,
+  className,
+}: {
+  fotoUrl?: string | null;
+  nombre?: string;
+  subiendo: boolean;
+  onCambiar: () => void;
+  className: string;
+}) {
+  const [menu, setMenu] = useState(false);
+  const [viendo, setViendo] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    if (!menu && !viendo) return;
+    const alClickFuera = (e: MouseEvent) => {
+      if (menu && ref.current && !ref.current.contains(e.target as Node)) setMenu(false);
+    };
+    const alTecla = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setMenu(false);
+        setViendo(false);
+      }
+    };
+    document.addEventListener('mousedown', alClickFuera);
+    document.addEventListener('keydown', alTecla);
+    return () => {
+      document.removeEventListener('mousedown', alClickFuera);
+      document.removeEventListener('keydown', alTecla);
+    };
+  }, [menu, viendo]);
+
+  // Las variables de color viven en .mod-social, por eso el visor se monta ahí y no en <body>.
+  const destino = document.querySelector('.mod-social') ?? document.body;
+
+  return (
+    <span className="foto-menu" ref={ref}>
+      <button
+        title="Opciones de tu foto de perfil"
+        type="button"
+        className={className}
+        onClick={() => setMenu((abierto) => !abierto)}
+        disabled={subiendo}
+        aria-label="Opciones de foto de perfil"
+        aria-haspopup="menu"
+        aria-expanded={menu}
+      >
+        <i className="ti ti-camera" aria-hidden="true" />
+      </button>
+
+      {menu && (
+        <div className="foto-menu-list" role="menu">
+          {fotoUrl && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setMenu(false);
+                setViendo(true);
+              }}
+            >
+              <i className="ti ti-eye" aria-hidden="true" /> Ver foto
+            </button>
+          )}
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setMenu(false);
+              onCambiar();
+            }}
+          >
+            <i className="ti ti-photo-edit" aria-hidden="true" /> {fotoUrl ? 'Cambiar foto' : 'Subir foto'}
+          </button>
+        </div>
+      )}
+
+      {viendo && fotoUrl &&
+        createPortal(
+          <div className="foto-visor" role="dialog" aria-modal="true" aria-label="Foto de perfil" onClick={() => setViendo(false)}>
+            <div className="foto-visor-caja" onClick={(e) => e.stopPropagation()}>
+              <button type="button" className="foto-visor-cerrar" aria-label="Cerrar" onClick={() => setViendo(false)}>
+                <i className="ti ti-x" aria-hidden="true" />
+              </button>
+              <img src={fotoUrl} alt={`Foto de perfil de ${nombre ?? 'tu cuenta'}`} />
+              <button
+                type="button"
+                className="foto-visor-cambiar"
+                onClick={() => {
+                  setViendo(false);
+                  onCambiar();
+                }}
+              >
+                <i className="ti ti-photo-edit" aria-hidden="true" /> Cambiar foto
+              </button>
+            </div>
+          </div>,
+          destino,
+        )}
+    </span>
+  );
+}
+
 function PerfilPanel() {
   const { user, updateFotoUrl, updateProfile, deleteAccount } = useAuth();
 
@@ -1626,15 +1733,13 @@ function PerfilPanel() {
             ) : (
               <div className="pf-avatar">{initials}</div>
             )}
-            <button title="Cambiar tu foto de perfil"
-              type="button"
+            <FotoMenu
               className="pf-avatar-edit"
-              onClick={handleFotoClick}
-              disabled={subiendoFoto}
-              aria-label="Cambiar foto de perfil"
-            >
-              <i className="ti ti-camera" aria-hidden="true" />
-            </button>
+              fotoUrl={user?.foto_url}
+              nombre={user?.name}
+              subiendo={subiendoFoto}
+              onCambiar={handleFotoClick}
+            />
             <input ref={fileInputRef} type="file" accept="image/*" hidden onChange={handleFotoChange} />
           </div>
 
@@ -1899,17 +2004,15 @@ function PerfilPanel() {
                   ) : (
                     <div className="pfx-me-avatar">{initials}</div>
                   )}
-                  <button title="Cambiar tu foto de perfil"
-                    type="button"
+                  <FotoMenu
                     className="pfx-me-cam"
-                    onClick={handleFotoClick}
-                    disabled={subiendoFoto}
-                    aria-label="Cambiar foto de perfil"
-                  >
-                    <i className="ti ti-camera" aria-hidden="true" />
-                  </button>
+                    fotoUrl={user?.foto_url}
+                    nombre={user?.name}
+                    subiendo={subiendoFoto}
+                    onCambiar={handleFotoClick}
+                  />
                 </div>
-                <div className="pfx-me-info">
+                  <div className="pfx-me-info">
                   <strong>{user?.name || 'Tu perfil'}</strong>
                   <span className="pfx-tag">
                     <i className={`ti ${esAdmin ? 'ti-shield-check' : 'ti-user-circle'}`} aria-hidden="true" />
