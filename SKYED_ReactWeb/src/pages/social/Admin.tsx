@@ -48,6 +48,7 @@ import type { EstadoPqr, Pqr, ResumenReservas } from "../../services/socialServi
 import { reservaService } from "../../services/socialService";
 import AdminReservasLista from "../../components/social/reservas/AdminReservasLista";
 import AdminReservaDetalle from "../../components/social/reservas/AdminReservaDetalle";
+import AdminCalendarioReservas from "../../components/social/reservas/AdminCalendarioReservas";
 import { ESTADO_VISUAL_LABEL, FECHA_TIPO_LABEL, fechaCorta } from "../../utils/reservasAdmin";
 import PqrGestion from "../../components/social/pqr/AdminPqrManager";
 import { UsuarioModal, EditarUsuarioModal, puedeEditarUsuario, RolesDeUsuario, Avatar, type UsuarioFila } from "../../components/deportivo/UsuariosAdmin";
@@ -946,7 +947,6 @@ function AdminPage() {
               {controlPermisos.puedeVerSeccion("eventos") && <Kpi icon={<CalendarDays size={19} />} label="Eventos" value={stats.events} />}
               {controlPermisos.puedeVerSeccion("reservas") && <>
                 <Kpi icon={<CalendarCheck2 size={19} />} label="Reservas" value={stats.reservations} />
-                <Kpi icon={<Check size={19} />} label="Reservas pendientes" value={stats.pending} />
                 <Kpi icon={<Wrench size={19} />} label="Ingresos confirmados" value={stats.income} formato={money} compact />
               </>}
               {controlPermisos.puedeVerSeccion("pqr") && <Kpi icon={<MessageSquareText size={19} />} label="PQR pendientes" value={stats.pqrs} />}
@@ -954,14 +954,7 @@ function AdminPage() {
 
             {resumenReservas && (
               <>
-                <div className="kpi-grid">
-                  <Kpi icon={<CalendarCheck2 size={19} />} label="Reservas nuevas" value={resumenReservas.nuevas} />
-                  <Kpi icon={<MessageSquareText size={19} />} label="Por contactar" value={resumenReservas.por_contactar} />
-                  <Kpi icon={<CalendarDays size={19} />} label="Eventos hoy" value={resumenReservas.eventos_hoy} />
-                  <Kpi icon={<CalendarDays size={19} />} label="Eventos esta semana" value={resumenReservas.eventos_semana} />
-                  <Kpi icon={<Check size={19} />} label="Confirmadas" value={resumenReservas.confirmadas} />
-                  <Kpi icon={<Wrench size={19} />} label="En planificación" value={resumenReservas.en_planificacion} />
-                </div>
+
 
                 <div className="dashboard-grid-main">
                   <section className="admin-card upcoming-card">
@@ -1012,11 +1005,17 @@ function AdminPage() {
               </>
             )}
 
+            <AdminCalendarioReservas
+              version={resumenReservas}
+              onVer={(id) => { setSection("reservas"); setReservaAbierta(id); }}
+            />
+
             <div className="dashboard-grid-main">
               <section className="admin-card upcoming-card">
                 <div className="card-head">
                   <div>
                     <span className="card-kicker">ACTIVIDAD</span>
+                    
                     <h2>Últimas reservas</h2>
                   </div>
                   <button title="Ver todas las reservas" className="link-button" onClick={() => selectSection("reservas")}>Ver todas →</button>
