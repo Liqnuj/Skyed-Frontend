@@ -496,7 +496,13 @@ function AdminPage() {
     };
   }, [darkMode]);
 
-  const [saved] = useState<SavedView>(readSavedView);
+  // Si se llega con un enlace directo (?seccion=pqr) se ignora la última vista guardada:
+  // ni la sección ni el formulario que había abierto se restauran.
+  const [saved] = useState<SavedView>(() => {
+    const pedida = new URLSearchParams(window.location.search).get("seccion") as Section | null;
+    if (pedida && SECCIONES.includes(pedida)) return { section: pedida, modal: null, editId: null };
+    return readSavedView();
+  });
   const persistReady = useRef(false);
 
   const [section, setSection] = useState<Section>(saved.section);
