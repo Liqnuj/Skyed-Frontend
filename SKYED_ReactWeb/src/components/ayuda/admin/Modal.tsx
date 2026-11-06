@@ -1,5 +1,9 @@
-import { useEffect, useId, useRef } from 'react';
-import type { ReactNode } from 'react';
+import { createContext, useContext, useEffect, useId, useRef } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
+import { createPortal } from 'react-dom';
+
+/** Clase y variables de la vista de ayuda: la ventana se monta fuera de ella y las necesita para verse igual. */
+export const AyudaContexto = createContext<{ className: string; style: CSSProperties } | null>(null);
 
 const ENFOCABLES =
   'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex]:not([tabindex="-1"])';
@@ -15,6 +19,7 @@ interface Props {
 
 export default function Modal({ titulo, onCerrar, bloqueado = false, ancho = 760, children }: Props) {
   const idTitulo = useId();
+  const contexto = useContext(AyudaContexto);
   const cuadro = useRef<HTMLDivElement>(null);
   const cerrarRef = useRef(onCerrar);
   const bloqueadoRef = useRef(bloqueado);
@@ -56,7 +61,7 @@ export default function Modal({ titulo, onCerrar, bloqueado = false, ancho = 760
     };
   }, []);
 
-  return (
+  const ventana = (
     <div className="ay-adm-fondo">
       <div
         ref={cuadro}
@@ -76,4 +81,11 @@ export default function Modal({ titulo, onCerrar, bloqueado = false, ancho = 760
       </div>
     </div>
   );
+
+  // Dentro del panel (Deportivo/Social) la ventana se monta en la raíz del panel: el contenido vive en
+  // .admin-main, que es un contexto de apilamiento por debajo del encabezado y el menú lateral,
+  // y ahí la ventana quedaba tapada por arriba y sin oscurecer esas barras.
+  const raiz = document.querySelector<HTMLElement>('.social-admin, .deportivo-admin');
+  if (!raiz || !contexto) return ventana;
+  return createPortal(<div className={contexto.className} style={contexto.style}>{ventana}</div>, raiz);
 }

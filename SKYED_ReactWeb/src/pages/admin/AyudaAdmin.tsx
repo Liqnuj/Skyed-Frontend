@@ -7,6 +7,7 @@ import type { SiteContext } from '../../utils/siteContext';
 import { useAccessibility } from '../../context/AccessibilityContext';
 import { useConfirmacion } from '../../components/shared/ConfirmDialog';
 import { CargandoPanel } from '../../components/shared/AdminMotion';
+import { AyudaContexto } from '../../components/ayuda/admin/Modal';
 import { ayudaAdminService } from '../../services/ayudaAdminService';
 import type { ArticuloAdmin, CategoriaAdmin, OpcionesAyuda } from '../../services/ayudaAdminService';
 import ArticulosPanel from '../../components/ayuda/admin/ArticulosPanel';
@@ -66,6 +67,7 @@ export default function AyudaAdmin({ modulo }: { modulo?: SiteContext }) {
         '--fs-scale': (parseInt(fontSize, 10) || 16) / 16,
       };
   const estilo = variables as CSSProperties;
+  const claseRaiz = `ayadm${modulo ? ' ayadm--embebido' : ''}${modulo && esSocial ? ' ayadm--social' : ''}${darkMode ? ' dark dark-mode' : ''}`;
 
   const avisar: Avisar = useCallback((tipo, texto) => avisarFlotante(texto, tipo), [avisarFlotante]);
 
@@ -113,7 +115,8 @@ export default function AyudaAdmin({ modulo }: { modulo?: SiteContext }) {
   }
 
   return (
-    <div className={`ayadm${modulo ? ' ayadm--embebido' : ''}${darkMode ? ' dark dark-mode' : ''}`} style={estilo}>
+    <AyudaContexto.Provider value={{ className: claseRaiz, style: estilo }}>
+    <div className={claseRaiz} style={estilo}>
       <div className="ay-adm-wrap">
         {/* <header className="ay-adm-cab">
           <Link className="ay-adm-volver" to="/admin">
@@ -182,5 +185,6 @@ export default function AyudaAdmin({ modulo }: { modulo?: SiteContext }) {
       </div>
       {dialogo}
     </div>
+    </AyudaContexto.Provider>
   );
 }

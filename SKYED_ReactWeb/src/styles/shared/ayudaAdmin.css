@@ -318,7 +318,10 @@
 .ayadm.ayadm--embebido .ay-adm-barra-relleno { background: linear-gradient(90deg, var(--ad-acento), var(--ad-acento-2)); }
 
 /* Ventanas: .admin-modal-backdrop / .admin-modal / .admin-modal-head */
-.ayadm.ayadm--embebido .ay-adm-fondo { z-index: 50000; padding: 20px; align-items: center; background: rgba(8, 12, 20, .68); backdrop-filter: blur(5px); }
+.ayadm.ayadm--embebido .ay-adm-fondo { z-index: 50000; padding: 20px; align-items: flex-start; background: rgba(8, 12, 20, .68); backdrop-filter: blur(5px); }
+/* margin:auto centra la ventana cuando cabe y, si es más alta que la pantalla, la deja arriba con scroll
+   (align-items:center la desbordaba por arriba y por abajo sin poder llegar a esas partes). */
+.ayadm.ayadm--embebido .ay-adm-modal { margin: auto; }
 .ayadm.ayadm--embebido .ay-adm-modal { border-radius: 20px; border: 1px solid var(--admin-line); box-shadow: 0 25px 80px rgba(0, 0, 0, .32), 0 2px 0 color-mix(in srgb, var(--admin-accent) 25%, transparent); }
 .ayadm.ayadm--embebido .ay-adm-modal-cab { padding: 20px 22px; background: linear-gradient(135deg, color-mix(in srgb, var(--admin-accent) 16%, var(--admin-surface)), var(--admin-surface) 65%); border-bottom: 1px solid var(--admin-line); }
 .ayadm.ayadm--embebido .ay-adm-modal-cab h2 { font-size: 18px; }
@@ -329,4 +332,106 @@
   .ayadm.ayadm--embebido .ay-adm-fondo { padding: 10px; }
   .ayadm.ayadm--embebido .ay-adm-modal { min-height: 0; border-radius: 20px; }
   .ayadm.ayadm--embebido .ay-adm-barra > .ay-adm-btn { margin-left: 0; }
+}
+
+/* =========================================================
+   Integrado al panel SOCIAL (ciruela, dorado y magenta)
+   Misma piel que Reservas, Lugares, Servicios…: botones en píldora, tarjetas de
+   22 px con borde suave, títulos en Playfair y ventanas con la franja dorada.
+   Se suma al bloque anterior, que aporta los tokens y la distribución.
+   ========================================================= */
+.ayadm.ayadm--embebido.ayadm--social {
+  --ad-acento-2: color-mix(in srgb, var(--admin-accent) 55%, #2d1454);
+  --ad-sombra: var(--sk-shadow-sm);
+  font-size: 14px;
+}
+
+/* Pestañas: píldoras (activa = primary-btn, resto = secondary-btn) */
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-tab { min-height: 40px; padding: 0 18px; border: 1px solid var(--admin-line); border-radius: 999px; font-size: 13.5px; }
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-tab:hover { border-color: var(--admin-accent); background: color-mix(in srgb, var(--admin-accent) 8%, var(--admin-surface)); transform: none; }
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-tab--activa, .ayadm.ayadm--embebido.ayadm--social .ay-adm-tab--activa:hover {
+  border-color: transparent; background: linear-gradient(135deg, var(--admin-accent), var(--ad-acento-2)); color: #fff;
+  box-shadow: 0 12px 24px -12px var(--admin-accent), inset 0 1px 0 rgba(255, 255, 255, .25);
+}
+
+/* Filtros: etiquetas como las cabeceras de tabla, controles en píldora como .admin-select */
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-campo label { font-size: 10.5px; letter-spacing: .12em; }
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-nota { font-size: 12px; }
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-barra input, .ayadm.ayadm--embebido.ayadm--social .ay-adm-barra select {
+  height: 38px; padding: 0 14px; border-radius: 999px; font-size: 13px; font-weight: 600;
+  border-color: color-mix(in srgb, var(--admin-muted) 35%, var(--admin-line));
+  background-color: color-mix(in srgb, var(--admin-muted) 8%, var(--admin-surface));
+}
+.ayadm.ayadm--embebido.ayadm--social input[type="text"], .ayadm.ayadm--embebido.ayadm--social input[type="search"], .ayadm.ayadm--embebido.ayadm--social input[type="number"],
+.ayadm.ayadm--embebido.ayadm--social input:not([type]), .ayadm.ayadm--embebido.ayadm--social select, .ayadm.ayadm--embebido.ayadm--social textarea { padding: 10px 14px; border-radius: 14px; font-size: 13.5px; }
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-modal .ay-adm-campo input, .ayadm.ayadm--embebido.ayadm--social .ay-adm-modal .ay-adm-campo select, .ayadm.ayadm--embebido.ayadm--social .ay-adm-modal .ay-adm-campo textarea { font-size: 13.5px; }
+
+/* Botones: primary-btn / secondary-btn / icon-btn / table-action del panel social */
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-btn { min-height: 44px; padding: 0 20px; border: 1px solid var(--admin-line); border-radius: 999px; font-size: 13.5px; font-weight: 700; }
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-btn--primario {
+  padding: 0 20px; border: 0; font-weight: 700; letter-spacing: 0;
+  box-shadow: 0 12px 24px -12px var(--admin-accent), inset 0 1px 0 rgba(255, 255, 255, .25);
+}
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-btn--primario:hover:not([disabled]) { transform: translateY(-2px); filter: none; box-shadow: 0 16px 28px -12px var(--admin-accent), inset 0 1px 0 rgba(255, 255, 255, .25); }
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-btn--suave { border-color: var(--admin-line); }
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-btn--suave:hover:not([disabled]) { border-color: var(--admin-accent); background: color-mix(in srgb, var(--admin-accent) 8%, var(--admin-surface)); transform: none; }
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-btn--chico { min-height: 36px; padding: 0 14px; font-size: 12px; }
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-icono { width: 36px; height: 36px; border-radius: 11px; color: var(--admin-muted); }
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-icono:hover:not([disabled]), .ayadm.ayadm--embebido.ayadm--social .ay-adm-icono[aria-pressed="true"] {
+  border-color: var(--admin-accent); color: var(--admin-ink, var(--admin-accent)); background: color-mix(in srgb, var(--admin-accent) 10%, var(--admin-surface));
+}
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-enlace { color: var(--admin-ink, var(--admin-accent)); }
+
+/* Tabla: .admin-card.table-card + .admin-table de Social */
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-tabla-wrap { border: 1px solid var(--admin-line); border-radius: 22px; box-shadow: var(--sk-shadow-sm); }
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-tabla th {
+  padding: 15px 20px; font-size: 10.5px; letter-spacing: .12em; border-bottom: 1px solid var(--admin-line);
+  background: linear-gradient(180deg, var(--admin-surface-2), color-mix(in srgb, var(--sk-blush) 40%, var(--admin-surface-2)));
+}
+.ayadm.ayadm--embebido.ayadm--social.dark .ay-adm-tabla th { background: var(--admin-surface-2); }
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-tabla td { padding: 15px 20px; font-size: 14px; border-top: 0; border-bottom: 1px solid var(--admin-line); }
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-tabla tbody tr:last-child td { border-bottom: 0; }
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-tabla strong { font-size: 14px; }
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-slug { font-size: 12px; }
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-cat-icono { width: 36px; height: 36px; border-radius: 12px; }
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-vacio { padding: 2.6rem 1rem; font-size: 14px; border-radius: 22px; }
+
+/* Estados: .admin-badge de Social (píldora con punto) */
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-estado { gap: 7px; padding: 5px 11px 5px 9px; border: 1px solid color-mix(in srgb, currentColor 28%, transparent); font-size: 11.5px; font-weight: 700; }
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-estado::before { display: inline-block; }
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-estado--boton { min-height: 0; font-size: 11.5px; }
+
+/* Métricas: .kpi-card de Social (brillo de acento arriba a la derecha, cifra en Playfair) */
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-kpi {
+  padding: 18px 18px 16px; border: 1px solid var(--admin-line); border-radius: 22px; box-shadow: var(--sk-shadow-sm);
+  background: radial-gradient(160px 110px at 100% 0, color-mix(in srgb, var(--admin-accent) 13%, transparent), transparent 70%), var(--admin-surface);
+}
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-kpi:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--admin-accent) 40%, var(--admin-line)); box-shadow: var(--sk-shadow); }
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-kpi-nombre { font-size: 11px; font-weight: 700; letter-spacing: .1em; }
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-kpi-valor { font-family: var(--sk-display); font-size: 34px; font-weight: 700; line-height: 1; letter-spacing: -.02em; }
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-kpi-nota { font-size: 12px; }
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-tarjeta { padding: 22px; border: 1px solid var(--admin-line); border-radius: 22px; box-shadow: var(--sk-shadow-sm); }
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-tarjeta h2 { font-family: var(--sk-display); font-size: 20px; font-weight: 700; letter-spacing: -.02em; margin-bottom: 14px; }
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-ranking li, .ayadm.ayadm--embebido.ayadm--social .ay-adm-barras li { font-size: 13px; }
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-ranking li > span:first-child::before { color: var(--admin-ink, var(--admin-accent)); }
+
+/* Ventanas: .admin-modal de Social (franja magenta-dorada arriba, título en Playfair) */
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-fondo { background: rgba(26, 10, 46, .55); backdrop-filter: blur(6px); }
+.ayadm.ayadm--embebido.ayadm--social.dark .ay-adm-fondo { background: rgba(10, 4, 22, .72); }
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-modal { border-radius: 26px; border: 1px solid var(--admin-line); box-shadow: 0 40px 80px -30px rgba(26, 10, 46, .7); }
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-modal-cab {
+  position: relative; padding: 22px 24px 18px; border-bottom: 1px solid var(--admin-line);
+  background: radial-gradient(300px 120px at 100% 0, rgba(201, 168, 76, .18), transparent 70%), linear-gradient(180deg, color-mix(in srgb, var(--sk-blush) 55%, var(--admin-surface)), var(--admin-surface));
+}
+.ayadm.ayadm--embebido.ayadm--social.dark .ay-adm-modal-cab {
+  background: radial-gradient(300px 120px at 100% 0, rgba(232, 201, 122, .12), transparent 70%), linear-gradient(180deg, #2a1850, var(--admin-surface));
+}
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-modal-cab::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 4px; background: linear-gradient(90deg, var(--admin-accent), var(--sk-gold), var(--sk-gold-light)); }
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-modal-cab h2 { font-family: var(--sk-display); font-size: 22px; font-weight: 700; }
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-modal-cuerpo { padding: 22px 24px; }
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-modal-pie { padding: 16px 24px; }
+.ayadm.ayadm--embebido.ayadm--social .ay-adm-opiniones { border-radius: 16px; border-left-color: var(--admin-accent); font-size: 13.5px; }
+@media (max-width: 720px) {
+  .ayadm.ayadm--embebido.ayadm--social .ay-adm-modal { border-radius: 22px; }
+  .ayadm.ayadm--embebido.ayadm--social .ay-adm-modal-cab, .ayadm.ayadm--embebido.ayadm--social .ay-adm-modal-cuerpo, .ayadm.ayadm--embebido.ayadm--social .ay-adm-modal-pie { padding-left: 18px; padding-right: 18px; }
 }

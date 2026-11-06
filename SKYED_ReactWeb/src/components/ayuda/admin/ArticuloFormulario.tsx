@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FormEvent, MouseEvent } from 'react';
 import AyudaContenido from '../AyudaContenido';
 import { ayudaAdminService } from '../../../services/ayudaAdminService';
@@ -15,10 +15,13 @@ import Modal from './Modal';
 import { mensajeDeError } from './tipos';
 import '../../../styles/shared/ayuda.css';
 
-const CONTEXTOS = [
-  'auth.login', 'auth.registro', 'auth.recuperar', 'cuenta.ajustes',
-  'social.reservar', 'social.reservas', 'social.pqr', 'deportivo.inscripcion',
-];
+// Pantallas donde puede aparecer el «?», según el módulo del artículo: así un admin social
+// solo ve las de Social y un artículo de Deportivo no ofrece pantallas de Social.
+const CONTEXTOS_POR_MODULO: Record<ModuloContenido, string[]> = {
+  general: ['auth.login', 'auth.registro', 'auth.recuperar', 'cuenta.ajustes'],
+  social: ['social.reservar', 'social.reservas', 'social.pqr'],
+  deportivo: ['deportivo.inscripcion'],
+};
 
 const MODULO: Record<ModuloContenido, string> = { general: 'General', social: 'Social', deportivo: 'Deportivo' };
 const ESTADO: Record<EstadoArticulo, string> = { borrador: 'Borrador', publicado: 'Publicado', desactivado: 'Desactivado' };
@@ -67,6 +70,18 @@ export default function ArticuloFormulario({ articulo, opciones, onCerrar, onGua
       setF((previo) => ({ ...previo, categoria_id: 0 }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [f.modulo]);
+
+  // Si el admin cambia el módulo, se quita la pantalla elegida cuando era de otro módulo.
+  // No corre al abrir el formulario: un artículo guardado no se modifica sin que lo toquen.
+  const moduloAnterior = useRef(f.modulo);
+  useEffect(() => {
+    if (moduloAnterior.current === f.modulo) return;
+    moduloAnterior.current = f.modulo;
+    const ajenas = (Object.keys(CONTEXTOS_POR_MODULO) as ModuloContenido[])
+      .filter((m) => m !== f.modulo)
+      .flatMap((m) => CONTEXTOS_POR_MODULO[m]);
+    setF((previo) => (ajenas.includes(previo.contexto) ? { ...previo, contexto: '' } : previo));
   }, [f.modulo]);
 
   useEffect(() => {
@@ -146,14 +161,17 @@ export default function ArticuloFormulario({ articulo, opciones, onCerrar, onGua
               <input id="ay-f-titulo" required maxLength={150} value={f.titulo} onChange={(e) => cambiar('titulo', e.target.value)} placeholder="¿Cómo realizo una reserva?" />
             </div>
 
-            <div className="ay-adm-campo">
-              <label htmlFor="ay-f-modulo">Módulo *</label>
-              <select id="ay-f-modulo" value={f.modulo} onChange={(e) => cambiar('modulo', e.target.value as ModuloContenido)}>
-                {opciones.modulos.map((m) => (
-                  <option key={m} value={m}>{MODULO[m]}</option>
-                ))}
-              </select>
-            </div>
+            {/* Con un solo módulo (admin social o deportivo) no hay nada que elegir: queda ese por defecto. */}
+            {opciones.modulos.length > 1 && (
+              <div className="ay-adm-campo">
+                <label htmlFor="ay-f-modulo">Módulo *</label>
+                <select id="ay-f-modulo" value={f.modulo} onChange={(e) => cambiar('modulo', e.target.value as ModuloContenido)}>
+                  {opciones.modulos.map((m) => (
+                    <option key={m} value={m}>{MODULO[m]}</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div className="ay-adm-campo">
               <label htmlFor="ay-f-categoria">Categoría *</label>
@@ -230,9 +248,9 @@ export default function ArticuloFormulario({ articulo, opciones, onCerrar, onGua
 
             <div className="ay-adm-campo">
               <label htmlFor="ay-f-contexto">Pantalla donde aparece el «?»</label>
-              <input id="ay-f-contexto" list="ay-contextos" maxLength={60} value={f.contexto} onChange={(e) => cambiar('contexto', e.target.value)} placeholder="social.reservar" />
+              <input id="ay-f-contexto" list="ay-contextos" maxLength={60} value={f.contexto} onChange={(e) => cambiar('contexto', e.target.value)} placeholder={CONTEXTOS_POR_MODULO[f.modulo][0] ?? ''} />
               <datalist id="ay-contextos">
-                {CONTEXTOS.map((c) => (
+                {CONTEXTOS_POR_MODULO[f.modulo].map((c) => (
                   <option key={c} value={c} />
                 ))}
               </datalist>

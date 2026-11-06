@@ -127,15 +127,18 @@ export default function ArticulosPanel({ articulos, opciones, recargar, avisar, 
             ))}
           </select>
         </div>
-        <div className="ay-adm-campo">
-          <label htmlFor="ay-adm-f-modulo">Módulo</label>
-          <select id="ay-adm-f-modulo" value={modulo} onChange={(e) => setModulo(e.target.value)}>
-            <option value="">Todos</option>
-            {opciones.modulos.map((m) => (
-              <option key={m} value={m}>{MODULO[m]}</option>
-            ))}
-          </select>
-        </div>
+        {/* Solo el superadmin administra más de un módulo; un admin social o deportivo no necesita filtrarlo. */}
+        {opciones.modulos.length > 1 && (
+          <div className="ay-adm-campo">
+            <label htmlFor="ay-adm-f-modulo">Módulo</label>
+            <select id="ay-adm-f-modulo" value={modulo} onChange={(e) => setModulo(e.target.value)}>
+              <option value="">Todos</option>
+              {opciones.modulos.map((m) => (
+                <option key={m} value={m}>{MODULO[m]}</option>
+              ))}
+            </select>
+          </div>
+        )}
         <div className="ay-adm-campo">
           <label htmlFor="ay-adm-f-cat">Categoría</label>
           <select id="ay-adm-f-cat" value={categoria} onChange={(e) => setCategoria(e.target.value)}>
@@ -168,7 +171,7 @@ export default function ArticulosPanel({ articulos, opciones, recargar, avisar, 
               <tr>
                 <th scope="col">Artículo</th>
                 <th scope="col">Categoría</th>
-                <th scope="col">Módulo</th>
+                {opciones.modulos.length > 1 && <th scope="col">Módulo</th>}
                 <th scope="col">Audiencia</th>
                 <th scope="col">Estado</th>
                 <th scope="col">Dest.</th>
@@ -191,7 +194,7 @@ export default function ArticulosPanel({ articulos, opciones, recargar, avisar, 
                       <span className="ay-adm-slug">/{a.slug}</span>
                     </td>
                     <td>{a.categoria?.nombre ?? '—'}</td>
-                    <td>{MODULO[a.modulo]}</td>
+                    {opciones.modulos.length > 1 && <td>{MODULO[a.modulo]}</td>}
                     <td>{AUDIENCIA[a.audiencia]}</td>
                     <td>
                       <span className={`ay-adm-estado ay-adm-estado--${a.estado}`}>{ESTADO[a.estado]}</span>
