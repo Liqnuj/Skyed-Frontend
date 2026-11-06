@@ -2437,3 +2437,47 @@
     margin-bottom: 0;
   }
 }
+
+.social-admin .admin-foto-menu {
+  display: flex;
+  flex: 0 0 auto;
+}
+
+.social-admin .admin-avatar-btn {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.social-admin .admin-avatar-btn img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+
+.social-admin .admin-foto-list {
+  position: fixed;
+  z-index: 1000;
+  min-width: 11rem;
+  padding: .4rem;
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+}
+
+.social-admin .admin-foto-list .secondary-btn {
+  width: 100%;
+  justify-content: flex-start;
+  gap: .5rem;
+}
+
+.social-admin .admin-foto-visor {
+  display: block;
+  max-width: 100%;
+  max-height: 65vh;
+  margin: 0 auto 1rem;
+  object-fit: contain;
+  border-radius: 1rem;
+}

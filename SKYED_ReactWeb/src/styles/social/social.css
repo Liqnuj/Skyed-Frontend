@@ -3703,3 +3703,96 @@
 .mod-social.dark-mode .testimonials-cta p { color: var(--white); }
 .mod-social .testimonials-cta small { display: block; margin-top: .85rem; color: var(--text-muted); font-size: calc(.78rem * var(--fs-scale, 1)); }
 
+.mod-social .foto-menu-list {
+  position: absolute;
+  top: calc(100% + .5rem);
+  left: 0;
+  z-index: 30;
+  min-width: 11rem;
+  padding: .35rem;
+  display: flex;
+  flex-direction: column;
+  gap: .15rem;
+  background: var(--plum-mid);
+  border: 1px solid var(--plum-light);
+  border-radius: .75rem;
+  box-shadow: 0 12px 32px color-mix(in srgb, var(--plum) 70%, transparent);
+}
+
+.mod-social .foto-menu-list button {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  width: 100%;
+  padding: .6rem .8rem;
+  background: transparent;
+  color: var(--white);
+  border: 0;
+  border-radius: .5rem;
+  font: inherit;
+  font-size: .88rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mod-social .foto-menu-list button:hover,
+.mod-social .foto-menu-list button:focus-visible {
+  background: var(--plum-light);
+  outline: none;
+}
+
+.mod-social .foto-visor {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: color-mix(in srgb, var(--plum) 88%, transparent);
+}
+
+.mod-social .foto-visor-caja {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.mod-social .foto-visor-caja img {
+  max-width: min(90vw, 560px);
+  max-height: 75vh;
+  object-fit: contain;
+  border: 2px solid var(--gold);
+  border-radius: 1rem;
+}
+
+.mod-social .foto-visor-cerrar {
+  position: absolute;
+  top: -.75rem;
+  right: -.75rem;
+  width: 2.25rem;
+  height: 2.25rem;
+  display: grid;
+  place-items: center;
+  background: var(--plum-mid);
+  color: var(--white);
+  border: 1px solid var(--plum-light);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.mod-social .foto-visor-cambiar {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .6rem 1.2rem;
+  background: var(--gold);
+  color: var(--plum);
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}

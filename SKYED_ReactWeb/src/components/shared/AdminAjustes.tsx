@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Bell, Camera, IdCard, Loader2, Lock, Eye, EyeOff } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Bell, Camera, IdCard, Loader2, Lock, Eye, EyeOff, Upload, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { apiFetch } from '../../services/api';
 import { prepararImagen } from '../../utils/prepararImagen';
@@ -50,6 +51,16 @@ function normalizarTipoDoc(tipo: string | null | undefined) {
   return tipo ? (map[tipo] ?? '') : '';
 }
 
+/** Sube por el DOM hasta el contenedor del panel (el que define las variables --admin-*). */
+function raizDelPanel(desde: HTMLElement | null): HTMLElement {
+  let el = desde?.parentElement ?? null;
+  while (el) {
+    if (getComputedStyle(el).getPropertyValue('--admin-surface').trim()) return el;
+    el = el.parentElement;
+  }
+  return document.body;
+}
+
 function soloFecha(f: string | null | undefined) {
   return f ? String(f).slice(0, 10) : '';
 }
@@ -57,11 +68,34 @@ function soloFecha(f: string | null | undefined) {
 export default function AdminAjustes({ avisos, notify }: Props) {
   const { user, updateProfile, updateFotoUrl } = useAuth();
 
-  /* ---------- Foto ---------- */
+    /* ---------- Foto ---------- */
   const fileRef = useRef<HTMLInputElement>(null);
+  const avatarWrapRef = useRef<HTMLDivElement>(null);
   const [fotoUrl, setFotoUrl] = useState<string | null>(user?.foto_url ?? null);
   const [subiendoFoto, setSubiendoFoto] = useState(false);
+  const [menuFoto, setMenuFoto] = useState(false);
+  const [verFoto, setVerFoto] = useState(false);
   const iniciales = (user?.name || 'AD').split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
+
+  // El menú se cierra al hacer clic fuera o con Esc; Esc también cierra el visor.
+  useEffect(() => {
+    if (!menuFoto && !verFoto) return;
+    const alClick = (e: MouseEvent) => {
+      if (menuFoto && !avatarWrapRef.current?.contains(e.target as Node)) setMenuFoto(false);
+    };
+    const alTecla = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setMenuFoto(false);
+        setVerFoto(false);
+      }
+    };
+    document.addEventListener('mousedown', alClick);
+    document.addEventListener('keydown', alTecla);
+    return () => {
+      document.removeEventListener('mousedown', alClick);
+      document.removeEventListener('keydown', alTecla);
+    };
+  }, [menuFoto, verFoto]);
 
   const cambiarFoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const original = e.target.files?.[0];
@@ -96,7 +130,6 @@ export default function AdminAjustes({ avisos, notify }: Props) {
       setSubiendoFoto(false);
     }
   };
-
   /* ---------- Datos personales ---------- */
   const partes = (user?.name || '').split(' ');
   const [nombre, setNombre] = useState(partes[0] || '');
@@ -224,7 +257,7 @@ export default function AdminAjustes({ avisos, notify }: Props) {
     <section className="aj">
       {/* Perfil */}
       <div className="admin-card aj-card aj-profile">
-        <div className="aj-avatar-wrap">
+        <div className="aj-avatar-wrap" ref={avatarWrapRef}>
           {fotoUrl
             ? <img src={fotoUrl} alt="Foto de perfil" className="aj-avatar" />
             : <div className="aj-avatar aj-avatar-ini">{iniciales}</div>}
@@ -232,19 +265,91 @@ export default function AdminAjustes({ avisos, notify }: Props) {
           <button
             type="button"
             className="aj-avatar-edit"
-            onClick={() => fileRef.current?.click()}
+            onClick={() => setMenuFoto((abierto) => !abierto)}
             disabled={subiendoFoto}
-            aria-label="Cambiar foto de perfil"
-            title="Cambiar foto de perfil"
+            aria-label="Opciones de foto de perfil"
+            aria-haspopup="menu"
+            aria-expanded={menuFoto}
+            title="Foto de perfil"
           >
             {subiendoFoto ? <Loader2 size={15} className="admin-spin" /> : <Camera size={15} />}
           </button>
+
+          {menuFoto && (
+            <div className="aj-foto-menu" role="menu">
+              {fotoUrl && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="secondary-btn"
+                  onClick={() => {
+                    setMenuFoto(false);
+                    setVerFoto(true);
+                  }}
+                >
+                  <Eye size={14} /> Ver foto
+                </button>
+              )}
+              <button
+                type="button"
+                role="menuitem"
+                className="secondary-btn"
+                onClick={() => {
+                  setMenuFoto(false);
+                  fileRef.current?.click();
+                }}
+              >
+                <Upload size={14} /> {fotoUrl ? 'Cambiar foto' : 'Subir foto'}
+              </button>
+            </div>
+          )}
         </div>
         <div className="aj-profile-info">
           <strong>{user?.name}</strong>
           <span>{user?.email}</span>
           <em>Administrador</em>
         </div>
+
+        {verFoto && fotoUrl &&
+          createPortal(
+            <div
+              className="aj-visor"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Foto de perfil"
+              onMouseDown={(e) => {
+                if (e.target === e.currentTarget) setVerFoto(false);
+              }}
+            >
+              <div className="aj-visor-caja">
+                <button
+                  type="button"
+                  className="aj-visor-cerrar"
+                  aria-label="Cerrar"
+                  title="Cerrar"
+                  onClick={() => setVerFoto(false)}
+                >
+                  <X size={16} />
+                </button>
+                <img
+                  className="aj-visor-img"
+                  src={fotoUrl}
+                  alt={`Foto de perfil de ${user?.name ?? 'tu cuenta'}`}
+                />
+                <button
+                  type="button"
+                  className="aj-visor-cambiar"
+                  onClick={() => {
+                    setVerFoto(false);
+                    fileRef.current?.click();
+                  }}
+                >
+                  <Upload size={14} /> Cambiar foto
+                </button>
+              </div>
+            </div>,
+            raizDelPanel(avatarWrapRef.current),
+          )}
       </div>
 
       <div className="aj-grid">
