@@ -1098,8 +1098,10 @@
 /* Campo vacío: borde rojo, fondo con un tinte y un leve temblor al aparecer. */
 .mod-deportivo .part-form-group input.part-input-error,
 .mod-deportivo .part-form-group select.part-input-error,
+.mod-deportivo .part-form-group textarea.part-input-error,
 .mod-deportivo.dark-mode .part-form-group input.part-input-error,
-.mod-deportivo.dark-mode .part-form-group select.part-input-error {
+.mod-deportivo.dark-mode .part-form-group select.part-input-error,
+.mod-deportivo.dark-mode .part-form-group textarea.part-input-error {
   border: 1.5px solid var(--part-err);
   background-color: var(--part-err-soft);
   box-shadow: 0 0 0 4px var(--part-err-soft);
@@ -1115,6 +1117,13 @@
 .mod-deportivo .part-form-group:has(.part-input-error) > label,
 .mod-deportivo .part-form-group:has(.part-group-error) > label {
   color: var(--part-err);
+}
+.mod-deportivo .part-form-group.part-group-error > label,
+.mod-deportivo .part-review-check.part-group-error {
+  color: var(--part-err);
+}
+.mod-deportivo .part-review-check.part-group-error input {
+  accent-color: var(--part-err);
 }
 
 /* Grupos de opciones sin elegir (categoría, kit, talla): borde y fondo rojizo.

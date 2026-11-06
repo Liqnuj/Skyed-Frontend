@@ -236,10 +236,13 @@ function InscriptionWizard() {
   const [condicionesMedicas, setCondicionesMedicas] = useState('');
   const [metodoPago, setMetodoPago] = useState<'transferencia' | 'nequi' | 'efectivo'>('transferencia');
   const [comprobante, setComprobante] = useState<File | null>(null);
+  const [errorComprobante, setErrorComprobante] = useState(false);
   const [arrastrando, setArrastrando] = useState(false);
   const [validandoComprobante, setValidandoComprobante] = useState(false);
   const [aceptaTerminos, setAceptaTerminos] = useState(false);
   const [aceptaCondicionFisica, setAceptaCondicionFisica] = useState(false);
+  const [errorTerminos, setErrorTerminos] = useState(false);
+  const [errorCondicionFisica, setErrorCondicionFisica] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
 
   // Perfil incompleto (documento/teléfono/fecha de nacimiento bloqueados sin dato)
@@ -567,6 +570,7 @@ function InscriptionWizard() {
     }
 
     setComprobante(file);
+    setErrorComprobante(false);
   }
 
   useEffect(() => {
@@ -654,7 +658,9 @@ function InscriptionWizard() {
   function irARevision(e: FormEvent) {
     e.preventDefault();
     if (metodoPago !== 'efectivo' && !comprobante) {
-      mostrarMsg('error', 'Adjunta tu comprobante de pago.');
+      setErrorComprobante(true);
+      mostrarMsg('error', 'Falta el campo: Comprobante de pago.');
+      document.querySelector('.part-comprobante-error')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
     setStep(3);
@@ -676,7 +682,8 @@ function InscriptionWizard() {
     // Reintento: la inscripción ya existe, solo falta subir la imagen del comprobante.
     if (pagoPendienteComprobante !== null) {
       if (!comprobante) {
-        mostrarMsg('error', 'Adjunta tu comprobante de pago.');
+        setErrorComprobante(true);
+        mostrarMsg('error', 'Falta el campo: Comprobante de pago.');
         return;
       }
       setEnviando(true);
@@ -705,11 +712,18 @@ function InscriptionWizard() {
       return;
     }
     if (metodoPago !== 'efectivo' && !comprobante) {
-      mostrarMsg('error', 'Adjunta tu comprobante de pago.');
+      setErrorComprobante(true);
+      mostrarMsg('error', 'Falta el campo: Comprobante de pago.');
       return;
     }
     if (!aceptaTerminos || !aceptaCondicionFisica) {
-      mostrarMsg('error', 'Debes aceptar los términos y confirmar tu estado de salud.');
+      setErrorTerminos(!aceptaTerminos);
+      setErrorCondicionFisica(!aceptaCondicionFisica);
+      const faltantes = [
+        !aceptaTerminos ? 'Términos y condiciones' : '',
+        !aceptaCondicionFisica ? 'Declaración de estado de salud' : '',
+      ].filter(Boolean);
+      mostrarMsg('error', `Faltan campos: ${faltantes.join(', ')}.`);
       return;
     }
 
@@ -1360,7 +1374,7 @@ function InscriptionWizard() {
                       <span>Realiza la transferencia por el valor exacto y adjunta el comprobante. Tu inscripción quedará en estado <strong>pendiente</strong> hasta que validemos el pago.</span>
                     </div>
 
-                    <div className="part-form-group">
+                    <div className={`part-form-group${errorComprobante ? ' part-group-error part-comprobante-error' : ''}`}>
                       <label htmlFor="comprobante">Comprobante de pago *</label>
                       <label
                         htmlFor="comprobante"
@@ -1480,8 +1494,8 @@ function InscriptionWizard() {
                   </p>
                 </div>
 
-                <label className="part-review-check">
-                  <input type="checkbox" checked={aceptaTerminos} onChange={(e) => setAceptaTerminos(e.target.checked)} />
+                <label className={`part-review-check${errorTerminos ? ' part-group-error' : ''}`}>
+                  <input type="checkbox" checked={aceptaTerminos} onChange={(e) => { setAceptaTerminos(e.target.checked); setErrorTerminos(!e.target.checked); }} />
                   <span>
                     Acepto los{' '}
                     <button title="Leer los términos y condiciones" type="button" className="part-link-terminos" onClick={() => setTermsOpen(true)}>
@@ -1496,8 +1510,8 @@ function InscriptionWizard() {
                 </label>
                 {!aceptaTerminos && <p className="part-form-hint" style={{ margin: '0 0 .7rem' }}>Debes aceptar los términos para continuar</p>}
 
-                <label className="part-review-check">
-                  <input type="checkbox" checked={aceptaCondicionFisica} onChange={(e) => setAceptaCondicionFisica(e.target.checked)} />
+                <label className={`part-review-check${errorCondicionFisica ? ' part-group-error' : ''}`}>
+                  <input type="checkbox" checked={aceptaCondicionFisica} onChange={(e) => { setAceptaCondicionFisica(e.target.checked); setErrorCondicionFisica(!e.target.checked); }} />
                   <span>Declaro estar en condiciones físicas adecuadas para participar en el evento y no tengo contraindicaciones médicas que me impidan hacerlo.</span>
                 </label>
                 {!aceptaCondicionFisica && <p className="part-form-hint" style={{ margin: '0 0 .9rem' }}>Debes confirmar tu estado de salud</p>}
@@ -1517,7 +1531,7 @@ function InscriptionWizard() {
                   <button title={enviando ? 'Enviando…' : 'Confirmar tu inscripción'}
                     type="button"
                     className="btn btn-primary"
-                    disabled={enviando || !aceptaTerminos || !aceptaCondicionFisica}
+                    disabled={enviando}
                     onClick={confirmarInscripcion}
                   >
                     <i className="ti ti-lock" aria-hidden="true" /> {enviando ? 'Enviando…' : pagoPendienteComprobante !== null ? 'Reintentar subida del comprobante' : 'Confirmar inscripción'}

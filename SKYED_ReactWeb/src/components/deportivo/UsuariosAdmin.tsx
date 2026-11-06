@@ -483,6 +483,16 @@ function fuerzaClave(clave: string) {
 
 type CampoUsuario = "tipo" | "documento" | "nombre" | "apellido" | "correo" | "telefono" | "fecha" | "clave";
 const ORDEN_CAMPOS: CampoUsuario[] = ["tipo", "documento", "nombre", "apellido", "correo", "telefono", "fecha", "clave"];
+const ETIQUETAS_CAMPOS_USUARIO: Record<CampoUsuario, string> = {
+  tipo: "Tipo de documento",
+  documento: "Número de documento",
+  nombre: "Nombres",
+  apellido: "Apellidos",
+  correo: "Correo",
+  telefono: "Teléfono",
+  fecha: "Fecha de nacimiento",
+  clave: "Contraseña",
+};
 
 /** Mensaje de error bajo un campo (solo se pinta cuando hay error). */
 function ErrorCampo({ id, texto }: { id: string; texto?: string | null }) {
@@ -606,7 +616,8 @@ export function UsuarioModal({ modulo = "deportivo", existentes = [], onClose, o
     if (primerError) {
       // Se marcan todos los campos para que se vea qué falta, y se lleva el foco al primero.
       setTocados(Object.fromEntries(ORDEN_CAMPOS.map((c) => [c, true])));
-      notify("Revisa los campos marcados en rojo.");
+      const faltantes = ORDEN_CAMPOS.filter((campo) => errores[campo]).map((campo) => ETIQUETAS_CAMPOS_USUARIO[campo]);
+      notify(`Completa o corrige estos campos: ${faltantes.join(", ")}.`, "error");
       const el = formRef.current?.querySelector<HTMLElement>(`[data-campo="${primerError}"]`);
       el?.focus();
       return;
@@ -1013,7 +1024,8 @@ export function EditarUsuarioModal({ usuarioId, yoId, existentes = [], onClose, 
     const primerError = ORDEN_EDICION.find((c) => errores[c]);
     if (primerError) {
       setTocados(Object.fromEntries(ORDEN_EDICION.map((c) => [c, true])));
-      notify("Revisa los campos marcados en rojo.", "error");
+      const faltantes = ORDEN_EDICION.filter((campo) => errores[campo]).map((campo) => ETIQUETAS_CAMPOS_USUARIO[campo]);
+      notify(`Completa o corrige estos campos: ${faltantes.join(", ")}.`, "error");
       formRef.current?.querySelector<HTMLElement>(`[data-campo="${primerError}"]`)?.focus();
       return;
     }
