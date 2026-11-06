@@ -182,6 +182,24 @@ type PqrSeg = {
 
 type UserRow = UsuarioFila;
 
+type CifrasEventoSocial = { reservas: number; confirmadas: number; pendientes: number; invitados: number; ingresos: number; por_confirmar: number };
+
+/** Reservas e ingresos de un evento, con el detalle de lo pendiente debajo. */
+function CeldasCifrasEventoSocial({ cifras }: { cifras?: CifrasEventoSocial }) {
+  const c = cifras ?? { reservas: 0, confirmadas: 0, pendientes: 0, invitados: 0, ingresos: 0, por_confirmar: 0 };
+  return <>
+    <td className="evt-cifra" title={`${c.confirmadas} confirmadas o completadas · ${c.pendientes} pendientes`}>
+      <strong>{c.reservas}</strong>
+      {c.invitados > 0 && <small>{c.invitados.toLocaleString("es-CO")} invitados</small>}
+      {c.pendientes > 0 && <small className="evt-pendiente">{c.pendientes} por confirmar</small>}
+    </td>
+    <td className="evt-cifra" title="Solo cuenta las reservas confirmadas o completadas">
+      <strong>{money(c.ingresos)}</strong>
+      {c.por_confirmar > 0 && <small className="evt-pendiente">{money(c.por_confirmar)} por confirmar</small>}
+    </td>
+  </>;
+}
+
 const money = (value: number | string | null | undefined) =>
   new Intl.NumberFormat("es-CO", {
     style: "currency",
@@ -492,6 +510,8 @@ function AdminPage() {
   const [ambientes, setAmbientes] = useState<Ambiente[]>([]);
   const [servicios, setServicios] = useState<Servicio[]>([]);
   const [eventos, setEventos] = useState<EventoSocial[]>([]);
+  // Reservas e ingresos por evento (GET /estadisticas/eventos-sociales, solo admins).
+  const [cifrasEventos, setCifrasEventos] = useState<Record<number, CifrasEventoSocial>>({});
   const [reservas, setReservas] = useState<Reserva[]>([]);
   // KPIs reales del módulo de reservas (GET /reservas/resumen).
   const [resumenReservas, setResumenReservas] = useState<ResumenReservas | null>(null);
@@ -514,7 +534,7 @@ function AdminPage() {
       const [a, s, e, r, p, t] = await Promise.all([
         controlPermisos.puedeVerSeccion("lugares") ? apiFetch("/ambientes") : Promise.resolve({ data: [] }),
         controlPermisos.puedeVerSeccion("servicios") ? apiFetch("/servicios") : Promise.resolve({ data: [] }),
-        controlPermisos.puedeVerSeccion("eventos") ? apiFetch("/eventos-sociales") : Promise.resolve({ data: [] }),
+        controlPermisos.puedeVerSeccion("eventos") ? apiFetch("/eventos-sociales?per_page=200") : Promise.resolve({ data: [] }),
         controlPermisos.puedeVerSeccion("reservas") ?         apiFetch("/reservas?per_page=100") : Promise.resolve({ data: [] }),
 
         // El backend pagina de 15 en 15; el panel pide hasta 100 de una vez.
@@ -525,6 +545,12 @@ function AdminPage() {
       setAmbientes(a.data ?? []);
       setServicios(s.data ?? []);
       setEventos(e.data ?? []);
+      // Si falla (p. ej. un asistente sin permiso), la tabla sigue funcionando sin las cifras.
+      if (controlPermisos.puedeVerSeccion("eventos")) {
+        apiFetch("/estadisticas/eventos-sociales")
+          .then((c) => setCifrasEventos(c?.data ?? {}))
+          .catch(() => setCifrasEventos({}));
+      }
       setReservas(r.data ?? []);
       // Si el resumen falla, el resto del panel sigue funcionando.
       try {
@@ -1096,7 +1122,7 @@ function AdminPage() {
             onAction={() => { setEditing(null); setModal("evento"); }}
             exportar={<ExportMenu ruta="social/eventos" archivo="skyed-social-eventos" params={{ q: search }} filtros={[FILTRO_ESTADO_EVENTO, ...FILTROS_FECHA]} onMensaje={notify} />}
           >
-            <thead><tr><th>Foto</th><th>ID</th><th>Nombre</th><th>Fecha</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <thead><tr><th>Foto</th><th>ID</th><th>Nombre</th><th>Fecha</th><th>Reservas</th><th>Ingresos</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody>
               {visibleEventos.map(e => {
                 const imageUrl = e.imagen_er ?? e.ambiente?.imagen_principal_a ?? undefined;
@@ -1109,6 +1135,7 @@ function AdminPage() {
                         : <span className="admin-thumb admin-thumb-empty" title="Sin foto">—</span>}
                     </td>
                     <td>#{e.id_er}</td><td><strong>{e.nombre_er}</strong></td><td>{formatDate(e.fecha_er)}</td>
+                    <CeldasCifrasEventoSocial cifras={cifrasEventos[e.id_er]} />
                     <td><Badge value={e.estado_er} /></td>
                     <td><div className="row-actions">
                       {puedeEditar("eventos") && <>
@@ -1120,7 +1147,7 @@ function AdminPage() {
                   </tr>
                 );
               })}
-              {!visibleEventos.length && <tr><td colSpan={6}>No hay eventos sociales.</td></tr>}
+              {!visibleEventos.length && <tr><td colSpan={8}>No hay eventos sociales.</td></tr>}
             </tbody>
           </SectionTable>
         )}
