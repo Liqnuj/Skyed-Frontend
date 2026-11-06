@@ -11,6 +11,7 @@ import {
   Check,
   ClipboardList,
   Eye,
+  Handshake,
   ImagePlus,
   LayoutDashboard,
   ListOrdered,
@@ -18,6 +19,8 @@ import {
   LogOut,
   House,
   Menu,
+  Map,
+  MapPin,
   Package,
   DatabaseBackup,
   Pencil,
@@ -52,10 +55,12 @@ import { useAvisos, type Avisar } from "../../components/shared/Avisos";
 import { CargandoPanel, NumeroAnimado } from "../../components/shared/AdminMotion";
 import AdminFooter from "../../components/shared/AdminFooter";
 import { RolesModal, RolesDeUsuario, UsuarioModal, EditarUsuarioModal, puedeEditarUsuario, Avatar, esAdmin, esAdminSocial, type UsuarioFila } from "../../components/deportivo/UsuariosAdmin";
+import AdminCatalogos, { type CatalogoDeportivo } from "../../components/deportivo/AdminCatalogos";
 import AsistentesPanel from "../../features/asistentes/AsistentesPanel";
 import { usePermisos } from "../../context/PermisosContext";
 import { primeraSeccionPermitida } from "../../types/permisos";
 import AyudaAdmin from "../../pages/admin/AyudaAdmin";
+import { limpiarCampoValidacion, validarFormularioDeportivo } from "../../utils/validarFormularioDeportivo";
 
 type Confirmar = ReturnType<typeof useConfirmacion>["confirmar"];
 // Base del panel: mismo diseño del panel social con la paleta deportiva
@@ -66,6 +71,7 @@ import "../../styles/deportivo/AdminExtras.css";
 type Section =
   | "inicio"
   | "eventos"
+  | CatalogoDeportivo
   | "inscripciones"
   | "acceso"
   | "resultados"
@@ -76,7 +82,12 @@ type Section =
   | "ajustes"
   | "ayuda";
 
-const SECCIONES: Section[] = ["inicio", "eventos", "inscripciones", "acceso", "resultados", "kits", "usuarios", "copias", "asistentes", "ajustes", "ayuda"];
+const SECCIONES: Section[] = ["inicio", "eventos", "patrocinadores", "rutas", "estaciones", "inscripciones", "acceso", "resultados", "kits", "usuarios", "copias", "asistentes", "ajustes", "ayuda"];
+
+const seccionDelegable = (seccion: string) =>
+  seccion === "patrocinadores" || seccion === "rutas" || seccion === "estaciones"
+    ? "eventos"
+    : seccion;
 
 type Categoria = {
   id: number;
@@ -283,7 +294,7 @@ const clearDrafts = () => {
 };
 
 const SECTION_KEY = "admin_section";
-const SECTIONS_VALIDAS = ["inicio", "eventos", "inscripciones", "acceso", "resultados", "kits", "usuarios", "copias", "asistentes", "ajustes", "ayuda"];
+const SECTIONS_VALIDAS: string[] = SECCIONES;
 type ModalKind = "evento" | "categorias" | "kit" | "pago" | "resultado" | "roles" | "usuario" | "editar-usuario" | null;
 
 /** "1:05" → "01:05:00"; acepta HH:MM o HH:MM:SS del input type="time". */
@@ -520,8 +531,8 @@ function Kpi({ icon, label, value, compact, formato }: { icon: React.ReactNode; 
 function AdminPage() {
   const { user, logout } = useAuth();
   const controlPermisos = usePermisos();
-  const puedeEditar = (seccion: string) => controlPermisos.puede(seccion, "editar");
-  const puedeEliminar = (seccion: string) => controlPermisos.puede(seccion, "eliminar");
+  const puedeEditar = (seccion: string) => controlPermisos.puede(seccionDelegable(seccion), "editar");
+  const puedeEliminar = (seccion: string) => controlPermisos.puede(seccionDelegable(seccion), "eliminar");
   // Ventana de confirmación con el diseño del panel (reemplaza window.confirm).
   const { confirmar, dialogo } = useConfirmacion();
   const {
@@ -773,16 +784,19 @@ function AdminPage() {
     return <main className="deportivo-admin"><section className="admin-card"><h1>Sin secciones habilitadas</h1><p>Solicita al administrador que te asigne al menos una sección.</p><button className="primary-btn" onClick={logout}>Cerrar sesión</button></section></main>;
   }
   if (controlPermisos.esAsistente &&
-    (section === "asistentes" || section === "copias" || section === "ajustes" || !controlPermisos.puedeVerSeccion(section))) {
+    (section === "asistentes" || section === "copias" || section === "ajustes" || !controlPermisos.puedeVerSeccion(seccionDelegable(section)))) {
     return <CargandoPanel modulo="deportivo" />;
   }
   const seccionesPanel = controlPermisos.esAsistente
-    ? SECCIONES.filter((key) => key !== "asistentes" && key !== "copias" && key !== "ajustes" && controlPermisos.puedeVerSeccion(key))
+    ? SECCIONES.filter((key) => key !== "asistentes" && key !== "copias" && key !== "ajustes" && controlPermisos.puedeVerSeccion(seccionDelegable(key)))
     : SECCIONES;
 
   const sectionMeta: Record<Section, { label: string; icon: any }> = {
     inicio: { label: "Inicio", icon: LayoutDashboard },
     eventos: { label: "Eventos", icon: CalendarDays },
+    patrocinadores: { label: "Patrocinadores", icon: Handshake },
+    rutas: { label: "Rutas", icon: Map },
+    estaciones: { label: "Estaciones", icon: MapPin },
     inscripciones: { label: "Inscripciones y pagos", icon: Wallet },
     acceso: { label: "Control de acceso", icon: QrCode },
     resultados: { label: "Resultados", icon: Trophy },
@@ -1048,6 +1062,13 @@ function AdminPage() {
         {section === "eventos" && (
           <SectionTable
             title="Gestión de eventos deportivos"
+            exportar={<ExportMenu ruta="deportivo/eventos" archivo="skyed-deportivo-eventos" params={{
+              q: search,
+              categoria: filtroCategoriaEvento || undefined,
+              estado: filtroEstadoEvento || undefined,
+              fecha: filtroFechaEvento || undefined,
+              cupos: filtroCuposEvento || undefined,
+            }} onMensaje={notify} />}
             action={puedeEditar("eventos") ? "Nuevo evento" : undefined}
             onAction={() => { setEditing(null); setModal("evento"); }}
             toolbar={<>
@@ -1113,9 +1134,54 @@ function AdminPage() {
           </SectionTable>
         )}
 
+        {section === "patrocinadores" && (
+          <AdminCatalogos
+            key="patrocinadores"
+            seccion="patrocinadores"
+            eventos={eventos}
+            search={search}
+            notify={notify}
+            confirmar={confirmar}
+            puedeEditar={puedeEditar("patrocinadores")}
+            puedeEliminar={puedeEliminar("patrocinadores")}
+          />
+        )}
+
+        {section === "rutas" && (
+          <AdminCatalogos
+            key="rutas"
+            seccion="rutas"
+            eventos={eventos}
+            search={search}
+            notify={notify}
+            confirmar={confirmar}
+            puedeEditar={puedeEditar("rutas")}
+            puedeEliminar={puedeEliminar("rutas")}
+          />
+        )}
+
+        {section === "estaciones" && (
+          <AdminCatalogos
+            key="estaciones"
+            seccion="estaciones"
+            eventos={eventos}
+            search={search}
+            notify={notify}
+            confirmar={confirmar}
+            puedeEditar={puedeEditar("estaciones")}
+            puedeEliminar={puedeEliminar("estaciones")}
+          />
+        )}
+
         {section === "inscripciones" && (
           <SectionTable
             title="Inscripciones y pagos"
+            exportar={<ExportMenu ruta="deportivo/inscripciones-pagos" archivo="skyed-deportivo-inscripciones-pagos" params={{
+              q: search,
+              estado: filtroPago === "todos" ? undefined : filtroPago,
+              evento: filtroEvento || undefined,
+              metodo: filtroMetodoPago || undefined,
+            }} onMensaje={notify} />}
             toolbar={<>
               <select className="admin-select" value={filtroPago} onChange={e => setFiltroPago(e.target.value as typeof filtroPago)} aria-label="Filtrar por estado del pago">
                 <option value="pendiente">Pagos por validar</option>
@@ -1168,6 +1234,11 @@ function AdminPage() {
         {section === "resultados" && (
           <SectionTable
             title="Resultados oficiales"
+            exportar={<ExportMenu ruta="deportivo/resultados" archivo="skyed-deportivo-resultados" params={{
+              q: search,
+              evento: filtroEvento || undefined,
+              estado: filtroEstadoResultado || undefined,
+            }} onMensaje={notify} />}
             action={puedeEditar("resultados") ? "Registrar resultado" : undefined}
             onAction={() => { setEditing(null); setModal("resultado"); }}
             toolbar={<>
@@ -1219,6 +1290,11 @@ function AdminPage() {
           ) : (
           <SectionTable
             title="Kits del participante"
+            exportar={<ExportMenu ruta="deportivo/kits" archivo="skyed-deportivo-kits" params={{
+              q: search,
+              stock: filtroStockKit || undefined,
+              lugar: filtroLugarKit || undefined,
+            }} onMensaje={notify} />}
             action={puedeEditar("kits") ? "Nuevo kit" : undefined}
             onAction={() => { setEditing(null); setModal("kit"); }}
             toolbar={<>
@@ -1517,8 +1593,11 @@ function EventoModal({ item, kits, onClose, onSave, notify, onKitCreado }: {
   const set = (campo: keyof typeof form, valor: string) => setForm(f => ({ ...f, [campo]: valor }));
 
   const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.imagen_e) { notify("Sube la foto del evento: es la que verán los participantes."); return; }
+    const camposAdicionales = form.imagen_e ? [] : [{
+      etiqueta: "Foto del evento",
+      elemento: e.currentTarget.querySelector<HTMLElement>('[data-validacion="imagen-evento"]'),
+    }];
+    if (!validarFormularioDeportivo(e, notify, camposAdicionales)) return;
 
     setSaving(true);
     await onSave({
@@ -1541,7 +1620,7 @@ function EventoModal({ item, kits, onClose, onSave, notify, onKitCreado }: {
 
   return <>
   <Modal title={item ? "Editar evento" : "Nuevo evento deportivo"} subtitle="Se publica en SKYED Deportivo apenas quede activo." onClose={onClose} closeOnBackdrop={false}>
-    <form className="modal-form" onSubmit={submit}>
+    <form className="modal-form" onSubmit={submit} noValidate>
       <div className="form-grid">
         <Field label="Nombre">
           <input required maxLength={120} value={form.nombre_e} onChange={e => set("nombre_e", capitalizeFirst(sanitizeText(e.target.value, 120)))} placeholder="Ej. Vuelta al Lago de Tota" />
@@ -1610,12 +1689,18 @@ function EventoModal({ item, kits, onClose, onSave, notify, onKitCreado }: {
       </Field>
 
       <Field label="Foto del evento (obligatoria)">
+        <div data-validacion="imagen-evento">
         <ImageUploadField
           path={form.imagen_e}
           previewUrl={preview}
-          onChange={(path, url) => { set("imagen_e", path); setPreview(url); }}
+          onChange={(path, url) => {
+            set("imagen_e", path);
+            setPreview(url);
+            limpiarCampoValidacion(document.querySelector('[data-validacion="imagen-evento"]'));
+          }}
           onError={notify}
         />
+        </div>
       </Field>
 
       <div className="modal-actions">
@@ -1660,10 +1745,15 @@ function CategoriasModal({ evento, onClose, notify, confirmar, permitirEditar, p
   useEffect(() => { cargar(); }, []);
 
   const agregar = async (e: React.FormEvent) => {
-    e.preventDefault();
     const min = form.edad_minima_cc === "" ? null : Number(form.edad_minima_cc);
     const max = form.edad_maxima_cc === "" ? null : Number(form.edad_maxima_cc);
-    if (min !== null && max !== null && max < min) { notify("La edad máxima no puede ser menor que la mínima."); return; }
+    const camposAdicionales = min !== null && max !== null && max < min
+      ? [{
+          etiqueta: "Edad máxima",
+          elemento: e.currentTarget.querySelector<HTMLElement>('[data-validacion="edad-maxima"]'),
+        }]
+      : [];
+    if (!validarFormularioDeportivo(e, notify, camposAdicionales)) return;
 
     setSaving(true);
     try {
@@ -1721,7 +1811,7 @@ function CategoriasModal({ evento, onClose, notify, confirmar, permitirEditar, p
       ))}
     </div>
 
-    {permitirEditar && <form className="modal-form" onSubmit={agregar}>
+    {permitirEditar && <form className="modal-form" onSubmit={agregar} noValidate>
       <div className="form-grid">
         <Field label="Nombre de la categoría">
           <input required maxLength={50} value={form.nombre_cc} onChange={e => set("nombre_cc", capitalizeFirst(sanitizeText(e.target.value, 50)))} placeholder="Ej. Élite, Master A, Juvenil" />
@@ -1737,7 +1827,7 @@ function CategoriasModal({ evento, onClose, notify, confirmar, permitirEditar, p
           <input type="number" min="0" max="120" inputMode="numeric" value={form.edad_minima_cc} onChange={e => set("edad_minima_cc", sanitizeInteger(e.target.value, 3))} />
         </Field>
         <Field label="Edad máxima (opcional)">
-          <input type="number" min="0" max="120" inputMode="numeric" value={form.edad_maxima_cc} onChange={e => set("edad_maxima_cc", sanitizeInteger(e.target.value, 3))} />
+          <input data-validacion="edad-maxima" type="number" min="0" max="120" inputMode="numeric" value={form.edad_maxima_cc} onChange={e => { set("edad_maxima_cc", sanitizeInteger(e.target.value, 3)); limpiarCampoValidacion(e.currentTarget); }} />
         </Field>
         <Field label="Distancia (opcional)">
           <input maxLength={45} value={form.distancia_cc} onChange={e => set("distancia_cc", sanitizeText(e.target.value, 45))} placeholder="Ej. 60 km" />
@@ -1931,6 +2021,12 @@ function EntregasKit({ eventos, search, notify }: { eventos: Evento[]; search: s
 
       <SectionTable
         title="Entrega de kits"
+        exportar={<ExportMenu ruta="deportivo/entregas-kits" archivo="skyed-deportivo-entregas-kits" params={{
+          q,
+          estado: estado || undefined,
+          evento: evento || undefined,
+          rol: rol || undefined,
+        }} onMensaje={notify} />}
         toolbar={<>
           <select className="admin-select" value={estado} onChange={e => setEstado(e.target.value)} aria-label="Filtrar por estado">
             <option value="">Todos los estados</option>
@@ -2152,15 +2248,16 @@ function ControlAcceso({ notify, onValidado }: { notify: Avisar; onValidado: () 
             Cada QR sirve una vez por persona: una entrada si va solo el titular y dos si lleva invitado.
             Solo funciona si el pago está confirmado.
           </p>
-          <form className="qr-check-form" onSubmit={e => { e.preventDefault(); validar(codigo); }}>
+          <form className="qr-check-form" noValidate onSubmit={e => { if (validarFormularioDeportivo(e, notify)) validar(codigo); }}>
             <input
+              required
               value={codigo}
               onChange={e => setCodigo(e.target.value.slice(0, 255))}
               placeholder="Código del QR"
               aria-label="Código del QR"
               autoFocus
             />
-            <button title={validando ? 'Validando…' : 'Validar el código de entrada'} className="primary-btn" disabled={validando || !codigo.trim()}>
+            <button title={validando ? 'Validando…' : 'Validar el código de entrada'} className="primary-btn" disabled={validando}>
               {validando ? <Loader2 size={16} className="admin-spin" /> : <ScanLine size={16} />} Validar
             </button>
           </form>
@@ -2283,7 +2380,7 @@ function ResultadoModal({ item, eventos, onClose, onSave, notify }: {
   }, [eventoId]);
 
   const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    if (!validarFormularioDeportivo(e, notify)) return;
     const datos: Record<string, unknown> = {
       tiempo_final_r: normalizarTiempo(form.tiempo_final_r),
       posicion_general_r: form.posicion_general_r ? Number(form.posicion_general_r) : null,
@@ -2307,7 +2404,7 @@ function ResultadoModal({ item, eventos, onClose, onSave, notify }: {
     subtitle={item ? `${nombreDe(item.inscripcion?.usuario)} · ${item.inscripcion?.evento?.nombre_e ?? ""}` : "Solo aparecen participantes con el pago confirmado."}
     onClose={onClose}
   >
-    <form className="modal-form" onSubmit={submit}>
+    <form className="modal-form" onSubmit={submit} noValidate>
       {!item && (
         <div className="form-grid">
           <Field label="Evento">
@@ -2393,7 +2490,7 @@ function TallasTabla({ filas, onChange, obligatorio, legacy, existentes }: {
   const borde = "1px solid color-mix(in srgb, currentColor 18%, transparent)";
 
   return (
-    <div className="admin-field">
+    <div className="admin-field" data-validacion="tallas-kit">
       <span>{obligatorio ? "Tallas y cantidades (obligatorio)" : "Tallas y cantidades"}</span>
 
       <div style={{ display: "flex", gap: ".4rem", flexWrap: "wrap", alignItems: "center" }}>
@@ -2425,8 +2522,9 @@ function TallasTabla({ filas, onChange, obligatorio, legacy, existentes }: {
                       value={f.talla}
                       maxLength={10}
                       aria-label="Talla"
+                      data-validacion={`kit-talla-${i}`}
                       placeholder="Ej. M"
-                      onChange={e => cambiar(i, "talla", sanitizeText(e.target.value, 10).toUpperCase())}
+                      onChange={e => { cambiar(i, "talla", sanitizeText(e.target.value, 10).toUpperCase()); limpiarCampoValidacion(e.currentTarget); }}
                     />
                   </td>
                   <td style={celda}>
@@ -2435,9 +2533,10 @@ function TallasTabla({ filas, onChange, obligatorio, legacy, existentes }: {
                       min={existentes.includes(f.talla.trim().toUpperCase()) ? 0 : 1}
                       inputMode="numeric"
                       aria-label={`Cantidad de la talla ${f.talla || i + 1}`}
+                      data-validacion={`kit-cantidad-${i}`}
                       placeholder="Ej. 10"
                       value={f.cantidad}
-                      onChange={e => cambiar(i, "cantidad", sanitizeInteger(e.target.value, 5))}
+                      onChange={e => { cambiar(i, "cantidad", sanitizeInteger(e.target.value, 5)); limpiarCampoValidacion(e.currentTarget); }}
                     />
                   </td>
                   <td style={celda}>
@@ -2504,7 +2603,7 @@ function EventoPicker({ eventos, value, onChange, obligatorio }: {
   };
 
   return (
-    <div className="admin-field">
+    <div className="admin-field" data-validacion="kit-evento">
       <span>{obligatorio ? "Evento (obligatorio)" : "Evento"}</span>
 
       <div style={{ display: "flex", alignItems: "center", gap: ".6rem" }}>
@@ -2531,7 +2630,7 @@ function EventoPicker({ eventos, value, onChange, obligatorio }: {
         {lista.map(e => {
           const activo = String(e.id) === value;
           return (
-            <button key={e.id} type="button" title={`Seleccionar ${e.nombre}`} role="option" aria-selected={activo} style={fila(activo)} onClick={() => onChange(String(e.id))}>
+            <button key={e.id} type="button" title={`Seleccionar ${e.nombre}`} role="option" aria-selected={activo} style={fila(activo)} onClick={ev => { onChange(String(e.id)); limpiarCampoValidacion(ev.currentTarget.closest(".admin-field")); }}>
               {e.imagen_url
                 ? <img src={e.imagen_url} alt="" style={miniatura} onError={ev => { (ev.target as HTMLImageElement).style.visibility = "hidden"; }} />
                 : <span style={{ ...miniatura, display: "grid", placeItems: "center", opacity: .7 }}><ImagePlus size={16} /></span>}
@@ -2592,32 +2691,34 @@ function KitModal({ item, eventos, onClose, onSave, notify, desdeEvento = false 
   const esNuevo = !item;
 
   const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    const camposAdicionales: Array<{ etiqueta: string; elemento: HTMLElement | null }> = [];
+    if (esNuevo && !form.id_e && !desdeEvento) {
+      camposAdicionales.push({ etiqueta: "Evento", elemento: e.currentTarget.querySelector('[data-validacion="kit-evento"]') });
+    }
+    if (esNuevo && !form.imagen_k) {
+      camposAdicionales.push({ etiqueta: "Imagen del kit", elemento: e.currentTarget.querySelector('[data-validacion="imagen-kit"]') });
+    }
+    if (esNuevo && !tallas.length) {
+      camposAdicionales.push({ etiqueta: "Tallas y cantidades", elemento: e.currentTarget.querySelector('[data-validacion="tallas-kit"]') });
+    }
 
-    if (esNuevo) {
-      if (!form.id_e && !desdeEvento) { notify("Selecciona el evento al que pertenece el kit."); return; }
-      if (!form.imagen_k) { notify("Sube la imagen del kit."); return; }
-      if (![form.nombre_k, form.lugar_entrega_k, form.contenido_k].every(v => v.trim())) {
-        notify("Completa todos los datos del kit.");
-        return;
+    tallas.forEach((fila, i) => {
+      if (!fila.talla.trim()) {
+        camposAdicionales.push({ etiqueta: `Talla ${i + 1}`, elemento: e.currentTarget.querySelector(`[data-validacion="kit-talla-${i}"]`) });
       }
-      if (!tallas.length) { notify("Agrega al menos una talla con su cantidad."); return; }
-    }
+      if (fila.cantidad === "" || (Number(fila.cantidad) < 1 && !tallasGuardadas.includes(fila.talla.trim().toUpperCase()))) {
+        camposAdicionales.push({ etiqueta: `Cantidad de la talla ${fila.talla.trim() || i + 1}`, elemento: e.currentTarget.querySelector(`[data-validacion="kit-cantidad-${i}"]`) });
+      }
+    });
 
-    // Las filas de tallas que existan deben estar completas y sin repetirse.
-    if (tallas.some(f => !f.talla.trim() || f.cantidad === "")) {
-      notify("Completa la talla y la cantidad de cada fila.");
-      return;
-    }
-    if (tallas.some(f => Number(f.cantidad) < 1 && !tallasGuardadas.includes(f.talla.trim().toUpperCase()))) {
-      notify("La cantidad de cada talla nueva debe ser de al menos 1.");
-      return;
-    }
     const nombresTalla = tallas.map(f => f.talla.trim().toUpperCase());
-    if (new Set(nombresTalla).size !== nombresTalla.length) {
-      notify("No repitas la misma talla.");
-      return;
-    }
+    const repetidas = new Set(nombresTalla.filter((nombre, i) => nombre && nombresTalla.indexOf(nombre) !== i));
+    repetidas.forEach(nombre => {
+      const i = nombresTalla.indexOf(nombre);
+      camposAdicionales.push({ etiqueta: `Talla ${nombre} (repetida)`, elemento: e.currentTarget.querySelector(`[data-validacion="kit-talla-${i}"]`) });
+    });
+
+    if (!validarFormularioDeportivo(e, notify, camposAdicionales)) return;
 
     // Al editar solo se envían los campos que tienen valor; los vacíos se dejan como estaban.
     const datos: Record<string, unknown> = {
@@ -2645,7 +2746,7 @@ function KitModal({ item, eventos, onClose, onSave, notify, desdeEvento = false 
     onClose={onClose}
     closeOnBackdrop={false}
   >
-    <form className="modal-form" onSubmit={submit}>
+    <form className="modal-form" onSubmit={submit} noValidate>
       <div className="form-grid">
         <Field label="Nombre">
           <input required={esNuevo} maxLength={45} value={form.nombre_k} onChange={e => set("nombre_k", capitalizeFirst(sanitizeText(e.target.value, 45)))} placeholder="Ej. Kit Gran Fondo 2026" />
@@ -2664,12 +2765,18 @@ function KitModal({ item, eventos, onClose, onSave, notify, desdeEvento = false 
       <TallasTabla filas={tallas} onChange={setTallas} obligatorio={esNuevo} legacy={!esNuevo} existentes={tallasGuardadas} />
       {!desdeEvento && <EventoPicker eventos={eventosDisponibles} value={form.id_e} onChange={id => set("id_e", id)} obligatorio={esNuevo} />}
       <Field label={esNuevo ? "Imagen del kit (obligatoria)" : "Imagen del kit"}>
+        <div data-validacion="imagen-kit">
         <ImageUploadField
           path={form.imagen_k}
           previewUrl={preview}
-          onChange={(path, url) => { set("imagen_k", path); setPreview(url); }}
+          onChange={(path, url) => {
+            set("imagen_k", path);
+            setPreview(url);
+            limpiarCampoValidacion(document.querySelector('[data-validacion="imagen-kit"]'));
+          }}
           onError={notify}
         />
+        </div>
         <small className="field-hint">Una foto de cómo se ve el kit. Se muestra cuadrada a los participantes, así que usa una foto cuadrada o con el kit al centro para que no se recorte.</small>
       </Field>
       <Field label="Contenido">

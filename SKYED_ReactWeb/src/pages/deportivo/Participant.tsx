@@ -8,6 +8,7 @@ import { useAccessibility } from '../../context/AccessibilityContext';
 import { apiFetch } from '../../services/api';
 import { prepararImagen } from '../../utils/prepararImagen';
 import { errorContrasena } from '../../utils/validaciones';
+import { validarFormularioDeportivo } from '../../utils/validarFormularioDeportivo';
 import '../../styles/deportivo/participante.css';
 import '../../styles/shared/nosotrosMotion.css';
 // import '../../styles/deportivo/filtros-participante.css';
@@ -1609,7 +1610,7 @@ function AjustesTab() {
   }, [datosMsg]);
 
   const submitDatosPersonales = async (e: React.FormEvent) => {
-    e.preventDefault();
+    if (!validarFormularioDeportivo(e, (texto) => setDatosMsg({ tipo: 'error', texto, id: Date.now() }))) return;
     setDatosMsg(null);
     const errorFecha = validarFechaNacimiento(fechaNacimiento);
     if (errorFecha) {
@@ -1657,9 +1658,8 @@ function AjustesTab() {
 
   // Acción 1: Validar contraseña actual
   const verificarActual = async (e: React.FormEvent) => {
-    e.preventDefault();
+    if (!validarFormularioDeportivo(e, (texto) => setMsg({ tipo: 'error', texto, id: Date.now() }))) return;
     setMsg(null);
-    if (!actual) return;
     setVerificando(true);
     
     try {
@@ -1677,7 +1677,7 @@ function AjustesTab() {
 
   // Acción 2: Guardar nueva contraseña (Modal)
   const submitCambio = async (e: React.FormEvent) => {
-    e.preventDefault();
+    if (!validarFormularioDeportivo(e, (texto) => setMsg({ tipo: 'error', texto, id: Date.now() }))) return;
     setMsg(null);
     
     const motivo = errorContrasena(nueva);
@@ -1763,7 +1763,7 @@ function AjustesTab() {
               <h3>Datos personales</h3>
             </div>
             <div className="part-card-body">
-              <form onSubmit={submitDatosPersonales}>
+              <form onSubmit={submitDatosPersonales} noValidate>
                 <div className="part-form-group">
                   <label htmlFor="d-nombre">Nombre</label>
                   <input id="d-nombre" type="text" value={nombre} onChange={(e) => setNombre(e.target.value)} required />
@@ -1855,7 +1855,7 @@ function AjustesTab() {
                 <h3>Seguridad</h3>
               </div>
               <div className="part-card-body">
-                <form onSubmit={verificarActual}>
+                <form onSubmit={verificarActual} noValidate>
                   <p style={{ fontSize: '0.85rem', color: 'var(--page-muted)', marginBottom: '1rem' }}>
                     Digita tu contraseña actual para poder actualizarla.
                   </p>
@@ -1890,7 +1890,7 @@ function AjustesTab() {
                     </div>
                   )}
 
-                  <button title={verificando ? 'Validando…' : 'Validar tu contraseña actual para cambiarla'} type="submit" className="btn btn-outline" disabled={verificando || !actual}>
+                  <button title={verificando ? 'Validando…' : 'Validar tu contraseña actual para cambiarla'} type="submit" className="btn btn-outline" disabled={verificando}>
                     {verificando ? 'Validando…' : 'Validar y cambiar'}
                   </button>
                 </form>
@@ -1952,7 +1952,7 @@ function AjustesTab() {
             </div>
             
             <div className="part-card-body" style={{ padding: '1.5rem' }}>
-              <form onSubmit={submitCambio}>
+              <form onSubmit={submitCambio} noValidate>
                 <div className="part-form-group">
                   <label htmlFor="p-nueva">Nueva contraseña</label>
                   <div className="part-pass-field">
