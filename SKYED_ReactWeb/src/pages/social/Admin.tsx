@@ -14,6 +14,7 @@ import {
   LayoutDashboard,
   Loader2,
   Lock,
+  LifeBuoy,
   LogOut,
   House,
   Menu,
@@ -39,6 +40,7 @@ import ExportMenu from "../../components/shared/ExportMenu";
 import type { ExportFiltro } from "../../components/shared/ExportMenu";
 import AdminAjustes from "../../components/shared/AdminAjustes";
 import CopiasSeguridad from "../../components/shared/CopiasSeguridad";
+import AyudaAdmin from "../admin/AyudaAdmin";
 import { apiFetch } from "../../services/api";
 import { useConfirmacion } from "../../components/shared/ConfirmDialog";
 import { useAvisos, type Avisar } from "../../components/shared/Avisos";
@@ -66,9 +68,10 @@ type Section =
   | "servicios"
   | "copias"
   | "asistentes"
-  | "ajustes";
+  | "ajustes"
+  | "ayuda";
 
-const SECCIONES: Section[] = ["inicio", "eventos", "reservas", "usuarios", "pqr", "lugares", "servicios", "copias", "asistentes", "ajustes"];
+const SECCIONES: Section[] = ["inicio", "eventos", "reservas", "usuarios", "pqr", "lugares", "servicios", "copias", "asistentes", "ajustes", "ayuda"];
 
 /* ---------- Persistencia de la vista (sección + formulario abierto) ----------
    Al recargar la página se vuelve a la misma sección y al mismo formulario.
@@ -77,7 +80,7 @@ type ModalKind = "ambiente" | "servicio" | "evento" | "reserva" | "pqr" | "usuar
 type SavedView = { section: Section; modal: ModalKind | null; editId: number | string | null };
 
 const VIEW_KEY = "skyed_admin_social_view";
-const SECTION_IDS: Section[] = ["inicio", "eventos", "reservas", "usuarios", "pqr", "lugares", "servicios", "copias", "asistentes", "ajustes"];
+const SECTION_IDS: Section[] = ["inicio", "eventos", "reservas", "usuarios", "pqr", "lugares", "servicios", "copias", "asistentes", "ajustes", "ayuda"];
 const MODAL_KINDS: ModalKind[] = ["ambiente", "servicio", "evento", "reserva", "pqr"];
 
 function readSavedView(): SavedView {
@@ -717,6 +720,7 @@ function AdminPage() {
     servicios: { label: "Servicios", icon: Wrench },
     copias: { label: "Copias de seguridad", icon: DatabaseBackup },
     ajustes: { label: "Ajustes", icon: Settings },
+    ayuda: { label: "Administrar ayuda", icon: LifeBuoy },
   };
 
   const accent = "#9c02ae"; // color de marca del panel
@@ -917,7 +921,7 @@ function AdminPage() {
             <span className="admin-eyebrow">ADMINISTRACIÓN</span>
             <h1 key={section}>{sectionMeta[section].label}</h1>
           </div>
-          {section !== "ajustes" && section !== "copias" && <label className="admin-search">
+          {section !== "ajustes" && section !== "copias" && section !== "ayuda" && <label className="admin-search">
             <Search size={17} />
             <input
               value={search}
@@ -1200,6 +1204,10 @@ function AdminPage() {
 
         {section === "copias" && (
           <CopiasSeguridad modulo="social" notify={notify} confirmar={confirmar} />
+        )}
+
+        {section === "ayuda" && (
+          <AyudaAdmin modulo="social" />
         )}
 
         {section === "ajustes" && (
