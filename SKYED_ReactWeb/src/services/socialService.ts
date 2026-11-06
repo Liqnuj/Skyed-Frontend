@@ -276,6 +276,142 @@ export interface ResponsableReserva {
   apellido_u: string;
 }
 
+
+/* ---- Detalle de una reserva para el Administrador Social ---- */
+
+export type TipoCampo = 'texto' | 'textarea' | 'numero' | 'booleano' | 'seleccion';
+
+/** Campo propio del tipo de evento. La API lo define; el formulario se dibuja con esto. */
+export interface CampoTipo {
+  clave: string;
+  etiqueta: string;
+  tipo: TipoCampo;
+  opciones: string[];
+  requerido_para_confirmar: boolean;
+}
+
+export type EstadoServicioReserva = 'pendiente' | 'confirmado' | 'no_disponible';
+
+export interface ServicioReserva {
+  id_rs: number;
+  id_s: number | null;
+  nombre_servicio: string;
+  cantidad: number;
+  origen: 'cliente' | 'admin';
+  estado: EstadoServicioReserva;
+  id_responsable: number | null;
+  observaciones: string | null;
+  servicio?: { id_s: number; nombre_s: string } | null;
+  responsable?: { id_u: number; nombre_u: string; apellido_u: string } | null;
+}
+
+export type TipoSeguimiento =
+  | 'creacion' | 'cambio_estado' | 'cambio_etapa' | 'cambio_fecha'
+  | 'contacto' | 'edicion' | 'servicio' | 'nota_interna' | 'actualizacion';
+
+/** Entrada de la línea de tiempo. `visible_usuario = false` es interna: el cliente no la ve. */
+export interface SeguimientoAdmin {
+  id_seguimiento: number;
+  fecha_actualizacion: string | null;
+  comentario: string | null;
+  id_admin: number | null;
+  tipo_evento: TipoSeguimiento;
+  estado_anterior: string | null;
+  estado_nuevo: string | null;
+  visible_usuario: boolean;
+  administrador?: { id_u: number; nombre_u: string; apellido_u: string } | null;
+}
+
+export interface DecoracionReserva {
+  requiere?: boolean | null;
+  tipo?: string | null;
+  tematica?: string | null;
+  colores?: string | null;
+  elementos?: string | null;
+  montaje?: string | null;
+  observaciones?: string | null;
+  estado?: 'pendiente' | 'en_proceso' | 'listo' | 'no_aplica' | null;
+}
+
+export interface LogisticaReserva {
+  montaje?: string | null;
+  desmontaje?: string | null;
+  personal?: string | null;
+  equipos?: string | null;
+  materiales?: string | null;
+  transporte?: string | null;
+  especiales?: string | null;
+}
+
+export interface GestionReserva {
+  etapa_gestion: EtapaGestion;
+  id_responsable: number | null;
+  fecha_propuesta: string | null;
+  fecha_confirmada: string | null;
+  hora_inicio: string | null;
+  hora_fin: string | null;
+  fecha_limite_preparacion: string | null;
+  id_a: number | null;
+  asistentes_final: number | null;
+  distribucion_espacio: string | null;
+  necesidades_especiales: string | null;
+  requerimientos_adicionales: string | null;
+  decoracion: DecoracionReserva | null;
+  logistica: LogisticaReserva | null;
+  datos_tipo: Record<string, string | number | boolean | null> | null;
+  contactado: boolean;
+  ultimo_contacto_en: string | null;
+  medio_ultimo_contacto: string | null;
+  proximo_contacto_en: string | null;
+  compromisos: string | null;
+  responsable?: { id_u: number; nombre_u: string; apellido_u: string } | null;
+  ambiente?: { id_a: number; nombre_a: string; capacidad_a?: number | null } | null;
+}
+
+export interface ReservaDetalle extends Omit<Reserva, 'seguimientos'> {
+  fecha_hasta_rese?: string | null;
+  hora_aprox_rese?: string | null;
+  duracion_horas_rese?: number | null;
+  usuario?: {
+    id_u: number;
+    nombre_u: string;
+    apellido_u: string;
+    correo_u: string;
+    telefono_u?: string | null;
+    ciudad_u?: string | null;
+    tipo_documento_u?: string | null;
+    documento_u?: string | null;
+  };
+  tipo_evento?: { id_tipo_eves: number; nombre_tipo_eves: string } | null;
+  gestion: GestionReserva | null;
+  servicios: ServicioReserva[];
+  seguimientos: SeguimientoAdmin[];
+}
+
+export interface MetaReserva {
+  grupo_tipo: string;
+  campos_tipo: CampoTipo[];
+  etapas: Record<EtapaGestion, string>;
+  etapas_permitidas: EtapaGestion[];
+  estados_permitidos: Array<'confirmada' | 'completada' | 'cancelada'>;
+  medios_contacto: string[];
+  estado_visual: EstadoVisualReserva;
+  fecha_efectiva: {
+    inicio: string;
+    fin: string;
+    tipo: FechaTipoReserva;
+    aproximada: boolean;
+    hora_inicio: string | null;
+    hora_fin: string | null;
+  };
+}
+
+export interface RespuestaDetalleReserva {
+  message?: string;
+  reserva: ReservaDetalle;
+  meta: MetaReserva;
+}
+                                                                         
 export interface CrearReservaPayload {
   nombre_rese?: string;
   fecha_evento_rese: string;
@@ -366,11 +502,59 @@ export const reservaService = {
     id: number,
     estado: 'confirmada' | 'completada' | 'cancelada',
     comentarios: { comentario_publico?: string; nota_interna?: string } = {},
-  ): Promise<void> {
-    await apiFetch(`/reservas/${id}/estado`, {
+  ): Promise<RespuestaDetalleReserva> {
+    return apiFetch(`/reservas/${id}/estado`, {
       method: 'POST',
       body: JSON.stringify({ estado, ...comentarios }),
     });
+  },
+
+  /** Detalle completo (solo administrador): reserva + ficha de gestión + historial + meta. */
+  async detalle(id: number): Promise<RespuestaDetalleReserva> {
+    return apiFetch(`/reservas/${id}`);
+  },
+
+  /** Guarda la planificación administrativa (el cliente nunca ve estos datos como suyos). */
+  async guardarGestion(id: number, payload: Record<string, unknown>): Promise<RespuestaDetalleReserva> {
+    return apiFetch(`/reservas/${id}/gestion`, { method: 'PUT', body: JSON.stringify(payload) });
+  },
+
+  async cambiarEtapa(id: number, etapa: EtapaGestion, nota_interna?: string): Promise<RespuestaDetalleReserva> {
+    return apiFetch(`/reservas/${id}/etapa`, {
+      method: 'POST',
+      body: JSON.stringify({ etapa, ...(nota_interna ? { nota_interna } : {}) }),
+    });
+  },
+
+  async registrarContacto(
+    id: number,
+    datos: { medio: string; observaciones?: string; compromisos?: string; proximo_contacto_en?: string },
+  ): Promise<RespuestaDetalleReserva> {
+    return apiFetch(`/reservas/${id}/contacto`, { method: 'POST', body: JSON.stringify(datos) });
+  },
+
+  /** Nota interna: solo la ven administradores. */
+  async agregarNota(id: number, nota: string): Promise<RespuestaDetalleReserva> {
+    return apiFetch(`/reservas/${id}/nota`, { method: 'POST', body: JSON.stringify({ nota }) });
+  },
+
+  async agregarServicio(
+    id: number,
+    datos: { id_s?: number; nombre_servicio?: string; cantidad?: number; observaciones?: string },
+  ): Promise<RespuestaDetalleReserva> {
+    return apiFetch(`/reservas/${id}/servicios`, { method: 'POST', body: JSON.stringify(datos) });
+  },
+
+  async actualizarServicio(
+    id: number,
+    servicioId: number,
+    datos: Partial<Pick<ServicioReserva, 'nombre_servicio' | 'cantidad' | 'estado' | 'id_responsable' | 'observaciones'>>,
+  ): Promise<RespuestaDetalleReserva> {
+    return apiFetch(`/reservas/${id}/servicios/${servicioId}`, { method: 'PUT', body: JSON.stringify(datos) });
+  },
+
+  async quitarServicio(id: number, servicioId: number): Promise<RespuestaDetalleReserva> {
+    return apiFetch(`/reservas/${id}/servicios/${servicioId}`, { method: 'DELETE' });
   },
 };
 
