@@ -293,6 +293,24 @@ const normalizarTiempo = (value: string) => {
   return partes.slice(0, 3).join(":");
 };
 
+type CifrasEventoDeportivo = { inscritos: number; confirmadas: number; pendientes: number; invitados: number; recaudado: number; por_validar: number };
+
+/** Inscritos y dinero recaudado de un evento, con el detalle de lo pendiente debajo. */
+function CeldasCifrasEvento({ cifras }: { cifras?: CifrasEventoDeportivo }) {
+  const c = cifras ?? { inscritos: 0, confirmadas: 0, pendientes: 0, invitados: 0, recaudado: 0, por_validar: 0 };
+  return <>
+    <td className="evt-cifra" title={`${c.confirmadas} confirmadas · ${c.pendientes} con el pago por validar`}>
+      <strong>{c.inscritos}</strong>
+      {c.invitados > 0 && <small>+{c.invitados} {c.invitados === 1 ? "invitado" : "invitados"}</small>}
+      {c.pendientes > 0 && <small className="evt-pendiente">{c.pendientes} por confirmar</small>}
+    </td>
+    <td className="evt-cifra" title="Solo cuenta los pagos confirmados">
+      <strong>{money(c.recaudado)}</strong>
+      {c.por_validar > 0 && <small className="evt-pendiente">{money(c.por_validar)} por validar</small>}
+    </td>
+  </>;
+}
+
 function Badge({ value }: { value: string }) {
   return <span className={`admin-badge ${value}`}>{human(value)}</span>;
 }
@@ -535,6 +553,8 @@ function AdminPage() {
   const [loading, setLoading] = useState(true); // true desde el inicio: sin "flash" de tarjetas en cero
 
   const [eventos, setEventos] = useState<Evento[]>([]);
+  // Inscritos y dinero por evento (GET /estadisticas/eventos-deportivos, solo admins).
+  const [cifrasEventos, setCifrasEventos] = useState<Record<number, CifrasEventoDeportivo>>({});
   const [kits, setKits] = useState<Kit[]>([]);
   const [pagos, setPagos] = useState<Pago[]>([]);
   const [resultados, setResultados] = useState<Resultado[]>([]);
@@ -574,6 +594,12 @@ function AdminPage() {
         controlPermisos.puedeVerSeccion("resultados") ? apiFetch("/resultados?per_page=500") : Promise.resolve(null),
       ]);
       setEventos(e?.data ?? []);
+      // Si falla (p. ej. un asistente sin permiso), la tabla sigue funcionando sin las cifras.
+      if (controlPermisos.puedeVerSeccion("eventos")) {
+        apiFetch("/estadisticas/eventos-deportivos")
+          .then((c) => setCifrasEventos(c?.data ?? {}))
+          .catch(() => setCifrasEventos({}));
+      }
       setKits(k?.data ?? []);
       setPagos(p?.pagos?.data ?? []);
       setResultados(r?.resultados?.data ?? []);
@@ -1046,7 +1072,7 @@ function AdminPage() {
               )}
             </>}
           >
-            <thead><tr><th>Foto</th><th>Nombre</th><th>Categoría</th><th>Fecha</th><th>Precio</th><th>Cupos</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <thead><tr><th>Foto</th><th>Nombre</th><th>Categoría</th><th>Fecha</th><th>Precio</th><th>Cupos</th><th>Inscritos</th><th>Recaudado</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody>
               {visibleEventos.map(e => (
                 <tr key={e.id}>
@@ -1065,6 +1091,7 @@ function AdminPage() {
                   <td>{formatDate(e.fecha)}</td>
                   <td>{money(e.precio)}</td>
                   <td>{e.cupos_disponibles}</td>
+                  <CeldasCifrasEvento cifras={cifrasEventos[e.id]} />
                   <td>
                     {puedeEditar("eventos") ? <select className="admin-select" value={e.estado} onChange={ev => cambiarEstadoEvento(e, ev.target.value as Evento["estado"])} aria-label="Estado del evento">
                       <option value="activo">Activo</option>
@@ -1081,7 +1108,7 @@ function AdminPage() {
                   </div></td>
                 </tr>
               ))}
-              {!visibleEventos.length && <tr><td colSpan={8}>{eventos.length ? "No hay eventos con estos filtros." : "No hay eventos deportivos."}</td></tr>}
+              {!visibleEventos.length && <tr><td colSpan={10}>{eventos.length ? "No hay eventos con estos filtros." : "No hay eventos deportivos."}</td></tr>}
             </tbody>
           </SectionTable>
         )}

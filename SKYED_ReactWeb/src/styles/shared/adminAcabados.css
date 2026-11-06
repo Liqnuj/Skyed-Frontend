@@ -214,3 +214,24 @@ html:has(.social-admin)::-webkit-scrollbar-corner {
     scrollbar-color: color-mix(in srgb, var(--acab-2) 50%, transparent) transparent;
   }
 }
+
+/* Cifras por evento (Inscritos/Recaudado, Reservas/Ingresos) en la tabla de eventos */
+:is(.deportivo-admin, .social-admin) .evt-cifra strong {
+  display: block;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+:is(.deportivo-admin, .social-admin) .evt-cifra small {
+  display: block;
+  margin-top: 2px;
+  color: var(--admin-muted);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+:is(.deportivo-admin, .social-admin) .evt-cifra small.evt-pendiente {
+  color: #b45309;
+}
+:is(.deportivo-admin, .social-admin).dark .evt-cifra small.evt-pendiente {
+  color: #fbbf24;
+}
