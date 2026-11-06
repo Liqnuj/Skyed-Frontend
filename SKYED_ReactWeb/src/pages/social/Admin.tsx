@@ -47,6 +47,7 @@ import AdminFooter from "../../components/shared/AdminFooter";
 import type { EstadoPqr, Pqr, ResumenReservas } from "../../services/socialService";
 import { reservaService } from "../../services/socialService";
 import AdminReservasLista from "../../components/social/reservas/AdminReservasLista";
+import AdminReservaDetalle from "../../components/social/reservas/AdminReservaDetalle";
 import { ESTADO_VISUAL_LABEL, FECHA_TIPO_LABEL, fechaCorta } from "../../utils/reservasAdmin";
 import PqrGestion from "../../components/social/pqr/AdminPqrManager";
 import { UsuarioModal, EditarUsuarioModal, puedeEditarUsuario, RolesDeUsuario, Avatar, type UsuarioFila } from "../../components/deportivo/UsuariosAdmin";
@@ -515,6 +516,8 @@ function AdminPage() {
   const [reservas, setReservas] = useState<Reserva[]>([]);
   // KPIs reales del módulo de reservas (GET /reservas/resumen).
   const [resumenReservas, setResumenReservas] = useState<ResumenReservas | null>(null);
+  // Reserva abierta en el detalle (null = se muestra el listado).
+  const [reservaAbierta, setReservaAbierta] = useState<number | null>(null);
   const [pqrs, setPqrs] = useState<Pqr[]>([]);
   const [pqrResumen, setPqrResumen] = useState<Partial<Record<EstadoPqr, number>>>({});
   const [pqrTotal, setPqrTotal] = useState(0);
@@ -623,6 +626,7 @@ function AdminPage() {
 
   const selectSection = (next: Section) => {
     setSection(next);
+    setReservaAbierta(null);
     setSearch("");
     setMobileOpen(false);
   };
@@ -970,7 +974,9 @@ function AdminPage() {
                     </div>
                     <div className="reservation-list">
                       {resumenReservas.proximos.map((p) => (
-                        <div className="reservation-item" key={p.id_rese}>
+                        <div className="reservation-item" key={p.id_rese} role="button" tabIndex={0} style={{ cursor: "pointer" }}
+                          onClick={() => { setSection("reservas"); setReservaAbierta(p.id_rese); }}
+                          onKeyDown={(e) => { if (e.key === "Enter") { setSection("reservas"); setReservaAbierta(p.id_rese); } }}>
                           <div className="mini-avatar">R{p.id_rese}</div>
                           <div className="reservation-main">
                             <strong>{p.titulo}</strong>
@@ -996,6 +1002,7 @@ function AdminPage() {
                       {resumenReservas.alertas.map((a, i) => (
                         <div className={`resx-alerta ${a.nivel}`} key={`${a.tipo}-${a.id_rese}-${i}`}>
                           <span>{a.mensaje}</span>
+                          <button className="link-button" style={{ marginLeft: "auto" }} onClick={() => { setSection("reservas"); setReservaAbierta(a.id_rese); }}>Ver →</button>
                         </div>
                       ))}
                       {!resumenReservas.alertas.length && <p>Todo al día. No hay alertas.</p>}
@@ -1153,13 +1160,25 @@ function AdminPage() {
         )}
 
         {section === "reservas" && (
-          <AdminReservasLista
-            tipos={tipos.map((t) => ({ id: t.id_tipo_eves, nombre: t.nombre_tipo_eves }))}
-            ambientes={ambientes.map((x) => ({ id: x.id_a, nombre: x.nombre_a }))}
-            onChanged={async () => { await loadAll(); }}
-            notify={notify}
-            confirmar={confirmar}
-          />
+          reservaAbierta !== null ? (
+            <AdminReservaDetalle
+              key={reservaAbierta}
+              id={reservaAbierta}
+              onBack={() => { setReservaAbierta(null); void loadAll(); }}
+              onChanged={async () => { await loadAll(); }}
+              notify={notify}
+              confirmar={confirmar}
+            />
+          ) : (
+            <AdminReservasLista
+              onVer={setReservaAbierta}
+              tipos={tipos.map((t) => ({ id: t.id_tipo_eves, nombre: t.nombre_tipo_eves }))}
+              ambientes={ambientes.map((x) => ({ id: x.id_a, nombre: x.nombre_a }))}
+              onChanged={async () => { await loadAll(); }}
+              notify={notify}
+              confirmar={confirmar}
+            />
+          )
         )}
 
         {section === "pqr" && (
