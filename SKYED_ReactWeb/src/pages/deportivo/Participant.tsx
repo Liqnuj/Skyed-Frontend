@@ -135,7 +135,12 @@ function tipoDocumentoLabel(tipo: string | null | undefined) {
 function fmtFechaLarga(iso: string | null | undefined) {
   if (!iso) return '—';
   try {
-    return new Date(iso).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' });
+    // Fechas sin hora (2008-07-29): se arman en hora local para que el día no se corra por la zona horaria.
+    const partes = /^(\d{4})-(\d{2})-(\d{2})(?:T00:00:00(?:\.0+)?Z)?$/.exec(iso);
+    const fecha = partes
+      ? new Date(Number(partes[1]), Number(partes[2]) - 1, Number(partes[3]))
+      : new Date(iso);
+    return fecha.toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' });
   } catch {
     return '—';
   }
