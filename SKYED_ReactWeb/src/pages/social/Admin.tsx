@@ -559,6 +559,15 @@ function AdminFotoMenu({
     };
   }, [menu]);
 
+  useEffect(() => {
+    if (!viendo) return;
+    const alTecla = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setViendo(false);
+    };
+    document.addEventListener("keydown", alTecla);
+    return () => document.removeEventListener("keydown", alTecla);
+  }, [viendo]);
+
   // Menú y visor se montan en .social-admin: fuera de la barra lateral (que recorta y tiene transform)
   // y dentro del contenedor que trae el modo oscuro y las variables del admin.
   const destino = document.querySelector(".social-admin") ?? document.body;
@@ -628,13 +637,33 @@ function AdminFotoMenu({
 
       {viendo && fotoUrl &&
         createPortal(
-          <Modal title="Foto de perfil" subtitle={nombre} onClose={() => setViendo(false)}>
-            <img className="admin-foto-visor" src={fotoUrl} alt={`Foto de perfil de ${nombre ?? "tu cuenta"}`} />
-            <div className="modal-actions">
-              <button type="button" className="secondary-btn" onClick={() => setViendo(false)}>Cerrar</button>
+          <div
+            className="afv-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Foto de perfil"
+            onMouseDown={(e) => {
+              if (e.target === e.currentTarget) setViendo(false);
+            }}
+          >
+            <div className="afv-caja">
               <button
                 type="button"
-                className="primary-btn"
+                className="afv-cerrar"
+                title="Cerrar"
+                aria-label="Cerrar"
+                onClick={() => setViendo(false)}
+              >
+                <X size={18} />
+              </button>
+              <img
+                className="afv-img"
+                src={fotoUrl}
+                alt={`Foto de perfil de ${nombre ?? "tu cuenta"}`}
+              />
+              <button
+                type="button"
+                className="primary-btn afv-cambiar"
                 onClick={() => {
                   setViendo(false);
                   onCambiar();
@@ -643,7 +672,7 @@ function AdminFotoMenu({
                 <Upload size={14} /> Cambiar foto
               </button>
             </div>
-          </Modal>,
+          </div>,
           destino,
         )}
     </div>

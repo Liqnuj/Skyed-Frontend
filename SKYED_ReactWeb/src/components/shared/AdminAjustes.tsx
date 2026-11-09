@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { Bell, Camera, IdCard, Loader2, Lock, Eye, EyeOff, Upload, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -52,13 +52,28 @@ function normalizarTipoDoc(tipo: string | null | undefined) {
 }
 
 /** Sube por el DOM hasta el contenedor del panel (el que define las variables --admin-*). */
-function raizDelPanel(desde: HTMLElement | null): HTMLElement {
-  let el = desde?.parentElement ?? null;
-  while (el) {
-    if (getComputedStyle(el).getPropertyValue('--admin-surface').trim()) return el;
-    el = el.parentElement;
-  }
-  return document.body;
+const VARIABLES_DEL_PANEL = [
+  '--admin-sidebar',
+  '--admin-accent',
+  '--admin-surface',
+  '--admin-line',
+  '--admin-text',
+  '--sk-gold',
+  '--sk-plum',
+  '--sk-plum-light',
+  '--sk-blush',
+];
+
+/** El visor se monta en <body> (fuera del panel), así que se le copian los colores del panel. */
+function variablesDelPanel(desde: HTMLElement | null): CSSProperties {
+  const estilo: Record<string, string> = {};
+  if (!desde) return estilo;
+  const css = getComputedStyle(desde);
+  VARIABLES_DEL_PANEL.forEach((nombre) => {
+    const valor = css.getPropertyValue(nombre).trim();
+    if (valor) estilo[nombre] = valor;
+  });
+  return estilo as CSSProperties;
 }
 
 function soloFecha(f: string | null | undefined) {
@@ -314,6 +329,7 @@ export default function AdminAjustes({ avisos, notify }: Props) {
           createPortal(
             <div
               className="aj-visor"
+              style={variablesDelPanel(avatarWrapRef.current)}
               role="dialog"
               aria-modal="true"
               aria-label="Foto de perfil"
@@ -348,7 +364,7 @@ export default function AdminAjustes({ avisos, notify }: Props) {
                 </button>
               </div>
             </div>,
-            raizDelPanel(avatarWrapRef.current),
+            document.body,
           )}
       </div>
 
