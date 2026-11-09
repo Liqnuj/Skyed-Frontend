@@ -71,7 +71,8 @@ export default function SocialUserMenu() {
   ];
   opciones.push({ to: '/social/ayuda', icono: 'ti-help-circle', titulo: 'Centro de ayuda', detalle: 'Guías y preguntas frecuentes' });
     if (esAdmin) {
-    opciones.push({ to: '/admin/ayuda', icono: 'ti-lifebuoy', titulo: 'Administrar ayuda', detalle: 'Artículos y métricas' });
+    // Con rol de Social se abre la ayuda de Social dentro de su panel; si no, la página suelta.
+    opciones.push({ to: esAdminSocial ? '/social/admin?seccion=ayuda' : '/admin/ayuda', icono: 'ti-lifebuoy', titulo: 'Administrar ayuda', detalle: 'Artículos y métricas' });
   }
 
   const cerrarSesion = async () => {

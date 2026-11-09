@@ -1,10 +1,35 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ayudaAdminService } from '../../../services/ayudaAdminService';
-import type { Metricas } from '../../../services/ayudaAdminService';
+import type { ArticuloAdmin, Metricas } from '../../../services/ayudaAdminService';
 import { mensajeDeError } from './tipos';
 
-export default function MetricasPanel({ onRevisar }: { onRevisar: (id: number) => void }) {
-  const [datos, setDatos] = useState<Metricas | null>(null);
+/** Deja las métricas solo con los artículos indicados (cuando el panel muestra un único módulo). */
+function acotar(m: Metricas, articulos: ArticuloAdmin[]): Metricas {
+  const ids = new Set(articulos.map((a) => a.id));
+  const categoriasIds = new Set(articulos.map((a) => a.categoria?.id));
+  const utiles = articulos.reduce((s, a) => s + (a.utiles ?? 0), 0);
+  const noUtiles = articulos.reduce((s, a) => s + (a.no_utiles ?? 0), 0);
+  const votos = utiles + noUtiles;
+  return {
+    resumen: {
+      articulos: articulos.length,
+      publicados: articulos.filter((a) => a.estado === 'publicado').length,
+      borradores: articulos.filter((a) => a.estado === 'borrador').length,
+      desactivados: articulos.filter((a) => a.estado === 'desactivado').length,
+      visitas: articulos.reduce((s, a) => s + a.visitas, 0),
+      utiles,
+      no_utiles: noUtiles,
+      satisfaccion: votos ? Math.round((utiles / votos) * 100) : null,
+    },
+    mas_vistos: m.mas_vistos.filter((f) => ids.has(f.id)),
+    por_mejorar: m.por_mejorar.filter((f) => ids.has(f.id)),
+    categorias: m.categorias.filter((c) => categoriasIds.has(c.id)),
+  };
+}
+
+export default function MetricasPanel({ onRevisar, articulos }: { onRevisar: (id: number) => void; articulos?: ArticuloAdmin[] }) {
+  const [bruto, setDatos] = useState<Metricas | null>(null);
+  const datos = bruto && articulos ? acotar(bruto, articulos) : bruto;
   const [error, setError] = useState('');
 
   const cargar = useCallback(() => {

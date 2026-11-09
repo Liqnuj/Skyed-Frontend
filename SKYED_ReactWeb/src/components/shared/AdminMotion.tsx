@@ -53,7 +53,7 @@ export function CargandoPanel({
   modulo,
   texto = "Preparando tu panel…",
 }: {
-  modulo: "social" | "deportivo";
+  modulo: "principal" | "social" | "deportivo";
   texto?: string;
 }) {
   return (
