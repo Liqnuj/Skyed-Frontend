@@ -11,9 +11,9 @@
 .deportivo-admin .back-link { color: #d6e9ee !important; }
 .deportivo-admin .sidebar-brand-text span,
 .deportivo-admin .sidebar-brand > span,
-.deportivo-admin .admin-user span { color: #8fa9c1 !important; }
+.deportivo-admin .admin-user span { color: #7d93ab !important; }
 .deportivo-admin .logout-btn { color: #9fb2c6 !important; }
-.deportivo-admin .admin-nav-item.active { box-shadow: inset 0 0 0 1px rgba(120, 220, 232, .08) !important; }
+.deportivo-admin .admin-nav-item.active { box-shadow: 0 7px 20px rgba(44, 156, 175, .28) !important; }
 .deportivo-admin .admin-sidebar ::selection { background: rgba(44, 156, 175, .55); }
 
 /* Estados de pagos, QR y resultados que la base no tiene */
