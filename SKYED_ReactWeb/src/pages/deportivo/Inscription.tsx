@@ -84,6 +84,13 @@ function soloNumeros(s: string) {
 
 const DRAFT_KEY_PREFIX = 'skyed_inscripcion_draft_';
 
+/** Giro del ícono mientras se valida el comprobante (el ícono de Tabler solo no se anima). */
+const ESTILOS_VALIDANDO = `
+@keyframes partSpin { to { transform: rotate(360deg); } }
+.part-spin { display: inline-block; animation: partSpin .9s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .part-spin { animation-duration: 2.4s; } }
+`;
+
 /** Animaciones y estilos de las opciones del kit (Sí/No y tallas). Se pinta una sola vez en la tarjeta del kit. */
 const ESTILOS_KIT = `
 @keyframes kitFadeUp { from { opacity: 0; transform: translateY(12px) scale(.94); } to { opacity: 1; transform: none; } }
@@ -155,6 +162,32 @@ const ESTILOS_KIT = `
   .kit-talla::after { display: none; }
 }
 `;
+
+/** Edad permitida del invitado: de 10 a 100 años, calculada desde la fecha de hoy. */
+const EDAD_MIN_INVITADO = 10;
+const EDAD_MAX_INVITADO = 100;
+function isoLocal(f: Date) {
+  const mm = String(f.getMonth() + 1).padStart(2, '0');
+  const dd = String(f.getDate()).padStart(2, '0');
+  return `${f.getFullYear()}-${mm}-${dd}`;
+}
+function rangoNacimientoInvitado() {
+  const hoy = new Date();
+  return {
+    // Más reciente permitida: hoy hace 10 años (cumple 10 hoy como mínimo).
+    max: isoLocal(new Date(hoy.getFullYear() - EDAD_MIN_INVITADO, hoy.getMonth(), hoy.getDate())),
+    // Más antigua permitida: hoy hace 100 años.
+    min: isoLocal(new Date(hoy.getFullYear() - EDAD_MAX_INVITADO, hoy.getMonth(), hoy.getDate())),
+  };
+}
+function errorNacimientoInvitado(valor: string): string {
+  if (!valor) return 'Este campo es obligatorio.';
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(valor)) return 'Escribe una fecha válida.';
+  const { min, max } = rangoNacimientoInvitado();
+  if (valor > max) return `El invitado debe tener al menos ${EDAD_MIN_INVITADO} años.`;
+  if (valor < min) return `El invitado no puede tener más de ${EDAD_MAX_INVITADO} años.`;
+  return '';
+}
 
 /** Sí / No en dos botones iguales, con animación al elegir. */
 function OpcionSiNo({ valor, onSi, onNo }: { valor: boolean | null; onSi: () => void; onNo: () => void }) {
@@ -239,6 +272,8 @@ function InscriptionWizard() {
   const [errorComprobante, setErrorComprobante] = useState(false);
   const [arrastrando, setArrastrando] = useState(false);
   const [validandoComprobante, setValidandoComprobante] = useState(false);
+  // Avance de la lectura OCR; null mientras se valida el QR u otra fase.
+  const [progresoValidacion, setProgresoValidacion] = useState<number | null>(null);
   // Lo que se leyó del comprobante: se guarda con el pago para que el admin lo vea.
   const [verificacion, setVerificacion] = useState<{
     hash: string | null;
@@ -459,83 +494,88 @@ function InscriptionWizard() {
     }
 
     setValidandoComprobante(true);
+    setProgresoValidacion(null);
 
-    // 1. Código QR.
-    const qr = await detectarQR(file).catch(() => ({ hay: true, texto: null })); // error técnico: no se bloquea
-    if (import.meta.env?.DEV) console.log('[comprobante] QR:', qr);
-    if (!qr.hay) {
-      rechazar(
-        'No encontramos el código QR del comprobante',
-        'Sube la captura completa del comprobante, donde se vea el código QR. No recortes la imagen ni le tomes una foto a la pantalla con otro celular.',
-      );
-      return;
-    }
-
-    // 2. Texto: que sea un comprobante y que el pago sea a SKYED.
-    const texto = await leerTexto(file);
-    const analisis = analizarTexto(texto, total, referenciaPago);
-    if (import.meta.env?.DEV) console.log('[comprobante] texto:', texto, '\n[comprobante] análisis:', analisis);
-
-    if (!analisis.pareceComprobante) {
-      rechazar(
-        'Esta imagen no parece un comprobante de pago',
-        'No encontramos datos como el valor, el banco, la fecha o la referencia. Sube la captura completa de la transacción.',
-      );
-      return;
-    }
-    if (analisis.destino === false) {
-      rechazar(
-        'El pago no es a la cuenta de SKYED',
-        'En el comprobante no aparece ninguna de nuestras cuentas. Revisa que hayas transferido a estos datos y vuelve a subir el comprobante:',
-        true,
-      );
-      return;
-    }
-
-    // 3. Que no se haya usado antes.
-    const huella = await huellaArchivo(file);
     try {
-      await apiFetch('/pagos/comprobante/verificar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ hash: huella, referencia_transaccion: analisis.referenciaTransaccion }),
-      });
-    } catch (err: any) {
-      // 409 = ya usado. Otros errores (sin conexión...) no bloquean: el servidor lo revisa otra vez al subirlo.
-      if (err?.status === 409 || /ya fue usado/i.test(err?.message ?? '')) {
+      // 1. Código QR.
+      const qr = await detectarQR(file).catch(() => ({ hay: true, texto: null })); // error técnico: no se bloquea
+      if (import.meta.env?.DEV) console.log('[comprobante] QR:', qr);
+      if (!qr.hay) {
         rechazar(
-          'Este comprobante ya fue usado',
-          'Ya se usó en otra inscripción. Sube el comprobante del pago de esta inscripción; si crees que es un error, escríbenos.',
+          'No encontramos el código QR del comprobante',
+          'Sube la captura completa del comprobante, donde se vea el código QR. No recortes la imagen ni le tomes una foto a la pantalla con otro celular.',
         );
         return;
       }
-    }
 
-    setValidandoComprobante(false);
-    setComprobante(file);
-    setErrorComprobante(false);
-    setVerificacion({
-      hash: huella,
-      referenciaTransaccion: analisis.referenciaTransaccion,
-      datos: {
-        qr: true,
-        qr_legible: qr.texto !== null,
-        destino: analisis.destino,
-        monto: analisis.monto,
-        monto_leido: analisis.montoLeido,
-        monto_esperado: total,
-        incluye_referencia: analisis.incluyeReferencia,
-      },
-    });
+      // 2. Texto: que sea un comprobante y que el pago sea a SKYED.
+      const texto = await leerTexto(file, setProgresoValidacion);
+      const analisis = analizarTexto(texto, total, referenciaPago);
+      if (import.meta.env?.DEV) console.log('[comprobante] texto:', texto, '\n[comprobante] análisis:', analisis);
 
-    // 4. Valor distinto al total: se acepta, pero se avisa.
-    if (analisis.monto === false) {
-      const leido = analisis.montoLeido !== null ? `$${analisis.montoLeido.toLocaleString('es-CO')}` : 'otro valor';
-      setAvisoComprobante({
-        tipo: 'aviso',
-        titulo: 'El valor no coincide con el total',
-        detalle: `En el comprobante leímos ${leido}, pero el total de tu inscripción es $${total.toLocaleString('es-CO')}. Puedes continuar, pero si el valor pagado no es el correcto, el admin podría rechazar el pago.`,
+      if (!analisis.pareceComprobante) {
+        rechazar(
+          'Esta imagen no parece un comprobante de pago',
+          'No encontramos datos como el valor, el banco, la fecha o la referencia. Sube la captura completa de la transacción.',
+        );
+        return;
+      }
+      if (analisis.destino === false) {
+        rechazar(
+          'El pago no es a la cuenta de SKYED',
+          'En el comprobante no aparece ninguna de nuestras cuentas. Revisa que hayas transferido a estos datos y vuelve a subir el comprobante:',
+          true,
+        );
+        return;
+      }
+
+      // 3. Que no se haya usado antes.
+      const huella = await huellaArchivo(file);
+      try {
+        await apiFetch('/pagos/comprobante/verificar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ hash: huella, referencia_transaccion: analisis.referenciaTransaccion }),
+        });
+      } catch (err: any) {
+        // 409 = ya usado. Otros errores (sin conexión...) no bloquean: el servidor lo revisa otra vez al subirlo.
+        if (err?.status === 409 || /ya fue usado/i.test(err?.message ?? '')) {
+          rechazar(
+            'Este comprobante ya fue usado',
+            'Ya se usó en otra inscripción. Sube el comprobante del pago de esta inscripción; si crees que es un error, escríbenos.',
+          );
+          return;
+        }
+      }
+
+      setComprobante(file);
+      setErrorComprobante(false);
+      setVerificacion({
+        hash: huella,
+        referenciaTransaccion: analisis.referenciaTransaccion,
+        datos: {
+          qr: true,
+          qr_legible: qr.texto !== null,
+          destino: analisis.destino,
+          monto: analisis.monto,
+          monto_leido: analisis.montoLeido,
+          monto_esperado: total,
+          incluye_referencia: analisis.incluyeReferencia,
+        },
       });
+
+      // 4. Valor distinto al total: se acepta, pero se avisa.
+      if (analisis.monto === false) {
+        const leido = analisis.montoLeido !== null ? `$${analisis.montoLeido.toLocaleString('es-CO')}` : 'otro valor';
+        setAvisoComprobante({
+          tipo: 'aviso',
+          titulo: 'El valor no coincide con el total',
+          detalle: `En el comprobante leímos ${leido}, pero el total de tu inscripción es $${total.toLocaleString('es-CO')}. Puedes continuar, pero si el valor pagado no es el correcto, el admin podría rechazar el pago.`,
+        });
+      }
+    } finally {
+      setValidandoComprobante(false);
+      setProgresoValidacion(null);
     }
   }
 
@@ -609,7 +649,10 @@ function InscriptionWizard() {
       if (!invNombre) { setErrorInvNombre('Este campo es obligatorio.'); falta('i-nombre', 'Nombre del invitado'); }
       if (!invApellido) { setErrorInvApellido('Este campo es obligatorio.'); falta('i-apellido', 'Apellido del invitado'); }
       if (!invTelefono) { setErrorInvTelefono('Este campo es obligatorio.'); falta('i-telefono', 'Teléfono del invitado'); }
-      if (!invFechaNacimiento) { setErrorInvFechaNac('Este campo es obligatorio.'); falta('i-fecha-nac', 'Fecha de nacimiento del invitado'); }
+      {
+        const errNac = errorNacimientoInvitado(invFechaNacimiento);
+        if (errNac) { setErrorInvFechaNac(errNac); falta('i-fecha-nac', 'Fecha de nacimiento del invitado'); }
+      }
       if (invDeseaKit && !invTallaKit) { setErrorInvTalla('Selecciona la talla del kit del invitado.'); falta('grupo-inv-talla', 'Talla del kit del invitado'); }
     }
 
@@ -1221,7 +1264,7 @@ function InscriptionWizard() {
                         </div>
                         <div className="part-form-group">
                           <label htmlFor="i-fecha-nac">Fecha de nacimiento</label>
-                          <input id="i-fecha-nac" type="date" required className={errorInvFechaNac ? 'part-input-error' : undefined} aria-invalid={!!errorInvFechaNac} value={invFechaNacimiento} onChange={(e) => { setInvFechaNacimiento(e.target.value); setErrorInvFechaNac(''); }} />
+                          <input id="i-fecha-nac" type="date" required min={rangoNacimientoInvitado().min} max={rangoNacimientoInvitado().max} className={errorInvFechaNac ? 'part-input-error' : undefined} aria-invalid={!!errorInvFechaNac} value={invFechaNacimiento} onChange={(e) => { setInvFechaNacimiento(e.target.value); setErrorInvFechaNac(''); }} />
                           {errorInvFechaNac && <p className="part-form-error">{errorInvFechaNac}</p>}
                         </div>
                         <div className="part-form-group">
@@ -1366,9 +1409,12 @@ function InscriptionWizard() {
                           if (e.dataTransfer.files?.[0]) manejarComprobante(e.dataTransfer.files[0]);
                         }}
                       >
-                        <i className={validandoComprobante ? 'ti ti-loader-2' : 'ti ti-cloud-upload'} aria-hidden="true" />
+                        {validandoComprobante && <style>{ESTILOS_VALIDANDO}</style>}
+                        <i className={validandoComprobante ? 'ti ti-loader-2 part-spin' : 'ti ti-cloud-upload'} aria-hidden="true" />
                         {validandoComprobante ? (
-                          <span>Validando comprobante (QR y datos de la transacción)…</span>
+                          <span role="status" aria-live="polite">
+                            Validando comprobante (QR y datos de la transacción)…{progresoValidacion !== null ? ` ${progresoValidacion}%` : ''}
+                          </span>
                         ) : comprobante ? (
                           <span>{comprobante.name}</span>
                         ) : (

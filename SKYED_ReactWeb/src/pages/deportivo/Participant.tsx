@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import QRCode from 'qrcode';
 import Protected from '../../components/Protected';
 import SportWrapper from '../../components/deportivo/SportWrapper';
+import CodigoCopiable from '../../components/deportivo/CodigoCopiable';
 import { useAuth } from '../../context/AuthContext';
 import { useAccessibility } from '../../context/AccessibilityContext';
 import { apiFetch } from '../../services/api';
@@ -1631,7 +1632,7 @@ function DetalleInscripcion({
               <div className="part-qr-glow">
                 <QrImagen codigo={insc.qr.codigo} />
               </div>
-              <div className="part-qr-code-text">{insc.qr.codigo}</div>
+              <CodigoCopiable codigo={insc.qr.codigo} />
               <p className="part-qr-hint">
                 {insc.qr.estado === 'usado'
                   ? 'Este QR ya fue escaneado y no sirve para volver a ingresar.'
