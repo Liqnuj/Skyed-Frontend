@@ -59,7 +59,7 @@ import AdminReservaDetalle from "../../components/social/reservas/AdminReservaDe
 import AdminCalendarioReservas from "../../components/social/reservas/AdminCalendarioReservas";
 import { ESTADO_VISUAL_LABEL, FECHA_TIPO_LABEL, fechaCorta } from "../../utils/reservasAdmin";
 import PqrGestion from "../../components/social/pqr/AdminPqrManager";
-import { UsuarioModal, EditarUsuarioModal, puedeEditarUsuario, RolesDeUsuario, Avatar, type UsuarioFila } from "../../components/deportivo/UsuariosAdmin";
+import { UsuarioModal, EditarUsuarioModal, puedeEditarUsuario, RolesDeUsuario, Avatar, perteneceAlModulo, type UsuarioFila } from "../../components/deportivo/UsuariosAdmin";
 import { usePermisos } from "../../context/PermisosContext";
 import { primeraSeccionPermitida } from "../../types/permisos";
 import "../../styles/social/Admin.css";
@@ -892,10 +892,13 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
   const visibleReservas = reservas.filter((r) =>
     filtered(`${r.id_rese} ${r.fecha_evento_rese} ${r.estado_rese}`)
   );
+  // Solo los usuarios del módulo social (igual que el panel deportivo con los suyos).
+  const usersModulo = users.filter((u) => perteneceAlModulo(u, "social"));
+  const visibleUsers = usersModulo.filter((u) => filtered(`${u.nombre_u} ${u.apellido_u ?? ""} ${u.correo_u}`));
 
 
   const stats = useMemo(() => ({
-    users: users.length,
+    users: usersModulo.length,
     events: eventos.length,
     reservations: reservas.length,
     pending: reservas.filter((r) => r.estado_rese === "pendiente").length,
@@ -1453,7 +1456,7 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
           >
             <thead><tr><th>ID</th><th>Usuario</th><th>Roles</th><th>Estado</th>{puedeEditar("usuarios") && <th>Acciones</th>}</tr></thead>
             <tbody>
-              {users.filter(u => filtered(`${u.nombre_u} ${u.apellido_u ?? ""} ${u.correo_u}`)).map(u => (
+              {visibleUsers.map(u => (
                 <tr key={u.id_u}>
                   <td><span className="usr-id">#{u.id_u}</span></td>
                   <td>
@@ -1465,7 +1468,7 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
                       </div>
                     </div>
                   </td>
-                  <td><RolesDeUsuario usuario={u} /></td>
+                  <td><RolesDeUsuario usuario={u} modulo="social" /></td>
                   <td><Badge value={u.estado_u ?? "activo"} /></td>
                   {puedeEditar("usuarios") && (
                     <td>
@@ -1476,8 +1479,8 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
                   )}
                 </tr>
               ))}
-              {!users.length && <tr><td colSpan={puedeEditar("usuarios") ? 5 : 4}>La API de usuarios no devolvió registros.</td></tr>}
-              {!!users.length && !users.some(u => filtered(`${u.nombre_u} ${u.apellido_u ?? ""} ${u.correo_u}`)) && <tr><td colSpan={puedeEditar("usuarios") ? 5 : 4}>Ningún usuario coincide con la búsqueda.</td></tr>}
+              {!usersModulo.length && <tr><td colSpan={puedeEditar("usuarios") ? 5 : 4}>No hay usuarios del módulo social.</td></tr>}
+              {!!usersModulo.length && !visibleUsers.length && <tr><td colSpan={puedeEditar("usuarios") ? 5 : 4}>Ningún usuario coincide con la búsqueda.</td></tr>}
             </tbody>
           </SectionTable>
         )}

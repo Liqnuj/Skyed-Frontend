@@ -97,6 +97,28 @@ export const ROLES_ASIGNABLES = ROLES.filter((r) => r.nombre !== "adminSocial");
 export const esAdminSocial = (u: UsuarioFila) => !!u.roles?.some((r) => r.nombre_rol === "adminSocial");
 export const esAdmin = (u: UsuarioFila) => !!u.roles?.some((r) => r.nombre_rol.startsWith("admin"));
 
+/** Roles de usuario normal: el registro es uno solo para toda la plataforma. */
+const ROLES_BASE = ["participante", "cliente"];
+
+/**
+ * ¿Este usuario se muestra en el panel de este módulo?
+ *  - Nunca aparece el administrador del otro módulo (ni quien administra los dos).
+ *  - Los usuarios normales (participante o cliente, o sin rol) aparecen en los
+ *    dos paneles: se registran una sola vez y pueden inscribirse y reservar.
+ *  - El personal (admin o asistente) solo aparece en el panel de su módulo.
+ */
+export function perteneceAlModulo(u: UsuarioFila, modulo: "deportivo" | "social"): boolean {
+  const roles = u.roles ?? [];
+  const adminDelOtro = modulo === "social" ? "adminDeportivo" : "adminSocial";
+  if (roles.some((r) => r.nombre_rol === adminDelOtro)) return false;
+  if (!roles.length) return true;
+  return roles.some((r) => {
+    if (ROLES_BASE.includes(r.nombre_rol)) return true;
+    const ctx = (r.pivot?.contexto ?? rolInfo(r.nombre_rol).contextoBase).toLowerCase();
+    return ctx === modulo || ctx === "general";
+  });
+}
+
 const TIPOS_DOCUMENTO = [
   { value: "cedula_ciudadania", label: "Cédula de ciudadanía" },
   { value: "tarjeta_identidad", label: "Tarjeta de identidad" },
@@ -164,10 +186,27 @@ export function RolChip({ nombre, contexto, onQuitar, bloqueado, motivoBloqueo, 
   );
 }
 
-/** Roles de un usuario en la tabla: hasta 3 etiquetas y un "+N". */
-export function RolesDeUsuario({ usuario }: { usuario: UsuarioFila }) {
-  const roles = usuario.roles ?? [];
-  if (!roles.length) return <span className="usr-sin-roles">Sin roles</span>;
+/**
+ * Roles de un usuario en la tabla: hasta 3 etiquetas y un "+N".
+ * Con `modulo`, solo muestra los roles de ese módulo (y los generales): en el
+ * panel Social sale "Cliente · Social" y no "Participante · Deportivo".
+ */
+export function RolesDeUsuario({ usuario, modulo }: { usuario: UsuarioFila; modulo?: "deportivo" | "social" }) {
+  const todos = usuario.roles ?? [];
+  const roles = modulo
+    ? todos.filter((r) => {
+        const ctx = (r.pivot?.contexto ?? rolInfo(r.nombre_rol).contextoBase).toLowerCase();
+        return ctx === modulo || ctx === "general";
+      })
+    : todos;
+  // Un usuario normal tiene acceso a las dos páginas y su rol cambia según
+  // dónde esté: en Social es cliente y en Deportivo participante. Si en la base
+  // solo tiene el rol del otro módulo, aquí se muestra el que le corresponde.
+  if (modulo && todos.some((r) => ROLES_BASE.includes(r.nombre_rol))
+      && !roles.some((r) => ROLES_BASE.includes(r.nombre_rol))) {
+    roles.unshift({ nombre_rol: modulo === "social" ? "cliente" : "participante", pivot: { contexto: modulo } } as (typeof todos)[number]);
+  }
+  if (!roles.length) return <span className="usr-sin-roles">{todos.length ? "Sin rol en este módulo" : "Sin roles"}</span>;
   const vistos = roles.slice(0, 3);
   return (
     <div className="usr-chips">

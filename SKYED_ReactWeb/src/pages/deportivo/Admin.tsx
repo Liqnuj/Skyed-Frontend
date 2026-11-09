@@ -56,7 +56,7 @@ import { useConfirmacion } from "../../components/shared/ConfirmDialog";
 import { useAvisos, type Avisar } from "../../components/shared/Avisos";
 import { CargandoPanel, NumeroAnimado } from "../../components/shared/AdminMotion";
 import AdminFooter from "../../components/shared/AdminFooter";
-import { RolesModal, RolesDeUsuario, UsuarioModal, EditarUsuarioModal, puedeEditarUsuario, Avatar, esAdmin, esAdminSocial, type UsuarioFila } from "../../components/deportivo/UsuariosAdmin";
+import { RolesModal, RolesDeUsuario, UsuarioModal, EditarUsuarioModal, puedeEditarUsuario, Avatar, esAdmin, perteneceAlModulo, type UsuarioFila } from "../../components/deportivo/UsuariosAdmin";
 import AdminCatalogos, { type CatalogoDeportivo } from "../../components/deportivo/AdminCatalogos";
 import AsistentesPanel from "../../features/asistentes/AsistentesPanel";
 import { usePermisos } from "../../context/PermisosContext";
@@ -803,17 +803,22 @@ function AdminPage() {
     .filter((k) => !filtroLugarKit || (k.lugar_entrega_k ?? "") === filtroLugarKit)
     .filter((k) => filtered(`${k.nombre_k} ${k.lugar_entrega_k ?? ""} ${k.contenido_k ?? ""}`));
 
-  // El admin deportivo no ve a los admin sociales.
-  const usersVisibles = users.filter((u) => !esAdminSocial(u));
+  // Solo los usuarios del módulo deportivo (nunca los admin sociales).
+  const usersVisibles = users.filter((u) => perteneceAlModulo(u, "deportivo"));
   const visibleUsers = usersVisibles
-    .filter((u) => !filtroRolUsuario || (u.roles ?? []).some((r) => r.nombre_rol === filtroRolUsuario))
+    .filter((u) => !filtroRolUsuario || (u.roles ?? []).some((r) => r.nombre_rol === filtroRolUsuario
+      // En Deportivo todo usuario normal es participante, aunque en la base solo sea cliente.
+      || (filtroRolUsuario === "participante" && r.nombre_rol === "cliente")))
     .filter((u) => !filtroEstadoUsuario || (u.estado_u ?? "activo") === filtroEstadoUsuario)
     .filter((u) => filtered(`${u.nombre_u} ${u.apellido_u ?? ""} ${u.correo_u}`));
 
   // Opciones que salen de los propios datos
   const metodosPago = Array.from(new Set(pagos.map((p) => p.metodo_pago_p).filter(Boolean) as string[])).sort();
   const lugaresKit = Array.from(new Set(kits.map((k) => k.lugar_entrega_k).filter(Boolean) as string[])).sort();
-  const rolesUsuario = Array.from(new Set(usersVisibles.flatMap((u) => (u.roles ?? []).map((r) => r.nombre_rol)))).sort();
+  // Solo los roles de este módulo (el cliente es del Social y no se muestra aquí).
+  const rolesUsuario = Array.from(new Set(usersVisibles.flatMap((u) => (u.roles ?? [])
+    .filter((r) => ["deportivo", "general"].includes((r.pivot?.contexto ?? "deportivo").toLowerCase()))
+    .map((r) => r.nombre_rol)))).sort();
 
   const stats = useMemo(() => {
     const activos = eventos.filter((e) => e.estado === "activo");
@@ -1473,7 +1478,7 @@ function AdminPage() {
                       </div>
                     </div>
                   </td>
-                  <td><RolesDeUsuario usuario={u} /></td>
+                  <td><RolesDeUsuario usuario={u} modulo="deportivo" /></td>
                   <td><Badge value={u.estado_u ?? "activo"} /></td>
                   <td>
                     {puedeEditar("usuarios") && (
