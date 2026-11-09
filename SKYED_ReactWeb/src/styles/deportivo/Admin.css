@@ -258,15 +258,27 @@
   display: flex !important;
   flex-direction: column !important;
 
-  background: var(--admin-sidebar) !important;
+  background:
+    radial-gradient(360px 280px at -60px 105%, rgba(44, 156, 175, .24), transparent 70%),
+    radial-gradient(300px 200px at 110% -20px, rgba(120, 220, 232, .1), transparent 70%),
+    linear-gradient(180deg, #091d36 0%, #102b49 100%) !important;
 
-  border-right: 1px solid rgba(255,255,255,.08) !important;
+  border-right: 1px solid rgba(104, 208, 220, .16) !important;
 
   overflow: hidden !important;
 
   z-index: 9000 !important;
 
   transform: none !important;
+  transition: width .25s ease, transform .25s ease !important;
+}
+
+.deportivo-admin.dark .admin-sidebar {
+  background:
+    radial-gradient(380px 300px at -60px 105%, rgba(44, 156, 175, .22), transparent 70%),
+    radial-gradient(300px 200px at 110% -20px, rgba(120, 220, 232, .07), transparent 70%),
+    linear-gradient(180deg, #050e1c 0%, #0b1c31 100%) !important;
+  border-right-color: rgba(104, 208, 220, .13) !important;
 }
 
 /* =========================================================
@@ -275,20 +287,21 @@
 
 .deportivo-admin .sidebar-brand {
   width: 100% !important;
-  min-height: 78px !important;
+  min-height: 76px !important;
 
-  flex: 0 0 78px !important;
+  flex: 0 0 76px !important;
 
   display: flex !important;
   align-items: center !important;
 
-  gap: 11px !important;
+  gap: 12px !important;
 
-  padding: 18px 17px !important;
+  padding: 16px 18px !important;
 
-  border-bottom: 1px solid rgba(255,255,255,.08) !important;
+  border-bottom: 1px solid rgba(104, 208, 220, .14) !important;
 
   position: relative !important;
+  overflow: hidden !important;
 }
 
 .deportivo-admin .sidebar-mark {
@@ -316,6 +329,7 @@
   width: 37px !important;
   height: 37px !important;
   object-fit: contain !important;
+  filter: drop-shadow(0 4px 10px rgba(44, 156, 175, .4)) !important;
 }
 
 .deportivo-admin .sidebar-brand-text strong em {
@@ -335,14 +349,15 @@
 .deportivo-admin .sidebar-brand-text span {
   display: block !important;
 
-  margin-top: 0 !important;
+  margin-top: 5px !important;
 
-  color: #8fd3df !important;
+  color: #70c8d4 !important;
 
-  font-size: 11px !important;
+  font-size: 10px !important;
   font-weight: 800 !important;
 
-  letter-spacing: .12em !important;
+  letter-spacing: .2em !important;
+  white-space: nowrap !important;
 }
 
 /* =========================================================
@@ -361,7 +376,7 @@
   display: flex !important;
   flex-direction: column !important;
 
-  padding: 14px 10px !important;
+  padding: 18px 12px 14px !important;
 
   margin: 0 !important;
 
@@ -369,6 +384,12 @@
   overflow-y: auto !important;
 
   isolation: isolate !important;
+}
+
+.deportivo-admin .sidebar-nav-group {
+  display: flex !important;
+  flex: 0 0 auto !important;
+  flex-direction: column !important;
 }
 
 .deportivo-admin .nav-caption {
@@ -379,14 +400,15 @@
   width: 100% !important;
 
   margin: 0 !important;
-  padding: 5px 11px 9px !important;
+  padding: 0 12px 12px !important;
 
-  color: #6f5d88 !important;
+  color: #70c8d4 !important;
 
   font-size: 10px !important;
   font-weight: 800 !important;
 
-  letter-spacing: .14em !important;
+  letter-spacing: .2em !important;
+  opacity: .85 !important;
 }
 
 /* =========================================================
@@ -396,7 +418,7 @@
 .deportivo-admin .admin-nav-item,
 .deportivo-admin .admin-nav-item.active,
 .deportivo-admin .admin-nav-item:hover {
-  position: static !important;
+  position: relative !important;
   inset: auto !important;
 
   display: flex !important;
@@ -406,17 +428,17 @@
   max-width: 100% !important;
   min-width: 0 !important;
 
-  height: 42px !important;
+  height: 48px !important;
 
-  flex: 0 0 42px !important;
+  flex: 0 0 48px !important;
 
-  margin: 2px 0 !important;
-  padding: 0 11px !important;
+  margin: 3px 0 !important;
+  padding: 0 10px 0 8px !important;
 
   gap: 12px !important;
 
-  border: 0 !important;
-  border-radius: 10px !important;
+  border: 1px solid transparent !important;
+  border-radius: 14px !important;
 
   background: transparent !important;
 
@@ -431,18 +453,52 @@
   transform: none !important;
 
   box-shadow: none !important;
+  transition: background .18s ease, color .18s ease, box-shadow .18s ease !important;
+}
+
+.deportivo-admin .admin-nav-item > svg {
+  box-sizing: content-box !important;
+  flex: none !important;
+  width: 18px !important;
+  height: 18px !important;
+  padding: 7px !important;
+  border-radius: 11px !important;
+  background: rgba(255, 255, 255, .07) !important;
+  transition: background .18s ease, color .18s ease !important;
 }
 
 .deportivo-admin .admin-nav-item:hover {
-  background: rgba(255,255,255,.07) !important;
+  background: rgba(255,255,255,.06) !important;
   color: white !important;
 }
 
+.deportivo-admin .admin-nav-item:hover > svg {
+  background: rgba(255, 255, 255, .13) !important;
+}
+
 .deportivo-admin .admin-nav-item.active {
-  background: var(--admin-accent) !important;
+  background: linear-gradient(90deg, rgba(44, 156, 175, .42), rgba(44, 156, 175, .09)) !important;
   color: white !important;
 
-  box-shadow: 0 7px 20px rgba(156,2,174,.24) !important;
+  border-color: rgba(120, 220, 232, .18) !important;
+  box-shadow: inset 0 0 0 1px rgba(120, 220, 232, .08) !important;
+}
+
+.deportivo-admin .admin-nav-item.active > svg {
+  background: linear-gradient(135deg, #8ee0e8, #2c9caf) !important;
+  color: #08223a !important;
+}
+
+.deportivo-admin .admin-nav-item.active::before {
+  content: "" !important;
+  position: absolute !important;
+  left: -12px !important;
+  top: 11px !important;
+  bottom: 11px !important;
+  width: 4px !important;
+  border-radius: 0 4px 4px 0 !important;
+  background: #8ee0e8 !important;
+  box-shadow: 0 0 14px rgba(120, 220, 232, .65) !important;
 }
 
 .deportivo-admin .admin-nav-item span {
@@ -460,6 +516,28 @@
   font-weight: 600 !important;
 }
 
+.deportivo-admin .nav-count {
+  min-width: 22px !important;
+  height: 22px !important;
+  display: inline-grid !important;
+  flex: 0 0 auto !important;
+  place-items: center !important;
+  margin-left: auto !important;
+  padding: 0 7px !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, .16) !important;
+  color: #d7f4f6 !important;
+  font-size: 11px !important;
+  font-style: normal !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+}
+
+.deportivo-admin .admin-nav-item.active .nav-count {
+  background: rgba(142, 224, 232, .2) !important;
+  color: #fff !important;
+}
+
 /* =========================================================
    PERFIL DEL SIDEBAR
    ========================================================= */
@@ -469,21 +547,22 @@
 
   width: 100% !important;
 
-  min-height: 70px !important;
+  min-height: 62px !important;
 
-  flex: 0 0 70px !important;
+  flex: 0 0 62px !important;
 
   display: flex !important;
   align-items: center !important;
 
   gap: 9px !important;
 
-  margin: 0 !important;
-  padding: 13px 11px !important;
+  margin: 0 12px 12px !important;
+  padding: 10px !important;
 
-  border-top: 1px solid rgba(255,255,255,.08) !important;
+  border: 1px solid rgba(255, 255, 255, .09) !important;
+  border-radius: 16px !important;
 
-  background: var(--admin-sidebar) !important;
+  background: rgba(255, 255, 255, .06) !important;
 
   z-index: 5 !important;
 }
@@ -502,9 +581,11 @@
 
   background: linear-gradient(
     135deg,
-    var(--admin-accent),
-    #4c9eea
+    #39b8c5,
+    #176b9b
   ) !important;
+
+  box-shadow: 0 0 0 2px rgba(120, 220, 232, .45) !important;
 
   color: white !important;
 
@@ -532,15 +613,15 @@
 
 .deportivo-admin .admin-user strong {
   color: white !important;
-  font-size: 11px !important;
+  font-size: 12.5px !important;
 }
 
 .deportivo-admin .admin-user span {
   margin-top: 2px !important;
 
-  color: #8e7da5 !important;
+  color: #8fa9c1 !important;
 
-  font-size: 9px !important;
+  font-size: 10.5px !important;
 }
 
 .deportivo-admin .logout-btn {
@@ -549,7 +630,12 @@
   background: transparent !important;
   border-color: transparent !important;
 
-  color: #a999b9 !important;
+  color: #9fb2c6 !important;
+}
+
+.deportivo-admin .logout-btn:hover {
+  background: rgba(255, 255, 255, .1) !important;
+  color: white !important;
 }
 
 /* =========================================================
@@ -590,11 +676,12 @@
 
 .deportivo-admin.is-collapsed .sidebar-brand {
   justify-content: center !important;
-  padding: 18px 10px !important;
+  padding: 16px 0 !important;
 }
 
 .deportivo-admin.is-collapsed .sidebar-brand-text,
 .deportivo-admin.is-collapsed .nav-caption,
+.deportivo-admin.is-collapsed .nav-count,
 .deportivo-admin.is-collapsed .admin-user {
   display: none !important;
 }
@@ -619,7 +706,8 @@
 
 .deportivo-admin.is-collapsed .sidebar-footer {
   justify-content: center !important;
-  padding: 13px 10px !important;
+  margin: 0 8px 12px !important;
+  padding: 8px 0 !important;
 }
 
 .deportivo-admin.is-collapsed .logout-btn {
@@ -1837,7 +1925,30 @@
 
   .deportivo-admin.is-collapsed .sidebar-brand {
     justify-content: flex-start !important;
-    padding: 18px 17px !important;
+    padding: 16px 18px !important;
+  }
+
+  .deportivo-admin.is-collapsed .nav-caption,
+  .deportivo-admin.is-collapsed .admin-user,
+  .deportivo-admin.is-collapsed .logout-btn {
+    display: revert !important;
+  }
+
+  .deportivo-admin.is-collapsed .admin-nav-item span {
+    display: block !important;
+  }
+
+  .deportivo-admin.is-collapsed .admin-nav-item {
+    width: 100% !important;
+    max-width: 100% !important;
+    justify-content: flex-start !important;
+    padding: 0 10px 0 8px !important;
+  }
+
+  .deportivo-admin.is-collapsed .sidebar-footer {
+    justify-content: flex-start !important;
+    margin: 0 12px 12px !important;
+    padding: 10px !important;
   }
 
   .deportivo-admin .admin-role,
