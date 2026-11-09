@@ -40,6 +40,9 @@ import {
   X,
   LifeBuoy,
   BarChart3,
+  CircleCheck,
+  CircleX,
+  CircleHelp,
 } from "lucide-react";
 import { ResumenEventoModal, Indicador, BarraProgreso, ListaValores } from "../../components/shared/ResumenEvento";
 
@@ -150,6 +153,10 @@ type Pago = {
   metodo_pago_p?: string | null;
   referencia_p?: string | null;
   comprobante_p?: string | null;
+  /** Número de la transacción en Nequi o el banco, leído del comprobante. */
+  referencia_transaccion_p?: string | null;
+  /** Lo que se revisó automáticamente al subir el comprobante. */
+  verificacion_comprobante_p?: RevisionComprobante | null;
   monto_p?: number | string | null;
   fecha_p?: string | null;
   estado_p: "pendiente" | "confirmado" | "rechazado" | "cancelado";
@@ -2147,6 +2154,57 @@ function CategoriasModal({ evento, onClose, notify, confirmar, permitirEditar, p
    PAGOS
 ================================================================ */
 
+type RevisionComprobante = {
+  qr?: boolean | null;
+  qr_legible?: boolean | null;
+  destino?: boolean | null;
+  monto?: boolean | null;
+  monto_leido?: number | null;
+  monto_esperado?: number | null;
+  incluye_referencia?: boolean | null;
+};
+
+/** Una línea de la revisión: ✓ sí, ✗ no, ? no se pudo leer. */
+function ItemRevision({ ok, texto }: { ok: boolean | null | undefined; texto: string }) {
+  const Icono = ok === true ? CircleCheck : ok === false ? CircleX : CircleHelp;
+  const color = ok === true ? "#16a34a" : ok === false ? "#dc2626" : "var(--admin-muted, #94a3b8)";
+  return (
+    <li style={{ display: "flex", alignItems: "center", gap: 7, listStyle: "none" }}>
+      <Icono size={15} color={color} aria-hidden="true" />
+      <span>{texto}</span>
+    </li>
+  );
+}
+
+/**
+ * Resumen de lo que se revisó automáticamente al subir el comprobante.
+ * Es una ayuda: el pago se confirma siempre revisando la cuenta.
+ */
+function RevisionDelComprobante({ pago }: { pago: Pago }) {
+  const v = pago.verificacion_comprobante_p;
+  if (!v) return null;
+  const montoTexto = v.monto === true
+    ? `Valor correcto (${money(v.monto_leido)})`
+    : v.monto === false
+      ? `El valor no coincide: se leyó ${money(v.monto_leido)} y el total es ${money(v.monto_esperado)}`
+      : "No se pudo leer el valor";
+  return (
+    <div className="message-box">
+      <span>Revisión automática del comprobante</span>
+      <ul style={{ margin: "8px 0 0", padding: 0, display: "grid", gap: 5, fontSize: 12 }}>
+        <ItemRevision ok={v.qr} texto={v.qr ? "Tiene el código QR del comprobante" : "Sin código QR"} />
+        <ItemRevision ok={v.destino} texto={v.destino === true ? "El pago es a la cuenta de SKYED" : v.destino === false ? "No se ve un pago a la cuenta de SKYED" : "No se pudo leer a quién se pagó"} />
+        <ItemRevision ok={v.monto} texto={montoTexto} />
+        {pago.referencia_transaccion_p && <ItemRevision ok={true} texto={`N.º de transacción: ${pago.referencia_transaccion_p} (no se ha usado en otra inscripción)`} />}
+        {v.incluye_referencia !== null && v.incluye_referencia !== undefined && (
+          <ItemRevision ok={v.incluye_referencia} texto={v.incluye_referencia ? `Incluye la referencia ${pago.referencia_p}` : `No se ve la referencia ${pago.referencia_p ?? ""} (Nequi no siempre la muestra)`} />
+        )}
+      </ul>
+      <p style={{ opacity: .75 }}>Es una ayuda: confirma siempre en la cuenta que el dinero llegó antes de aprobar.</p>
+    </div>
+  );
+}
+
 function PagoModal({ item, onClose, onCambiar, permitirCambiar }: {
   item: Pago;
   onClose: () => void;
@@ -2213,6 +2271,7 @@ function PagoModal({ item, onClose, onCambiar, permitirCambiar }: {
                 </a>
               </>}
       </div>
+      <RevisionDelComprobante pago={item} />
       <div className="message-box">
         <span>Contacto de emergencia</span>
         <p>

@@ -7,8 +7,8 @@ import TermsModal from '../../components/shared/TermsModal';
 import { useAuth } from '../../context/AuthContext';
 import { apiFetch } from '../../services/api';
 import { prepararImagen } from '../../utils/prepararImagen';
-import jsQR from 'jsqr';
-import { createWorker } from 'tesseract.js';
+import { DATOS_PAGO, referenciaDePago } from '../../config/datosPago';
+import { detectarQR, leerTexto, analizarTexto, huellaArchivo } from '../../utils/comprobantePago';
 import '../../styles/deportivo/participante.css';
 
 interface Kit {
@@ -239,6 +239,21 @@ function InscriptionWizard() {
   const [errorComprobante, setErrorComprobante] = useState(false);
   const [arrastrando, setArrastrando] = useState(false);
   const [validandoComprobante, setValidandoComprobante] = useState(false);
+  // Lo que se leyó del comprobante: se guarda con el pago para que el admin lo vea.
+  const [verificacion, setVerificacion] = useState<{
+    hash: string | null;
+    referenciaTransaccion: string | null;
+    datos: Record<string, unknown>;
+  } | null>(null);
+  // Problema con el comprobante: se queda visible debajo del recuadro (no se
+  // borra solo como las alertas) hasta que el usuario lo cierre o suba otro.
+  const [avisoComprobante, setAvisoComprobante] = useState<{
+    tipo: 'error' | 'aviso';
+    titulo: string;
+    detalle: string;
+    /** Mostrar los datos de la cuenta de SKYED a la que debía pagar. */
+    mostrarCuenta?: boolean;
+  } | null>(null);
   const [aceptaTerminos, setAceptaTerminos] = useState(false);
   const [aceptaCondicionFisica, setAceptaCondicionFisica] = useState(false);
   const [errorTerminos, setErrorTerminos] = useState(false);
@@ -414,170 +429,128 @@ function InscriptionWizard() {
     setMsg({ tipo, texto, id: Date.now() });
   }
 
-  // Convierte la imagen a blanco/negro puro (umbral por brillo). El QR se lee
-  // mejor así cuando la foto viene comprimida (p. ej. reenviada por WhatsApp)
-  // y los bordes de los módulos quedan un poco difuminados a color.
-  function aBlancoYNegro(imageData: ImageData): ImageData {
-    const { data, width, height } = imageData;
-    const salida = new Uint8ClampedArray(data.length);
-    let suma = 0;
-    const totalPixeles = width * height;
-    for (let i = 0; i < data.length; i += 4) {
-      suma += 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-    }
-    const umbral = (suma / totalPixeles) * 0.9;
-    for (let i = 0; i < data.length; i += 4) {
-      const lum = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-      const v = lum < umbral ? 0 : 255;
-      salida[i] = v; salida[i + 1] = v; salida[i + 2] = v; salida[i + 3] = 255;
-    }
-    return new ImageData(salida, width, height);
-  }
-
-  // Lee la imagen del comprobante y verifica que contenga un código QR legible.
-  // Prueba varias escalas y, si falla a color, también en blanco y negro puro,
-  // porque una foto comprimida (WhatsApp, etc.) puede fallar a la primera.
-  // Los PDF no se pueden analizar en el navegador con jsQR, así que se dejan pasar.
-  function contieneCodigoQR(file: File): Promise<boolean> {
-    if (file.type === 'application/pdf') return Promise.resolve(true);
-
-    return new Promise((resolve) => {
-      const url = URL.createObjectURL(file);
-      const img = new Image();
-
-      img.onload = () => {
-        try {
-          const escalas = [1, 1.5, 0.75, 2, 0.5];
-          let encontrado = false;
-
-          for (const escala of escalas) {
-            const w = Math.max(1, Math.round(img.naturalWidth * escala));
-            const h = Math.max(1, Math.round(img.naturalHeight * escala));
-            if (w < 50 || h < 50 || w * h > 30_000_000) continue;
-
-            const canvas = document.createElement('canvas');
-            canvas.width = w;
-            canvas.height = h;
-            const ctx = canvas.getContext('2d');
-            if (!ctx) continue;
-            ctx.drawImage(img, 0, 0, w, h);
-            const imageData = ctx.getImageData(0, 0, w, h);
-
-            let codigo = jsQR(imageData.data, w, h, { inversionAttempts: 'attemptBoth' });
-            if (!codigo) {
-              const byn = aBlancoYNegro(imageData);
-              codigo = jsQR(byn.data, w, h, { inversionAttempts: 'attemptBoth' });
-            }
-
-            if (import.meta.env?.DEV) {
-              console.log(`[comprobante] intento QR escala ${escala} (${w}x${h}):`, codigo ? 'ENCONTRADO' : 'no encontrado');
-            }
-
-            if (codigo) { encontrado = true; break; }
-          }
-
-          resolve(encontrado);
-        } catch {
-          // Si algo falla al analizar la imagen, no bloqueamos al usuario por un error técnico.
-          resolve(true);
-        } finally {
-          URL.revokeObjectURL(url);
-        }
-      };
-      img.onerror = () => {
-        URL.revokeObjectURL(url);
-        resolve(true);
-      };
-      img.src = url;
-    });
-  }
-
-  function normalizarTexto(s: string) {
-    return s
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase();
-  }
-
-  // Lee el texto de la imagen con OCR. Los PDF no se procesan aquí
-  // (habría que renderizar la página a imagen primero, fuera de este alcance).
-  async function extraerTextoComprobante(file: File): Promise<string> {
-    if (file.type === 'application/pdf') return '';
-    try {
-      const worker = await createWorker('spa');
-      const { data } = await worker.recognize(file);
-      await worker.terminate();
-      return data.text || '';
-    } catch {
-      return '';
-    }
-  }
-
-  // Revisa si el texto leído realmente parece el de un comprobante de pago
-  // (monto, banco/entidad, fecha/referencia), no solo una imagen con un QR pegado.
-  function pareceComprobanteDePago(textoOriginal: string): boolean {
-    if (!textoOriginal.trim()) return true; // si el OCR no devolvió nada (falla técnica, PDF, etc.), no bloqueamos por esto
-    const texto = normalizarTexto(textoOriginal);
-
-    // El símbolo "$" es de los que más falla el OCR, así que también aceptamos
-    // un número con separador de miles (20.000 / 20,000) aunque no detecte el "$".
-    const tieneMonto = /\$\s?\d[\d.,]*/.test(textoOriginal) || /\b\d{1,3}[.,]\d{3}(?:[.,]\d{2})?\b/.test(textoOriginal);
-    const tienePalabraDePago = /(pago|transferencia|transaccion|comprobante|envio|movimiento|consignacion|realizado)/.test(texto);
-    const tieneEntidad = /(banco|nequi|daviplata|bancolombia|davivienda|bbva|cuenta de ahorros|cuenta)/.test(texto);
-    const tieneReferenciaOFecha = /(referencia|fecha|hora|llave|para|destino)/.test(texto);
-
-    const indicios = [tieneMonto, tienePalabraDePago, tieneEntidad, tieneReferenciaOFecha].filter(Boolean).length;
-
-    if (import.meta.env?.DEV) {
-      console.log('[comprobante] texto OCR:', textoOriginal);
-      console.log('[comprobante] indicios:', { tieneMonto, tienePalabraDePago, tieneEntidad, tieneReferenciaOFecha, total: indicios });
-    }
-
-    return indicios >= 1;
-  }
-
+  /**
+   * Revisa el comprobante antes de aceptarlo (ver utils/comprobantePago.ts):
+   *  1. Que tenga el código QR del comprobante (obligatorio).
+   *  2. Que el texto sea de un comprobante y el pago sea a la cuenta de SKYED.
+   *  3. Que no se haya usado antes en otra inscripción.
+   *  4. Si el valor no coincide con el total, se acepta pero se avisa.
+   * Lo que se lee se guarda con el pago para que el admin lo vea al validar.
+   */
   async function manejarComprobante(file: File | null) {
-    if (!file) { setComprobante(null); return; }
+    setAvisoComprobante(null);
+    if (!file) { setComprobante(null); setVerificacion(null); return; }
+
+    const rechazar = (titulo: string, detalle: string, mostrarCuenta = false) => {
+      setValidandoComprobante(false);
+      setComprobante(null);
+      setVerificacion(null);
+      setAvisoComprobante({ tipo: 'error', titulo, detalle, mostrarCuenta });
+    };
 
     // El admin verá esta imagen para confirmar el pago: solo se aceptan imágenes.
     if (!/^image\/(jpeg|png|webp)$/.test(file.type)) {
-      mostrarMsg('error', 'El comprobante debe ser una imagen JPG, PNG o WEBP (no PDF).');
+      rechazar('Formato no permitido', 'El comprobante debe ser una imagen JPG, PNG o WEBP (no PDF). Toma una captura de pantalla del comprobante y súbela.');
       return;
     }
     if (file.size > 15 * 1024 * 1024) {
-      mostrarMsg('error', 'La imagen es demasiado pesada. Usa una de menos de 15 MB.');
+      rechazar('La imagen es demasiado pesada', 'Usa una imagen de menos de 15 MB. Una captura de pantalla normal sirve.');
       return;
     }
 
     setValidandoComprobante(true);
 
-    const tieneQR = await contieneCodigoQR(file);
-    if (import.meta.env?.DEV) console.log('[comprobante] ¿tiene QR?', tieneQR);
-    if (!tieneQR) {
-      setValidandoComprobante(false);
-      setComprobante(null);
-      mostrarMsg('error', 'La imagen no parece contener el código QR del comprobante de pago. Sube una captura completa que incluya el QR.');
+    // 1. Código QR.
+    const qr = await detectarQR(file).catch(() => ({ hay: true, texto: null })); // error técnico: no se bloquea
+    if (import.meta.env?.DEV) console.log('[comprobante] QR:', qr);
+    if (!qr.hay) {
+      rechazar(
+        'No encontramos el código QR del comprobante',
+        'Sube la captura completa del comprobante, donde se vea el código QR. No recortes la imagen ni le tomes una foto a la pantalla con otro celular.',
+      );
       return;
     }
 
-    const texto = await extraerTextoComprobante(file);
+    // 2. Texto: que sea un comprobante y que el pago sea a SKYED.
+    const texto = await leerTexto(file);
+    const analisis = analizarTexto(texto, total, referenciaPago);
+    if (import.meta.env?.DEV) console.log('[comprobante] texto:', texto, '\n[comprobante] análisis:', analisis);
+
+    if (!analisis.pareceComprobante) {
+      rechazar(
+        'Esta imagen no parece un comprobante de pago',
+        'No encontramos datos como el valor, el banco, la fecha o la referencia. Sube la captura completa de la transacción.',
+      );
+      return;
+    }
+    if (analisis.destino === false) {
+      rechazar(
+        'El pago no es a la cuenta de SKYED',
+        'En el comprobante no aparece ninguna de nuestras cuentas. Revisa que hayas transferido a estos datos y vuelve a subir el comprobante:',
+        true,
+      );
+      return;
+    }
+
+    // 3. Que no se haya usado antes.
+    const huella = await huellaArchivo(file);
+    try {
+      await apiFetch('/pagos/comprobante/verificar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hash: huella, referencia_transaccion: analisis.referenciaTransaccion }),
+      });
+    } catch (err: any) {
+      // 409 = ya usado. Otros errores (sin conexión...) no bloquean: el servidor lo revisa otra vez al subirlo.
+      if (err?.status === 409 || /ya fue usado/i.test(err?.message ?? '')) {
+        rechazar(
+          'Este comprobante ya fue usado',
+          'Ya se usó en otra inscripción. Sube el comprobante del pago de esta inscripción; si crees que es un error, escríbenos.',
+        );
+        return;
+      }
+    }
+
     setValidandoComprobante(false);
-
-    if (!pareceComprobanteDePago(texto)) {
-      setComprobante(null);
-      mostrarMsg('error', 'La imagen no parece un comprobante de pago real (no se detectaron datos como monto, banco, fecha o referencia). Sube la captura completa de la transacción.');
-      return;
-    }
-
     setComprobante(file);
     setErrorComprobante(false);
+    setVerificacion({
+      hash: huella,
+      referenciaTransaccion: analisis.referenciaTransaccion,
+      datos: {
+        qr: true,
+        qr_legible: qr.texto !== null,
+        destino: analisis.destino,
+        monto: analisis.monto,
+        monto_leido: analisis.montoLeido,
+        monto_esperado: total,
+        incluye_referencia: analisis.incluyeReferencia,
+      },
+    });
+
+    // 4. Valor distinto al total: se acepta, pero se avisa.
+    if (analisis.monto === false) {
+      const leido = analisis.montoLeido !== null ? `$${analisis.montoLeido.toLocaleString('es-CO')}` : 'otro valor';
+      setAvisoComprobante({
+        tipo: 'aviso',
+        titulo: 'El valor no coincide con el total',
+        detalle: `En el comprobante leímos ${leido}, pero el total de tu inscripción es $${total.toLocaleString('es-CO')}. Puedes continuar, pero si el valor pagado no es el correcto, el admin podría rechazar el pago.`,
+      });
+    }
   }
 
+  // Cuando aparece un problema con el comprobante, se lleva a la vista.
+  useEffect(() => {
+    if (avisoComprobante) document.getElementById('aviso-comprobante')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [avisoComprobante]);
+
+  // Duración de la alerta según lo largo del texto (los errores se leen con calma).
+  const duracionMsg = msg ? Math.min(10000, Math.max(msg.tipo === 'error' ? 6000 : 4000, msg.texto.length * 55)) : 0;
   useEffect(() => {
     if (!msg) return;
-    const timer = setTimeout(() => setMsg(null), 4000);
+    const timer = setTimeout(() => setMsg(null), duracionMsg);
     return () => clearTimeout(timer);
-  }, [msg]);
+  }, [msg, duracionMsg]);
 
 
   const precioEvento = evento?.precio || 0;
@@ -601,7 +574,8 @@ function InscriptionWizard() {
       : (deseaJersey === true && tallaKit === t ? 1 : 0);
     return hay - otra;
   };
-  const referenciaPago = evento ? `SKYED-${String(evento.id).padStart(4, '0')}` : '';
+  // Única por inscripción (evento + participante), p. ej. SKYED-0002-15.
+  const referenciaPago = evento ? referenciaDePago(evento.id, user?.id) : '';
 
   function irAPago(e: FormEvent) {
     e.preventDefault();
@@ -673,6 +647,10 @@ function InscriptionWizard() {
     const imagen = await prepararImagen(comprobante).catch(() => comprobante);
     const body = new FormData();
     body.append('comprobante', imagen);
+    // Lo que se revisó en el navegador (el servidor vuelve a revisar si está repetido).
+    if (verificacion?.hash) body.append('hash_original', verificacion.hash);
+    if (verificacion?.referenciaTransaccion) body.append('referencia_transaccion', verificacion.referenciaTransaccion);
+    if (verificacion) body.append('verificacion', JSON.stringify(verificacion.datos));
     await apiFetch(`/pagos/${pagoId}/comprobante`, { method: 'POST', body });
   }
 
@@ -1299,7 +1277,7 @@ function InscriptionWizard() {
                 <div className={`part-form-alert ${msg.tipo}`} key={msg.id}>
                   <span className="part-alert-icon">{msg.tipo === 'ok' ? '✅' : '⚠️'}</span>
                   {msg.texto}
-                  <div className="part-alert-timer" />
+                  <div className="part-alert-timer" style={{ animationDuration: `${duracionMsg}ms` }} />
                 </div>
               )}
 
@@ -1333,16 +1311,16 @@ function InscriptionWizard() {
                 {metodoPago === 'transferencia' && (
                   <div className="part-pay-bank">
                     <div className="part-pay-bank-title"><i className="ti ti-building-bank" aria-hidden="true" /> Datos bancarios para transferencia</div>
-                    <div className="part-pay-bank-row"><span>Banco</span><strong>Bancolombia</strong></div>
-                    <div className="part-pay-bank-row"><span>Tipo de cuenta</span><strong>Cuenta de ahorros</strong></div>
+                    <div className="part-pay-bank-row"><span>Banco</span><strong>{DATOS_PAGO.banco}</strong></div>
+                    <div className="part-pay-bank-row"><span>Tipo de cuenta</span><strong>{DATOS_PAGO.tipoCuenta}</strong></div>
                     <div className="part-pay-bank-row">
                       <span>N.º de cuenta</span>
-                      <strong>123-456789-12 <button title="Copiar el número de cuenta" type="button" className="part-pay-copy" onClick={() => navigator.clipboard.writeText('123456789-12')}>Copiar</button></strong>
+                      <strong>{DATOS_PAGO.cuenta} <button title="Copiar el número de cuenta" type="button" className="part-pay-copy" onClick={() => navigator.clipboard.writeText(DATOS_PAGO.cuentaDigitos)}>Copiar</button></strong>
                     </div>
-                    <div className="part-pay-bank-row"><span>Titular</span><strong>SKYED Eventos SAS</strong></div>
+                    <div className="part-pay-bank-row"><span>Titular</span><strong>{DATOS_PAGO.titular}</strong></div>
                     <div className="part-pay-bank-row">
                       <span>NIT</span>
-                      <strong>900.123.456-7 <button title="Copiar el NIT" type="button" className="part-pay-copy" onClick={() => navigator.clipboard.writeText('900123456-7')}>Copiar</button></strong>
+                      <strong>{DATOS_PAGO.nit} <button title="Copiar el NIT" type="button" className="part-pay-copy" onClick={() => navigator.clipboard.writeText(DATOS_PAGO.nit.replace(/\./g, ''))}>Copiar</button></strong>
                     </div>
                     <div className="part-pay-bank-row"><span>Referencia (poner en descripción)</span><strong className="part-pay-ref">{referenciaPago}</strong></div>
                   </div>
@@ -1353,9 +1331,9 @@ function InscriptionWizard() {
                     <div className="part-pay-bank-title"><i className="ti ti-device-mobile" aria-hidden="true" /> Datos para Nequi / Daviplata</div>
                     <div className="part-pay-bank-row">
                       <span>Número</span>
-                      <strong>300 123 4567 <button title="Copiar el número de Nequi o Daviplata" type="button" className="part-pay-copy" onClick={() => navigator.clipboard.writeText('3001234567')}>Copiar</button></strong>
+                      <strong>{DATOS_PAGO.nequiVisible} <button title="Copiar el número de Nequi o Daviplata" type="button" className="part-pay-copy" onClick={() => navigator.clipboard.writeText(DATOS_PAGO.nequi)}>Copiar</button></strong>
                     </div>
-                    <div className="part-pay-bank-row"><span>Titular</span><strong>SKYED Eventos SAS</strong></div>
+                    <div className="part-pay-bank-row"><span>Titular</span><strong>{DATOS_PAGO.titular}</strong></div>
                     <div className="part-pay-bank-row"><span>Referencia (poner en el mensaje)</span><strong className="part-pay-ref">{referenciaPago}</strong></div>
                   </div>
                 )}
@@ -1396,7 +1374,7 @@ function InscriptionWizard() {
                         ) : (
                           <>
                             <span>Arrastra tu comprobante aquí o haz clic</span>
-                            <span className="part-pay-upload-hint">Formatos aceptados: JPG, PNG, PDF · Máximo 5 MB</span>
+                            <span className="part-pay-upload-hint">Captura completa con el QR · JPG, PNG o WEBP · Máximo 15 MB</span>
                           </>
                         )}
                       </label>
@@ -1406,12 +1384,43 @@ function InscriptionWizard() {
                         accept=".jpg,.jpeg,.png,.webp"
                         style={{ display: 'none' }}
                         disabled={validandoComprobante}
-                        onChange={(e) => manejarComprobante(e.target.files?.[0] ?? null)}
+                        onChange={(e) => {
+                          manejarComprobante(e.target.files?.[0] ?? null);
+                          // Así se puede volver a elegir la misma imagen después de corregir algo.
+                          e.target.value = '';
+                        }}
                       />
                       {!validandoComprobante && comprobante && (
                         <p className="part-form-hint" style={{ margin: '.4rem 0 0', color: '#16a34a' }}>
-                          <i className="ti ti-circle-check" aria-hidden="true" /> Comprobante validado: QR y datos de la transacción detectados.
+                          <i className="ti ti-circle-check" aria-hidden="true" /> Comprobante validado: QR detectado{verificacion?.datos.destino === true ? ' y pago a la cuenta de SKYED' : ''}.
                         </p>
+                      )}
+
+                      {avisoComprobante && !validandoComprobante && (
+                        <div id="aviso-comprobante" className={`part-pay-alerta ${avisoComprobante.tipo}`} role="alert">
+                          <i className={`ti ${avisoComprobante.tipo === 'error' ? 'ti-alert-octagon' : 'ti-alert-triangle'} part-pay-alerta-icono`} aria-hidden="true" />
+                          <div className="part-pay-alerta-cuerpo">
+                            <strong>{avisoComprobante.titulo}</strong>
+                            <p>{avisoComprobante.detalle}</p>
+                            {avisoComprobante.mostrarCuenta && (
+                              <ul className="part-pay-alerta-cuenta">
+                                {metodoPago === 'nequi' ? (
+                                  <li><span>Nequi / Daviplata</span><b>{DATOS_PAGO.nequiVisible}</b></li>
+                                ) : (
+                                  <>
+                                    <li><span>Banco</span><b>{DATOS_PAGO.banco} · {DATOS_PAGO.tipoCuenta}</b></li>
+                                    <li><span>N.º de cuenta</span><b>{DATOS_PAGO.cuenta}</b></li>
+                                  </>
+                                )}
+                                <li><span>Titular</span><b>{DATOS_PAGO.titular}</b></li>
+                                <li><span>Valor a pagar</span><b>${total.toLocaleString('es-CO')}</b></li>
+                              </ul>
+                            )}
+                          </div>
+                          <button type="button" className="part-pay-alerta-cerrar" title="Cerrar este aviso" aria-label="Cerrar este aviso" onClick={() => setAvisoComprobante(null)}>
+                            <i className="ti ti-x" aria-hidden="true" />
+                          </button>
+                        </div>
                       )}
                     </div>
                   </>
@@ -1421,7 +1430,7 @@ function InscriptionWizard() {
                   <div className={`part-form-alert ${msg.tipo}`} key={msg.id}>
                     <span className="part-alert-icon">{msg.tipo === 'ok' ? '✅' : '⚠️'}</span>
                     {msg.texto}
-                    <div className="part-alert-timer" />
+                    <div className="part-alert-timer" style={{ animationDuration: `${duracionMsg}ms` }} />
                   </div>
                 )}
 
@@ -1520,7 +1529,7 @@ function InscriptionWizard() {
                   <div className={`part-form-alert ${msg.tipo}`} key={msg.id}>
                     <span className="part-alert-icon">{msg.tipo === 'ok' ? '✅' : '⚠️'}</span>
                     {msg.texto}
-                    <div className="part-alert-timer" />
+                    <div className="part-alert-timer" style={{ animationDuration: `${duracionMsg}ms` }} />
                   </div>
                 )}
 
