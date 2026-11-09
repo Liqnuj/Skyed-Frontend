@@ -25,6 +25,7 @@ import {
   Plus,
   Search,
   Settings,
+  ShieldCheck,
   Trash2,
   Upload,
   Users,
@@ -59,7 +60,7 @@ import AdminReservaDetalle from "../../components/social/reservas/AdminReservaDe
 import AdminCalendarioReservas from "../../components/social/reservas/AdminCalendarioReservas";
 import { ESTADO_VISUAL_LABEL, FECHA_TIPO_LABEL, fechaCorta } from "../../utils/reservasAdmin";
 import PqrGestion from "../../components/social/pqr/AdminPqrManager";
-import { UsuarioModal, EditarUsuarioModal, puedeEditarUsuario, RolesDeUsuario, Avatar, perteneceAlModulo, type UsuarioFila } from "../../components/deportivo/UsuariosAdmin";
+import { UsuarioModal, EditarUsuarioModal, RolesModal, puedeEditarUsuario, RolesDeUsuario, Avatar, esSuperAdminRoles, perteneceAlModulo, type UsuarioFila } from "../../components/deportivo/UsuariosAdmin";
 import { usePermisos } from "../../context/PermisosContext";
 import { primeraSeccionPermitida } from "../../types/permisos";
 import "../../styles/social/Admin.css";
@@ -82,7 +83,7 @@ const SECCIONES: Section[] = ["inicio", "eventos", "reservas", "usuarios", "pqr"
 /* ---------- Persistencia de la vista (sección + formulario abierto) ----------
    Al recargar la página se vuelve a la misma sección y al mismo formulario.
    Se guarda en sessionStorage: sobrevive al F5 pero no a cerrar la pestaña. */
-type ModalKind = "ambiente" | "servicio" | "evento" | "reserva" | "pqr" | "usuario" | "editar-usuario";
+type ModalKind = "ambiente" | "servicio" | "evento" | "reserva" | "pqr" | "usuario" | "editar-usuario" | "roles";
 type SavedView = { section: Section; modal: ModalKind | null; editId: number | string | null };
 
 const VIEW_KEY = "skyed_admin_social_view";
@@ -681,6 +682,7 @@ function AdminFotoMenu({
 
 function AdminPage() {
   const { user, logout, updateFotoUrl } = useAuth();
+  const esSuperAdmin = esSuperAdminRoles(user?.roles ?? []);
   const controlPermisos = usePermisos();
   const puedeEditar = (seccion: string) => controlPermisos.puede(seccion, "editar");
   const puedeEliminar = (seccion: string) => controlPermisos.puede(seccion, "eliminar");
@@ -857,6 +859,7 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
           reserva: undefined,
           usuario: undefined, // el formulario de usuario nunca se restaura (lleva contraseña)
           "editar-usuario": undefined, // se vuelve a abrir desde la tabla, con los datos del servidor
+          roles: undefined,
         }[saved.modal];
         const item = lista?.find(x => String(editIdOf(saved.modal, x)) === String(saved.editId));
         if (item) {
@@ -1504,6 +1507,9 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
                       <button type="button" className="usr-btn-roles usr-btn-editar" disabled={!puedeEditarUsuario(u, user)} title={puedeEditarUsuario(u, user) ? `Editar los datos de ${u.nombre_u}` : "Solo el super administrador puede editar a otro administrador"} onClick={() => { setEditing({ id_u: u.id_u }); setModal("editar-usuario"); }}>
                         <Pencil size={14} /> Editar
                       </button>
+                      {esSuperAdmin && <button type="button" className="usr-btn-roles" title={`Gestionar los roles de ${u.nombre_u}`} onClick={() => { setEditing({ id_u: u.id_u }); setModal("roles"); }}>
+                        <ShieldCheck size={14} /> Roles
+                      </button>}
                     </td>
                   )}
                 </tr>
@@ -1569,6 +1575,20 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         />
       )}
 
+      {modal === "roles" && puedeEditar("usuarios") && esSuperAdmin && (
+        <RolesModal
+          users={users}
+          inicialId={editing?.id_u ?? null}
+          yoId={user.id}
+          modulo="social"
+          esSuperAdmin={esSuperAdmin}
+          onClose={() => setModal(null)}
+          onCambio={async () => { await loadAll(); }}
+          notify={notify}
+          confirmar={confirmar}
+        />
+      )}
+
       {resumenEvento && (
         <ResumenSocial evento={resumenEvento} cifras={cifrasEventos[resumenEvento.id_er]} onClose={() => setResumenEvento(null)} />
       )}
@@ -1576,6 +1596,7 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
       {modal === "usuario" && puedeEditar("usuarios") && (
         <UsuarioModal
           modulo="social"
+          esSuperAdmin={esSuperAdmin}
           existentes={users}
           onClose={() => setModal(null)}
           notify={notify}
