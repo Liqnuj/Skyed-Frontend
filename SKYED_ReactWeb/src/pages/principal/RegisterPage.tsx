@@ -138,9 +138,13 @@ export default function RegisterPage() {
           fecha_nacimiento_u: fechaNac,
           contrasena_u: password,
           contrasena_u_confirmation: confirm,
+                    acepta_terminos: terms,
+          acepta_privacidad: terms,
           captcha_id: captcha.id,
           captcha: captcha.respuesta,
+
         });
+        
 
         setSuccessMsg('¡Registro exitoso! Bienvenido a SKYED.');
 
