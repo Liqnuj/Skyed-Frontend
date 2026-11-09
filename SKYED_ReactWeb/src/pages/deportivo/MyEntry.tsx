@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import QRCode from 'qrcode';
 import Protected from '../../components/Protected';
 import SportWrapper from '../../components/deportivo/SportWrapper';
+import CodigoCopiable from '../../components/deportivo/CodigoCopiable';
 import { apiFetch } from '../../services/api';
 import '../../styles/deportivo/participante.css';
 
@@ -148,7 +149,7 @@ function MyEntryContent() {
               <div className="part-qr-glow">
                 <QrImagen codigo={qr.codigo} />
               </div>
-              <div className="part-qr-code-text">{qr.codigo}</div>
+              <CodigoCopiable codigo={qr.codigo} />
               <p className="part-qr-hint">Muestra este código en el punto de control el día del evento.</p>
             </div>
           ) : (

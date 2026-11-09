@@ -67,6 +67,62 @@ export type ResultadoQR = {
   texto: string | null;
 };
 
+function aBlancoYNegro(imagen: ImageData): ImageData {
+  const { data, width, height } = imagen;
+  const salida = new Uint8ClampedArray(data.length);
+  let suma = 0;
+  for (let i = 0; i < data.length; i += 4) {
+    suma += 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+  }
+  const umbral = (suma / (width * height)) * 0.9;
+  for (let i = 0; i < data.length; i += 4) {
+    const brillo = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+    const valor = brillo < umbral ? 0 : 255;
+    salida[i] = valor;
+    salida[i + 1] = valor;
+    salida[i + 2] = valor;
+    salida[i + 3] = 255;
+  }
+  return new ImageData(salida, width, height);
+}
+
+function detectarConJsQR(imagen: ImageData): string | null {
+  const origen = document.createElement('canvas');
+  origen.width = imagen.width;
+  origen.height = imagen.height;
+  const origenContexto = origen.getContext('2d');
+  if (!origenContexto) return null;
+  origenContexto.putImageData(imagen, 0, 0);
+
+  for (const escala of [1, 1.5, 0.75, 2, 0.5]) {
+    const width = Math.max(1, Math.round(imagen.width * escala));
+    const height = Math.max(1, Math.round(imagen.height * escala));
+    if (width < 50 || height < 50 || width * height > 30_000_000) continue;
+
+    let muestra = imagen;
+    if (escala !== 1) {
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const contexto = canvas.getContext('2d', { willReadFrequently: true });
+      if (!contexto) continue;
+      contexto.drawImage(origen, 0, 0, width, height);
+      muestra = contexto.getImageData(0, 0, width, height);
+    }
+
+    let codigo = jsQR(muestra.data, width, height, { inversionAttempts: 'attemptBoth' });
+    if (!codigo) {
+      const blancoYNegro = aBlancoYNegro(muestra);
+      codigo = jsQR(blancoYNegro.data, width, height, { inversionAttempts: 'attemptBoth' });
+    }
+    if (import.meta.env?.DEV) {
+      console.log(`[comprobante] intento jsQR escala ${escala} (${width}x${height}):`, codigo ? 'ENCONTRADO' : 'no encontrado');
+    }
+    if (codigo) return codigo.data;
+  }
+  return null;
+}
+
 /**
  * Busca un código QR en el comprobante.
  *
@@ -97,9 +153,9 @@ export async function detectarQR(file: Blob): Promise<ResultadoQR> {
     if (import.meta.env?.DEV) console.warn('[comprobante] no cargó zxing, se usa jsQR', e);
   }
 
-  // Respaldo: jsQR (solo lee QR completos, sin logo encima).
-  const codigo = jsQR(imagen.data, imagen.width, imagen.height, { inversionAttempts: 'attemptBoth' });
-  return codigo ? { hay: true, texto: codigo.data } : { hay: false, texto: null };
+  // Respaldo: jsQR con varias escalas y contraste mejorado para imágenes comprimidas.
+  const texto = detectarConJsQR(imagen);
+  return texto ? { hay: true, texto } : { hay: false, texto: null };
 }
 
 /* ------------------------------------------------------------------ */
@@ -107,13 +163,24 @@ export async function detectarQR(file: Blob): Promise<ResultadoQR> {
 /* ------------------------------------------------------------------ */
 
 /** Lee el texto de la imagen. Si falla, devuelve '' (no se bloquea por un error técnico). */
-export async function leerTexto(file: Blob): Promise<string> {
+export async function leerTexto(file: Blob, onProgress?: (progress: number) => void): Promise<string> {
   try {
     const { createWorker } = await import('tesseract.js');
-    const worker = await createWorker('spa');
-    const { data } = await worker.recognize(file);
-    await worker.terminate();
-    return data.text || '';
+    const worker = await createWorker('spa', 1, {
+      logger: (message: { status: string; progress: number }) => {
+        if (message.status === 'recognizing text') onProgress?.(Math.round(message.progress * 100));
+      },
+    });
+    try {
+      const { data } = await worker.recognize(file);
+      return data.text || '';
+    } finally {
+      try {
+        await worker.terminate();
+      } catch {
+        // El trabajador puede haberse cerrado al fallar la lectura.
+      }
+    }
   } catch {
     return '';
   }
