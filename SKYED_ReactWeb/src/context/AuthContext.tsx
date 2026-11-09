@@ -26,6 +26,8 @@ export interface RegisterData {
   contrasena_u: string;
   contrasena_u_confirmation: string;
   contexto?: 'deportivo' | 'social';
+      acepta_terminos: boolean;
+  acepta_privacidad: boolean;
   /** Verificación "No soy un robot": la imagen y lo que escribió la persona. */
   captcha_id: string;
   captcha: string;
