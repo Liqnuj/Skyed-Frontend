@@ -253,12 +253,14 @@ function ModalBase({ titulo, subtitulo, ancho, onClose, cerrarFuera = true, chil
    GESTIONAR ROLES
 ================================================================ */
 
-export function RolesModal({ users, inicialId, yoId, onClose, onCambio, notify, confirmar }: {
+export function RolesModal({ users, inicialId, yoId, modulo = "deportivo", esSuperAdmin = false, onClose, onCambio, notify, confirmar }: {
   users: UsuarioFila[];
   /** Usuario que se abre ya seleccionado (desde el botón de su fila). */
   inicialId: number | null;
   /** Id del administrador que está usando el panel (no puede quitarse su propio rol). */
   yoId?: number;
+  modulo?: "deportivo" | "social";
+  esSuperAdmin?: boolean;
   onClose: () => void;
   /** Se llama tras asignar o quitar un rol para que el panel recargue la lista. */
   onCambio: () => Promise<void>;
@@ -267,15 +269,23 @@ export function RolesModal({ users, inicialId, yoId, onClose, onCambio, notify, 
 }) {
   const [selId, setSelId] = useState<number | null>(inicialId);
   const [busqueda, setBusqueda] = useState("");
-  const [rol, setRol] = useState("participante");
-  const [contexto, setContexto] = useState<Contexto>("deportivo");
+  const [rol, setRol] = useState(modulo === "social" ? "cliente" : "participante");
+  const [contexto, setContexto] = useState<Contexto>(modulo);
   const [ocupado, setOcupado] = useState(false);
 
-  // Un admin deportivo nunca ve a los admin sociales.
-  const visibles = useMemo(() => users.filter((u) => !esAdminSocial(u)), [users]);
+  const visibles = useMemo(
+    () => esSuperAdmin ? users : users.filter((u) => perteneceAlModulo(u, modulo)),
+    [users, modulo, esSuperAdmin],
+  );
   const sel = visibles.find((u) => u.id_u === selId) ?? null;
-  // Otro administrador: se pueden ver sus roles, no cambiarlos.
-  const soloLectura = !!sel && esAdmin(sel) && sel.id_u !== yoId;
+  const soloLectura = !!sel && !esSuperAdmin && esAdmin(sel) && sel.id_u !== yoId;
+  const rolesAsignables = modulo === "social"
+    ? ROLES.filter((r) => r.nombre === "cliente" || r.nombre === "adminSocial")
+    : ROLES_ASIGNABLES;
+  const rolesDelModulo = sel?.roles?.filter((r) => {
+    const ctx = (r.pivot?.contexto ?? "general").toLowerCase();
+    return ctx === modulo || ctx === "general";
+  }) ?? [];
 
   const lista = useMemo(() => {
     const q = quitarTildes(busqueda.trim());
@@ -387,11 +397,11 @@ export function RolesModal({ users, inicialId, yoId, onClose, onCambio, notify, 
               </div>
 
               <h4 className="usr-subtitulo">Roles actuales</h4>
-              {sel.roles?.length ? (
+              {rolesDelModulo.length ? (
                 <div className="usr-chips grandes">
-                  {sel.roles.map((r, i) => {
+                  {rolesDelModulo.map((r, i) => {
                     const ctx = r.pivot?.contexto ?? "general";
-                    const propio = sel.id_u === yoId && r.nombre_rol === "adminDeportivo";
+                    const propio = sel.id_u === yoId && r.nombre_rol.toLowerCase().startsWith("admin");
                     return (
                       <RolChip
                         key={`${r.nombre_rol}-${ctx}-${i}`}
@@ -406,7 +416,7 @@ export function RolesModal({ users, inicialId, yoId, onClose, onCambio, notify, 
                   })}
                 </div>
               ) : (
-                <p className="usr-aviso">Este usuario aún no tiene roles asignados.</p>
+                <p className="usr-aviso">Este usuario aún no tiene roles asignados en este módulo.</p>
               )}
 
               {soloLectura ? (
@@ -417,7 +427,7 @@ export function RolesModal({ users, inicialId, yoId, onClose, onCambio, notify, 
                 <>
                 <h4 className="usr-subtitulo">Asignar un rol</h4>
                 <div className="usr-roles-grid" role="radiogroup" aria-label="Rol a asignar">
-                  {ROLES_ASIGNABLES.map((r) => {
+                  {rolesAsignables.map((r) => {
                     const Icono = r.icono;
                     const activo = rol === r.nombre;
                     return (
@@ -539,9 +549,10 @@ function ErrorCampo({ id, texto }: { id: string; texto?: string | null }) {
   return <small id={id} className="usr-error" role="alert">{texto}</small>;
 }
 
-export function UsuarioModal({ modulo = "deportivo", existentes = [], onClose, onCreado, notify }: {
+export function UsuarioModal({ modulo = "deportivo", esSuperAdmin = false, existentes = [], onClose, onCreado, notify }: {
   /** Panel desde el que se crea: define el rol por defecto y los roles extra que se pueden dar. */
   modulo?: "deportivo" | "social";
+  esSuperAdmin?: boolean;
   /** Usuarios ya cargados en el panel: sirven para avisar de un correo repetido antes de enviar. */
   existentes?: Array<{ correo_u: string }>;
   onClose: () => void;
@@ -551,8 +562,10 @@ export function UsuarioModal({ modulo = "deportivo", existentes = [], onClose, o
 }) {
   const esSocial = modulo === "social";
   const contextoBase: Contexto = esSocial ? "social" : "deportivo";
-  // El admin social solo puede dar el rol de su módulo; el deportivo, los de ROLES_ASIGNABLES.
-  const rolesExtra = esSocial ? ROLES.filter((r) => r.nombre === "adminSocial") : ROLES_ASIGNABLES;
+  const rolesExtra = ROLES.filter((r) =>
+    (r.contextoBase === modulo || ROLES_BASE.includes(r.nombre))
+    && (esSuperAdmin || !r.nombre.toLowerCase().startsWith("admin"))
+  );
   const rolPorDefecto = esSocial ? "Cliente" : "Participante";
 
   const [form, setForm] = useState({

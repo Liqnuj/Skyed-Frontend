@@ -57,7 +57,7 @@ import { useConfirmacion } from "../../components/shared/ConfirmDialog";
 import { useAvisos, type Avisar } from "../../components/shared/Avisos";
 import { CargandoPanel, NumeroAnimado } from "../../components/shared/AdminMotion";
 import AdminFooter from "../../components/shared/AdminFooter";
-import { RolesModal, RolesDeUsuario, UsuarioModal, EditarUsuarioModal, puedeEditarUsuario, Avatar, esAdmin, perteneceAlModulo, type UsuarioFila } from "../../components/deportivo/UsuariosAdmin";
+import { RolesModal, RolesDeUsuario, UsuarioModal, EditarUsuarioModal, puedeEditarUsuario, Avatar, esAdmin, esSuperAdminRoles, perteneceAlModulo, type UsuarioFila } from "../../components/deportivo/UsuariosAdmin";
 import AdminCatalogos, { type CatalogoDeportivo } from "../../components/deportivo/AdminCatalogos";
 import AsistentesPanel from "../../features/asistentes/AsistentesPanel";
 import { usePermisos } from "../../context/PermisosContext";
@@ -300,15 +300,15 @@ const normalizarTiempo = (value: string) => {
 const plural = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno : varios}`;
 
 type CifrasEventoDeportivo = {
-  inscritos: number; confirmadas: number; pendientes: number; invitados: number; cupos_ocupados: number;
-  recaudado: number; por_validar: number;
+  inscritos: number; confirmadas: number; pendientes: number; canceladas: number; invitados: number; cupos_ocupados: number;
+  recaudado: number; recaudado_canceladas: number; por_validar: number;
   desglose: { inscripciones: number; kits: number; invitados: number };
   asistencia: { esperados: number; asistieron: number };
   kits: { pedidos: number; entregados: number };
 };
 
 const CIFRAS_VACIAS: CifrasEventoDeportivo = {
-  inscritos: 0, confirmadas: 0, pendientes: 0, invitados: 0, cupos_ocupados: 0, recaudado: 0, por_validar: 0,
+  inscritos: 0, confirmadas: 0, pendientes: 0, canceladas: 0, invitados: 0, cupos_ocupados: 0, recaudado: 0, recaudado_canceladas: 0, por_validar: 0,
   desglose: { inscripciones: 0, kits: 0, invitados: 0 }, asistencia: { esperados: 0, asistieron: 0 }, kits: { pedidos: 0, entregados: 0 },
 };
 
@@ -336,16 +336,17 @@ function ResumenDeportivo({ evento, cifras, onClose }: { evento: Evento; cifras?
       <Indicador
         titulo="Inscritos"
         valor={c.inscritos}
-        detalle={`${plural(c.confirmadas, "confirmado", "confirmados")} · ${c.pendientes} con el pago por validar${c.invitados ? ` · ${c.invitados} con invitado` : ""}`}
+        detalle={`${plural(c.confirmadas, "confirmado", "confirmados")} · ${c.pendientes} con el pago por validar${c.canceladas ? ` · ${plural(c.canceladas, "cancelada", "canceladas")}` : ""}${c.invitados ? ` · ${c.invitados} con invitado` : ""}`}
       />
       <Indicador titulo="Ocupación de cupos" valor={`${c.cupos_ocupados} de ${totalCupos}`} detalle={evento.cupos_disponibles === 1 ? "Queda 1 cupo libre." : `Quedan ${evento.cupos_disponibles} cupos libres.`}>
         <BarraProgreso actual={c.cupos_ocupados} total={totalCupos} etiqueta="Cupos ocupados" />
       </Indicador>
-      <Indicador titulo="Dinero recaudado" valor={money(c.recaudado)} detalle="Solo pagos confirmados." ancho>
+      <Indicador titulo="Dinero recaudado" valor={money(c.recaudado)} detalle="Pagos confirmados; no descuenta devoluciones." ancho>
         <ListaValores filas={[
           { nombre: "Inscripciones", valor: money(c.desglose.inscripciones) },
           { nombre: "Kits", valor: money(c.desglose.kits) },
           { nombre: "Invitados", valor: money(c.desglose.invitados) },
+          ...(c.recaudado_canceladas > 0 ? [{ nombre: "De inscripciones canceladas (sin devolución registrada)", valor: money(c.recaudado_canceladas), destacado: true }] : []),
           ...(c.por_validar > 0 ? [{ nombre: "Por validar (aún no cuenta)", valor: money(c.por_validar), destacado: true }] : []),
         ]} />
       </Indicador>
@@ -379,9 +380,11 @@ function CeldasCifrasEvento({ cifras }: { cifras?: CifrasEventoDeportivo }) {
       <strong>{c.inscritos}</strong>
       {c.invitados > 0 && <small>+{c.invitados} {c.invitados === 1 ? "invitado" : "invitados"}</small>}
       {c.pendientes > 0 && <small className="evt-pendiente">{c.pendientes} por confirmar</small>}
+      {c.canceladas > 0 && <small>{c.canceladas} {c.canceladas === 1 ? "cancelada" : "canceladas"}</small>}
     </td>
-    <td className="evt-cifra" title="Solo cuenta los pagos confirmados">
+    <td className="evt-cifra" title="Suma pagos confirmados; no descuenta devoluciones">
       <strong>{money(c.recaudado)}</strong>
+      {c.recaudado_canceladas > 0 && <small className="evt-pendiente" title="Pago confirmado asociado a una inscripción cancelada; no hay devolución registrada.">{money(c.recaudado_canceladas)} de canceladas</small>}
       {c.por_validar > 0 && <small className="evt-pendiente">{money(c.por_validar)} por validar</small>}
     </td>
   </>;
@@ -762,6 +765,7 @@ function AdminFotoMenu({
 
 function AdminPage() {
   const { user, logout, updateFotoUrl } = useAuth();
+  const esSuperAdmin = esSuperAdminRoles(user?.roles ?? []);
   const controlPermisos = usePermisos();
   const puedeEditar = (seccion: string) => controlPermisos.puede(seccionDelegable(seccion), "editar");
   const puedeEliminar = (seccion: string) => controlPermisos.puede(seccionDelegable(seccion), "eliminar");
@@ -1483,7 +1487,7 @@ function AdminPage() {
               )}
             </>}
           >
-            <thead><tr><th>Participante</th><th>Evento</th><th>Inscripción</th><th>Monto</th><th>Método</th><th>Pago</th><th>Acciones</th></tr></thead>
+            <thead><tr><th>Participante</th><th>Evento</th><th>Fecha inscripción</th><th>Estado inscripción</th><th>Monto</th><th>Método</th><th>Estado pago</th><th>Acciones</th></tr></thead>
             <tbody>
               {visiblePagos.map(p => (
                 <tr key={p.id_pago}>
@@ -1493,6 +1497,12 @@ function AdminPage() {
                   </td>
                   <td>{p.inscripcion?.evento?.nombre_e ?? "—"}</td>
                   <td>{formatDate(p.inscripcion?.fecha_i)}</td>
+                  <td className="evt-cifra">
+                    <Badge value={p.inscripcion?.estado_i ?? "sin inscripción"} />
+                    {p.estado_p === "confirmado" && p.inscripcion?.estado_i === "cancelada" && (
+                      <small className="evt-pendiente" title="El pago sigue confirmado aunque la inscripción y el cupo están cancelados.">Pago sin devolución registrada</small>
+                    )}
+                  </td>
                   <td>{money(p.monto_p)}</td>
                   <td>{human(p.metodo_pago_p ?? "—")}</td>
                   <td><Badge value={p.estado_p} /></td>
@@ -1505,7 +1515,7 @@ function AdminPage() {
                   </div></td>
                 </tr>
               ))}
-              {!visiblePagos.length && <tr><td colSpan={7}>No hay inscripciones con este filtro.</td></tr>}
+              {!visiblePagos.length && <tr><td colSpan={8}>No hay inscripciones con este filtro.</td></tr>}
             </tbody>
           </SectionTable>
         )}
@@ -1653,7 +1663,7 @@ function AdminPage() {
             action={puedeEditar("usuarios") ? "Nuevo usuario" : undefined}
             onAction={() => { setEditing(null); setModal("usuario"); }}
             toolbar={<>
-              {puedeEditar("usuarios") && <button type="button" className="secondary-btn" title="Asignar o quitar roles a los usuarios" onClick={() => { setEditing(null); setModal("roles"); }}>
+              {puedeEditar("usuarios") && esSuperAdmin && <button type="button" className="secondary-btn" title="Asignar o quitar roles a los usuarios" onClick={() => { setEditing(null); setModal("roles"); }}>
                 <ShieldCheck size={15} /> Gestionar roles
               </button>}
               {filtroSelect(filtroRolUsuario, setFiltroRolUsuario, "Filtrar por rol", "Todos los roles",
@@ -1691,9 +1701,9 @@ function AdminPage() {
                       <button type="button" className="usr-btn-roles usr-btn-editar" disabled={!puedeEditarUsuario(u, user)} title={puedeEditarUsuario(u, user) ? `Editar los datos de ${u.nombre_u}` : "Solo el super administrador puede editar a otro administrador"} onClick={() => { setEditing({ id_u: u.id_u }); setModal("editar-usuario"); }}>
                         <Pencil size={14} /> Editar
                       </button>
-                      <button type="button" className="usr-btn-roles" title={esAdmin(u) && u.id_u !== user.id ? `Ver los roles de ${u.nombre_u} (es administrador)` : `Gestionar los roles de ${u.nombre_u}`} onClick={() => { setEditing({ id_u: u.id_u }); setModal("roles"); }}>
-                        <ShieldCheck size={14} /> {esAdmin(u) && u.id_u !== user.id ? "Ver roles" : "Roles"}
-                      </button>
+                      {esSuperAdmin && <button type="button" className="usr-btn-roles" title={`Gestionar los roles de ${u.nombre_u}`} onClick={() => { setEditing({ id_u: u.id_u }); setModal("roles"); }}>
+                        <ShieldCheck size={14} /> Roles
+                      </button>}
                     </div>
                     )}
                   </td>
@@ -1783,11 +1793,12 @@ function AdminPage() {
         />
       )}
 
-      {modal === "roles" && puedeEditar("usuarios") && (
+      {modal === "roles" && puedeEditar("usuarios") && esSuperAdmin && (
         <RolesModal
           users={users}
           inicialId={editing?.id_u ?? null}
           yoId={user.id}
+          esSuperAdmin={esSuperAdmin}
           onClose={closeModal}
           notify={notify}
           confirmar={confirmar}
@@ -1809,6 +1820,7 @@ function AdminPage() {
       {modal === "usuario" && puedeEditar("usuarios") && (
         <UsuarioModal
           modulo="deportivo"
+          esSuperAdmin={esSuperAdmin}
           existentes={users}
           onClose={closeModal}
           notify={notify}
