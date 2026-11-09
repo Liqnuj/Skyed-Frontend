@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import AccountMenu from '../shared/AccountMenu';
+import SportBell from './SportBell';
 import type { GrupoMenu } from '../shared/AccountMenu';
 
 export default function SportNav() {
@@ -59,14 +60,18 @@ const { user } = useAuth();
           <li><Link title="Ir a la sección de contacto" to="/deportivo/nosotros#contactanos" onClick={close}>Contacto</Link></li>
         </ul>
         <div className="nav-cta">
-          {user ? (
-            <AccountMenu
-              tema="deportivo"
-              grupos={grupos}
-              rol={esAdmin ? 'Administrador' : 'Ciclista SKYED'}
-              alSalirIrA="/deportivo"
-            />
-          ) : (
+{user ? (
+  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+    {!esAdmin && <SportBell />}
+    <AccountMenu
+      tema="deportivo"
+      grupos={grupos}
+      rol={esAdmin ? 'Administrador' : 'Ciclista SKYED'}
+      alSalirIrA="/deportivo"
+    />
+  </div>
+  
+)  : (
             <Link title="Iniciar sesión o crear una cuenta" to="/login" className="btn btn-primary">Iniciar sesión</Link>
           )}
         </div>
