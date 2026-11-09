@@ -974,6 +974,21 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     ayuda: { label: "Administrar ayuda", icon: LifeBuoy },
   };
 
+  // Menú lateral dividido en secciones, igual que el panel deportivo.
+  const gruposNavegacion: Array<{ titulo: string; secciones: Section[] }> = [
+    { titulo: "PRINCIPAL", secciones: ["inicio", "eventos", "reservas", "usuarios"] },
+    { titulo: "GESTIÓN", secciones: ["pqr", "lugares", "servicios"] },
+    { titulo: "CUENTA", secciones: ["asistentes", "copias", "ajustes", "ayuda"] },
+  ];
+  const conteosNavegacion: Partial<Record<Section, number>> = {
+    eventos: eventos.length,
+    reservas: reservas.length,
+    usuarios: usersModulo.length,
+    pqr: pqrs.length,
+    lugares: ambientes.length,
+    servicios: servicios.length,
+  };
+
   const accent = "#9c02ae"; // color de marca del panel
   const scale = parseInt(fontSize, 10) / 16;
 
@@ -1116,40 +1131,32 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         </div>
 
         <nav className="sidebar-nav">
-          <p className="nav-caption">GESTIÓN</p>
-          {seccionesPanel.filter(key => key !== "ajustes" && key !== "asistentes").map(key => {
-            const Icon = sectionMeta[key].icon;
+          {gruposNavegacion.map(({ titulo, secciones }) => {
+            const visibles = secciones.filter(key => seccionesPanel.includes(key));
+            if (!visibles.length) return null;
+
             return (
-              <button
-                key={key}
-                className={`admin-nav-item ${section === key ? "active" : ""}`}
-                onClick={() => selectSection(key)}
-                title={sectionMeta[key].label}
-              >
-                <Icon size={18} />
-                <span>{sectionMeta[key].label}</span>
-              </button>
+              <div className="sidebar-nav-group" key={titulo}>
+                <p className="nav-caption">{titulo}</p>
+                {visibles.map(key => {
+                  const Icon = sectionMeta[key].icon;
+                  const conteo = conteosNavegacion[key];
+                  return (
+                    <button
+                      key={key}
+                      className={`admin-nav-item ${section === key ? "active" : ""}`}
+                      onClick={() => selectSection(key)}
+                      title={sectionMeta[key].label}
+                    >
+                      <Icon size={18} />
+                      <span>{sectionMeta[key].label}</span>
+                      {conteo !== undefined && <i className="nav-count">{conteo}</i>}
+                    </button>
+                  );
+                })}
+              </div>
             );
           })}
-          {!controlPermisos.esAsistente && <>
-            <p className="nav-caption">CUENTA</p>
-            <button
-              className={`admin-nav-item ${section === "asistentes" ? "active" : ""}`}
-              onClick={() => selectSection("asistentes")}
-              title={sectionMeta.asistentes.label}
-            >
-              <UserPlus size={18} />
-              <span>{sectionMeta.asistentes.label}</span>
-            </button>
-            <button
-              className={`admin-nav-item ${section === "ajustes" ? "active" : ""}`}
-              onClick={() => selectSection("ajustes")}
-              title={sectionMeta.ajustes.label}
-            >
-              <Settings size={18} />
-              <span>{sectionMeta.ajustes.label}</span>
-            </button>
-          </>}
         </nav>
 
         <div className="sidebar-footer">
