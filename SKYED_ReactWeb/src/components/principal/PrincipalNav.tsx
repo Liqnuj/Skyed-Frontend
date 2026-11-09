@@ -108,7 +108,12 @@ export default function PrincipalNav() {
     },
     {
       opciones: [
-        { to: '/ayuda', icono: 'ti-help-circle', titulo: 'Centro de ayuda', detalle: 'Guías y preguntas frecuentes' }
+        { to: '/ayuda', icono: 'ti-help-circle', titulo: 'Centro de ayuda', detalle: 'Guías y preguntas frecuentes' },
+        // Solo el superadmin (administra los dos módulos) gestiona la ayuda general de la página principal;
+        // la ayuda de cada módulo se administra dentro de su panel.
+        ...(esAdminDeportivo && esAdminSocial
+          ? [{ to: '/admin/ayuda', icono: 'ti-lifebuoy', titulo: 'Administrar ayuda', detalle: 'Artículos y métricas de la página principal' }]
+          : []),
       ],
     },
   ];

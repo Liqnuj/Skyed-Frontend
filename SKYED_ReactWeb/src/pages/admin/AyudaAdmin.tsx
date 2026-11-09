@@ -9,7 +9,7 @@ import { useConfirmacion } from '../../components/shared/ConfirmDialog';
 import { CargandoPanel } from '../../components/shared/AdminMotion';
 import { AyudaContexto } from '../../components/ayuda/admin/Modal';
 import { ayudaAdminService } from '../../services/ayudaAdminService';
-import type { ArticuloAdmin, CategoriaAdmin, OpcionesAyuda } from '../../services/ayudaAdminService';
+import type { ArticuloAdmin, CategoriaAdmin, ModuloContenido, OpcionesAyuda } from '../../services/ayudaAdminService';
 import ArticulosPanel from '../../components/ayuda/admin/ArticulosPanel';
 import CategoriasPanel from '../../components/ayuda/admin/CategoriasPanel';
 import MetricasPanel from '../../components/ayuda/admin/MetricasPanel';
@@ -17,6 +17,7 @@ import { mensajeDeError } from '../../components/ayuda/admin/tipos';
 import type { Avisar } from '../../components/ayuda/admin/tipos';
 import '../../styles/shared/ayudaAdmin.css';
 import { useAvisos } from '../../components/shared/Avisos';
+import PrincipalWrapper from '../../components/principal/PrincipalWrapper';
 
 type Pestana = 'articulos' | 'categorias' | 'metricas';
 
@@ -31,7 +32,7 @@ const MODULO: Record<string, string> = { general: 'General', social: 'Social', d
 /** /admin/ayuda: administración del contenido del Centro de Ayuda (la ruta ya exige ser administrador). */
 export default function AyudaAdmin({ modulo }: { modulo?: SiteContext }) {
   const { user } = useAuth();
-  const { darkMode, fontSize } = useAccessibility();
+  const { darkMode, fontSize, dyslexia } = useAccessibility();
   const { confirmar, dialogo } = useConfirmacion();
 
   const [pestana, setPestana] = useState<Pestana>('articulos');
@@ -52,6 +53,12 @@ export default function AyudaAdmin({ modulo }: { modulo?: SiteContext }) {
     : tieneDeportivo && !tieneSocial ? 'deportivo'
     : modulo ?? getSiteContext();
   const esSocial = moduloActivo === 'social';
+
+  // Qué contenido administra esta pantalla:
+  // - Dentro de un panel (Deportivo o Social): solo la ayuda de ese módulo.
+  // - Suelta (/admin/ayuda) con un superadmin (tiene los dos roles): la ayuda general de la página principal.
+  // - Un admin de un solo módulo no necesita acotarse: el backend ya le entrega solo lo suyo.
+  const ambito: ModuloContenido | null = modulo ?? (tieneSocial && tieneDeportivo ? 'general' : null);
   // Dentro del panel hereda su acento (--admin-accent) y su escala (el panel ya usa zoom),
   // para verse igual que Kits, Usuarios, etc. Suelta (/admin/ayuda) conserva su propia paleta.
   const variables: Record<string, string | number> = modulo
@@ -67,7 +74,9 @@ export default function AyudaAdmin({ modulo }: { modulo?: SiteContext }) {
         '--fs-scale': (parseInt(fontSize, 10) || 16) / 16,
       };
   const estilo = variables as CSSProperties;
-  const claseRaiz = `ayadm${modulo ? ' ayadm--embebido' : ''}${modulo && esSocial ? ' ayadm--social' : ''}${darkMode ? ' dark dark-mode' : ''}`;
+  // Suelta (sin panel): diseño propio con los dos colores de SKYED y botón de accesibilidad.
+  const claseRaiz = `ayadm${modulo ? ' ayadm--embebido' : ' ayadm--principal'}${modulo && esSocial ? ' ayadm--social' : ''}${darkMode ? ' dark dark-mode' : ''}${!modulo && dyslexia ? ' dyslexia' : ''}`;
+  const esPrincipal = ambito === 'general';
 
   const avisar: Avisar = useCallback((tipo, texto) => avisarFlotante(texto, tipo), [avisarFlotante]);
 
@@ -78,14 +87,21 @@ export default function AyudaAdmin({ modulo }: { modulo?: SiteContext }) {
         ayudaAdminService.articulos(),
         ayudaAdminService.categorias(),
       ]);
-      setOpciones(op);
-      setArticulos(ar);
-      setCategorias(ca);
+      // Se acota solo si el backend realmente entrega ese módulo; si no, se muestra lo que llegó.
+      if (ambito && op.modulos.includes(ambito)) {
+        setOpciones({ ...op, modulos: [ambito] });
+        setArticulos(ar.filter((a) => a.modulo === ambito));
+        setCategorias(ca.filter((c) => c.modulo === ambito));
+      } else {
+        setOpciones(op);
+        setArticulos(ar);
+        setCategorias(ca);
+      }
       setErrorCarga('');
     } catch (e) {
       setErrorCarga(mensajeDeError(e, 'No pudimos cargar la administración del Centro de Ayuda.'));
     }
-  }, []);
+  }, [ambito]);
 
   useEffect(() => {
     void cargar();
@@ -114,21 +130,28 @@ export default function AyudaAdmin({ modulo }: { modulo?: SiteContext }) {
     return <CargandoPanel modulo={moduloActivo} texto="Cargando centro de ayuda…" />;
   }
 
-  return (
+  const pagina = (
     <AyudaContexto.Provider value={{ className: claseRaiz, style: estilo }}>
     <div className={claseRaiz} style={estilo}>
       <div className="ay-adm-wrap">
-        {/* <header className="ay-adm-cab">
-          <Link className="ay-adm-volver" to="/admin">
-            <i className="ti ti-arrow-left" aria-hidden="true" /> Volver a mi panel
-          </Link>
-          <span className="ay-adm-eyebrow">ADMINISTRACIÓN</span>
-          <h1>Centro de Ayuda</h1>
-          <p>
-            Crea y mantén las guías que ven los usuarios.
-            {opciones && <> Puedes gestionar contenido de: <strong>{opciones.modulos.map((m) => MODULO[m] ?? m).join(', ')}</strong>.</>}
-          </p>
-        </header> */}
+        {!modulo && (
+          <header className="ay-adm-top">
+            <Link className="ay-adm-volver" to={esPrincipal ? '/' : '/admin'}>
+              <i className="ti ti-arrow-left" aria-hidden="true" /> {esPrincipal ? 'Volver al inicio' : 'Volver a mi panel'}
+            </Link>
+            <div>
+              <h1 className="ay-adm-titulo">
+                Administrar <em>ayuda</em>
+              </h1>
+              <p className="ay-adm-subtitulo">
+                {esPrincipal
+                  ? 'Crea y mantén los artículos, categorías y métricas del Centro de Ayuda general de SKYED, el que ven todos los visitantes.'
+                  : 'Crea y mantén las guías que ven los usuarios.'}
+                {!esPrincipal && opciones && <> Puedes gestionar contenido de: <strong>{opciones.modulos.map((m) => MODULO[m] ?? m).join(', ')}</strong>.</>}
+              </p>
+            </div>
+          </header>
+        )}
 
 
         {errorCarga ? (
@@ -139,9 +162,7 @@ export default function AyudaAdmin({ modulo }: { modulo?: SiteContext }) {
             </button>
           </div>
         ) : !opciones || !articulos ? (
-          <div className="ay-adm-vacio" role="status">
-            Cargando…
-          </div>
+          <CargandoPanel modulo="principal" texto="Cargando centro de ayuda…" />
         ) : (
           <>
             <div className="ay-adm-tabs" role="tablist" aria-label="Secciones de administración" onKeyDown={alTeclear}>
@@ -178,7 +199,7 @@ export default function AyudaAdmin({ modulo }: { modulo?: SiteContext }) {
               {pestana === 'categorias' && (
                 <CategoriasPanel categorias={categorias} opciones={opciones} recargar={cargar} avisar={avisar} confirmar={confirmar} />
               )}
-              {pestana === 'metricas' && <MetricasPanel onRevisar={revisar} />}
+              {pestana === 'metricas' && <MetricasPanel onRevisar={revisar} articulos={ambito ? articulos : undefined} />}
             </div>
           </>
         )}
@@ -187,4 +208,8 @@ export default function AyudaAdmin({ modulo }: { modulo?: SiteContext }) {
     </div>
     </AyudaContexto.Provider>
   );
+
+  // Suelta (sin panel): se envuelve en el layout de la página principal para que traiga
+  // el botón de accesibilidad, el modo oscuro y la tipografía igual que el Centro de Ayuda.
+  return modulo ? pagina : <PrincipalWrapper>{pagina}</PrincipalWrapper>;
 }
