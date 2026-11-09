@@ -1347,3 +1347,83 @@
   .part-toolbar .part-toolbar-row,
   .part-toolbar .part-toolbar-dates { grid-template-columns: 1fr; }
 }
+
+/* ---- Menú "Ver foto / Cambiar foto" y visor de la foto de perfil ---- */
+.mod-deportivo.part-foto-menu {
+  position: fixed;
+  z-index: 1000;
+  min-height: 0;
+  width: auto;
+  min-width: 11rem;
+  padding: .4rem;
+  display: flex;
+  flex-direction: column;
+  gap: .2rem;
+  background: var(--surface, #fff);
+  border: 1px solid var(--accent);
+  border-radius: 14px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, .35);
+}
+
+.mod-deportivo.part-foto-menu button {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  width: 100%;
+  padding: .6rem .8rem;
+  background: transparent;
+  color: inherit;
+  border: 0;
+  border-radius: 10px;
+  font: inherit;
+  font-size: calc(.88rem * var(--fs-scale, 1));
+  text-align: left;
+  cursor: pointer;
+}
+
+.mod-deportivo.part-foto-menu button:hover,
+.mod-deportivo.part-foto-menu button:focus-visible {
+  background: var(--accent);
+  color: var(--accent-contrast, #fff);
+  outline: none;
+}
+
+.part-foto-caja {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  max-width: 100%;
+  animation: partQrPop .35s cubic-bezier(.34, 1.56, .64, 1) both;
+}
+
+.part-foto-caja .part-foto-cerrar {
+  top: -.75rem;
+  right: -.75rem;
+}
+
+.part-foto-img {
+  display: block;
+  max-width: min(86vw, 480px);
+  max-height: 70vh;
+  object-fit: contain;
+  background: var(--surface, #fff);
+  border: 2px solid var(--accent);
+  border-radius: 1rem;
+}
+
+.part-foto-cambiar {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .6rem 1.2rem;
+  background: var(--accent);
+  color: var(--accent-contrast, #fff);
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-size: calc(.9rem * var(--fs-scale, 1));
+  font-weight: 600;
+  cursor: pointer;
+}

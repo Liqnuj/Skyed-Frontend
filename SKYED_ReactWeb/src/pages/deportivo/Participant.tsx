@@ -511,6 +511,156 @@ function ListToolbar({ filtros, base, onChange, rangos, estados, conteos, placeh
   );
 }
 
+function FotoPerfilMenu({
+  fotoUrl,
+  nombre,
+  subiendo,
+  onCambiar,
+  className,
+}: {
+  fotoUrl?: string | null;
+  nombre?: string;
+  subiendo: boolean;
+  onCambiar: () => void;
+  className: string;
+}) {
+  const { darkMode } = useAccessibility();
+  const [menu, setMenu] = useState(false);
+  const [viendo, setViendo] = useState(false);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const botonRef = useRef<HTMLButtonElement>(null);
+  const listaRef = useRef<HTMLDivElement>(null);
+
+  // El menú va en <body> (la tarjeta tiene overflow: hidden), por eso se ubica con coordenadas.
+  const alternar = () => {
+    const r = botonRef.current?.getBoundingClientRect();
+    if (r) {
+      setPos({
+        top: r.bottom + 8,
+        left: Math.max(8, Math.min(r.left, window.innerWidth - 200)),
+      });
+    }
+    setMenu((abierto) => !abierto);
+  };
+
+  useEffect(() => {
+    if (!menu && !viendo) return;
+    const alClickFuera = (e: MouseEvent) => {
+      const objetivo = e.target as Node;
+      if (botonRef.current?.contains(objetivo) || listaRef.current?.contains(objetivo)) return;
+      setMenu(false);
+    };
+    const alTecla = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setMenu(false);
+        setViendo(false);
+      }
+    };
+    const cerrarMenu = () => setMenu(false);
+    document.addEventListener('mousedown', alClickFuera);
+    document.addEventListener('keydown', alTecla);
+    window.addEventListener('resize', cerrarMenu);
+    window.addEventListener('scroll', cerrarMenu, true);
+    return () => {
+      document.removeEventListener('mousedown', alClickFuera);
+      document.removeEventListener('keydown', alTecla);
+      window.removeEventListener('resize', cerrarMenu);
+      window.removeEventListener('scroll', cerrarMenu, true);
+    };
+  }, [menu, viendo]);
+
+  const modo = darkMode ? ' dark-mode' : '';
+
+  return (
+    <>
+      <button
+        ref={botonRef}
+        type="button"
+        className={className}
+        aria-label="Opciones de foto de perfil"
+        aria-haspopup="menu"
+        aria-expanded={menu}
+        title="Foto de perfil"
+        onClick={alternar}
+        disabled={subiendo}
+      >
+        <i className={`ti ${subiendo ? 'ti-loader-2' : 'ti-camera'}`} aria-hidden="true" />
+      </button>
+
+      {menu && pos && createPortal(
+        <div
+          ref={listaRef}
+          className={`mod-deportivo part-foto-menu${modo}`}
+          role="menu"
+          style={{ top: pos.top, left: pos.left }}
+        >
+          {fotoUrl && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setMenu(false);
+                setViendo(true);
+              }}
+            >
+              <i className="ti ti-eye" aria-hidden="true" /> Ver foto
+            </button>
+          )}
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setMenu(false);
+              onCambiar();
+            }}
+          >
+            <i className="ti ti-photo-edit" aria-hidden="true" /> {fotoUrl ? 'Cambiar foto' : 'Subir foto'}
+          </button>
+        </div>,
+        document.body,
+      )}
+
+      {viendo && fotoUrl && createPortal(
+        <div
+          className={`mod-deportivo part-qr-overlay part-foto-overlay${modo}`}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Foto de perfil"
+          onClick={() => setViendo(false)}
+        >
+          <div className="part-foto-caja" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              title="Cerrar"
+              className="part-qr-close part-foto-cerrar"
+              aria-label="Cerrar"
+              onClick={() => setViendo(false)}
+            >
+              <i className="ti ti-x" aria-hidden="true" />
+            </button>
+            <img
+              className="part-foto-img"
+              src={fotoUrl}
+              alt={`Foto de perfil de ${nombre ?? 'tu cuenta'}`}
+            />
+            <button
+              type="button"
+              className="part-foto-cambiar"
+              onClick={() => {
+                setViendo(false);
+                onCambiar();
+              }}
+            >
+              <i className="ti ti-upload" aria-hidden="true" /> Cambiar foto
+            </button>
+          </div>
+        </div>,
+        document.body,
+      )}
+    </>
+  );
+}
+
 export default function Participant() {
   return (
     <Protected>
@@ -773,15 +923,13 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
               onChange={handleFotoChange}
               style={{ display: 'none' }}
             />
-            <button
+            <FotoPerfilMenu
               className="part-avatar-edit"
-              aria-label="Cambiar foto de perfil"
-              title="Cambiar foto de perfil"
-              onClick={handleFotoClick}
-              disabled={subiendoFoto}
-            >
-              <i className={`ti ${subiendoFoto ? 'ti-loader-2' : 'ti-camera'}`} aria-hidden="true" />
-            </button>
+              fotoUrl={user?.foto_url}
+              nombre={user?.name}
+              subiendo={subiendoFoto}
+              onCambiar={handleFotoClick}
+            />
           </div>
           <div className="part-meta">
             <div className="part-badge"><i className="ti ti-medal" aria-hidden="true" />Ciclista verificado</div>
@@ -1735,16 +1883,13 @@ function AjustesTab() {
                 onChange={handleFotoChange}
                 style={{ display: 'none' }}
               />
-              <button
-                type="button"
+              <FotoPerfilMenu
                 className="part-profile-avatar-edit"
-                onClick={handleFotoClick}
-                disabled={subiendoFoto}
-                aria-label="Cambiar foto de perfil"
-                title="Cambiar foto de perfil"
-              >
-                <i className={`ti ${subiendoFoto ? 'ti-loader-2' : 'ti-camera'}`} aria-hidden="true" />
-              </button>
+                fotoUrl={fotoUrl}
+                nombre={user?.name}
+                subiendo={subiendoFoto}
+                onCambiar={handleFotoClick}
+              />
             </div>
             <div className="part-profile-info">
               <p className="part-profile-name">{user?.name || 'Ciclista'}</p>
