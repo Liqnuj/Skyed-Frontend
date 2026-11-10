@@ -196,6 +196,26 @@ type Ingreso = {
   nombre?: string;
   evento?: string;
   entrada?: string;
+  /** "kit" cuando fue la entrega de un kit (no una entrada al evento). */
+  tipo?: "entrada" | "kit";
+};
+
+/** Lo que devuelve /qr/kit/consultar y /qr/kit/entregar. */
+type KitPorQr = {
+  rol: "titular" | "invitado";
+  nombre: string | null;
+  documento?: string | number | null;
+  talla?: string | null;
+  estado: string;
+  fecha_entrega?: string | null;
+  entregado_por?: string | null;
+};
+type ConsultaKit = {
+  message: string;
+  evento?: { id: number; nombre: string };
+  kit?: string | null;
+  kits: KitPorQr[];
+  pendientes: number;
 };
 
 const CATEGORIAS_EVENTO: Array<{ value: string; label: string }> = [
@@ -2472,6 +2492,9 @@ function ControlAcceso({ notify, onValidado }: { notify: Avisar; onValidado: () 
   const [validando, setValidando] = useState(false);
   const [resultado, setResultado] = useState<Ingreso | null>(null);
   const [historial, setHistorial] = useState<Ingreso[]>([]);
+  // QR del kit escaneado: se muestran las tallas y se espera la confirmación del staff.
+  const [kitPorEntregar, setKitPorEntregar] = useState<{ codigo: string; datos: ConsultaKit } | null>(null);
+  const [entregandoKit, setEntregandoKit] = useState(false);
   const [camara, setCamara] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -2488,10 +2511,75 @@ function ControlAcceso({ notify, onValidado }: { notify: Avisar; onValidado: () 
   // Apaga la cámara al salir de la sección.
   useEffect(() => detenerCamara, []);
 
+  const anotar = (ingreso: Ingreso) => {
+    setResultado(ingreso);
+    setHistorial(h => [ingreso, ...h].slice(0, 8));
+  };
+
+  const ahora = () => new Date().toLocaleTimeString("es-CO", { hour: "numeric", minute: "2-digit" });
+
+  const lineaKit = (k: KitPorQr) =>
+    `${k.rol === "invitado" ? "Invitado" : "Titular"}: ${k.nombre ?? "—"}${k.documento ? ` · Doc. ${k.documento}` : ""} · Talla ${k.talla ?? "—"}${k.estado === "entregado" ? " · ya entregado" : ""}`;
+
+  /** QR del kit: primero se consulta (tallas y a quién) y el staff confirma la entrega. */
+  const consultarKit = async (codigoKit: string) => {
+    setKitPorEntregar(null);
+    try {
+      const datos: ConsultaKit = await apiFetch("/qr/kit/consultar", { method: "POST", body: JSON.stringify({ codigo_kit: codigoKit }) });
+      if (datos.pendientes > 0) {
+        setResultado(null);
+        setKitPorEntregar({ codigo: codigoKit, datos });
+      } else {
+        anotar({
+          ok: false,
+          tipo: "kit",
+          titulo: "Kit ya entregado",
+          detalle: [datos.evento?.nombre ?? "", ...datos.kits.map(lineaKit)].filter(Boolean),
+          hora: ahora(),
+        });
+      }
+    } catch (err) {
+      anotar({ ok: false, tipo: "kit", titulo: "No se puede entregar el kit", detalle: [err instanceof Error ? err.message : "No se pudo leer el código del kit."], hora: ahora() });
+    }
+  };
+
+  const entregarKit = async () => {
+    if (!kitPorEntregar || entregandoKit) return;
+    setEntregandoKit(true);
+    try {
+      const res: ConsultaKit & { entregados?: number } = await apiFetch("/qr/kit/entregar", { method: "POST", body: JSON.stringify({ codigo_kit: kitPorEntregar.codigo }) });
+      const titular = res.kits.find(k => k.rol === "titular") ?? res.kits[0];
+      anotar({
+        ok: true,
+        tipo: "kit",
+        titulo: res.message || "Kit entregado",
+        detalle: [res.evento?.nombre ?? "", ...res.kits.map(lineaKit)].filter(Boolean),
+        hora: ahora(),
+        nombre: titular?.nombre ?? undefined,
+        evento: res.evento?.nombre,
+        entrada: (res.entregados ?? 1) > 1 ? `${res.entregados} kits` : "Kit",
+      });
+      setKitPorEntregar(null);
+      onValidado();
+    } catch (err) {
+      anotar({ ok: false, tipo: "kit", titulo: "No se pudo entregar el kit", detalle: [err instanceof Error ? err.message : "Intenta de nuevo."], hora: ahora() });
+      setKitPorEntregar(null);
+    } finally {
+      setEntregandoKit(false);
+    }
+  };
+
   const validar = async (valor: string) => {
     const limpio = valor.trim();
     if (!limpio || validando) return;
     setValidando(true);
+    if (/^kit-/i.test(limpio)) {
+      await consultarKit(limpio);
+      setCodigo("");
+      setValidando(false);
+      return;
+    }
+    setKitPorEntregar(null);
     const hora = new Date().toLocaleTimeString("es-CO", { hour: "numeric", minute: "2-digit" });
     let ingreso: Ingreso;
     try {
@@ -2536,14 +2624,13 @@ function ControlAcceso({ notify, onValidado }: { notify: Avisar; onValidado: () 
         hora,
       };
     }
-    setResultado(ingreso);
-    setHistorial(h => [ingreso, ...h].slice(0, 8));
+    anotar(ingreso);
     setCodigo("");
     setValidando(false);
   };
 
-  // El QR es solo para la asistencia: los kits se entregan días antes,
-  // desde Kits → Entregas kits.
+  // Dos QR por inscripción: el de entrada (asistencia del día del evento) y,
+  // si pidió kit, el del kit ("KIT-…"), que se usa días antes al entregarlo.
 
   const iniciarCamara = async () => {
     if (!navigator.mediaDevices?.getUserMedia) {
@@ -2587,27 +2674,28 @@ function ControlAcceso({ notify, onValidado }: { notify: Avisar; onValidado: () 
     <section className="section-view">
       <div className="section-header">
         <div>
-          <span className="card-kicker">DÍA DEL EVENTO</span>
-          <h2>Validar entrada con QR</h2>
+          <span className="card-kicker">CONTROL CON QR</span>
+          <h2>Validar entrada o entregar kit</h2>
         </div>
       </div>
       <div className="qr-check">
         <div className="admin-card">
           <p style={{ margin: 0 }}>
-            Escanea el QR del participante o escribe el código que aparece debajo de él en "Mi entrada".
-            Cada QR sirve una vez por persona: una entrada si va solo el titular y dos si lleva invitado.
-            Solo funciona si el pago está confirmado.
+            Escanea el QR del participante o escribe el código que aparece debajo de él.
+            El QR de <b>Entrada al evento</b> registra la asistencia (una vez por persona; dos si lleva invitado).
+            El de <b>Retiro del kit</b> (empieza por "KIT-") muestra las tallas para entregar el kit.
+            Los dos solo funcionan si el pago está confirmado.
           </p>
           <form className="qr-check-form" noValidate onSubmit={e => { if (validarFormularioDeportivo(e, notify)) validar(codigo); }}>
             <input
               required
               value={codigo}
               onChange={e => setCodigo(e.target.value.slice(0, 255))}
-              placeholder="Código del QR"
+              placeholder="Código del QR (entrada o KIT-…)"
               aria-label="Código del QR"
               autoFocus
             />
-            <button title={validando ? 'Validando…' : 'Validar el código de entrada'} className="primary-btn" disabled={validando}>
+            <button title={validando ? 'Validando…' : 'Validar el código (entrada o kit)'} className="primary-btn" disabled={validando}>
               {validando ? <Loader2 size={16} className="admin-spin" /> : <ScanLine size={16} />} Validar
             </button>
           </form>
@@ -2620,7 +2708,31 @@ function ControlAcceso({ notify, onValidado }: { notify: Avisar; onValidado: () 
         </div>
 
         <div className="admin-card">
-          {resultado ? (
+          {kitPorEntregar ? (
+            <div className="qr-result kit" role="status">
+              <strong><Package size={17} style={{ verticalAlign: "-3px" }} /> {kitPorEntregar.datos.message}</strong>
+              <p>{kitPorEntregar.datos.evento?.nombre}{kitPorEntregar.datos.kit ? ` · ${kitPorEntregar.datos.kit}` : ""}</p>
+              <ul className="qr-kits">
+                {kitPorEntregar.datos.kits.map((k, i) => (
+                  <li key={i} className={k.estado === "entregado" ? "hecho" : ""}>
+                    <span className="qr-kits-talla">{k.talla ?? "—"}</span>
+                    <span className="qr-kits-quien">
+                      <b>{k.nombre ?? "—"}</b>
+                      <small>{k.rol === "invitado" ? "Invitado" : "Titular"}{k.documento ? ` · Doc. ${k.documento}` : ""}</small>
+                    </span>
+                    <span className="qr-kits-estado">{k.estado === "entregado" ? "Ya entregado" : "Por entregar"}</span>
+                  </li>
+                ))}
+              </ul>
+              <p style={{ fontSize: 12, opacity: .8 }}>Verifica el documento antes de entregar.</p>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+                <button type="button" className="primary-btn" disabled={entregandoKit} onClick={entregarKit} title="Marcar los kits como entregados">
+                  {entregandoKit ? <Loader2 size={15} className="admin-spin" /> : <Check size={15} />} Entregar {kitPorEntregar.datos.pendientes > 1 ? `${kitPorEntregar.datos.pendientes} kits` : "kit"}
+                </button>
+                <button type="button" className="secondary-btn" disabled={entregandoKit} onClick={() => setKitPorEntregar(null)} title="No entregar ahora">Cancelar</button>
+              </div>
+            </div>
+          ) : resultado ? (
             <div className={`qr-result ${resultado.ok ? "ok" : "error"}`} role="status">
               <strong>{resultado.ok ? "✓" : "✕"} {resultado.titulo}</strong>
               {resultado.detalle.map((d, i) => <p key={i}>{d}</p>)}
@@ -2628,7 +2740,7 @@ function ControlAcceso({ notify, onValidado }: { notify: Avisar; onValidado: () 
           ) : (
             <div className="qr-result" role="status">
               <strong>Esperando un código…</strong>
-              <p>Aquí verás si la persona puede ingresar.</p>
+              <p>Aquí verás si la persona puede ingresar o qué kit entregarle.</p>
             </div>
           )}
 
@@ -2639,7 +2751,7 @@ function ControlAcceso({ notify, onValidado }: { notify: Avisar; onValidado: () 
             <div className="resource-list">
               {historial.map((h, i) => (
                 <div className="resource-item" key={i}>
-                  <div className="resource-icon">{h.ok ? <Check size={16} /> : <X size={16} />}</div>
+                  <div className="resource-icon">{h.tipo === "kit" ? <Package size={16} /> : h.ok ? <Check size={16} /> : <X size={16} />}</div>
                   <div className="resource-main">
                     <strong>{h.ok ? (h.nombre ?? h.detalle[0]) : h.titulo}</strong>
                     <span>{h.hora} · {h.ok ? [h.entrada, h.evento].filter(Boolean).join(" · ") : h.detalle[0]}</span>

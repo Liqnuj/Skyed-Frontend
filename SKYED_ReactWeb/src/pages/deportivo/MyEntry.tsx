@@ -20,6 +20,8 @@ interface EventoInscrito {
 interface Qr {
   codigo: string | null;
   estado: string | null;
+  /** QR para retirar el kit (solo si se pidió kit). */
+  codigo_kit?: string | null;
 }
 
 interface InscripcionActiva {
@@ -154,6 +156,19 @@ function MyEntryContent() {
             </div>
           ) : (
             <p className="part-form-hint">Tu código QR se está generando, vuelve a intentarlo en un momento.</p>
+          )}
+
+          {qr?.codigo_kit && (
+            <div className="part-qr-block" style={{ marginTop: '1.75rem', paddingTop: '1.5rem', borderTop: '2px dashed color-mix(in srgb, currentColor 15%, transparent)' }}>
+              <h3 style={{ margin: '0 0 .9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '.4rem' }}>
+                <i className="ti ti-shirt-sport" aria-hidden="true" /> Retiro del kit
+              </h3>
+              <div className="part-qr-glow">
+                <QrImagen codigo={qr.codigo_kit} />
+              </div>
+              <CodigoCopiable codigo={qr.codigo_kit} />
+              <p className="part-qr-hint">Muestra este código en el punto de entrega del kit, con tu documento.</p>
+            </div>
           )}
 
           <div style={{ marginTop: '1.5rem' }}>

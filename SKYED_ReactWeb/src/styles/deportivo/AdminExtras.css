@@ -109,6 +109,25 @@
 .deportivo-admin .qr-result strong { display: block; font-size: 1.05rem; margin-bottom: 6px; }
 .deportivo-admin .qr-result p { margin: 2px 0; }
 
+/* QR del kit escaneado: tallas por entregar y botón para confirmar. */
+.deportivo-admin .qr-result.kit { border-color: #93c5fd; background: #eff6ff; color: #1e3a8a; }
+.deportivo-admin.dark .qr-result.kit { background: rgba(30, 58, 138, .3); border-color: rgba(147, 197, 253, .45); color: #dbeafe; }
+.deportivo-admin .qr-kits { list-style: none; margin: 10px 0 4px; padding: 0; display: grid; gap: 8px; }
+.deportivo-admin .qr-kits li {
+  display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px;
+  padding: 8px 10px; border-radius: 12px; background: rgba(255, 255, 255, .75); border: 1px solid rgba(37, 99, 235, .2);
+}
+.deportivo-admin.dark .qr-kits li { background: rgba(0, 0, 0, .2); border-color: rgba(147, 197, 253, .25); }
+.deportivo-admin .qr-kits li.hecho { opacity: .55; }
+.deportivo-admin .qr-kits-talla {
+  min-width: 44px; height: 44px; border-radius: 10px; display: grid; place-items: center; padding: 0 6px;
+  background: #2563eb; color: #fff; font-weight: 900; font-style: italic; font-size: 1.1rem;
+}
+.deportivo-admin .qr-kits-quien { display: flex; flex-direction: column; min-width: 0; }
+.deportivo-admin .qr-kits-quien b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.deportivo-admin .qr-kits-quien small { opacity: .75; }
+.deportivo-admin .qr-kits-estado { font-size: 12px; font-weight: 800; }
+
 /* ---------- Categorías dentro del modal de un evento ---------- */
 .deportivo-admin .cat-list {
   display: grid;

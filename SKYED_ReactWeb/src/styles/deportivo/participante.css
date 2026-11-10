@@ -878,61 +878,7 @@
 }
 
 
-/* --- Método de pago --- */
-.mod-deportivo .part-pay-tabs {
-  display: flex;
-  gap: .5rem;
-  margin-bottom: 1rem;
-  flex-wrap: wrap;
-}
-
-.mod-deportivo .part-pay-tab {
-  display: flex;
-  align-items: center;
-  gap: .4rem;
-  padding: .55rem .9rem;
-  border-radius: 8px;
-  border: 1px solid var(--accent);
-  background: var(--surface, #fff);
-  color: inherit;
-  font-size: calc(.85rem * var(--fs-scale, 1));
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.mod-deportivo .part-pay-tab.active {
-  background: var(--accent);
-  color: #fff;
-}
-
-.mod-deportivo .part-pay-bank {
-  border: 1px solid var(--border, #e5e7eb);
-  border-radius: 10px;
-  padding: .9rem 1.1rem;
-  margin-bottom: 1rem;
-}
-
-.mod-deportivo .part-pay-bank-title {
-  display: flex;
-  align-items: center;
-  gap: .4rem;
-  font-weight: 700;
-  margin-bottom: .6rem;
-  font-size: calc(.9rem * var(--fs-scale, 1));
-}
-
-.mod-deportivo .part-pay-bank-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: .45rem 0;
-  border-bottom: 1px solid var(--border, #e5e7eb);
-  font-size: calc(.85rem * var(--fs-scale, 1));
-}
-
-.mod-deportivo .part-pay-bank-row:last-child { border-bottom: none; }
-.mod-deportivo .part-pay-bank-row span { color: var(--muted, #6b7280); }
-
+/* Botón "Copiar" (lo usa CodigoCopiable en la entrada del participante). */
 .mod-deportivo .part-pay-copy {
   border: none;
   background: none;
@@ -941,116 +887,6 @@
   cursor: pointer;
   margin-left: .4rem;
   font-size: calc(.8rem * var(--fs-scale, 1));
-}
-
-.mod-deportivo .part-pay-ref { color: var(--accent); }
-
-.mod-deportivo .part-pay-warning {
-  display: flex;
-  align-items: flex-start;
-  gap: .5rem;
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
-  color: var(--accent);
-  border-radius: 10px;
-  padding: .75rem .9rem;
-  font-size: calc(.82rem * var(--fs-scale, 1));
-  margin-bottom: 1rem;
-}
-
-.mod-deportivo .part-pay-upload {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: .3rem;
-  text-align: center;
-  border: 1px dashed var(--accent);
-  border-radius: 10px;
-  padding: 1.6rem 1rem;
-  cursor: pointer;
-  font-size: calc(.85rem * var(--fs-scale, 1));
-  color: var(--muted, #6b7280);
-}
-
-.mod-deportivo .part-pay-upload i { font-size: 1.4rem; color: var(--accent); }
-.mod-deportivo .part-pay-upload.dragover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
-.mod-deportivo .part-pay-upload-hint { font-size: calc(.72rem * var(--fs-scale, 1)); color: var(--muted, #6b7280); }
-
-/* --- Resumen / revisión de inscripción --- */
-.mod-deportivo .part-review-block {
-  border: 1px solid var(--border, #e5e7eb);
-  border-radius: 10px;
-  padding: .9rem 1.1rem;
-  margin-bottom: 1rem;
-}
-
-.mod-deportivo .part-review-title {
-  font-size: calc(.72rem * var(--fs-scale, 1));
-  letter-spacing: .04em;
-  text-transform: uppercase;
-  color: var(--accent);
-  font-weight: 700;
-  margin-bottom: .5rem;
-}
-
-.mod-deportivo .part-review-row {
-  display: flex;
-  justify-content: space-between;
-  padding: .4rem 0;
-  border-bottom: 1px solid var(--border, #e5e7eb);
-  font-size: calc(.85rem * var(--fs-scale, 1));
-}
-
-.mod-deportivo .part-review-row:last-child { border-bottom: none; }
-.mod-deportivo .part-review-row span { color: var(--muted, #6b7280); }
-
-.mod-deportivo .part-review-total {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-top: .6rem;
-  margin-top: .3rem;
-  border-top: 1px solid var(--border, #e5e7eb);
-  font-weight: 700;
-}
-
-.mod-deportivo .part-review-total strong {
-  color: var(--accent);
-  font-size: calc(1.1rem * var(--fs-scale, 1));
-}
-
-.mod-deportivo .part-review-terms {
-  max-height: 140px;
-  overflow-y: auto;
-  border: 1px solid var(--border, #e5e7eb);
-  border-radius: 10px;
-  padding: .8rem .9rem;
-  font-size: calc(.78rem * var(--fs-scale, 1));
-  color: var(--muted, #6b7280);
-  margin-bottom: .9rem;
-}
-
-.mod-deportivo .part-review-terms a { color: var(--accent); }
-
-.mod-deportivo .part-review-check {
-  display: flex;
-  align-items: flex-start;
-  gap: .5rem;
-  margin-bottom: .3rem;
-  font-size: calc(.85rem * var(--fs-scale, 1));
-  cursor: pointer;
-}
-
-.mod-deportivo .part-review-check input { margin-top: .2rem; }
-.mod-deportivo .part-review-check a { color: var(--accent); }
-.mod-deportivo .part-link-terminos {
-  color: var(--accent);
-  background: none;
-  border: none;
-  padding: 0;
-  font: inherit;
-  text-decoration: underline;
-  cursor: pointer;
 }
 
 /* ---------- Campos que faltan o están mal ---------- */
@@ -1118,12 +954,8 @@
 .mod-deportivo .part-form-group:has(.part-group-error) > label {
   color: var(--part-err);
 }
-.mod-deportivo .part-form-group.part-group-error > label,
-.mod-deportivo .part-review-check.part-group-error {
+.mod-deportivo .part-form-group.part-group-error > label {
   color: var(--part-err);
-}
-.mod-deportivo .part-review-check.part-group-error input {
-  accent-color: var(--part-err);
 }
 
 /* Grupos de opciones sin elegir (categoría, kit, talla): borde y fondo rojizo.
@@ -1427,87 +1259,1035 @@
   font-weight: 600;
   cursor: pointer;
 }
-/* ---- Aviso fijo del comprobante de pago ----
-   Los problemas con el comprobante no se borran solos (como las alertas):
-   quedan debajo del recuadro, grandes y claros, hasta que se cierran o se
-   sube otra imagen. */
-.mod-deportivo .part-pay-alerta {
+
+/* =====================================================================
+   INSCRIPCIÓN A UN EVENTO (.insc) — pages/deportivo/Inscription.tsx
+   Diseño deportivo: encabezado con la foto del evento, "pista" de
+   progreso con la bici, secciones numeradas y un ticket con el total.
+   ===================================================================== */
+.mod-deportivo .insc {
+  --i-card: #ffffff;
+  --i-suave: #f3f8fb;
+  --i-linea: #e2eaf1;
+  --i-texto: #0f172a;
+  --i-tenue: #5b6775;
+  --i-acento: var(--accent, #2c9caf);
+  --i-acento-2: #1b7f91;
+  --i-noche: #071a2c;
+  --i-azul: #2563eb;
+  --i-ok: #16a34a;
+  --i-error: #dc2626;
+  --i-error-suave: rgba(220, 38, 38, .08);
+  --i-sombra: 0 14px 34px -18px rgba(7, 26, 44, .35);
+  --i-radio: 18px;
+
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 1.25rem 1rem 3.5rem;
+  color: var(--i-texto);
+  scroll-margin-top: 90px;
+}
+.mod-deportivo.dark-mode .insc {
+  --i-card: #0f2131;
+  --i-suave: #132a3c;
+  --i-linea: rgba(126, 211, 225, .16);
+  --i-texto: #f1f6fa;
+  --i-tenue: #a9bccb;
+  --i-acento: #3bc0d4;
+  --i-acento-2: #2c9caf;
+  --i-azul: #60a5fa;
+  --i-error: #ff6b6b;
+  --i-error-suave: rgba(255, 107, 107, .1);
+  --i-sombra: 0 14px 34px -18px rgba(0, 0, 0, .7);
+  color-scheme: dark;
+}
+
+@keyframes inscSube { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes inscGiro { to { transform: rotate(360deg); } }
+@keyframes inscPedalea { 0%, 100% { transform: translate(-50%, -50%) rotate(-4deg); } 50% { transform: translate(-50%, -62%) rotate(4deg); } }
+@keyframes inscLatido { 0%, 100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, .55); } 70% { box-shadow: 0 0 0 7px rgba(22, 163, 74, 0); } }
+@keyframes inscTiembla { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-3px); } }
+@keyframes inscPop { 0% { transform: scale(.6); opacity: 0; } 60% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); } }
+@keyframes inscBrillo { from { transform: translateX(-120%) skewX(-20deg); } to { transform: translateX(220%) skewX(-20deg); } }
+@keyframes inscRueda { from { transform: translateX(-30px); } to { transform: translateX(30px); } }
+
+.mod-deportivo .insc .insc-solo-lector {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.mod-deportivo .insc .insc-giro { display: inline-block; animation: inscGiro .9s linear infinite; }
+
+/* ---------- Cargando / error ---------- */
+.mod-deportivo .insc.insc-estado { min-height: 50vh; display: grid; place-items: center; }
+.mod-deportivo .insc .insc-cargando {
+  display: flex; flex-direction: column; align-items: center; gap: .8rem;
+  color: var(--i-tenue); font-weight: 700; font-size: calc(1rem * var(--fs-scale, 1));
+}
+.mod-deportivo .insc .insc-cargando > i { font-size: 3rem; color: var(--i-acento); animation: inscRueda 1s ease-in-out infinite alternate; }
+
+/* ---------- Encabezado del evento ---------- */
+.mod-deportivo .insc .insc-hero {
   position: relative;
-  display: flex;
-  align-items: flex-start;
-  gap: .75rem;
-  margin-top: .75rem;
-  padding: 1rem 2.6rem 1rem 1rem;
-  border-radius: 12px;
-  border: 1px solid;
-  border-left-width: 5px;
-  line-height: 1.5;
-  animation: partAlertSlideIn .25s ease both;
+  overflow: hidden;
+  border-radius: 24px;
+  min-height: 250px;
+  padding: 1.6rem 2rem 3.4rem;
+  color: #fff;
+  background: linear-gradient(135deg, #0a2540, #0e4a6e);
+  box-shadow: 0 24px 50px -28px rgba(10, 37, 64, .7);
 }
-.mod-deportivo .part-pay-alerta.error { background: #fef2f2; border-color: #fca5a5; border-left-color: #dc2626; color: #7f1d1d; }
-.mod-deportivo .part-pay-alerta.aviso { background: #fffbeb; border-color: #fcd34d; border-left-color: #d97706; color: #78350f; }
-
-.mod-deportivo .part-pay-alerta-icono { font-size: calc(1.6rem * var(--fs-scale, 1)); flex-shrink: 0; margin-top: .05rem; }
-.mod-deportivo .part-pay-alerta.error .part-pay-alerta-icono { color: #dc2626; }
-.mod-deportivo .part-pay-alerta.aviso .part-pay-alerta-icono { color: #d97706; }
-
-.mod-deportivo .part-pay-alerta-cuerpo { flex: 1; min-width: 0; }
-.mod-deportivo .part-pay-alerta-cuerpo strong { display: block; font-size: calc(1rem * var(--fs-scale, 1)); margin-bottom: .2rem; }
-.mod-deportivo .part-pay-alerta-cuerpo p { margin: 0; font-size: calc(.9rem * var(--fs-scale, 1)); }
-
-.mod-deportivo .part-pay-alerta-cuenta {
-  list-style: none;
-  margin: .65rem 0 0;
-  padding: .55rem .8rem;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, .7);
-  border: 1px dashed currentColor;
+/* La foto del evento con sus colores reales. Encima solo una sombra oscura
+   a la izquierda (donde va el texto) que se desvanece hacia la derecha. */
+.mod-deportivo .insc .insc-hero::before {
+  content: ""; position: absolute; inset: 0;
+  background: var(--hero-img, none) center / cover no-repeat;
+  /* Un poco más grande que la portada: así se recortan los bordes o marcos
+     que traen algunas imágenes (p. ej. capturas con esquinas oscuras). */
+  transform: scale(1.1);
 }
-.mod-deportivo .part-pay-alerta-cuenta li {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: .25rem 0;
-  font-size: calc(.88rem * var(--fs-scale, 1));
+.mod-deportivo .insc .insc-hero::after {
+  content: ""; position: absolute; inset: 0;
+  background:
+    linear-gradient(100deg, rgba(4, 12, 22, .9) 0%, rgba(4, 12, 22, .72) 38%, rgba(4, 12, 22, .2) 75%, rgba(4, 12, 22, 0) 100%),
+    linear-gradient(0deg, rgba(4, 12, 22, .45) 0%, rgba(4, 12, 22, 0) 45%);
 }
-.mod-deportivo .part-pay-alerta-cuenta li span { opacity: .8; }
-.mod-deportivo .part-pay-alerta-cuenta li b { text-align: right; }
-
-.mod-deportivo .part-pay-alerta-cerrar {
-  position: absolute;
-  top: .55rem;
-  right: .55rem;
-  width: 30px;
-  height: 30px;
-  display: grid;
-  place-items: center;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-  font-size: 1rem;
+.mod-deportivo.dark-mode .insc .insc-hero { box-shadow: 0 24px 50px -28px rgba(0, 0, 0, .8); }
+.mod-deportivo .insc .insc-hero-rayas {
+  position: absolute; z-index: 1; inset: 0 0 0 auto; width: 46%; pointer-events: none;
+  background: repeating-linear-gradient(115deg, transparent 0 22px, rgba(255, 255, 255, .08) 22px 24px, transparent 24px 48px, rgba(255, 255, 255, .05) 48px 50px);
+  mask-image: linear-gradient(90deg, transparent, #000 60%);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 60%);
 }
-.mod-deportivo .part-pay-alerta-cerrar:hover { background: rgba(0, 0, 0, .08); }
+.mod-deportivo .insc .insc-hero-contenido { position: relative; z-index: 2; max-width: 720px; }
+.mod-deportivo .insc .insc-migas {
+  display: flex; align-items: center; gap: .35rem; flex-wrap: wrap;
+  font-size: calc(.78rem * var(--fs-scale, 1)); color: rgba(255, 255, 255, .7); margin-bottom: 1rem;
+}
+.mod-deportivo .insc .insc-migas a { color: rgba(255, 255, 255, .85); text-decoration: none; }
+.mod-deportivo .insc .insc-migas a:hover { color: #fff; text-decoration: underline; }
+.mod-deportivo .insc .insc-migas i { font-size: .8rem; opacity: .6; }
+.mod-deportivo .insc .insc-migas span { color: #fff; font-weight: 700; }
 
-.mod-deportivo.dark-mode .part-pay-alerta.error { background: #2a1416; border-color: #7f1d1d; border-left-color: #ef4444; color: #fecaca; }
-.mod-deportivo.dark-mode .part-pay-alerta.aviso { background: #2a2110; border-color: #78350f; border-left-color: #f59e0b; color: #fde68a; }
-.mod-deportivo.dark-mode .part-pay-alerta.error .part-pay-alerta-icono { color: #f87171; }
-.mod-deportivo.dark-mode .part-pay-alerta.aviso .part-pay-alerta-icono { color: #fbbf24; }
-.mod-deportivo.dark-mode .part-pay-alerta-cuenta { background: rgba(0, 0, 0, .25); }
-.mod-deportivo.dark-mode .part-pay-alerta-cerrar:hover { background: rgba(255, 255, 255, .1); }
+.mod-deportivo .insc .insc-hero-chips { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: .7rem; }
+.mod-deportivo .insc .insc-chip {
+  display: inline-flex; align-items: center; gap: .35rem;
+  padding: .32rem .8rem; border-radius: 999px;
+  background: rgba(59, 192, 212, .18); border: 1px solid rgba(59, 192, 212, .45);
+  color: #bff4fb; font-size: calc(.75rem * var(--fs-scale, 1)); font-weight: 800;
+  text-transform: uppercase; letter-spacing: .06em;
+}
+.mod-deportivo .insc .insc-chip-alt { background: rgba(37, 99, 235, .28); border-color: rgba(147, 197, 253, .55); color: #dbeafe; }
 
-@media (max-width: 480px) {
-  .mod-deportivo .part-pay-alerta-cuenta li { flex-direction: column; gap: 0; }
-  .mod-deportivo .part-pay-alerta-cuenta li b { text-align: left; }
+.mod-deportivo .insc .insc-hero-titulo {
+  margin: 0 0 .9rem;
+  font-size: calc(clamp(1.9rem, 4.2vw, 3rem) * var(--fs-scale, 1));
+  font-weight: 900; font-style: italic; text-transform: uppercase;
+  letter-spacing: -.01em; line-height: 1.02; color: #fff;
+  text-shadow: 0 6px 24px rgba(0, 0, 0, .35);
+}
+.mod-deportivo .insc .insc-hero-meta { display: flex; flex-wrap: wrap; gap: .5rem 1.2rem; margin: 0; padding: 0; list-style: none; }
+.mod-deportivo .insc .insc-hero-meta li {
+  display: inline-flex; align-items: center; gap: .4rem;
+  font-size: calc(.88rem * var(--fs-scale, 1)); font-weight: 600; color: rgba(255, 255, 255, .9);
+}
+.mod-deportivo .insc .insc-hero-meta i { color: #3bc0d4; font-size: 1.05rem; }
+
+/* ---------- Pista de progreso ---------- */
+.mod-deportivo .insc .insc-pista {
+  position: relative; z-index: 2;
+  max-width: 600px; margin: -2.2rem auto 0;
+  padding: .9rem 1.4rem .7rem;
+  background: var(--i-card); border: 1px solid var(--i-linea);
+  border-radius: 20px; box-shadow: var(--i-sombra);
+}
+.mod-deportivo .insc .insc-pista-linea {
+  position: absolute; left: calc(1.4rem + 46px); right: calc(1.4rem + 46px); top: calc(.9rem + 18px);
+  height: 4px; border-radius: 4px; background: var(--i-linea);
+}
+.mod-deportivo .insc .insc-pista-relleno {
+  height: 100%; width: var(--avance, 0%); border-radius: inherit;
+  background: linear-gradient(90deg, var(--i-acento), var(--i-azul));
+  transition: width .6s cubic-bezier(.22, 1, .36, 1);
+}
+.mod-deportivo .insc .insc-pista-bici {
+  position: absolute; z-index: 3; top: -27px; left: var(--avance, 0%);
+  font-size: 1.3rem; color: var(--i-azul); filter: drop-shadow(0 2px 3px rgba(0,0,0,.25));
+  transform: translate(-50%, -50%);
+  transition: left .6s cubic-bezier(.22, 1, .36, 1);
+  animation: inscPedalea .7s ease-in-out infinite;
+}
+.mod-deportivo .insc .insc-pista-pasos { position: relative; display: flex; justify-content: space-between; margin: 0; padding: 0; list-style: none; }
+.mod-deportivo .insc .insc-pista-pasos li { width: 92px; display: flex; justify-content: center; }
+.mod-deportivo .insc .insc-pista-pasos button {
+  display: flex; flex-direction: column; align-items: center; gap: .35rem;
+  background: none; border: 0; padding: 0; font: inherit; color: var(--i-tenue); cursor: default;
+}
+.mod-deportivo .insc .insc-pista-pasos button:disabled { opacity: 1; }
+.mod-deportivo .insc .insc-pista-pasos button:not(:disabled) { cursor: pointer; }
+.mod-deportivo .insc .insc-pista-pasos button:not(:disabled):hover .insc-pista-titulo { color: var(--i-acento); text-decoration: underline; }
+.mod-deportivo .insc .insc-pista-num {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: grid; place-items: center;
+  font-weight: 900; font-style: italic; font-size: calc(.95rem * var(--fs-scale, 1));
+  background: var(--i-suave); border: 2px solid var(--i-linea); color: var(--i-tenue);
+  transition: background .3s ease, border-color .3s ease, color .3s ease, transform .3s ease;
+}
+.mod-deportivo .insc .insc-pista-titulo { font-size: calc(.76rem * var(--fs-scale, 1)); font-weight: 700; }
+.mod-deportivo .insc .insc-pista-pasos li.hecho .insc-pista-num { background: var(--i-acento); border-color: var(--i-acento); color: #fff; }
+.mod-deportivo .insc .insc-pista-pasos li.actual .insc-pista-num {
+  background: linear-gradient(135deg, var(--i-acento), var(--i-acento-2)); border-color: transparent; color: #fff;
+  transform: scale(1.12); box-shadow: 0 0 0 5px color-mix(in srgb, var(--i-acento) 22%, transparent);
+}
+.mod-deportivo .insc .insc-pista-pasos li.actual .insc-pista-titulo { color: var(--i-texto); }
+
+/* ---------- Distribución ---------- */
+.mod-deportivo .insc .insc-grid {
+  display: grid; grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 1.6rem; align-items: start; margin-top: 1.6rem;
+}
+.mod-deportivo .insc .insc-form { display: flex; flex-direction: column; gap: 1.1rem; }
+
+/* ---------- Secciones numeradas ---------- */
+.mod-deportivo .insc .insc-seccion {
+  position: relative; overflow: hidden;
+  background: var(--i-card); border: 1px solid var(--i-linea);
+  border-radius: var(--i-radio); box-shadow: var(--i-sombra);
+  padding: 1.3rem 1.5rem 1.5rem;
+  animation: inscSube .45s cubic-bezier(.22, 1, .36, 1) both;
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+.mod-deportivo .insc .insc-seccion::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+  background: linear-gradient(180deg, var(--i-acento), var(--i-azul));
+}
+.mod-deportivo .insc .insc-seccion-cab { display: flex; align-items: flex-start; gap: .9rem; margin-bottom: 1.1rem; }
+.mod-deportivo .insc .insc-seccion-num {
+  font-size: calc(2.1rem * var(--fs-scale, 1)); font-weight: 900; font-style: italic; line-height: .9;
+  color: transparent; -webkit-text-stroke: 1.6px var(--i-acento); letter-spacing: -.04em;
+  min-width: 2.6ch;
+}
+.mod-deportivo .insc .insc-seccion-cab h3 {
+  display: flex; align-items: center; gap: .45rem; margin: 0;
+  font-size: calc(1.08rem * var(--fs-scale, 1)); font-weight: 800; color: var(--i-texto);
+}
+.mod-deportivo .insc .insc-seccion-cab h3 i { color: var(--i-acento); font-size: 1.15rem; }
+.mod-deportivo .insc .insc-seccion-cab p { margin: .2rem 0 0; color: var(--i-tenue); font-size: calc(.84rem * var(--fs-scale, 1)); }
+.mod-deportivo .insc .insc-seccion-cuerpo { display: flex; flex-direction: column; gap: 1rem; }
+
+/* ---------- Campos ---------- */
+.mod-deportivo .insc .insc-campos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem 1.1rem; }
+.mod-deportivo .insc .insc-campo { display: flex; flex-direction: column; gap: .4rem; min-width: 0; }
+.mod-deportivo .insc .insc-campo.ancho { grid-column: 1 / -1; }
+.mod-deportivo .insc .insc-etiqueta {
+  display: block; margin: 0;
+  font-size: calc(.8rem * var(--fs-scale, 1)); font-weight: 800; color: var(--i-texto);
+  letter-spacing: .01em;
+}
+.mod-deportivo .insc .insc-control { position: relative; }
+.mod-deportivo .insc .insc-control-icono {
+  position: absolute; left: .9rem; top: 50%; transform: translateY(-50%);
+  color: var(--i-tenue); font-size: 1.1rem; pointer-events: none; transition: color .2s ease;
+}
+.mod-deportivo .insc .insc-control-ok {
+  position: absolute; right: .85rem; top: 50%; transform: translateY(-50%);
+  color: var(--i-ok); font-size: 1.15rem; pointer-events: none; animation: inscPop .3s ease both;
+}
+.mod-deportivo .insc .insc-control select ~ .insc-control-ok { right: 2.1rem; }
+.mod-deportivo .insc .insc-control textarea ~ .insc-control-ok { top: 1.2rem; }
+.mod-deportivo .insc .insc-input {
+  width: 100%; box-sizing: border-box;
+  min-height: 48px; padding: .7rem 2.5rem .7rem 1rem;
+  border-radius: 12px; border: 1.5px solid var(--i-linea);
+  background: var(--i-suave); color: var(--i-texto);
+  font: inherit; font-size: calc(.95rem * var(--fs-scale, 1)); font-weight: 600;
+  transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+}
+.mod-deportivo .insc .insc-control.con-icono .insc-input { padding-left: 2.6rem; }
+.mod-deportivo .insc .insc-input::placeholder { color: var(--i-tenue); font-weight: 500; opacity: .75; }
+.mod-deportivo .insc .insc-input:hover { border-color: color-mix(in srgb, var(--i-acento) 45%, var(--i-linea)); }
+.mod-deportivo .insc .insc-input:focus {
+  outline: none; border-color: var(--i-acento); background: var(--i-card);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--i-acento) 20%, transparent);
+}
+.mod-deportivo .insc .insc-control:focus-within .insc-control-icono { color: var(--i-acento); }
+.mod-deportivo .insc .insc-textarea { min-height: 96px; resize: vertical; line-height: 1.5; }
+.mod-deportivo .insc .insc-input-dorsal { font-size: calc(1.15rem * var(--fs-scale, 1)); font-weight: 900; font-style: italic; letter-spacing: .08em; }
+.mod-deportivo .insc .con-ok .insc-input { border-color: color-mix(in srgb, var(--i-ok) 55%, var(--i-linea)); }
+.mod-deportivo .insc .con-error .insc-input {
+  border-color: var(--i-error); background: var(--i-error-suave);
+  animation: inscTiembla .3s ease-in-out;
+}
+.mod-deportivo .insc .con-error .insc-control-icono,
+.mod-deportivo .insc .insc-campo.con-error .insc-etiqueta { color: var(--i-error); }
+
+.mod-deportivo .insc .insc-error {
+  display: flex; align-items: center; gap: .35rem; margin: 0;
+  color: var(--i-error); font-size: calc(.79rem * var(--fs-scale, 1)); font-weight: 700;
+  animation: inscSube .25s ease both;
+}
+.mod-deportivo .insc .insc-ayuda {
+  display: flex; align-items: center; gap: .35rem; flex-wrap: wrap; margin: 0;
+  color: var(--i-tenue); font-size: calc(.78rem * var(--fs-scale, 1));
+}
+.mod-deportivo .insc .insc-ayuda a { color: var(--i-acento); font-weight: 700; }
+.mod-deportivo .insc .insc-contador { margin-left: auto; font-variant-numeric: tabular-nums; }
+.mod-deportivo .insc .insc-grupo-error {
+  border-radius: 14px; outline: 2px solid var(--i-error); outline-offset: 4px;
+  animation: inscTiembla .3s ease-in-out;
 }
 
-/* El recuadro para subir el comprobante es un <label>: la regla general
-   ".part-form-group label { display: block }" le ganaba y el texto quedaba
-   pegado ("haz clicFormatos..."). Con más especificidad vuelve a ser columna. */
-.mod-deportivo .part-form-group label.part-pay-upload {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
+/* ---------- Pastillas (RH, parentesco) ---------- */
+.mod-deportivo .insc .insc-pastillas {
+  display: grid; grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr)); gap: .5rem;
+  border-radius: 14px;
+}
+.mod-deportivo .insc .insc-pastillas.con-error { outline: 2px solid var(--i-error); outline-offset: 4px; animation: inscTiembla .3s ease-in-out; }
+.mod-deportivo .insc .insc-pastilla {
+  display: inline-flex; align-items: center; justify-content: center; gap: .35rem;
+  min-height: 44px; padding: .5rem .6rem; border-radius: 12px; cursor: pointer;
+  border: 1.5px solid var(--i-linea); background: var(--i-suave); color: var(--i-texto);
+  font: inherit; font-size: calc(.86rem * var(--fs-scale, 1)); font-weight: 800;
+  transition: transform .15s ease, border-color .2s ease, background .2s ease, box-shadow .2s ease, color .2s ease;
+}
+.mod-deportivo .insc .insc-pastilla i { color: var(--i-acento); font-size: 1rem; transition: color .2s ease; }
+.mod-deportivo .insc .insc-pastilla:hover { border-color: var(--i-acento); transform: translateY(-2px); }
+.mod-deportivo .insc .insc-pastilla:active { transform: scale(.96); }
+.mod-deportivo .insc .insc-pastilla[aria-checked="true"] {
+  background: linear-gradient(135deg, var(--i-acento), var(--i-acento-2)); border-color: transparent; color: #fff;
+  box-shadow: 0 10px 20px -12px var(--i-acento);
+}
+.mod-deportivo .insc .insc-pastilla[aria-checked="true"] i { color: #fff; }
+
+/* ---------- Perfil del corredor ---------- */
+.mod-deportivo .insc .insc-perfil {
+  display: flex; align-items: center; gap: .85rem;
+  padding: .8rem 1rem; border-radius: 14px;
+  background: linear-gradient(120deg, color-mix(in srgb, var(--i-acento) 14%, var(--i-suave)), var(--i-suave));
+  border: 1px solid var(--i-linea);
+}
+.mod-deportivo .insc .insc-perfil-avatar {
+  width: 46px; height: 46px; border-radius: 50%; flex: none;
+  display: grid; place-items: center;
+  background: linear-gradient(135deg, var(--i-acento), var(--i-noche)); color: #fff;
+  font-weight: 900; font-style: italic; box-shadow: 0 0 0 3px var(--i-card);
+}
+.mod-deportivo .insc .insc-perfil-texto { min-width: 0; display: flex; flex-direction: column; }
+.mod-deportivo .insc .insc-perfil-texto strong { font-size: calc(.98rem * var(--fs-scale, 1)); }
+.mod-deportivo .insc .insc-perfil-texto span { color: var(--i-tenue); font-size: calc(.8rem * var(--fs-scale, 1)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mod-deportivo .insc .insc-perfil .insc-enlace { margin-left: auto; }
+
+.mod-deportivo .insc .insc-fichas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem; }
+.mod-deportivo .insc .insc-ficha {
+  position: relative; display: flex; align-items: center; gap: .6rem;
+  padding: .7rem .8rem; border-radius: 12px; border: 1px dashed var(--i-linea); background: var(--i-suave);
+}
+.mod-deportivo .insc .insc-ficha:focus { outline: none; }
+.mod-deportivo .insc .insc-ficha > i:first-child { font-size: 1.2rem; color: var(--i-acento); }
+.mod-deportivo .insc .insc-ficha div { display: flex; flex-direction: column; min-width: 0; }
+.mod-deportivo .insc .insc-ficha span { font-size: calc(.68rem * var(--fs-scale, 1)); text-transform: uppercase; letter-spacing: .06em; color: var(--i-tenue); font-weight: 800; }
+.mod-deportivo .insc .insc-ficha strong { font-size: calc(.88rem * var(--fs-scale, 1)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mod-deportivo .insc .insc-ficha-candado { margin-left: auto; color: var(--i-tenue); opacity: .6; font-size: .95rem; }
+.mod-deportivo .insc .insc-ficha.con-error { border: 1.5px solid var(--i-error); background: var(--i-error-suave); }
+
+/* ---------- Enlaces y botones ---------- */
+.mod-deportivo .insc .insc-enlace {
+  display: inline-flex; align-items: center; gap: .25rem;
+  background: none; border: 0; padding: 0; font: inherit; cursor: pointer;
+  color: var(--i-acento); font-weight: 800; font-size: calc(.82rem * var(--fs-scale, 1));
+  text-decoration: underline; text-underline-offset: 3px;
+}
+.mod-deportivo .insc .insc-btn {
+  position: relative; overflow: hidden;
+  display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+  padding: .75rem 1.3rem; border-radius: 999px; cursor: pointer; text-decoration: none;
+  font: inherit; font-size: calc(.92rem * var(--fs-scale, 1)); font-weight: 800; letter-spacing: .01em;
+  border: 1.5px solid transparent;
+  transition: transform .2s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease, color .2s ease;
+}
+.mod-deportivo .insc .insc-btn-primario {
+  color: #fff; background: linear-gradient(135deg, var(--i-acento), var(--i-acento-2));
+  box-shadow: 0 14px 26px -14px var(--i-acento);
+}
+.mod-deportivo .insc .insc-btn-primario::after {
+  content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 40%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .35), transparent);
+  transform: translateX(-120%) skewX(-20deg); pointer-events: none;
+}
+.mod-deportivo .insc .insc-btn-primario:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 18px 30px -14px var(--i-acento); color: #fff; }
+.mod-deportivo .insc .insc-btn-primario:not(:disabled):hover::after { animation: inscBrillo .7s ease; }
+.mod-deportivo .insc .insc-btn-primario:not(:disabled):hover i.ti-arrow-right { transform: translateX(3px); }
+.mod-deportivo .insc .insc-btn i { transition: transform .2s ease; }
+.mod-deportivo .insc .insc-btn-secundario { color: var(--i-texto); background: transparent; border-color: var(--i-linea); }
+.mod-deportivo .insc .insc-btn-secundario:not(:disabled):hover { border-color: var(--i-acento); color: var(--i-acento); }
+.mod-deportivo .insc .insc-btn-grande { padding: .95rem 1.8rem; font-size: calc(1rem * var(--fs-scale, 1)); }
+.mod-deportivo .insc .insc-btn-salida { background: linear-gradient(135deg, var(--i-acento-2), var(--i-acento) 55%, var(--i-azul) 140%); }
+.mod-deportivo .insc .insc-btn:disabled { opacity: .55; cursor: not-allowed; box-shadow: none; }
+.mod-deportivo .insc .insc-btn:focus-visible,
+.mod-deportivo .insc .insc-pastilla:focus-visible,
+.mod-deportivo .insc .insc-categoria:focus-visible,
+.mod-deportivo .insc .insc-metodo:focus-visible,
+.mod-deportivo .insc .insc-interruptor:focus-visible,
+.mod-deportivo .insc .insc-copiar:focus-visible,
+.mod-deportivo .insc .insc-enlace:focus-visible,
+.mod-deportivo .insc .kit-sino button:focus-visible,
+.mod-deportivo .insc .kit-talla:focus-visible,
+.mod-deportivo .insc .insc-pista-pasos button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--i-acento) 60%, transparent); outline-offset: 3px;
+}
+
+.mod-deportivo .insc .insc-acciones {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+  padding: 1rem 1.2rem; border-radius: var(--i-radio);
+  background: var(--i-card); border: 1px solid var(--i-linea); box-shadow: var(--i-sombra);
+}
+.mod-deportivo .insc .insc-acciones-total { display: flex; flex-direction: column; }
+.mod-deportivo .insc .insc-acciones-total span { font-size: calc(.72rem * var(--fs-scale, 1)); text-transform: uppercase; letter-spacing: .08em; color: var(--i-tenue); font-weight: 800; }
+.mod-deportivo .insc .insc-acciones-total strong { font-size: calc(1.45rem * var(--fs-scale, 1)); font-weight: 900; font-style: italic; color: var(--i-acento); }
+.mod-deportivo .insc .insc-acciones .insc-btn-primario { margin-left: auto; }
+
+/* ---------- Avisos de bloque ---------- */
+.mod-deportivo .insc .insc-banner {
+  display: flex; align-items: center; gap: .9rem; flex-wrap: wrap;
+  padding: 1rem 1.1rem; border-radius: 14px; border: 1px solid;
+}
+.mod-deportivo .insc .insc-banner > i { font-size: 1.7rem; flex: none; }
+.mod-deportivo .insc .insc-banner > div { flex: 1; min-width: 200px; }
+.mod-deportivo .insc .insc-banner strong { display: block; font-size: calc(.98rem * var(--fs-scale, 1)); }
+.mod-deportivo .insc .insc-banner p { margin: .15rem 0 0; font-size: calc(.86rem * var(--fs-scale, 1)); line-height: 1.5; }
+.mod-deportivo .insc .insc-banner.error { background: var(--i-error-suave); border-color: color-mix(in srgb, var(--i-error) 45%, transparent); color: var(--i-texto); }
+.mod-deportivo .insc .insc-banner.error > i { color: var(--i-error); }
+.mod-deportivo .insc .insc-banner.info { background: color-mix(in srgb, var(--i-acento) 10%, var(--i-card)); border-color: color-mix(in srgb, var(--i-acento) 40%, transparent); }
+.mod-deportivo .insc .insc-banner.info > i { color: var(--i-acento); }
+
+/* ---------- Categorías ---------- */
+.mod-deportivo .insc .insc-categorias { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: .7rem; border-radius: 14px; }
+.mod-deportivo .insc .insc-categorias.con-error { outline: 2px solid var(--i-error); outline-offset: 4px; animation: inscTiembla .3s ease-in-out; }
+.mod-deportivo .insc .insc-categoria {
+  position: relative; display: flex; align-items: center; gap: .75rem; text-align: left;
+  padding: .85rem .95rem; border-radius: 14px; cursor: pointer;
+  border: 1.5px solid var(--i-linea); background: var(--i-suave); color: var(--i-texto); font: inherit;
+  animation: inscSube .4s ease both; animation-delay: calc(var(--i, 0) * 50ms);
+  transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease, background .2s ease;
+}
+.mod-deportivo .insc .insc-categoria:hover { transform: translateY(-3px); border-color: var(--i-acento); box-shadow: 0 12px 22px -16px var(--i-acento); }
+.mod-deportivo .insc .insc-categoria-icono {
+  width: 40px; height: 40px; border-radius: 12px; flex: none;
+  display: grid; place-items: center; font-size: 1.25rem;
+  background: color-mix(in srgb, var(--i-acento) 16%, transparent); color: var(--i-acento);
+  transition: background .2s ease, color .2s ease;
+}
+.mod-deportivo .insc .insc-categoria-texto { display: flex; flex-direction: column; min-width: 0; }
+.mod-deportivo .insc .insc-categoria-texto strong { font-size: calc(.92rem * var(--fs-scale, 1)); }
+.mod-deportivo .insc .insc-categoria-texto small { color: var(--i-tenue); font-size: calc(.76rem * var(--fs-scale, 1)); }
+.mod-deportivo .insc .insc-categoria-check { position: absolute; top: .55rem; right: .6rem; color: var(--i-acento); opacity: 0; transform: scale(.5); transition: opacity .2s ease, transform .2s ease; }
+.mod-deportivo .insc .insc-categoria[aria-checked="true"] {
+  border-color: var(--i-acento); background: color-mix(in srgb, var(--i-acento) 12%, var(--i-card));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--i-acento) 18%, transparent);
+}
+.mod-deportivo .insc .insc-categoria[aria-checked="true"] .insc-categoria-icono { background: linear-gradient(135deg, var(--i-acento), var(--i-azul)); color: #fff; }
+.mod-deportivo .insc .insc-categoria[aria-checked="true"] .insc-categoria-check { opacity: 1; transform: scale(1); }
+
+/* ---------- Kit ---------- */
+.mod-deportivo .insc .insc-kit {
+  display: flex; gap: 1rem; align-items: center;
+  padding: .9rem; border-radius: 16px; border: 1px solid var(--i-linea);
+  background: linear-gradient(120deg, var(--i-suave), color-mix(in srgb, var(--i-azul) 7%, var(--i-suave)));
+}
+.mod-deportivo .insc .insc-kit-foto { width: 120px; height: 120px; object-fit: cover; border-radius: 14px; flex: none; box-shadow: var(--i-sombra); }
+.mod-deportivo .insc .insc-kit-info { display: flex; flex-direction: column; gap: .2rem; min-width: 0; }
+.mod-deportivo .insc .insc-kit-info strong { font-size: calc(1rem * var(--fs-scale, 1)); }
+.mod-deportivo .insc .insc-kit-precio { font-weight: 900; font-style: italic; font-size: calc(1.2rem * var(--fs-scale, 1)); color: var(--i-azul); }
+.mod-deportivo .insc .insc-kit-info ul { margin: .3rem 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: .2rem; }
+.mod-deportivo .insc .insc-kit-info li { display: flex; align-items: flex-start; gap: .4rem; font-size: calc(.82rem * var(--fs-scale, 1)); color: var(--i-tenue); }
+.mod-deportivo .insc .insc-kit-info li i { color: var(--i-acento); margin-top: .15rem; }
+
+/* Sí / No y tallas del kit */
+@keyframes kitFadeUp { from { opacity: 0; transform: translateY(12px) scale(.94); } to { opacity: 1; transform: none; } }
+@keyframes kitPop { 0% { transform: scale(1); } 35% { transform: scale(1.1); } 70% { transform: scale(.97); } 100% { transform: scale(1); } }
+@keyframes kitCheck { from { opacity: 0; transform: scale(0) rotate(-120deg); } to { opacity: 1; transform: scale(1) rotate(0); } }
+@keyframes kitShine { from { transform: translateX(-130%); } to { transform: translateX(130%); } }
+@keyframes kitPulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
+@keyframes kitSlideIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+
+.mod-deportivo .insc .kit-sino { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; max-width: 360px; }
+.mod-deportivo .insc .kit-sino button {
+  display: flex; align-items: center; justify-content: center; gap: .45rem;
+  padding: .75rem 1rem; border-radius: 12px; cursor: pointer; font: inherit; font-weight: 800; color: var(--i-texto);
+  border: 1.5px solid var(--i-linea); background: var(--i-suave);
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease, color .18s ease;
+}
+.mod-deportivo .insc .kit-sino button:hover { transform: translateY(-2px); border-color: var(--i-acento); box-shadow: 0 8px 16px -10px var(--i-acento); }
+.mod-deportivo .insc .kit-sino button:active { transform: scale(.95); }
+.mod-deportivo .insc .kit-sino button[aria-checked="true"] {
+  background: linear-gradient(135deg, var(--i-acento), var(--i-acento-2)); border-color: transparent; color: #fff;
+  box-shadow: 0 8px 18px -8px var(--i-acento); animation: kitPop .35s ease;
+}
+.mod-deportivo .insc .kit-sino button[aria-checked="true"] i { animation: kitCheck .4s cubic-bezier(.34, 1.56, .64, 1) both; }
+
+.mod-deportivo .insc .kit-rejilla {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: .6rem; max-width: 560px;
+  animation: kitSlideIn .3s ease both;
+}
+.mod-deportivo .insc .kit-talla {
+  position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .15rem;
+  min-height: 74px; padding: .6rem .4rem; border-radius: 14px; font: inherit; color: var(--i-texto); cursor: pointer;
+  border: 1.5px solid var(--i-linea); background: var(--i-suave);
+  animation: kitFadeUp .45s cubic-bezier(.22, 1, .36, 1) both; animation-delay: calc(var(--i, 0) * 70ms);
+  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease, background .2s ease;
+}
+.mod-deportivo .insc .kit-talla:not(:disabled):hover { transform: translateY(-4px); border-color: var(--i-acento); box-shadow: 0 12px 20px -12px var(--i-acento); }
+.mod-deportivo .insc .kit-talla:not(:disabled):active { transform: scale(.93); }
+.mod-deportivo .insc .kit-talla[data-activa="true"] {
+  border-color: var(--i-acento); background: color-mix(in srgb, var(--i-acento) 18%, var(--i-card));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--i-acento) 24%, transparent);
+  animation: kitFadeUp .45s cubic-bezier(.22, 1, .36, 1) both, kitPop .4s ease;
+  animation-delay: calc(var(--i, 0) * 70ms), 0ms;
+}
+.mod-deportivo .insc .kit-talla[data-activa="true"]::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, .35) 50%, transparent 70%);
+  animation: kitShine .8s ease .05s both;
+}
+.mod-deportivo .insc .kit-talla .kit-check { position: absolute; top: 6px; right: 6px; font-size: 1rem; color: var(--i-acento); animation: kitCheck .4s cubic-bezier(.34, 1.56, .64, 1) both; }
+.mod-deportivo .insc .kit-talla strong { font-size: 1.25rem; font-weight: 900; font-style: italic; line-height: 1.1; transition: transform .2s ease; }
+.mod-deportivo .insc .kit-talla:not(:disabled):hover strong { transform: scale(1.12); }
+.mod-deportivo .insc .kit-talla small { font-size: .7rem; font-weight: 700; opacity: .7; }
+.mod-deportivo .insc .kit-talla small[data-nivel="poca"] { color: var(--i-azul); opacity: 1; }
+.mod-deportivo .insc .kit-talla small[data-nivel="ultima"] { color: var(--i-azul); opacity: 1; animation: kitPulse 1.1s ease-in-out infinite; }
+.mod-deportivo .insc .kit-talla:disabled { opacity: .5; cursor: not-allowed; filter: grayscale(.5); }
+.mod-deportivo .insc .kit-talla:disabled strong { text-decoration: line-through; }
+.mod-deportivo .insc .kit-talla:disabled small { color: var(--i-error); opacity: 1; }
+
+/* ---------- Invitado ---------- */
+.mod-deportivo .insc .insc-interruptor {
+  display: flex; align-items: center; gap: .9rem; width: 100%; text-align: left;
+  padding: .9rem 1rem; border-radius: 14px; cursor: pointer; font: inherit; color: var(--i-texto);
+  border: 1.5px dashed var(--i-linea); background: var(--i-suave);
+  transition: border-color .2s ease, background .2s ease;
+}
+.mod-deportivo .insc .insc-interruptor:hover { border-color: var(--i-acento); }
+.mod-deportivo .insc .insc-interruptor.activo { border-style: solid; border-color: var(--i-acento); background: color-mix(in srgb, var(--i-acento) 10%, var(--i-card)); }
+.mod-deportivo .insc .insc-interruptor-pista {
+  position: relative; width: 48px; height: 28px; border-radius: 999px; flex: none;
+  background: var(--i-linea); transition: background .25s ease;
+}
+.mod-deportivo .insc .insc-interruptor-pista span {
+  position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%;
+  background: #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .25); transition: transform .25s cubic-bezier(.34, 1.56, .64, 1);
+}
+.mod-deportivo .insc .insc-interruptor.activo .insc-interruptor-pista { background: linear-gradient(135deg, var(--i-acento), var(--i-azul)); }
+.mod-deportivo .insc .insc-interruptor.activo .insc-interruptor-pista span { transform: translateX(20px); }
+.mod-deportivo .insc .insc-interruptor-texto { display: flex; flex-direction: column; }
+.mod-deportivo .insc .insc-interruptor-texto strong { font-size: calc(.95rem * var(--fs-scale, 1)); }
+.mod-deportivo .insc .insc-interruptor-texto small { color: var(--i-tenue); font-size: calc(.8rem * var(--fs-scale, 1)); }
+.mod-deportivo .insc .insc-invitado {
+  display: flex; flex-direction: column; gap: 1rem;
+  padding: 1.1rem; border-radius: 16px; border: 1px solid var(--i-linea); background: var(--i-card);
+  animation: inscSube .35s ease both;
+}
+.mod-deportivo .insc .insc-invitado-kit { gap: .6rem; padding-top: .9rem; border-top: 1px dashed var(--i-linea); }
+
+/* ---------- Paso 2: pago ---------- */
+.mod-deportivo .insc .insc-metodos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .7rem; }
+.mod-deportivo .insc .insc-metodo {
+  position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: .25rem; text-align: left;
+  padding: 1rem; border-radius: 16px; cursor: pointer; font: inherit; color: var(--i-texto);
+  border: 1.5px solid var(--i-linea); background: var(--i-suave);
+  transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease, background .2s ease;
+}
+.mod-deportivo .insc .insc-metodo > i:first-child {
+  width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; font-size: 1.35rem; margin-bottom: .3rem;
+  background: color-mix(in srgb, var(--i-acento) 16%, transparent); color: var(--i-acento);
+  transition: background .2s ease, color .2s ease;
+}
+.mod-deportivo .insc .insc-metodo strong { font-size: calc(.92rem * var(--fs-scale, 1)); }
+.mod-deportivo .insc .insc-metodo small { color: var(--i-tenue); font-size: calc(.76rem * var(--fs-scale, 1)); }
+.mod-deportivo .insc .insc-metodo:hover { transform: translateY(-3px); border-color: var(--i-acento); }
+.mod-deportivo .insc .insc-metodo-check { position: absolute; top: .7rem; right: .7rem; color: var(--i-acento); opacity: 0; transform: scale(.5); transition: opacity .2s ease, transform .2s ease; }
+.mod-deportivo .insc .insc-metodo[aria-checked="true"] {
+  border-color: var(--i-acento); background: color-mix(in srgb, var(--i-acento) 12%, var(--i-card));
+  box-shadow: 0 14px 26px -18px var(--i-acento);
+}
+.mod-deportivo .insc .insc-metodo[aria-checked="true"] > i:first-child { background: linear-gradient(135deg, var(--i-acento), var(--i-acento-2)); color: #fff; }
+.mod-deportivo .insc .insc-metodo[aria-checked="true"] .insc-metodo-check { opacity: 1; transform: scale(1); }
+
+.mod-deportivo .insc .insc-monto {
+  position: relative; overflow: hidden;
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+  padding: 1rem 1.2rem; border-radius: 16px; color: #fff;
+  background:
+    repeating-linear-gradient(115deg, transparent 0 18px, rgba(255, 255, 255, .05) 18px 22px),
+    linear-gradient(120deg, var(--i-noche), #0d3a52 60%, #1b7f91);
+}
+.mod-deportivo .insc .insc-monto span { font-size: calc(.8rem * var(--fs-scale, 1)); text-transform: uppercase; letter-spacing: .08em; font-weight: 800; opacity: .85; }
+.mod-deportivo .insc .insc-monto strong { font-size: calc(1.9rem * var(--fs-scale, 1)); font-weight: 900; font-style: italic; letter-spacing: -.01em; }
+
+.mod-deportivo .insc .insc-datos-pago { border: 1px solid var(--i-linea); border-radius: 16px; overflow: hidden; }
+.mod-deportivo .insc .insc-dato {
+  display: grid; grid-template-columns: minmax(120px, auto) 1fr auto; align-items: center; gap: .8rem;
+  padding: .75rem 1rem; border-bottom: 1px solid var(--i-linea);
+}
+.mod-deportivo .insc .insc-dato:last-child { border-bottom: 0; }
+.mod-deportivo .insc .insc-dato-etiqueta { color: var(--i-tenue); font-size: calc(.82rem * var(--fs-scale, 1)); }
+.mod-deportivo .insc .insc-dato-valor { text-align: right; font-size: calc(.92rem * var(--fs-scale, 1)); word-break: break-word; }
+.mod-deportivo .insc .insc-dato.destacado { background: color-mix(in srgb, var(--i-acento) 8%, transparent); }
+.mod-deportivo .insc .insc-dato.destacado .insc-dato-valor { font-size: calc(1.12rem * var(--fs-scale, 1)); font-weight: 900; letter-spacing: .03em; color: var(--i-acento); }
+.mod-deportivo .insc .insc-copiar {
+  display: inline-flex; align-items: center; gap: .3rem;
+  padding: .38rem .75rem; border-radius: 999px; cursor: pointer;
+  font: inherit; font-size: calc(.76rem * var(--fs-scale, 1)); font-weight: 800;
+  color: var(--i-acento); background: color-mix(in srgb, var(--i-acento) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--i-acento) 35%, transparent);
+  transition: background .2s ease, color .2s ease, transform .15s ease;
+}
+.mod-deportivo .insc .insc-copiar:hover { background: color-mix(in srgb, var(--i-acento) 22%, transparent); }
+.mod-deportivo .insc .insc-copiar:active { transform: scale(.94); }
+.mod-deportivo .insc .insc-copiar.ok { color: #fff; background: var(--i-ok); border-color: var(--i-ok); animation: kitPop .35s ease; }
+
+.mod-deportivo .insc .insc-como { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem; margin: 0; padding: 0; list-style: none; }
+.mod-deportivo .insc .insc-como li {
+  display: flex; align-items: flex-start; gap: .55rem;
+  padding: .75rem; border-radius: 12px; background: var(--i-suave);
+  font-size: calc(.82rem * var(--fs-scale, 1)); line-height: 1.45; color: var(--i-texto);
+}
+.mod-deportivo .insc .insc-como li p { margin: 0; }
+.mod-deportivo .insc .insc-como li span {
+  width: 24px; height: 24px; border-radius: 50%; flex: none;
+  display: grid; place-items: center; font-weight: 900; font-style: italic; font-size: .8rem;
+  color: #fff; background: linear-gradient(135deg, var(--i-acento), var(--i-azul));
+}
+
+.mod-deportivo .insc .insc-subida {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .45rem; text-align: center;
+  min-height: 180px; padding: 1.4rem; border-radius: 18px; cursor: pointer;
+  border: 2px dashed color-mix(in srgb, var(--i-acento) 45%, var(--i-linea));
+  background: color-mix(in srgb, var(--i-acento) 4%, var(--i-suave));
+  color: var(--i-texto);
+  transition: border-color .2s ease, background .2s ease, transform .2s ease;
+}
+.mod-deportivo .insc .insc-subida:hover { border-color: var(--i-acento); background: color-mix(in srgb, var(--i-acento) 9%, var(--i-suave)); }
+.mod-deportivo .insc .insc-subida.arrastrando { border-style: solid; border-color: var(--i-acento); transform: scale(1.01); background: color-mix(in srgb, var(--i-acento) 14%, var(--i-suave)); }
+.mod-deportivo .insc .insc-subida.validando { cursor: progress; }
+.mod-deportivo .insc .insc-subida-icono {
+  width: 58px; height: 58px; border-radius: 18px; display: grid; place-items: center;
+  font-size: 1.8rem; color: #fff; background: linear-gradient(135deg, var(--i-acento), var(--i-acento-2));
+  box-shadow: 0 14px 24px -14px var(--i-acento);
+}
+.mod-deportivo .insc .insc-subida strong { font-size: calc(.98rem * var(--fs-scale, 1)); }
+.mod-deportivo .insc .insc-subida small { color: var(--i-tenue); font-size: calc(.78rem * var(--fs-scale, 1)); }
+.mod-deportivo .insc .insc-subida-barra { width: min(280px, 80%); height: 6px; border-radius: 6px; background: var(--i-linea); overflow: hidden; }
+.mod-deportivo .insc .insc-subida-barra span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--i-acento), var(--i-azul)); transition: width .3s ease; }
+.mod-deportivo .insc .insc-subida.lista {
+  flex-direction: row; justify-content: flex-start; gap: 1rem; text-align: left; min-height: 0;
+  border-style: solid; border-color: color-mix(in srgb, var(--i-ok) 55%, var(--i-linea));
+  background: color-mix(in srgb, var(--i-ok) 7%, var(--i-suave));
+}
+.mod-deportivo .insc .insc-subida-vista { width: 84px; height: 110px; object-fit: cover; object-position: top; border-radius: 12px; flex: none; box-shadow: var(--i-sombra); }
+.mod-deportivo .insc .insc-subida-ok { display: flex; flex-direction: column; gap: .15rem; min-width: 0; }
+.mod-deportivo .insc .insc-subida-ok strong { display: flex; align-items: center; gap: .35rem; color: var(--i-ok); }
+.mod-deportivo .insc .insc-subida-nombre { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Aviso fijo del comprobante: no se borra solo, se lee con calma. */
+.mod-deportivo .insc .insc-aviso {
+  position: relative; display: flex; align-items: flex-start; gap: .75rem;
+  margin-top: .8rem; padding: 1rem 2.6rem 1rem 1rem;
+  border-radius: 14px; border: 1px solid; border-left-width: 5px; line-height: 1.5;
+  animation: inscSube .25s ease both;
+}
+.mod-deportivo .insc .insc-aviso.error { background: #fef2f2; border-color: #fca5a5; border-left-color: #dc2626; color: #7f1d1d; }
+.mod-deportivo .insc .insc-aviso.aviso { background: #eff6ff; border-color: #93c5fd; border-left-color: #2563eb; color: #1e3a8a; }
+.mod-deportivo.dark-mode .insc .insc-aviso.error { background: #2a1416; border-color: #7f1d1d; border-left-color: #ef4444; color: #fecaca; }
+.mod-deportivo.dark-mode .insc .insc-aviso.aviso { background: #0f2240; border-color: #1e3a8a; border-left-color: #60a5fa; color: #bfdbfe; }
+.mod-deportivo .insc .insc-aviso-icono { font-size: calc(1.6rem * var(--fs-scale, 1)); flex: none; }
+.mod-deportivo .insc .insc-aviso-cuerpo { flex: 1; min-width: 0; }
+.mod-deportivo .insc .insc-aviso-cuerpo strong { display: block; font-size: calc(1rem * var(--fs-scale, 1)); margin-bottom: .2rem; }
+.mod-deportivo .insc .insc-aviso-cuerpo p { margin: 0; font-size: calc(.9rem * var(--fs-scale, 1)); }
+.mod-deportivo .insc .insc-aviso-cuenta {
+  list-style: none; margin: .65rem 0 0; padding: .55rem .8rem; border-radius: 10px;
+  background: rgba(255, 255, 255, .6); border: 1px dashed currentColor;
+}
+.mod-deportivo.dark-mode .insc .insc-aviso-cuenta { background: rgba(0, 0, 0, .25); }
+.mod-deportivo .insc .insc-aviso-cuenta li { display: flex; justify-content: space-between; gap: 1rem; padding: .22rem 0; font-size: calc(.88rem * var(--fs-scale, 1)); }
+.mod-deportivo .insc .insc-aviso-cuenta li span { opacity: .8; }
+.mod-deportivo .insc .insc-aviso-cerrar {
+  position: absolute; top: .55rem; right: .55rem; width: 30px; height: 30px;
+  display: grid; place-items: center; border: 0; border-radius: 8px;
+  background: transparent; color: inherit; cursor: pointer; font-size: 1rem;
+}
+.mod-deportivo .insc .insc-aviso-cerrar:hover { background: rgba(0, 0, 0, .08); }
+
+/* ---------- Paso 3: revisar ---------- */
+.mod-deportivo .insc .insc-resumen { display: flex; flex-direction: column; gap: .8rem; }
+.mod-deportivo .insc .insc-resumen-bloque { border: 1px solid var(--i-linea); border-radius: 16px; overflow: hidden; }
+.mod-deportivo .insc .insc-resumen-bloque header {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: .65rem 1rem; background: var(--i-suave);
+}
+.mod-deportivo .insc .insc-resumen-bloque header > span {
+  display: inline-flex; align-items: center; gap: .4rem;
+  font-size: calc(.76rem * var(--fs-scale, 1)); font-weight: 900; text-transform: uppercase; letter-spacing: .08em;
+}
+.mod-deportivo .insc .insc-resumen-bloque header > span i { color: var(--i-acento); font-size: 1rem; }
+.mod-deportivo .insc .insc-resumen-bloque dl { margin: 0; padding: .3rem 1rem; }
+.mod-deportivo .insc .insc-resumen-bloque dl div {
+  display: flex; justify-content: space-between; gap: 1rem; padding: .5rem 0;
+  border-bottom: 1px dashed var(--i-linea); font-size: calc(.87rem * var(--fs-scale, 1));
+}
+.mod-deportivo .insc .insc-resumen-bloque dl div:last-child { border-bottom: 0; }
+.mod-deportivo .insc .insc-resumen-bloque dt { color: var(--i-tenue); }
+.mod-deportivo .insc .insc-resumen-bloque dd { margin: 0; font-weight: 700; text-align: right; }
+.mod-deportivo .insc .insc-ok-texto { display: inline-flex; align-items: center; gap: .3rem; color: var(--i-ok); }
+.mod-deportivo .insc .insc-resumen-total {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: .8rem 1rem; border-top: 1px solid var(--i-linea);
+  background: color-mix(in srgb, var(--i-acento) 8%, transparent);
+}
+.mod-deportivo .insc .insc-resumen-total span { font-weight: 900; text-transform: uppercase; letter-spacing: .08em; font-size: calc(.8rem * var(--fs-scale, 1)); }
+.mod-deportivo .insc .insc-resumen-total strong { font-size: calc(1.4rem * var(--fs-scale, 1)); font-weight: 900; font-style: italic; color: var(--i-acento); }
+
+.mod-deportivo .insc .insc-terminos {
+  padding: .9rem 1rem; border-radius: 14px; background: var(--i-suave);
+  border-left: 4px solid var(--i-azul);
+}
+.mod-deportivo .insc .insc-terminos p { margin: 0; font-size: calc(.84rem * var(--fs-scale, 1)); line-height: 1.6; color: var(--i-texto); }
+.mod-deportivo .insc .insc-check {
+  position: relative; display: flex; align-items: flex-start; gap: .75rem; cursor: pointer;
+  padding: .85rem 1rem; border-radius: 14px; border: 1.5px solid var(--i-linea); background: var(--i-card);
+  font-size: calc(.88rem * var(--fs-scale, 1)); line-height: 1.5; color: var(--i-texto);
+  transition: border-color .2s ease, background .2s ease;
+}
+.mod-deportivo .insc .insc-check:hover { border-color: var(--i-acento); }
+.mod-deportivo .insc .insc-check input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.mod-deportivo .insc .insc-check-caja {
+  width: 24px; height: 24px; border-radius: 8px; flex: none; margin-top: .05rem;
+  display: grid; place-items: center; border: 2px solid var(--i-linea); background: var(--i-suave);
+  transition: background .2s ease, border-color .2s ease;
+}
+.mod-deportivo .insc .insc-check-caja i { color: #fff; font-size: .95rem; opacity: 0; transform: scale(.4); transition: opacity .2s ease, transform .25s cubic-bezier(.34, 1.56, .64, 1); }
+.mod-deportivo .insc .insc-check.marcado { border-color: var(--i-acento); background: color-mix(in srgb, var(--i-acento) 8%, var(--i-card)); }
+.mod-deportivo .insc .insc-check.marcado .insc-check-caja { background: linear-gradient(135deg, var(--i-acento), var(--i-acento-2)); border-color: transparent; }
+.mod-deportivo .insc .insc-check.marcado .insc-check-caja i { opacity: 1; transform: scale(1); }
+.mod-deportivo .insc .insc-check input:focus-visible + .insc-check-caja { outline: 3px solid color-mix(in srgb, var(--i-acento) 60%, transparent); outline-offset: 2px; }
+.mod-deportivo .insc .insc-check.con-error { border-color: var(--i-error); background: var(--i-error-suave); animation: inscTiembla .3s ease-in-out; }
+.mod-deportivo .insc .insc-check.con-error .insc-check-caja { border-color: var(--i-error); }
+
+/* ---------- Inscripción lista ---------- */
+.mod-deportivo .insc .insc-meta {
+  position: relative; overflow: hidden; text-align: center;
+  padding: 3.2rem 1.5rem 2.2rem; border-radius: 22px;
+  background: var(--i-card); border: 1px solid var(--i-linea); box-shadow: var(--i-sombra);
+  animation: inscSube .5s ease both;
+}
+.mod-deportivo .insc .insc-meta-bandera {
+  position: absolute; top: 0; left: 0; right: 0; height: 16px;
+  background: repeating-conic-gradient(var(--i-texto) 0% 25%, transparent 0% 50%) 0 0 / 16px 16px;
+  opacity: .85;
+}
+.mod-deportivo .insc .insc-meta-icono {
+  width: 86px; height: 86px; margin: 0 auto 1rem; border-radius: 50%;
+  display: grid; place-items: center; font-size: 2.6rem; color: #fff;
+  background: linear-gradient(135deg, var(--i-acento), var(--i-azul));
+  box-shadow: 0 0 0 8px color-mix(in srgb, var(--i-azul) 18%, transparent), 0 20px 36px -18px var(--i-azul);
+  animation: inscPop .6s cubic-bezier(.34, 1.56, .64, 1) .1s both;
+}
+.mod-deportivo .insc .insc-meta h2 {
+  margin: 0 0 .6rem; font-size: calc(clamp(1.5rem, 3vw, 2rem) * var(--fs-scale, 1));
+  font-weight: 900; font-style: italic; text-transform: uppercase; color: var(--i-texto);
+}
+.mod-deportivo .insc .insc-meta p { margin: 0 auto .4rem; max-width: 520px; color: var(--i-texto); line-height: 1.6; font-size: calc(.95rem * var(--fs-scale, 1)); }
+.mod-deportivo .insc .insc-meta .insc-meta-sub { color: var(--i-tenue); font-size: calc(.85rem * var(--fs-scale, 1)); }
+.mod-deportivo .insc .insc-meta-acciones { display: flex; justify-content: center; gap: .7rem; flex-wrap: wrap; margin-top: 1.4rem; }
+
+/* ---------- Ticket (resumen lateral) ---------- */
+.mod-deportivo .insc .insc-ticket {
+  position: sticky; top: 92px;
+  background: var(--i-card); border: 1px solid var(--i-linea);
+  border-radius: 22px; box-shadow: var(--i-sombra); overflow: hidden;
+}
+.mod-deportivo .insc .insc-ticket-cab {
+  display: flex; align-items: center; justify-content: space-between; gap: .6rem;
+  padding: .85rem 1.1rem; color: #fff;
+  background: repeating-linear-gradient(115deg, transparent 0 16px, rgba(255, 255, 255, .05) 16px 20px), linear-gradient(120deg, var(--i-noche), #0d3a52);
+}
+.mod-deportivo .insc .insc-ticket-cab > span:first-child { display: inline-flex; align-items: center; gap: .4rem; font-weight: 900; font-style: italic; text-transform: uppercase; letter-spacing: .04em; font-size: calc(.85rem * var(--fs-scale, 1)); }
+.mod-deportivo .insc .insc-cupos { display: inline-flex; align-items: center; gap: .4rem; font-size: calc(.75rem * var(--fs-scale, 1)); font-weight: 800; color: #bbf7d0; }
+.mod-deportivo .insc .insc-cupos-punto { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; animation: inscLatido 1.8s ease-out infinite; }
+.mod-deportivo .insc .insc-cupos.agotado { color: #fecaca; }
+.mod-deportivo .insc .insc-cupos.agotado .insc-cupos-punto { background: #ef4444; animation: none; }
+.mod-deportivo .insc .insc-ticket-evento { display: flex; gap: .8rem; align-items: center; padding: 1rem 1.1rem .9rem; }
+.mod-deportivo .insc .insc-ticket-evento img { width: 64px; height: 64px; object-fit: cover; border-radius: 14px; flex: none; }
+.mod-deportivo .insc .insc-ticket-evento div { display: flex; flex-direction: column; gap: .1rem; min-width: 0; }
+.mod-deportivo .insc .insc-ticket-evento strong { font-size: calc(.98rem * var(--fs-scale, 1)); line-height: 1.25; }
+.mod-deportivo .insc .insc-ticket-evento span { color: var(--i-tenue); font-size: calc(.8rem * var(--fs-scale, 1)); }
+.mod-deportivo .insc .insc-ticket-evento .insc-ticket-cat { display: inline-flex; align-items: center; gap: .25rem; color: var(--i-acento); font-weight: 800; }
+.mod-deportivo .insc .insc-ticket-corte {
+  position: relative; height: 22px;
+  background:
+    radial-gradient(circle at 0 50%, var(--bg, #fff) 10px, transparent 11px) left / 22px 22px no-repeat,
+    radial-gradient(circle at 100% 50%, var(--bg, #fff) 10px, transparent 11px) right / 22px 22px no-repeat;
+}
+.mod-deportivo .insc .insc-ticket-corte::after {
+  content: ""; position: absolute; left: 18px; right: 18px; top: 50%;
+  border-top: 2px dashed var(--i-linea);
+}
+.mod-deportivo .insc .insc-ticket-lineas { list-style: none; margin: 0; padding: .4rem 1.1rem; }
+.mod-deportivo .insc .insc-ticket-lineas li { display: flex; justify-content: space-between; gap: 1rem; padding: .4rem 0; font-size: calc(.86rem * var(--fs-scale, 1)); }
+.mod-deportivo .insc .insc-ticket-lineas li span { color: var(--i-tenue); }
+.mod-deportivo .insc .insc-ticket-total {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 1rem;
+  margin: .3rem 1.1rem 0; padding: .9rem 0 .4rem; border-top: 2px solid var(--i-texto);
+}
+.mod-deportivo .insc .insc-ticket-total span { font-weight: 900; text-transform: uppercase; letter-spacing: .1em; font-size: calc(.8rem * var(--fs-scale, 1)); }
+.mod-deportivo .insc .insc-ticket-total strong {
+  font-size: calc(1.9rem * var(--fs-scale, 1)); font-weight: 900; font-style: italic; letter-spacing: -.02em;
+  background: linear-gradient(135deg, var(--i-acento), var(--i-azul)); -webkit-background-clip: text; background-clip: text; color: transparent; padding-right: .14em;
+  animation: inscPop .35s ease both;
+}
+.mod-deportivo .insc .insc-ticket-nota {
+  display: flex; align-items: flex-start; gap: .4rem; margin: .6rem 1.1rem 1.1rem;
+  color: var(--i-tenue); font-size: calc(.76rem * var(--fs-scale, 1)); line-height: 1.45;
+}
+.mod-deportivo .insc .insc-ticket-nota i { color: var(--i-ok); margin-top: .1rem; }
+
+/* ---------- Pantallas pequeñas ---------- */
+@media (max-width: 980px) {
+  .mod-deportivo .insc .insc-grid { grid-template-columns: 1fr; }
+  .mod-deportivo .insc .insc-ticket { position: static; }
+}
+@media (max-width: 640px) {
+  .mod-deportivo .insc { padding: .8rem .75rem 3rem; }
+  .mod-deportivo .insc .insc-hero { padding: 1.2rem 1.2rem 3.2rem; border-radius: 18px; min-height: 0; }
+  .mod-deportivo .insc .insc-pista { margin-left: .4rem; margin-right: .4rem; padding: .8rem .9rem .6rem; }
+  .mod-deportivo .insc .insc-pista-linea { left: calc(.9rem + 38px); right: calc(.9rem + 38px); top: calc(.8rem + 18px); }
+  .mod-deportivo .insc .insc-pista-pasos li { width: 76px; }
+  .mod-deportivo .insc .insc-seccion { padding: 1.1rem 1rem 1.2rem; }
+  .mod-deportivo .insc .insc-seccion-num { font-size: calc(1.6rem * var(--fs-scale, 1)); }
+  .mod-deportivo .insc .insc-campos,
+  .mod-deportivo .insc .insc-fichas,
+  .mod-deportivo .insc .insc-metodos,
+  .mod-deportivo .insc .insc-como { grid-template-columns: 1fr; }
+  .mod-deportivo .insc .insc-pastillas { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .mod-deportivo .insc #c-parentesco { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mod-deportivo .insc .insc-kit { flex-direction: column; align-items: flex-start; }
+  .mod-deportivo .insc .insc-dato { grid-template-columns: 1fr auto; }
+  .mod-deportivo .insc .insc-dato-etiqueta { grid-column: 1 / -1; }
+  .mod-deportivo .insc .insc-dato-valor { text-align: left; }
+  .mod-deportivo .insc .insc-acciones { flex-direction: column-reverse; align-items: stretch; }
+  .mod-deportivo .insc .insc-acciones .insc-btn { width: 100%; margin-left: 0; }
+  .mod-deportivo .insc .insc-acciones-total { flex-direction: row; justify-content: space-between; align-items: baseline; }
+  .mod-deportivo .insc .insc-subida.lista { flex-direction: column; text-align: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mod-deportivo .insc *,
+  .mod-deportivo .insc *::before,
+  .mod-deportivo .insc *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+}
+
+/* =====================================================================
+   PASES CON CÓDIGO QR (.pase) — perfil del participante
+   "Entrada al evento" (siempre) y "Retiro del kit" (si pidió kit).
+   ===================================================================== */
+.part-qr-overlay.pase-fondo { padding: 1rem; overflow-y: auto; }
+
+.pase {
+  --p-card: #ffffff;
+  --p-suave: #f3f8fb;
+  --p-linea: #e2eaf1;
+  --p-texto: #0f172a;
+  --p-tenue: #5b6775;
+  --p-acento: #2c9caf;
+  --p-acento-2: #1b7f91;
+  --p-ok: #16a34a;
+  --p-fondo-pagina: rgba(10, 14, 20, .55);
+
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  margin: auto;
+  border-radius: 24px;
+  background: var(--p-card);
+  color: var(--p-texto);
+  box-shadow: 0 30px 70px rgba(0, 0, 0, .4);
+  animation: partQrPop .35s cubic-bezier(.34, 1.56, .64, 1) both;
+}
+/* El pase del kit en azul rey, para distinguirlo de un vistazo. */
+.pase.pase-kit { --p-acento: #2563eb; --p-acento-2: #1d4ed8; }
+.dark-mode .pase {
+  --p-card: #0f2131;
+  --p-suave: #132a3c;
+  --p-linea: rgba(126, 211, 225, .16);
+  --p-texto: #f1f6fa;
+  --p-tenue: #a9bccb;
+  --p-acento: #3bc0d4;
+  --p-acento-2: #2c9caf;
+}
+.dark-mode .pase.pase-kit { --p-acento: #60a5fa; --p-acento-2: #3b82f6; }
+
+.pase-solo-lector { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.pase-cerrar {
+  position: absolute; top: .8rem; right: .8rem; z-index: 2;
+  width: 36px; height: 36px; border-radius: 50%; border: 0; cursor: pointer;
+  display: grid; place-items: center; font-size: 1.1rem;
+  background: rgba(255, 255, 255, .16); color: #fff;
+  transition: background .2s ease, transform .2s ease;
+}
+.pase-cerrar:hover { background: rgba(255, 255, 255, .28); transform: rotate(90deg); }
+.pase-cerrar:focus-visible { outline: 3px solid rgba(255, 255, 255, .7); outline-offset: 2px; }
+
+/* Encabezado oscuro con el evento */
+.pase-cab {
+  padding: 1.3rem 3.2rem 1.2rem 1.4rem;
+  color: #fff;
+  background:
+    repeating-linear-gradient(115deg, transparent 0 18px, rgba(255, 255, 255, .05) 18px 22px),
+    linear-gradient(120deg, #071a2c, #0d3a52 60%, var(--p-acento-2));
+  transition: background .3s ease;
+}
+.pase-marca {
+  display: inline-flex; align-items: center; gap: .35rem;
+  font-size: calc(.68rem * var(--fs-scale, 1)); font-weight: 800; letter-spacing: .12em; text-transform: uppercase; opacity: .8;
+}
+.pase-cab h3 {
+  margin: .35rem 0 .45rem; color: #fff;
+  font-size: calc(1.35rem * var(--fs-scale, 1)); font-weight: 900; font-style: italic; text-transform: uppercase; line-height: 1.1;
+}
+.pase-cab p { display: flex; flex-wrap: wrap; gap: .3rem .9rem; margin: 0; font-size: calc(.78rem * var(--fs-scale, 1)); opacity: .9; }
+.pase-cab p span { display: inline-flex; align-items: center; gap: .3rem; }
+.pase-cab p i { color: #7dd3fc; }
+
+/* Selector Entrada / Kit */
+.pase-selector {
+  display: grid; grid-template-columns: 1fr 1fr; gap: .35rem;
+  margin: 1rem 1.2rem 0; padding: .3rem; border-radius: 14px; background: var(--p-suave);
+}
+.pase-selector button {
+  position: relative; display: inline-flex; align-items: center; justify-content: center; gap: .35rem;
+  padding: .6rem .5rem; border: 0; border-radius: 10px; cursor: pointer;
+  background: transparent; color: var(--p-tenue);
+  font: inherit; font-size: calc(.8rem * var(--fs-scale, 1)); font-weight: 800;
+  transition: background .2s ease, color .2s ease, box-shadow .2s ease;
+}
+.pase-selector button:hover { color: var(--p-texto); }
+.pase-selector button[aria-selected="true"] {
+  background: var(--p-card); color: var(--p-acento);
+  box-shadow: 0 6px 14px -8px rgba(7, 26, 44, .45);
+}
+.pase-selector button:focus-visible { outline: 3px solid color-mix(in srgb, var(--p-acento) 55%, transparent); outline-offset: 2px; }
+.pase-punto {
+  position: absolute; top: .45rem; right: .55rem; width: 8px; height: 8px; border-radius: 50%;
+  background: #3b82f6; box-shadow: 0 0 0 3px color-mix(in srgb, #3b82f6 25%, transparent);
+}
+
+/* Cuerpo */
+.pase-cuerpo { display: flex; flex-direction: column; align-items: center; gap: .9rem; padding: 1.1rem 1.4rem 1.2rem; animation: partQrFadeIn .25s ease both; }
+.pase-titulo { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: .6rem; flex-wrap: wrap; }
+.pase-titulo strong { display: inline-flex; align-items: center; gap: .4rem; font-size: calc(1rem * var(--fs-scale, 1)); font-weight: 900; }
+.pase-titulo strong i { color: var(--p-acento); font-size: 1.2rem; }
+
+.pase-estado {
+  display: inline-flex; align-items: center; gap: .3rem;
+  padding: .25rem .65rem; border-radius: 999px;
+  font-size: calc(.72rem * var(--fs-scale, 1)); font-weight: 800; white-space: nowrap;
+}
+.pase-estado::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.pase-estado.ok { color: #15803d; background: rgba(22, 163, 74, .12); }
+.pase-estado.espera { color: #1d4ed8; background: rgba(37, 99, 235, .12); }
+.pase-estado.usado { color: var(--p-tenue); background: color-mix(in srgb, var(--p-tenue) 14%, transparent); }
+.pase-estado.error { color: #dc2626; background: rgba(220, 38, 38, .1); }
+.dark-mode .pase-estado.ok { color: #4ade80; }
+.dark-mode .pase-estado.espera { color: #93c5fd; }
+.dark-mode .pase-estado.error { color: #f87171; }
+
+/* El QR: siempre sobre blanco (los lectores lo necesitan), con esquinas de visor */
+.pase-qr {
+  position: relative; padding: 16px; border-radius: 20px; background: #fff;
+  box-shadow: 0 18px 36px -20px color-mix(in srgb, var(--p-acento) 80%, transparent), 0 0 0 1px var(--p-linea);
+}
+.pase-qr img { display: block; width: min(240px, 62vw); height: auto; border-radius: 6px; }
+.pase-esquina { position: absolute; width: 26px; height: 26px; border: 4px solid var(--p-acento); }
+.pase-esquina.a { top: -4px; left: -4px; border-right: 0; border-bottom: 0; border-top-left-radius: 14px; }
+.pase-esquina.b { top: -4px; right: -4px; border-left: 0; border-bottom: 0; border-top-right-radius: 14px; }
+.pase-esquina.c { bottom: -4px; left: -4px; border-right: 0; border-top: 0; border-bottom-left-radius: 14px; }
+.pase-esquina.d { bottom: -4px; right: -4px; border-left: 0; border-top: 0; border-bottom-right-radius: 14px; }
+.pase-qr.inactivo img { opacity: .18; filter: grayscale(1); }
+.pase-qr.inactivo .pase-esquina { border-color: var(--p-linea); }
+.pase-sello {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .4rem;
+  padding: 1rem; text-align: center; color: #0f172a; font-weight: 800; font-size: calc(.88rem * var(--fs-scale, 1));
+}
+.pase-sello i { font-size: 2.2rem; color: var(--p-acento); }
+
+/* Código en texto */
+.pase-codigo {
+  width: 100%; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: .15rem .6rem;
+  padding: .6rem .8rem; border-radius: 12px; background: var(--p-suave); border: 1px dashed var(--p-linea);
+}
+.pase-codigo-etiqueta { grid-column: 1 / -1; font-size: calc(.65rem * var(--fs-scale, 1)); font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--p-tenue); }
+.pase-codigo code {
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  font-size: calc(.8rem * var(--fs-scale, 1)); font-weight: 700; color: var(--p-texto);
+  word-break: break-all; letter-spacing: .02em; background: none;
+}
+.pase-copiar {
+  display: inline-flex; align-items: center; gap: .3rem;
+  padding: .4rem .75rem; border-radius: 999px; cursor: pointer;
+  font: inherit; font-size: calc(.75rem * var(--fs-scale, 1)); font-weight: 800;
+  color: var(--p-acento); background: color-mix(in srgb, var(--p-acento) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--p-acento) 35%, transparent);
+  transition: background .2s ease, transform .15s ease;
+}
+.pase-copiar:hover { background: color-mix(in srgb, var(--p-acento) 22%, transparent); }
+.pase-copiar:active { transform: scale(.94); }
+.pase-copiar.ok { color: #fff; background: var(--p-ok); border-color: var(--p-ok); }
+
+/* Datos */
+.pase-datos { width: 100%; margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+.pase-datos div { padding: .55rem .7rem; border-radius: 12px; background: var(--p-suave); min-width: 0; }
+.pase-datos dt { font-size: calc(.65rem * var(--fs-scale, 1)); font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--p-tenue); }
+.pase-datos dd { margin: .1rem 0 0; font-size: calc(.86rem * var(--fs-scale, 1)); font-weight: 700; overflow-wrap: anywhere; }
+.pase-dorsal { font-size: calc(1.15rem * var(--fs-scale, 1)) !important; font-weight: 900 !important; font-style: italic; color: var(--p-acento); }
+
+.pase-kits { width: 100%; margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: .45rem; }
+.pase-kits li {
+  display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: .6rem;
+  padding: .6rem .75rem; border-radius: 12px; background: var(--p-suave);
+  font-size: calc(.85rem * var(--fs-scale, 1));
+}
+.pase-kits-quien { display: inline-flex; align-items: center; gap: .35rem; font-weight: 800; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pase-kits-quien i { color: var(--p-acento); }
+.pase-kits-talla { color: var(--p-tenue); }
+.pase-kits-talla b { color: var(--p-texto); font-size: calc(.95rem * var(--fs-scale, 1)); font-style: italic; }
+
+.pase-ayuda {
+  width: 100%; display: flex; align-items: flex-start; gap: .4rem; margin: 0;
+  font-size: calc(.8rem * var(--fs-scale, 1)); line-height: 1.45; color: var(--p-tenue);
+}
+.pase-ayuda i { color: var(--p-acento); margin-top: .1rem; }
+
+/* Pie con corte de tiquete */
+.pase-pie {
+  position: relative; display: flex; align-items: center; justify-content: center; gap: .4rem;
+  padding: .9rem 1.2rem 1rem; border-top: 2px dashed var(--p-linea);
+  font-size: calc(.74rem * var(--fs-scale, 1)); color: var(--p-tenue);
+}
+.pase-pie i { color: var(--p-acento); }
+
+@media (max-width: 420px) {
+  .pase-cab { padding: 1.1rem 3rem 1rem 1.1rem; }
+  .pase-cuerpo { padding: 1rem 1rem 1.1rem; }
+  .pase-selector { margin: .9rem .9rem 0; }
+  .pase-datos { grid-template-columns: 1fr; }
+  .pase-kits li { grid-template-columns: 1fr auto; }
+  .pase-kits li .pase-estado { grid-column: 1 / -1; justify-self: start; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pase, .pase-cuerpo, .pase-cerrar { animation: none !important; transition: none !important; }
 }

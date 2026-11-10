@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import type { FormEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { FormEvent, ReactNode } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import Protected from '../../components/Protected';
 import SportWrapper from '../../components/deportivo/SportWrapper';
@@ -11,6 +11,11 @@ import { DATOS_PAGO, referenciaDePago } from '../../config/datosPago';
 import { detectarQR, leerTexto, analizarTexto, huellaArchivo } from '../../utils/comprobantePago';
 import '../../styles/deportivo/participante.css';
 
+/* =====================================================================
+   Inscripción a un evento deportivo (3 pasos: datos, pago y confirmar).
+   Los estilos están en participante.css, sección "INSCRIPCIÓN (.insc)".
+   ===================================================================== */
+
 interface Kit {
   nombre?: string | null;
   precio?: number;
@@ -20,14 +25,6 @@ interface Kit {
   fecha_entrega?: string | null;
   lugar_entrega?: string | null;
   incluido?: boolean;
-}
-
-/** "2026-10-27T00:00:00.000000Z" -> "27 de octubre de 2026" sin desfase de zona horaria. */
-function fmtFechaKit(iso: string | null | undefined) {
-  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso ?? ''));
-  if (!m) return '';
-  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
-    .toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 interface EventoInscripcion {
@@ -47,121 +44,198 @@ interface EventoInscripcion {
   kit?: Kit | null;
 }
 
-// ASUNCIÓN: no vi CategoriaCompetenciaResource.php — nombre/descripcion son
-// mi mejor suposición según lo que se ve en la maqueta (ej. "Elite hombre",
-// "Masculino · 18-40 años"). Confirmar nombres reales de campos.
 interface CategoriaCompetencia {
   id: number;
   nombre: string;
   descripcion?: string | null;
 }
 
+type MetodoPago = 'transferencia' | 'nequi' | 'efectivo';
+
 const RH_OPCIONES = ['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'];
+
+const PARENTESCOS = [
+  { valor: 'madre', etiqueta: 'Madre', icono: 'ti-woman' },
+  { valor: 'padre', etiqueta: 'Padre', icono: 'ti-man' },
+  { valor: 'esposo_a', etiqueta: 'Esposo/a', icono: 'ti-heart' },
+  { valor: 'hermano_a', etiqueta: 'Hermano/a', icono: 'ti-users' },
+  { valor: 'amigo_a', etiqueta: 'Amigo/a', icono: 'ti-friends' },
+  { valor: 'otro', etiqueta: 'Otro', icono: 'ti-user' },
+];
+
+const TIPOS_DOCUMENTO: Record<string, { etiqueta: string; min: number; max: number }> = {
+  CC: { etiqueta: 'Cédula de ciudadanía', min: 6, max: 10 },
+  TI: { etiqueta: 'Tarjeta de identidad', min: 10, max: 11 },
+  CE: { etiqueta: 'Cédula de extranjería', min: 6, max: 10 },
+  PA: { etiqueta: 'Pasaporte', min: 5, max: 12 },
+};
+
+const METODOS: Array<{ valor: MetodoPago; titulo: string; detalle: string; icono: string }> = [
+  { valor: 'transferencia', titulo: 'Transferencia', detalle: 'Desde tu banco', icono: 'ti-building-bank' },
+  { valor: 'nequi', titulo: 'Nequi / Daviplata', detalle: 'Al instante desde el celular', icono: 'ti-device-mobile' },
+  { valor: 'efectivo', titulo: 'Efectivo', detalle: 'En el punto de inscripción', icono: 'ti-cash' },
+];
+
+const MAX_MEDICO = 500;
+const DRAFT_KEY_PREFIX = 'skyed_inscripcion_draft_';
+
+/* ---------------------------------------------------------------------
+   Formatos
+   --------------------------------------------------------------------- */
 
 function fmtMoney(n: number | null | undefined) {
   return '$' + (Number(n) || 0).toLocaleString('es-CO');
 }
 
-export default function Inscription() {
-  return (
-    <Protected>
-      <SportWrapper>
-        <InscriptionWizard />
-      </SportWrapper>
-    </Protected>
-  );
+/** "2026-11-25T00:00:00.000000Z" -> Date local (sin desfase de zona horaria). */
+function fechaLocal(iso: string | null | undefined): Date | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso ?? ''));
+  return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null;
 }
-function soloLetras(s: string) {
+
+/** "25 de noviembre de 2026" */
+function fmtFecha(iso: string | null | undefined) {
+  const f = fechaLocal(iso);
+  return f ? f.toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+}
+
+/** "mar, 25 nov" para el encabezado. */
+function fmtFechaCorta(iso: string | null | undefined) {
+  const f = fechaLocal(iso);
+  return f ? f.toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' }) : '';
+}
+
+/** "07:00:00" -> "7:00 a. m." */
+function fmtHora(hora: string | null | undefined) {
+  const m = /^(\d{1,2}):(\d{2})/.exec(String(hora ?? ''));
+  if (!m) return hora ?? '';
+  return new Date(2000, 0, 1, Number(m[1]), Number(m[2])).toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit' });
+}
+
+/** Días que faltan para el evento (0 = hoy, negativo = ya pasó). */
+function diasParaEvento(iso: string | null | undefined) {
+  const f = fechaLocal(iso);
+  if (!f) return null;
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  return Math.round((f.getTime() - hoy.getTime()) / 86_400_000);
+}
+
+/* ---------------------------------------------------------------------
+   Limpieza de lo que se escribe (no deja pasar caracteres especiales)
+   --------------------------------------------------------------------- */
+
+/** Solo letras (con tildes, ñ y ü) y espacios; cada palabra empieza en mayúscula. */
+function soloLetras(s: string, max = 50) {
   return s
-    .replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ ]/g, '')
+    .replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ ]/g, '')
+    .replace(/^\s+/, '')
     .replace(/\s{2,}/g, ' ')
-    .replace(/(^|\s)([a-záéíóúñ])/g, (_, p1, p2) => p1 + p2.toUpperCase());
+    .replace(/(^|\s)([a-záéíóúñü])/g, (_, p1, p2) => p1 + p2.toUpperCase())
+    .slice(0, max);
 }
 
-function soloNumeros(s: string) {
-  return s.replace(/[^0-9]/g, '').slice(0, 10);
+/** Solo números, con un largo máximo. */
+function soloNumeros(s: string, max = 10) {
+  return s.replace(/\D/g, '').slice(0, max);
 }
 
-const DRAFT_KEY_PREFIX = 'skyed_inscripcion_draft_';
+/** Dorsal: solo números, sin ceros a la izquierda, de 1 a 99999. */
+function limpiarDorsal(s: string) {
+  return s.replace(/\D/g, '').replace(/^0+/, '').slice(0, 5);
+}
 
-/** Giro del ícono mientras se valida el comprobante (el ícono de Tabler solo no se anima). */
-const ESTILOS_VALIDANDO = `
-@keyframes partSpin { to { transform: rotate(360deg); } }
-.part-spin { display: inline-block; animation: partSpin .9s linear infinite; }
-@media (prefers-reduced-motion: reduce) { .part-spin { animation-duration: 2.4s; } }
-`;
+/** Correo: sin espacios, en minúscula y máximo 80 caracteres. */
+function limpiarCorreo(s: string) {
+  return s.replace(/\s/g, '').toLowerCase().slice(0, 80);
+}
 
-/** Animaciones y estilos de las opciones del kit (Sí/No y tallas). Se pinta una sola vez en la tarjeta del kit. */
-const ESTILOS_KIT = `
-@keyframes kitFadeUp { from { opacity: 0; transform: translateY(12px) scale(.94); } to { opacity: 1; transform: none; } }
-@keyframes kitPop { 0% { transform: scale(1); } 35% { transform: scale(1.1); } 70% { transform: scale(.97); } 100% { transform: scale(1); } }
-@keyframes kitCheck { from { opacity: 0; transform: scale(0) rotate(-120deg); } to { opacity: 1; transform: scale(1) rotate(0); } }
-@keyframes kitShine { from { transform: translateX(-130%); } to { transform: translateX(130%); } }
-@keyframes kitPulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
-@keyframes kitSlideIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+/** Texto libre (condiciones médicas): sin símbolos que sirvan para inyectar código. */
+function limpiarTextoLibre(s: string) {
+  return s
+    .replace(/[<>{}[\]`$\\|^~]/g, '')
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
+    .slice(0, MAX_MEDICO);
+}
 
-.kit-sino { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; max-width: 360px; margin-top: .6rem; }
-.kit-sino button {
-  display: flex; align-items: center; justify-content: center; gap: .45rem;
-  padding: .75rem 1rem; border-radius: 12px; cursor: pointer; font: inherit; font-weight: 700; color: inherit;
-  border: 1.5px solid color-mix(in srgb, currentColor 25%, transparent); background: transparent;
-  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease, color .18s ease;
+/** ¿Al limpiar se quitó algo distinto de espacios? (para avisar qué no se permite) */
+function quitoCaracteres(antes: string, despues: string) {
+  return despues.replace(/\s/g, '').length < antes.replace(/\s/g, '').length;
 }
-.kit-sino button:hover { transform: translateY(-2px); border-color: var(--accent); box-shadow: 0 8px 16px -10px var(--accent); }
-.kit-sino button:active { transform: scale(.95); }
-.kit-sino button[aria-checked="true"] {
-  background: var(--accent); border-color: var(--accent); color: #fff;
-  box-shadow: 0 8px 18px -8px var(--accent); animation: kitPop .35s ease;
-}
-.kit-sino button[aria-checked="true"] i { animation: kitCheck .4s cubic-bezier(.34, 1.56, .64, 1) both; }
 
-.kit-rejilla {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: .6rem; margin-top: .7rem; max-width: 560px;
-  animation: kitSlideIn .3s ease both;
-}
-.kit-talla {
-  position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .15rem;
-  min-height: 74px; padding: .6rem .4rem; border-radius: 14px; font: inherit; color: inherit; cursor: pointer;
-  border: 1.5px solid color-mix(in srgb, currentColor 25%, transparent); background: transparent;
-  animation: kitFadeUp .45s cubic-bezier(.22, 1, .36, 1) both; animation-delay: calc(var(--i, 0) * 70ms);
-  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease, background .2s ease;
-}
-.kit-talla:not(:disabled):hover {
-  transform: translateY(-4px); border-color: var(--accent);
-  box-shadow: 0 12px 20px -12px var(--accent);
-}
-.kit-talla:not(:disabled):active { transform: scale(.93); }
-.kit-talla[data-activa="true"] {
-  border-color: var(--accent); background: color-mix(in srgb, var(--accent) 18%, transparent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 24%, transparent);
-  animation: kitFadeUp .45s cubic-bezier(.22, 1, .36, 1) both, kitPop .4s ease;
-  animation-delay: calc(var(--i, 0) * 70ms), 0ms;
-}
-.kit-talla[data-activa="true"]::after {
-  content: ""; position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, .35) 50%, transparent 70%);
-  animation: kitShine .8s ease .05s both;
-}
-.kit-talla .kit-check {
-  position: absolute; top: 6px; right: 6px; font-size: 1rem; color: var(--accent);
-  animation: kitCheck .4s cubic-bezier(.34, 1.56, .64, 1) both;
-}
-.kit-talla strong { font-size: 1.25rem; line-height: 1.1; transition: transform .2s ease; }
-.kit-talla:not(:disabled):hover strong { transform: scale(1.12); }
-.kit-talla small { font-size: .7rem; font-weight: 600; opacity: .7; }
-.kit-talla small[data-nivel="poca"] { color: #f59e0b; opacity: 1; }
-.kit-talla small[data-nivel="ultima"] { color: #f59e0b; opacity: 1; animation: kitPulse 1.1s ease-in-out infinite; }
-.kit-talla:disabled { opacity: .5; cursor: not-allowed; filter: grayscale(.5); }
-.kit-talla:disabled strong { text-decoration: line-through; }
-.kit-talla:disabled small { color: #ef4444; opacity: 1; }
+const SOLO_LETRAS = 'Solo se permiten letras y espacios.';
+const SOLO_NUMEROS = 'Solo se permiten números.';
+const SIN_SIMBOLOS = 'No se permiten símbolos como < > { } [ ] $ \\ | " \' ; =';
 
-@media (prefers-reduced-motion: reduce) {
-  .kit-sino button, .kit-sino button i, .kit-rejilla, .kit-talla, .kit-talla .kit-check, .kit-talla strong, .kit-talla small {
-    animation: none !important; transition: none !important;
+/** Caracteres que el filtro global (utils/seguridadTexto.ts) quita antes de que React los vea. */
+const ESPECIALES = /[<>"'`;\\|&{}[\]^~=$＜＞＂＇；＆＝｜＄]/;
+
+/**
+ * El filtro global borra los caracteres peligrosos al instante, así que el
+ * campo nunca "ve" que se escribieron. Esto los detecta justo antes (al
+ * teclear o pegar) para poder explicarle a la persona por qué no aparecen.
+ */
+function detectarEspeciales(avisar: () => void, alEscribirBien?: () => void) {
+  return {
+    onBeforeInput: (e: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const dato = (e.nativeEvent as InputEvent).data;
+      if (dato && ESPECIALES.test(dato)) avisar();
+      else if (dato) alEscribirBien?.();
+    },
+    onPaste: (e: React.ClipboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      if (ESPECIALES.test(e.clipboardData.getData('text'))) avisar();
+    },
+  };
+}
+
+/* ---------------------------------------------------------------------
+   Validaciones (devuelven '' si está bien o el mensaje de error)
+   --------------------------------------------------------------------- */
+
+function errorCelular(v: string) {
+  if (!v) return 'Este campo es obligatorio.';
+  if (v.length < 10) {
+    const faltan = 10 - v.length;
+    return `Faltan ${faltan} dígito${faltan === 1 ? '' : 's'}: el celular tiene 10.`;
   }
-  .kit-talla::after { display: none; }
+  if (!/^3\d{9}$/.test(v)) return 'El celular debe empezar por 3 (ej. 3001234567).';
+  return '';
 }
-`;
+
+function errorNombreCompleto(v: string) {
+  const t = v.trim();
+  if (!t) return 'Este campo es obligatorio.';
+  const partes = t.split(/\s+/);
+  if (partes.length < 2) return 'Escribe el nombre y el apellido.';
+  if (partes.some((p) => p.length < 2)) return 'Cada nombre debe tener al menos 2 letras.';
+  return '';
+}
+
+function errorNombre(v: string) {
+  const t = v.trim();
+  if (!t) return 'Este campo es obligatorio.';
+  if (t.replace(/\s/g, '').length < 2) return 'Debe tener al menos 2 letras.';
+  return '';
+}
+
+function errorDocumentoInvitado(tipo: string, v: string, documentoTitular: string) {
+  const reglas = TIPOS_DOCUMENTO[tipo] ?? TIPOS_DOCUMENTO.CC;
+  if (!v) return 'Este campo es obligatorio.';
+  if (v.length < reglas.min || v.length > reglas.max) {
+    return reglas.min === reglas.max
+      ? `La ${reglas.etiqueta.toLowerCase()} debe tener ${reglas.min} dígitos.`
+      : `Debe tener entre ${reglas.min} y ${reglas.max} dígitos.`;
+  }
+  if (documentoTitular && v === String(documentoTitular)) return 'Es tu mismo documento: el invitado debe ser otra persona.';
+  return '';
+}
+
+function errorCorreo(v: string) {
+  if (!v) return '';
+  if (!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(v)) return 'Escribe un correo válido (ej. nombre@correo.com).';
+  return '';
+}
 
 /** Edad permitida del invitado: de 10 a 100 años, calculada desde la fecha de hoy. */
 const EDAD_MIN_INVITADO = 10;
@@ -174,9 +248,7 @@ function isoLocal(f: Date) {
 function rangoNacimientoInvitado() {
   const hoy = new Date();
   return {
-    // Más reciente permitida: hoy hace 10 años (cumple 10 hoy como mínimo).
     max: isoLocal(new Date(hoy.getFullYear() - EDAD_MIN_INVITADO, hoy.getMonth(), hoy.getDate())),
-    // Más antigua permitida: hoy hace 100 años.
     min: isoLocal(new Date(hoy.getFullYear() - EDAD_MAX_INVITADO, hoy.getMonth(), hoy.getDate())),
   };
 }
@@ -187,6 +259,95 @@ function errorNacimientoInvitado(valor: string): string {
   if (valor > max) return `El invitado debe tener al menos ${EDAD_MIN_INVITADO} años.`;
   if (valor < min) return `El invitado no puede tener más de ${EDAD_MAX_INVITADO} años.`;
   return '';
+}
+
+/* ---------------------------------------------------------------------
+   Piezas de la interfaz
+   --------------------------------------------------------------------- */
+
+/** Bloque numerado del formulario ("01 · Tu perfil de corredor"). */
+function Seccion({ numero, icono, titulo, subtitulo, children }: {
+  numero: number;
+  icono: string;
+  titulo: string;
+  subtitulo?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="insc-seccion" style={{ '--i': numero } as React.CSSProperties}>
+      <header className="insc-seccion-cab">
+        <span className="insc-seccion-num" aria-hidden="true">{String(numero).padStart(2, '0')}</span>
+        <div>
+          <h3><i className={`ti ${icono}`} aria-hidden="true" /> {titulo}</h3>
+          {subtitulo && <p>{subtitulo}</p>}
+        </div>
+      </header>
+      <div className="insc-seccion-cuerpo">{children}</div>
+    </section>
+  );
+}
+
+/** Campo con etiqueta, ícono, mensaje de error y marca verde cuando está bien. */
+function Campo({ id, etiqueta, icono, error, ok, ayuda, ancho, children }: {
+  id: string;
+  etiqueta: ReactNode;
+  icono?: string;
+  error?: string;
+  ok?: boolean;
+  ayuda?: ReactNode;
+  ancho?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div className={`insc-campo${error ? ' con-error' : ok ? ' con-ok' : ''}${ancho ? ' ancho' : ''}`}>
+      <label htmlFor={id} className="insc-etiqueta">{etiqueta}</label>
+      <div className={`insc-control${icono ? ' con-icono' : ''}`}>
+        {icono && <i className={`ti ${icono} insc-control-icono`} aria-hidden="true" />}
+        {children}
+        {ok && !error && <i className="ti ti-circle-check-filled insc-control-ok" aria-hidden="true" />}
+      </div>
+      {error
+        ? <p className="insc-error" id={`${id}-error`}><i className="ti ti-alert-circle" aria-hidden="true" /> {error}</p>
+        : ayuda ? <p className="insc-ayuda">{ayuda}</p> : null}
+    </div>
+  );
+}
+
+/** Opciones en "pastillas" (RH, parentesco...). */
+function Pastillas<T extends string>({ id, opciones, valor, onCambio, error, etiqueta, columnas }: {
+  id: string;
+  opciones: Array<{ valor: T; etiqueta: string; icono?: string }>;
+  valor: string;
+  onCambio: (v: T) => void;
+  error?: string;
+  etiqueta: string;
+  columnas?: number;
+}) {
+  return (
+    <div
+      id={id}
+      tabIndex={-1}
+      role="radiogroup"
+      aria-label={etiqueta}
+      className={`insc-pastillas${error ? ' con-error' : ''}`}
+      style={columnas ? ({ '--cols': columnas } as React.CSSProperties) : undefined}
+    >
+      {opciones.map((o) => (
+        <button
+          key={o.valor}
+          type="button"
+          role="radio"
+          aria-checked={valor === o.valor}
+          title={`Elegir ${o.etiqueta}`}
+          className="insc-pastilla"
+          onClick={() => onCambio(o.valor)}
+        >
+          {o.icono && <i className={`ti ${o.icono}`} aria-hidden="true" />}
+          <span>{o.etiqueta}</span>
+        </button>
+      ))}
+    </div>
+  );
 }
 
 /** Sí / No en dos botones iguales, con animación al elegir. */
@@ -235,6 +396,64 @@ function TallaOpcion({ talla, quedan, controlado, activa, indice, onClick }: {
   );
 }
 
+/** Copia un texto al portapapeles (con respaldo para navegadores sin permiso). */
+async function copiarTexto(texto: string) {
+  try {
+    await navigator.clipboard.writeText(texto);
+  } catch {
+    const campo = document.createElement('textarea');
+    campo.value = texto;
+    campo.style.position = 'fixed';
+    campo.style.opacity = '0';
+    document.body.appendChild(campo);
+    campo.select();
+    try { document.execCommand('copy'); } catch { /* sin soporte */ }
+    document.body.removeChild(campo);
+  }
+}
+
+/** Un dato para pagar (cuenta, titular...) con botón de copiar que confirma "Copiado". */
+function DatoPago({ etiqueta, valor, copiar, destacado }: { etiqueta: string; valor: string; copiar?: string; destacado?: boolean }) {
+  const [copiado, setCopiado] = useState(false);
+  const temporizador = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(temporizador.current), []);
+
+  const alCopiar = async () => {
+    if (!copiar) return;
+    await copiarTexto(copiar);
+    setCopiado(true);
+    clearTimeout(temporizador.current);
+    temporizador.current = setTimeout(() => setCopiado(false), 1800);
+  };
+
+  return (
+    <div className={`insc-dato${destacado ? ' destacado' : ''}`}>
+      <span className="insc-dato-etiqueta">{etiqueta}</span>
+      <strong className="insc-dato-valor">{valor}</strong>
+      {copiar && (
+        <button type="button" className={`insc-copiar${copiado ? ' ok' : ''}`} title={`Copiar: ${etiqueta.toLowerCase()}`} onClick={alCopiar}>
+          <i className={`ti ${copiado ? 'ti-check' : 'ti-copy'}`} aria-hidden="true" /> {copiado ? 'Copiado' : 'Copiar'}
+        </button>
+      )}
+      <span className="insc-solo-lector" role="status" aria-live="polite">{copiado ? `${etiqueta} copiado` : ''}</span>
+    </div>
+  );
+}
+
+/* =====================================================================
+   Página
+   ===================================================================== */
+
+export default function Inscription() {
+  return (
+    <Protected>
+      <SportWrapper>
+        <InscriptionWizard />
+      </SportWrapper>
+    </Protected>
+  );
+}
+
 function InscriptionWizard() {
   const { id } = useParams();
   const nav = useNavigate();
@@ -267,8 +486,10 @@ function InscriptionWizard() {
   const [dorsalPreferido, setDorsalPreferido] = useState('');
   const [tallaKit, setTallaKit] = useState('');
   const [condicionesMedicas, setCondicionesMedicas] = useState('');
-  const [metodoPago, setMetodoPago] = useState<'transferencia' | 'nequi' | 'efectivo'>('transferencia');
+  const [avisoCondiciones, setAvisoCondiciones] = useState('');
+  const [metodoPago, setMetodoPago] = useState<MetodoPago>('transferencia');
   const [comprobante, setComprobante] = useState<File | null>(null);
+  const [vistaComprobante, setVistaComprobante] = useState<string | null>(null);
   const [errorComprobante, setErrorComprobante] = useState(false);
   const [arrastrando, setArrastrando] = useState(false);
   const [validandoComprobante, setValidandoComprobante] = useState(false);
@@ -312,6 +533,8 @@ function InscriptionWizard() {
   const [errorInvTelefono, setErrorInvTelefono] = useState('');
   const [errorInvFechaNac, setErrorInvFechaNac] = useState('');
   const [errorInvTalla, setErrorInvTalla] = useState('');
+  const [errorInvCorreo, setErrorInvCorreo] = useState('');
+  const [errorInvDorsal, setErrorInvDorsal] = useState('');
   const [errorCategoria, setErrorCategoria] = useState('');
   const [errorKit, setErrorKit] = useState('');
   const [errorTalla, setErrorTalla] = useState('');
@@ -368,26 +591,26 @@ function InscriptionWizard() {
       if (!raw) return;
       const draft = JSON.parse(raw);
       if (draft.rh) setRh(draft.rh);
-      if (draft.contactoEmergenciaNombre) setContactoEmergenciaNombre(draft.contactoEmergenciaNombre);
-      if (draft.contactoEmergenciaTelefono) setContactoEmergenciaTelefono(draft.contactoEmergenciaTelefono);
+      if (draft.contactoEmergenciaNombre) setContactoEmergenciaNombre(soloLetras(String(draft.contactoEmergenciaNombre), 100));
+      if (draft.contactoEmergenciaTelefono) setContactoEmergenciaTelefono(soloNumeros(String(draft.contactoEmergenciaTelefono)));
       if (draft.parentesco) setParentesco(draft.parentesco);
       if (draft.categoriaId) setCategoriaId(draft.categoriaId);
       if (draft.deseaJersey !== undefined && draft.deseaJersey !== null) setDeseaJersey(draft.deseaJersey);
-      if (draft.dorsalPreferido) setDorsalPreferido(draft.dorsalPreferido);
+      if (draft.dorsalPreferido) setDorsalPreferido(limpiarDorsal(String(draft.dorsalPreferido)));
       if (draft.tallaKit) setTallaKit(draft.tallaKit);
-      if (draft.condicionesMedicas) setCondicionesMedicas(draft.condicionesMedicas);
+      if (draft.condicionesMedicas) setCondicionesMedicas(limpiarTextoLibre(String(draft.condicionesMedicas)));
       if (draft.mostrarInvitado) setMostrarInvitado(draft.mostrarInvitado);
-      if (draft.invTipoDocumento) setInvTipoDocumento(draft.invTipoDocumento);
-      if (draft.invDocumento) setInvDocumento(draft.invDocumento);
-      if (draft.invNombre) setInvNombre(draft.invNombre);
-      if (draft.invApellido) setInvApellido(draft.invApellido);
+      if (draft.invTipoDocumento && TIPOS_DOCUMENTO[draft.invTipoDocumento]) setInvTipoDocumento(draft.invTipoDocumento);
+      if (draft.invDocumento) setInvDocumento(soloNumeros(String(draft.invDocumento), 12));
+      if (draft.invNombre) setInvNombre(soloLetras(String(draft.invNombre)));
+      if (draft.invApellido) setInvApellido(soloLetras(String(draft.invApellido)));
       if (draft.invRh) setInvRh(draft.invRh);
-      if (draft.invTelefono) setInvTelefono(draft.invTelefono);
+      if (draft.invTelefono) setInvTelefono(soloNumeros(String(draft.invTelefono)));
       if (draft.invFechaNacimiento) setInvFechaNacimiento(draft.invFechaNacimiento);
-      if (draft.invCorreo) setInvCorreo(draft.invCorreo);
+      if (draft.invCorreo) setInvCorreo(limpiarCorreo(String(draft.invCorreo)));
       if (draft.invDeseaKit) setInvDeseaKit(draft.invDeseaKit);
       if (draft.invTallaKit) setInvTallaKit(draft.invTallaKit);
-      if (draft.invDorsal) setInvDorsal(draft.invDorsal);
+      if (draft.invDorsal) setInvDorsal(limpiarDorsal(String(draft.invDorsal)));
       if (draft.metodoPago) setMetodoPago(draft.metodoPago);
 
       // El archivo del comprobante nunca se puede restaurar tras recargar
@@ -450,7 +673,7 @@ function InscriptionWizard() {
     setDocumento(user.documento || '');
     setTelefonoContacto(user.telefono || '');
     if (user.fecha_nacimiento) {
-      setFechaNacimiento(user.fecha_nacimiento.slice(0, 10)); // YYYY-MM-DD para el input type="date"
+      setFechaNacimiento(user.fecha_nacimiento.slice(0, 10)); // YYYY-MM-DD
     }
 
     const faltaDato = !user.documento || !user.telefono || !user.fecha_nacimiento;
@@ -459,6 +682,19 @@ function InscriptionWizard() {
       mostrarMsg('error', 'Tu perfil tiene datos incompletos (documento, teléfono o fecha de nacimiento). Complétalos en Ajustes de tu perfil antes de continuar con la inscripción.');
     }
   }, [user]);
+
+  // Miniatura del comprobante elegido (se libera al cambiarlo).
+  useEffect(() => {
+    if (!comprobante) { setVistaComprobante(null); return; }
+    const url = URL.createObjectURL(comprobante);
+    setVistaComprobante(url);
+    return () => URL.revokeObjectURL(url);
+  }, [comprobante]);
+
+  // Al cambiar de paso se sube al inicio para empezar a leer desde arriba.
+  useEffect(() => {
+    document.getElementById('insc-arriba')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [step, done]);
 
   function mostrarMsg(tipo: 'ok' | 'error', texto: string) {
     setMsg({ tipo, texto, id: Date.now() });
@@ -592,7 +828,6 @@ function InscriptionWizard() {
     return () => clearTimeout(timer);
   }, [msg, duracionMsg]);
 
-
   const precioEvento = evento?.precio || 0;
   const precioKitUnitario = evento?.kit ? Number(evento.kit.precio || 0) : 0;
   const precioKit = deseaJersey ? precioKitUnitario : 0;
@@ -617,49 +852,54 @@ function InscriptionWizard() {
   // Única por inscripción (evento + participante), p. ej. SKYED-0002-15.
   const referenciaPago = evento ? referenciaDePago(evento.id, user?.id) : '';
 
+  const errorDorsalInvitado = (v: string) =>
+    v && dorsalPreferido && v === dorsalPreferido ? 'Ese dorsal ya lo pediste para ti: elige otro.' : '';
+
   function irAPago(e: FormEvent) {
     e.preventDefault();
     if (!evento) return;
 
-    // Campos que faltan: se marcan en rojo, cada uno con su mensaje.
+    // Campos que faltan o están mal: se marcan en rojo, cada uno con su mensaje.
     const faltantes: Array<{ id: string; etiqueta: string }> = [];
     const falta = (id: string, etiqueta: string) => { faltantes.push({ id, etiqueta }); };
+    const revisar = (error: string, set: (e: string) => void, id: string, etiqueta: string) => {
+      set(error);
+      if (error) falta(id, etiqueta);
+    };
 
-    if (!documento) { setErrorDocumento('Este campo es obligatorio.'); falta('documento', 'Documento'); }
+    if (!documento) { setErrorDocumento('Falta en tu perfil.'); falta('documento', 'Documento'); }
     if (!rh) { setErrorRh('Selecciona tu tipo de sangre.'); falta('rh', 'Tipo de sangre'); }
-    if (!telefonoContacto) { setErrorTelefonoContacto('Este campo es obligatorio.'); falta('tel-contacto', 'Teléfono de contacto'); }
-    if (!fechaNacimiento) { setErrorFechaNacimiento('Este campo es obligatorio.'); falta('fecha-nac', 'Fecha de nacimiento'); }
-    if (!contactoEmergenciaNombre) {
-      setErrorNombreContacto('Este campo es obligatorio.');
-      falta('c-nombre', 'Nombre del contacto de emergencia');
-    } else if (contactoEmergenciaNombre.trim().split(/\s+/).filter(Boolean).length < 2) {
-      setErrorNombreContacto('Escribe el nombre completo (nombre y apellido).');
-      falta('c-nombre', 'Nombre completo del contacto de emergencia');
-    } else {
-      setErrorNombreContacto('');
+    if (!telefonoContacto) { setErrorTelefonoContacto('Falta en tu perfil.'); falta('tel-contacto', 'Teléfono de contacto'); }
+    if (!fechaNacimiento) { setErrorFechaNacimiento('Falta en tu perfil.'); falta('fecha-nac', 'Fecha de nacimiento'); }
+
+    revisar(errorNombreCompleto(contactoEmergenciaNombre), setErrorNombreContacto, 'c-nombre', 'Nombre del contacto de emergencia');
+    {
+      let err = errorCelular(contactoEmergenciaTelefono);
+      if (!err && contactoEmergenciaTelefono === telefonoContacto) err = 'Es tu propio número: pon el de otra persona.';
+      revisar(err, setErrorTelefonoEmergencia, 'c-telefono', 'Teléfono del contacto de emergencia');
     }
-    if (!contactoEmergenciaTelefono) { setErrorTelefonoEmergencia('Este campo es obligatorio.'); falta('c-telefono', 'Teléfono del contacto de emergencia'); }
     if (!parentesco) { setErrorParentesco('Selecciona el parentesco.'); falta('c-parentesco', 'Parentesco'); }
-    if (!categoriaId) { setErrorCategoria('Selecciona una categoría de competencia.'); falta('grupo-categoria', 'Categoría de competencia'); }
+    if (!categoriaId && categorias.length > 0) { setErrorCategoria('Selecciona una categoría de competencia.'); falta('grupo-categoria', 'Categoría de competencia'); }
     if (evento?.kit && deseaJersey === null) { setErrorKit('Indica si deseas adquirir el kit.'); falta('grupo-kit', 'Kit'); }
     if (evento?.kit && deseaJersey === true && !tallaKit) { setErrorTalla('Selecciona la talla del kit.'); falta('grupo-talla', 'Talla del kit'); }
 
     if (mostrarInvitado) {
-      if (!invDocumento) { setErrorInvDocumento('Este campo es obligatorio.'); falta('i-documento', 'Documento del invitado'); }
-      if (!invNombre) { setErrorInvNombre('Este campo es obligatorio.'); falta('i-nombre', 'Nombre del invitado'); }
-      if (!invApellido) { setErrorInvApellido('Este campo es obligatorio.'); falta('i-apellido', 'Apellido del invitado'); }
-      if (!invTelefono) { setErrorInvTelefono('Este campo es obligatorio.'); falta('i-telefono', 'Teléfono del invitado'); }
-      {
-        const errNac = errorNacimientoInvitado(invFechaNacimiento);
-        if (errNac) { setErrorInvFechaNac(errNac); falta('i-fecha-nac', 'Fecha de nacimiento del invitado'); }
+      revisar(errorDocumentoInvitado(invTipoDocumento, invDocumento, documento), setErrorInvDocumento, 'i-documento', 'Documento del invitado');
+      revisar(errorNombre(invNombre), setErrorInvNombre, 'i-nombre', 'Nombre del invitado');
+      revisar(errorNombre(invApellido), setErrorInvApellido, 'i-apellido', 'Apellido del invitado');
+      revisar(errorCelular(invTelefono), setErrorInvTelefono, 'i-telefono', 'Teléfono del invitado');
+      revisar(errorNacimientoInvitado(invFechaNacimiento), setErrorInvFechaNac, 'i-fecha-nac', 'Fecha de nacimiento del invitado');
+      revisar(errorCorreo(invCorreo), setErrorInvCorreo, 'i-correo', 'Correo del invitado');
+      if (evento?.kit && invDeseaKit) {
+        if (!invTallaKit) { setErrorInvTalla('Selecciona la talla del kit del invitado.'); falta('grupo-inv-talla', 'Talla del kit del invitado'); }
+        revisar(errorDorsalInvitado(invDorsal), setErrorInvDorsal, 'inv-dorsal', 'Dorsal del invitado');
       }
-      if (invDeseaKit && !invTallaKit) { setErrorInvTalla('Selecciona la talla del kit del invitado.'); falta('grupo-inv-talla', 'Talla del kit del invitado'); }
     }
 
     if (faltantes.length) {
       const nombres = faltantes.map(f => f.etiqueta);
       const lista = nombres.length <= 4 ? nombres.join(', ') : `${nombres.slice(0, 4).join(', ')} y ${nombres.length - 4} más`;
-      mostrarMsg('error', `Faltan datos por completar: ${lista}. Revisa los campos marcados en rojo.`);
+      mostrarMsg('error', `Revisa estos datos: ${lista}. Están marcados en rojo.`);
       // Lleva la vista al primer campo con error (sin enfocar los bloqueados del perfil).
       const el = document.getElementById(faltantes[0].id);
       if (el) {
@@ -677,7 +917,7 @@ function InscriptionWizard() {
     if (metodoPago !== 'efectivo' && !comprobante) {
       setErrorComprobante(true);
       mostrarMsg('error', 'Falta el campo: Comprobante de pago.');
-      document.querySelector('.part-comprobante-error')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      document.getElementById('zona-comprobante')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
     setStep(3);
@@ -748,16 +988,13 @@ function InscriptionWizard() {
       return;
     }
 
-    // ASUNCIÓN: nombres de campo para rh/telefono_contacto/categoria/
-    // jersey/dorsal/condiciones médicas del titular — pendiente de
-    // confirmar contra el StoreInscripcionRequest actualizado.
     const payload: Record<string, unknown> = {
       cupo_i: 1,
       precio_pagado_i: total,
       documento,
       rh_u: rh,
       telefono_contacto: telefonoContacto,
-      contacto_emergencia_nombre: contactoEmergenciaNombre,
+      contacto_emergencia_nombre: contactoEmergenciaNombre.trim(),
       contacto_emergencia_telefono: contactoEmergenciaTelefono,
       contacto_emergencia_parentesco: parentesco,
       fecha_nacimiento: fechaNacimiento,
@@ -765,7 +1002,7 @@ function InscriptionWizard() {
       desea_jersey: evento?.kit ? deseaJersey === true : false,
       numero_dorsal_preferido: evento?.kit && deseaJersey ? (dorsalPreferido || null) : null,
       talla_kit: deseaJersey ? (tallaKit || null) : null,
-      condiciones_medicas: condicionesMedicas || null,
+      condiciones_medicas: condicionesMedicas.trim() || null,
       metodo_pago_p: metodoPago,
       referencia_p: referenciaPago,
       // La imagen se sube aparte (POST /pagos/{id}/comprobante) cuando la inscripción ya existe.
@@ -776,8 +1013,8 @@ function InscriptionWizard() {
       payload.invitado = {
         tipo_documento: invTipoDocumento,
         documento_inv: invDocumento,
-        nombre_inv: invNombre,
-        apellido_inv: invApellido,
+        nombre_inv: invNombre.trim(),
+        apellido_inv: invApellido.trim(),
         rh_inv: invRh,
         telefono_inv: invTelefono,
         fecha_nacimiento_inv: invFechaNacimiento,
@@ -827,466 +1064,517 @@ function InscriptionWizard() {
     setEnviando(false);
   }
 
+  /* ------------------------------------------------------------------ */
+  /* Render                                                             */
+  /* ------------------------------------------------------------------ */
+
   if (cargando) {
     return (
-      <div className="part-body" style={{ gridTemplateColumns: '1fr', maxWidth: 1100, margin: '0 auto' }}>
-        <div className="part-card"><div className="part-card-body">Cargando evento…</div></div>
+      <div className="insc insc-estado">
+        <div className="insc-cargando" role="status">
+          <i className="ti ti-bike" aria-hidden="true" />
+          <span>Preparando tu inscripción…</span>
+        </div>
       </div>
     );
   }
 
   if (errorCarga || !evento) {
     return (
-      <div className="part-body" style={{ gridTemplateColumns: '1fr', maxWidth: 1100, margin: '0 auto' }}>
-        <div className="part-card"><div className="part-card-body">{errorCarga || 'Evento no encontrado.'}</div></div>
+      <div className="insc insc-estado">
+        <div className="insc-cargando">
+          <i className="ti ti-mood-sad" aria-hidden="true" />
+          <span>{errorCarga || 'Evento no encontrado.'}</span>
+          <Link className="insc-btn insc-btn-secundario" to="/deportivo/eventos" title="Ver todos los eventos">Ver eventos</Link>
+        </div>
       </div>
     );
   }
 
   const initials = (user?.name || 'SK').split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
+  const dias = diasParaEvento(evento.fecha);
+  const categoriaElegida = categorias.find((c) => c.id === categoriaId);
+  const nombreMetodo = METODOS.find((m) => m.valor === metodoPago)?.titulo ?? metodoPago;
+  const pasos = [
+    { n: 1 as const, titulo: 'Tus datos', icono: 'ti-user' },
+    { n: 2 as const, titulo: 'Pago', icono: 'ti-credit-card' },
+    { n: 3 as const, titulo: 'Confirmar', icono: 'ti-flag' },
+  ];
+  const avance = done ? 100 : ((step - 1) / 2) * 100;
+  let numeroSeccion = 0;
+  const siguiente = () => ++numeroSeccion;
 
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto', padding: '1.5rem' }}>
-      {/* Breadcrumb */}
-      <div className="part-form-hint" style={{ margin: '0 0 1rem' }}>
-        <Link title="Ir al inicio" to="/deportivo" style={{ color: 'var(--muted, #6b7280)' }}>Inicio</Link>
-        {' / '}
-        <Link title="Ver todos los eventos" to="/deportivo/eventos" style={{ color: 'var(--muted, #6b7280)' }}>Eventos</Link>
-        {' / '}
-        <span>{evento.nombre}</span>
-        {' / '}
-        <strong style={{ color: 'inherit' }}>Inscripción</strong>
-      </div>
-
-      {/* Stepper */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '.5rem', marginBottom: '1.75rem' }}>
-        {[{ n: 1, label: 'Tus datos' }, { n: 2, label: 'Pago' }, { n: 3, label: 'Confirmar' }].map((s, idx) => (
-          <div key={s.n} style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '.3rem' }}>
-              <div
-                style={{
-                  width: 30, height: 30, borderRadius: '50%',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontWeight: 700, fontSize: '.85rem',
-                  background: step >= (s.n as 1 | 2 | 3) ? 'var(--accent)' : 'var(--bg, #f8fafc)',
-                  color: step >= (s.n as 1 | 2 | 3) ? '#fff' : 'var(--muted, #6b7280)',
-                  border: step >= (s.n as 1 | 2 | 3) ? 'none' : '1px solid var(--border, #e5e7eb)',
-                }}
-              >
-                {s.n}
-              </div>
-              <span className="part-form-hint" style={{ margin: 0, fontWeight: step === s.n ? 700 : 400 }}>{s.label}</span>
-            </div>
-            {idx < 2 && <div style={{ width: 60, height: 2, background: step > (s.n as 1 | 2 | 3) ? 'var(--accent)' : 'var(--border, #e5e7eb)', marginBottom: '1.2rem' }} />}
+    <div className="insc" id="insc-arriba">
+      {/* ===== Encabezado del evento ===== */}
+      <header className="insc-hero" style={evento.imagen_url ? ({ '--hero-img': `url("${evento.imagen_url}")` } as React.CSSProperties) : undefined}>
+        <div className="insc-hero-rayas" aria-hidden="true" />
+        <div className="insc-hero-contenido">
+          <div className="insc-migas" role="navigation" aria-label="Ruta de navegación">
+            <Link title="Ir al inicio" to="/deportivo">Inicio</Link>
+            <i className="ti ti-chevron-right" aria-hidden="true" />
+            <Link title="Ver todos los eventos" to="/deportivo/eventos">Eventos</Link>
+            <i className="ti ti-chevron-right" aria-hidden="true" />
+            <span>Inscripción</span>
           </div>
-        ))}
+
+          <div className="insc-hero-chips">
+            <span className="insc-chip"><i className="ti ti-bike" aria-hidden="true" /> {evento.categoria}</span>
+            {dias !== null && dias >= 0 && (
+              <span className="insc-chip insc-chip-alt">
+                <i className="ti ti-hourglass-high" aria-hidden="true" /> {dias === 0 ? '¡Es hoy!' : dias === 1 ? 'Falta 1 día' : `Faltan ${dias} días`}
+              </span>
+            )}
+          </div>
+
+          <h1 className="insc-hero-titulo">{evento.nombre}</h1>
+
+          <ul className="insc-hero-meta">
+            <li><i className="ti ti-calendar-event" aria-hidden="true" /> {fmtFechaCorta(evento.fecha)}</li>
+            <li><i className="ti ti-clock" aria-hidden="true" /> {fmtHora(evento.hora)}</li>
+            <li><i className="ti ti-map-pin" aria-hidden="true" /> {evento.ubicacion}</li>
+            {evento.distancia && <li><i className="ti ti-route" aria-hidden="true" /> {evento.distancia}</li>}
+            {evento.desnivel && <li><i className="ti ti-mountain" aria-hidden="true" /> {evento.desnivel}</li>}
+          </ul>
+        </div>
+      </header>
+
+      {/* ===== Progreso: la "pista" con la bici avanzando ===== */}
+      <div className="insc-pista" style={{ '--avance': `${avance}%` } as React.CSSProperties}>
+        <div className="insc-pista-linea" aria-hidden="true">
+          <div className="insc-pista-relleno" />
+          <i className="ti ti-bike insc-pista-bici" />
+        </div>
+        <ol className="insc-pista-pasos">
+          {pasos.map((p) => {
+            const hecho = done || step > p.n;
+            const actual = !done && step === p.n;
+            const puedeVolver = !done && step > p.n && !enviando;
+            return (
+              <li key={p.n} className={`${hecho ? 'hecho' : ''}${actual ? ' actual' : ''}`}>
+                <button
+                  type="button"
+                  disabled={!puedeVolver}
+                  title={puedeVolver ? `Volver a: ${p.titulo}` : p.titulo}
+                  aria-current={actual ? 'step' : undefined}
+                  onClick={() => puedeVolver && setStep(p.n)}
+                >
+                  <span className="insc-pista-num">{hecho ? <i className="ti ti-check" aria-hidden="true" /> : p.n}</span>
+                  <span className="insc-pista-titulo">{p.titulo}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ol>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 340px', gap: '1.5rem', alignItems: 'start' }}>
-        {/* Columna izquierda: formulario */}
-        <div>
+      <div className="insc-grid">
+        {/* ===================== Columna principal ===================== */}
+        <div className="insc-principal">
+          {/* ---------------- PASO 1: datos ---------------- */}
           {step === 1 && (
-            <form onSubmit={irAPago} noValidate>
-              {/* Tarjeta 1: cuenta + documento */}
-              <div className="part-card">
-                <div className="part-card-head">
-                  <span className="part-card-head-icon"><i className="ti ti-user" aria-hidden="true" /></span>
-                  <h3>Datos del participante</h3>
-                </div>
-                <div className="part-card-body">
-                  <p className="part-form-hint" style={{ marginTop: 0 }}>Confirma tu información personal. Los campos marcados con * son obligatorios.</p>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '.75rem', padding: '.75rem', background: 'var(--bg, #f8fafc)', borderRadius: 10, marginBottom: '1.25rem' }}>
-                    <div className="part-avatar" style={{ width: 40, height: 40, fontSize: '.9rem' }}>{initials}</div>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontWeight: 700, fontSize: '.9rem' }}>{user?.name}</div>
-                      <div className="part-form-hint" style={{ margin: 0 }}>{user?.email}</div>
-                    </div>
-                    <button title="Iniciar sesión con otra cuenta" type="button" className="part-btn-link-detail" style={{ marginLeft: 'auto' }} onClick={() => nav('/login')}>
-                      ¿No eres tú? Cambiar cuenta
-                    </button>
+            <form onSubmit={irAPago} noValidate className="insc-form">
+              {perfilIncompleto && (
+                <div className="insc-banner error" role="alert">
+                  <i className="ti ti-user-exclamation" aria-hidden="true" />
+                  <div>
+                    <strong>Completa tu perfil para inscribirte</strong>
+                    <p>Te falta el documento, el teléfono o la fecha de nacimiento. Solo toma un minuto.</p>
                   </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 1.25rem' }}>
-                    <div className="part-form-group">
-                      <label htmlFor="documento">N.º de documento *</label>
-                      <input
-                        id="documento"
-                        required
-                        readOnly
-                        className={`part-input-locked${errorDocumento ? ' part-input-error' : ''}`}
-                        aria-invalid={!!errorDocumento}
-                        value={documento}
-                        onFocus={(e) => {
-                          e.target.blur();
-                          mostrarMsg('error', 'Para modificar tu número de documento, ve a Ajustes de tu perfil.');
-                        }}
-                      />
-                      {errorDocumento && <p className="part-form-error">{errorDocumento}</p>}
-                    </div>
-                    <div className="part-form-group">
-                      <label htmlFor="rh">Tipo de sangre (RH) *</label>
-                      <select id="rh" required className={errorRh ? 'part-input-error' : undefined} aria-invalid={!!errorRh} value={rh} onChange={(e) => { setRh(e.target.value); setErrorRh(''); }}>
-                        <option value="">Seleccionar…</option>
-                        {RH_OPCIONES.map((o) => <option key={o} value={o}>{o}</option>)}
-                      </select>
-                      {errorRh && <p className="part-form-error">{errorRh}</p>}
-                    </div>
-                    <div className="part-form-group">
-                      <label htmlFor="tel-contacto">Teléfono de contacto *</label>
-                      <input
-                        id="tel-contacto"
-                        type="tel"
-                        required
-                        readOnly
-                        className={`part-input-locked${errorTelefonoContacto ? ' part-input-error' : ''}`}
-                        aria-invalid={!!errorTelefonoContacto}
-                        value={telefonoContacto}
-                        onFocus={(e) => {
-                          e.target.blur();
-                          mostrarMsg('error', 'Para modificar tu teléfono, ve a Ajustes de tu perfil.');
-                        }}
-                      />
-                      {errorTelefonoContacto && <p className="part-form-error">{errorTelefonoContacto}</p>}
-                    </div>
-                    <div className="part-form-group">
-                      <label htmlFor="fecha-nac">Fecha de nacimiento *</label>
-                      <input
-                        id="fecha-nac"
-                        type="date"
-                        required
-                        readOnly
-                        className={`part-input-locked${errorFechaNacimiento ? ' part-input-error' : ''}`}
-                        aria-invalid={!!errorFechaNacimiento}
-                        value={fechaNacimiento}
-                        onFocus={(e) => {
-                          e.target.blur();
-                          mostrarMsg('error', 'Para modificar tu fecha de nacimiento, ve a Ajustes de tu perfil.');
-                        }}
-                      />
-                      {errorFechaNacimiento && <p className="part-form-error">{errorFechaNacimiento}</p>}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Tarjeta 2: contacto de emergencia */}
-              <div className="part-card">
-                <div className="part-card-head">
-                  <span className="part-card-head-icon"><i className="ti ti-phone-call" aria-hidden="true" /></span>
-                  <h3>Contacto de emergencia</h3>
-                </div>
-                <div className="part-card-body">
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 1.25rem' }}>
-                    <div className="part-form-group">
-                      <label htmlFor="c-nombre">Nombre completo *</label>
-                      <input
-                        id="c-nombre"
-                        required
-                        className={errorNombreContacto ? 'part-input-error' : undefined}
-                        aria-invalid={!!errorNombreContacto}
-                        value={contactoEmergenciaNombre}
-                        onChange={(e) => {
-                          const raw = e.target.value;
-                          const limpio = soloLetras(raw);
-                          setErrorNombreContacto(limpio.replace(/\s/g, '').length < raw.replace(/\s/g, '').length ? 'Este campo solo permite letras.' : '');
-                          setContactoEmergenciaNombre(limpio);
-                        }}
-                      />
-                      {errorNombreContacto && <p className="part-form-error">{errorNombreContacto}</p>}
-                    </div>
-                    <div className="part-form-group">
-                      <label htmlFor="c-telefono">Teléfono *</label>
-                      <input
-                        id="c-telefono"
-                        type="tel"
-                        required
-                        className={errorTelefonoEmergencia ? 'part-input-error' : undefined}
-                        aria-invalid={!!errorTelefonoEmergencia}
-                        value={contactoEmergenciaTelefono}
-                        onChange={(e) => {
-                          const raw = e.target.value;
-                          const limpio = soloNumeros(raw);
-                          setErrorTelefonoEmergencia(/[^0-9]/.test(raw) ? 'Este campo solo permite números.' : '');
-                          setContactoEmergenciaTelefono(limpio);
-                        }}
-                      />
-                      {errorTelefonoEmergencia && <p className="part-form-error">{errorTelefonoEmergencia}</p>}
-                    </div>
-                    <div className="part-form-group" style={{ gridColumn: '1 / -1' }}>
-                      <label htmlFor="c-parentesco">Parentesco *</label>
-                      <select id="c-parentesco" required className={errorParentesco ? 'part-input-error' : undefined} aria-invalid={!!errorParentesco} value={parentesco} onChange={(e) => { setParentesco(e.target.value); setErrorParentesco(''); }}>
-                        <option value="">Seleccionar…</option>
-                        <option value="madre">Madre</option>
-                        <option value="padre">Padre</option>
-                        <option value="esposo_a">Esposo/a</option>
-                        <option value="hermano_a">Hermano/a</option>
-                        <option value="amigo_a">Amigo/a</option>
-                        <option value="otro">Otro</option>
-                      </select>
-                      {errorParentesco && <p className="part-form-error">{errorParentesco}</p>}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Tarjeta 3: categoría de competencia */}
-              <div className="part-card">
-                <div className="part-card-head">
-                  <span className="part-card-head-icon"><i className="ti ti-medal" aria-hidden="true" /></span>
-                  <h3>Categoría de competencia</h3>
-                </div>
-                <div className="part-card-body">
-                  <div id="grupo-categoria" tabIndex={-1} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.75rem' }}>
-                    {categorias.length === 0 && <div className="part-form-hint">Este evento no tiene categorías configuradas.</div>}
-                    {categorias.map((cat) => (
-                      <label
-                        key={cat.id}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: '.6rem', padding: '.75rem',
-                          border: `${errorCategoria && categoriaId !== cat.id ? 2 : 1}px solid ${categoriaId === cat.id ? 'var(--accent)' : errorCategoria ? 'var(--part-err, #d92d2d)' : 'var(--border, #e5e7eb)'}`,
-                          borderRadius: 10, cursor: 'pointer',
-                          background: categoriaId === cat.id
-                            ? 'color-mix(in srgb, var(--accent) 8%, transparent)'
-                            : errorCategoria ? 'var(--part-err-soft, rgba(217, 45, 45, 0.1))' : 'transparent',
-                        }}
-                      >
-                        <input type="radio" name="categoria" style={{ width: 'auto' }} checked={categoriaId === cat.id} onChange={() => { setCategoriaId(cat.id); setErrorCategoria(''); }} />
-                        <div>
-                          <div style={{ fontWeight: 700, fontSize: '.85rem' }}>{cat.nombre}</div>
-                          {cat.descripcion && <div className="part-form-hint" style={{ margin: 0 }}>{cat.descripcion}</div>}
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                  {errorCategoria && <p className="part-form-error">{errorCategoria}</p>}
-                </div>
-              </div>
-
-              {/* Tarjeta 4: kit / jersey / dorsal */}
-              {evento.kit && (
-                <div className="part-card">
-                  <div className="part-card-head">
-                    <span className="part-card-head-icon"><i className="ti ti-shirt-sport" aria-hidden="true" /></span>
-                    <h3>Kit y dorsal</h3>
-                  </div>
-                  <div className="part-card-body">
-                    <style>{ESTILOS_KIT}</style>
-                    {evento.kit && (
-                      <div style={{ border: '1px dashed var(--border, #e5e7eb)', borderRadius: 10, padding: '.9rem 1rem', marginBottom: '1rem' }}>
-                        {evento.kit.imagen_url && (
-                          <img
-                            src={evento.kit.imagen_url}
-                            alt={evento.kit.nombre || 'Kit del evento'}
-                            style={{ display: 'block', width: '100%', maxWidth: 320, aspectRatio: '1 / 1', objectFit: 'cover', objectPosition: 'center', borderRadius: 12, margin: '0 auto .9rem' }}
-                            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                          />
-                        )}
-                        <div className="part-review-row"><span>Kit</span><strong>{evento.kit.nombre || 'Kit del evento'}</strong></div>
-                        {evento.kit.contenido && (
-                          <div className="part-review-row"><span>Incluye</span><strong>{evento.kit.contenido}</strong></div>
-                        )}
-                        {evento.kit.lugar_entrega && (
-                          <div className="part-review-row"><span>Recogida</span><strong>{evento.kit.lugar_entrega}</strong></div>
-                        )}
-                        {evento.kit.fecha_entrega && (
-                          <div className="part-review-row"><span>Fecha de entrega</span><strong>{fmtFechaKit(evento.kit.fecha_entrega)}</strong></div>
-                        )}
-                        <div className="part-review-row"><span>Precio</span><strong>{fmtMoney(evento.kit.precio)}</strong></div>
-                      </div>
-                    )}
-                    <div className="part-form-group">
-                      <label>¿Desea adquirir el kit? *</label>
-                      <p className="part-form-hint" style={{ marginTop: '0rem' }}>
-                        El kit incluye jersey, pantaloneta y medias. Al adquirirlo se sumarán {fmtMoney(evento.kit.precio)} al valor de la inscripción.
-                      </p>
-                      <div id="grupo-kit" tabIndex={-1} className={errorKit ? 'part-group-error' : undefined} style={{ display: 'inline-block' }}>
-                        <OpcionSiNo valor={deseaJersey} onSi={() => { setDeseaJersey(true); setErrorKit(''); }} onNo={() => { setDeseaJersey(false); setErrorKit(''); setErrorTalla(''); }} />
-                      </div>
-                      {errorKit && <p className="part-form-error">{errorKit}</p>}
-                    </div>
-                    {deseaJersey === true && (
-                      <>
-                        <div className="part-form-group">
-                          <label>Talla del kit *</label>
-                          <div id="grupo-talla" tabIndex={-1} role="radiogroup" aria-label="Talla del kit" className={`kit-rejilla${errorTalla ? ' part-group-error' : ''}`}>
-                            {opcionesTalla.map((t, idx) => (
-                              <TallaOpcion
-                                key={t}
-                                indice={idx}
-                                talla={t}
-                                quedan={quedan(t, 'titular')}
-                                controlado={kitConTallas}
-                                activa={tallaKit === t}
-                                onClick={() => { setTallaKit(t); setErrorTalla(''); }}
-                              />
-                            ))}
-                          </div>
-                          {errorTalla && <p className="part-form-error">{errorTalla}</p>}
-                        </div>
-                        <div className="part-form-group" style={{ marginBottom: 0 }}>
-                          <label htmlFor="dorsal">Número de dorsal preferido (opcional, sujeto a disponibilidad)</label>
-                          <input id="dorsal" placeholder="Ej: 42" inputMode="numeric" value={dorsalPreferido} onChange={(e) => setDorsalPreferido(e.target.value.replace(/\D/g, ''))} />
-                          <br></br>
-                          <br></br>
-                          <div className="part-form-hint" style={{ marginBottom: 0 }}>Si el número ya está tomado, se asignará uno automáticamente.</div>
-                        </div>
-                      </>
-                    )}
-                  </div>
+                  <Link className="insc-btn insc-btn-primario" to="/deportivo/perfil" title="Ir a completar mi perfil">Completar perfil</Link>
                 </div>
               )}
 
-              {/* Tarjeta 5: información médica */}
-              <div className="part-card">
-                <div className="part-card-head">
-                  <span className="part-card-head-icon"><i className="ti ti-first-aid-kit" aria-hidden="true" /></span>
-                  <h3>Información médica</h3>
+              <Seccion numero={siguiente()} icono="ti-id-badge-2" titulo="Tu perfil de corredor" subtitulo="Estos datos vienen de tu cuenta. Solo elige tu tipo de sangre.">
+                <div className="insc-perfil">
+                  <div className="insc-perfil-avatar" aria-hidden="true">{initials}</div>
+                  <div className="insc-perfil-texto">
+                    <strong>{user?.name}</strong>
+                    <span>{user?.email}</span>
+                  </div>
+                  <button title="Iniciar sesión con otra cuenta" type="button" className="insc-enlace" onClick={() => nav('/login')}>
+                    ¿No eres tú?
+                  </button>
                 </div>
-                <div className="part-card-body">
-                  <div className="part-form-group" style={{ marginBottom: 0 }}>
-                    <label htmlFor="condiciones">Condiciones médicas relevantes (opcional)</label>
-                    <textarea
-                      id="condiciones"
-                      rows={3}
-                      value={condicionesMedicas}
-                      onChange={(e) => setCondicionesMedicas(e.target.value)}
-                      style={{ width: '100%', padding: '.55rem .7rem', borderRadius: 8, border: '1px solid var(--accent)', fontFamily: 'inherit', fontSize: '.9rem', background: 'var(--surface, #fff)', color: 'inherit' }}
-                    />
-                    <br></br>
-                    <br></br>
-                    <div className="part-form-hint" style={{ marginBottom: 0 }}>
-                      Tus datos médicos solo serán visibles para el personal de primeros auxilios del evento y nunca se compartirán con terceros.
+
+                <div className="insc-fichas">
+                  {[
+                    { id: 'documento', icono: 'ti-id', etiqueta: 'Documento', valor: documento, error: errorDocumento },
+                    { id: 'tel-contacto', icono: 'ti-phone', etiqueta: 'Teléfono', valor: telefonoContacto, error: errorTelefonoContacto },
+                    { id: 'fecha-nac', icono: 'ti-cake', etiqueta: 'Nacimiento', valor: fmtFecha(fechaNacimiento), error: errorFechaNacimiento },
+                  ].map((f) => (
+                    <div key={f.id} id={f.id} tabIndex={-1} className={`insc-ficha${f.error ? ' con-error' : ''}`}>
+                      <i className={`ti ${f.icono}`} aria-hidden="true" />
+                      <div>
+                        <span>{f.etiqueta}</span>
+                        <strong>{f.valor || 'Sin registrar'}</strong>
+                      </div>
+                      <i className="ti ti-lock insc-ficha-candado" aria-hidden="true" title="Se cambia desde tu perfil" />
                     </div>
+                  ))}
+                </div>
+                <p className="insc-ayuda">
+                  <i className="ti ti-info-circle" aria-hidden="true" /> ¿Algún dato está mal? Cámbialo en <Link to="/deportivo/perfil" title="Ir a mi perfil">tu perfil</Link>.
+                </p>
+
+                <div className="insc-campo ancho">
+                  <span className="insc-etiqueta" id="rh-etiqueta">Tipo de sangre (RH) *</span>
+                  <Pastillas
+                    id="rh"
+                    etiqueta="Tipo de sangre"
+                    opciones={RH_OPCIONES.map((o) => ({ valor: o, etiqueta: o, icono: 'ti-droplet' }))}
+                    valor={rh}
+                    columnas={8}
+                    error={errorRh}
+                    onCambio={(v) => { setRh(v); setErrorRh(''); }}
+                  />
+                  {errorRh && <p className="insc-error"><i className="ti ti-alert-circle" aria-hidden="true" /> {errorRh}</p>}
+                </div>
+              </Seccion>
+
+              <Seccion numero={siguiente()} icono="ti-phone-call" titulo="Contacto de emergencia" subtitulo="A quién llamamos si algo pasa en la carrera. Debe ser otra persona.">
+                <div className="insc-campos">
+                  <Campo id="c-nombre" etiqueta="Nombre completo *" icono="ti-user" error={errorNombreContacto} ok={!errorNombreCompleto(contactoEmergenciaNombre)}>
+                    <input
+                      id="c-nombre"
+                      className="insc-input"
+                      placeholder="Ej: María Gómez"
+                      autoComplete="off"
+                      maxLength={100}
+                      aria-invalid={!!errorNombreContacto}
+                      aria-describedby={errorNombreContacto ? 'c-nombre-error' : undefined}
+                      value={contactoEmergenciaNombre}
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        const limpio = soloLetras(raw, 100);
+                        setContactoEmergenciaNombre(limpio);
+                        setErrorNombreContacto(quitoCaracteres(raw, limpio) ? SOLO_LETRAS : errorNombreContacto && errorNombreContacto !== SOLO_LETRAS ? errorNombreCompleto(limpio) : '');
+                      }}
+                      {...detectarEspeciales(() => setErrorNombreContacto(SOLO_LETRAS))}
+                      onBlur={() => contactoEmergenciaNombre && setErrorNombreContacto(errorNombreCompleto(contactoEmergenciaNombre))}
+                    />
+                  </Campo>
+                  <Campo id="c-telefono" etiqueta="Celular *" icono="ti-device-mobile" error={errorTelefonoEmergencia}
+                    ok={!errorCelular(contactoEmergenciaTelefono) && contactoEmergenciaTelefono !== telefonoContacto}
+                    ayuda={`${contactoEmergenciaTelefono.length}/10 dígitos`}>
+                    <input
+                      id="c-telefono"
+                      type="tel"
+                      inputMode="numeric"
+                      className="insc-input"
+                      placeholder="3001234567"
+                      maxLength={10}
+                      aria-invalid={!!errorTelefonoEmergencia}
+                      aria-describedby={errorTelefonoEmergencia ? 'c-telefono-error' : undefined}
+                      value={contactoEmergenciaTelefono}
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        const limpio = soloNumeros(raw);
+                        setContactoEmergenciaTelefono(limpio);
+                        setErrorTelefonoEmergencia(/[^\d\s]/.test(raw) ? SOLO_NUMEROS : errorTelefonoEmergencia && errorTelefonoEmergencia !== SOLO_NUMEROS ? errorCelular(limpio) : '');
+                      }}
+                      {...detectarEspeciales(() => setErrorTelefonoEmergencia(SOLO_NUMEROS))}
+                      onBlur={() => {
+                        if (!contactoEmergenciaTelefono) return;
+                        const err = errorCelular(contactoEmergenciaTelefono)
+                          || (contactoEmergenciaTelefono === telefonoContacto ? 'Es tu propio número: pon el de otra persona.' : '');
+                        setErrorTelefonoEmergencia(err);
+                      }}
+                    />
+                  </Campo>
+                  <div className="insc-campo ancho">
+                    <span className="insc-etiqueta">Parentesco *</span>
+                    <Pastillas
+                      id="c-parentesco"
+                      etiqueta="Parentesco"
+                      opciones={PARENTESCOS}
+                      valor={parentesco}
+                      columnas={3}
+                      error={errorParentesco}
+                      onCambio={(v) => { setParentesco(v); setErrorParentesco(''); }}
+                    />
+                    {errorParentesco && <p className="insc-error"><i className="ti ti-alert-circle" aria-hidden="true" /> {errorParentesco}</p>}
                   </div>
                 </div>
-              </div>
+              </Seccion>
 
-              {/* Tarjeta 6: acompañante opcional */}
-              <div className="part-card">
-                <div className="part-card-body">
-                  <button title={mostrarInvitado ? 'Quitar el invitado' : 'Agregar un invitado'}
-                    type="button"
-                    className="btn btn-outline"
-                    style={{ width: '100%' }}
-                    onClick={() => setMostrarInvitado((v) => !v)}
-                  >
-                    <i className="ti ti-user-plus" aria-hidden="true" /> {mostrarInvitado ? 'Quitar invitado' : 'Agregar invitado (participante adicional)'}
-                  </button>
+              <Seccion numero={siguiente()} icono="ti-trophy" titulo="Categoría de competencia" subtitulo="Elige en la que vas a correr.">
+                <div id="grupo-categoria" tabIndex={-1} role="radiogroup" aria-label="Categoría de competencia" className={`insc-categorias${errorCategoria ? ' con-error' : ''}`}>
+                  {categorias.length === 0 && <p className="insc-ayuda">Este evento no tiene categorías configuradas.</p>}
+                  {categorias.map((cat, i) => (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={categoriaId === cat.id}
+                      title={`Correr en la categoría ${cat.nombre}`}
+                      className="insc-categoria"
+                      style={{ '--i': i } as React.CSSProperties}
+                      onClick={() => { setCategoriaId(cat.id); setErrorCategoria(''); }}
+                    >
+                      <span className="insc-categoria-icono"><i className="ti ti-medal" aria-hidden="true" /></span>
+                      <span className="insc-categoria-texto">
+                        <strong>{cat.nombre}</strong>
+                        {cat.descripcion && <small>{cat.descripcion}</small>}
+                      </span>
+                      <i className="ti ti-circle-check-filled insc-categoria-check" aria-hidden="true" />
+                    </button>
+                  ))}
+                </div>
+                {errorCategoria && <p className="insc-error"><i className="ti ti-alert-circle" aria-hidden="true" /> {errorCategoria}</p>}
+              </Seccion>
 
-                  {mostrarInvitado && (
-                    <div style={{ border: '1px dashed var(--border, #e5e7eb)', borderRadius: 10, padding: '1rem', marginTop: '1rem' }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 1rem' }}>
-                        <div className="part-form-group">
-                          <label htmlFor="i-tipo-doc">Tipo de documento</label>
-                          <select id="i-tipo-doc" value={invTipoDocumento} onChange={(e) => setInvTipoDocumento(e.target.value)}>
-                            <option value="CC">Cédula de ciudadanía</option>
-                            <option value="TI">Tarjeta de identidad</option>
-                            <option value="CE">Cédula de extranjería</option>
-                            <option value="PA">Pasaporte</option>
-                          </select>
+              {evento.kit && (
+                <Seccion numero={siguiente()} icono="ti-shirt-sport" titulo="Kit del corredor" subtitulo="Jersey, pantaloneta y medias del evento.">
+                  <div className="insc-kit">
+                    {evento.kit.imagen_url && (
+                      <img
+                        className="insc-kit-foto"
+                        src={evento.kit.imagen_url}
+                        alt={evento.kit.nombre || 'Kit del evento'}
+                        onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                      />
+                    )}
+                    <div className="insc-kit-info">
+                      <strong>{evento.kit.nombre || 'Kit del evento'}</strong>
+                      <span className="insc-kit-precio">{fmtMoney(evento.kit.precio)}</span>
+                      <ul>
+                        {evento.kit.contenido && <li><i className="ti ti-package" aria-hidden="true" /> {evento.kit.contenido}</li>}
+                        {evento.kit.lugar_entrega && <li><i className="ti ti-map-pin" aria-hidden="true" /> Recógelo en {evento.kit.lugar_entrega}</li>}
+                        {evento.kit.fecha_entrega && <li><i className="ti ti-calendar" aria-hidden="true" /> Entrega: {fmtFecha(evento.kit.fecha_entrega)}</li>}
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div className="insc-campo ancho">
+                    <span className="insc-etiqueta">¿Quieres el kit? *</span>
+                    <div id="grupo-kit" tabIndex={-1} className={errorKit ? 'insc-grupo-error' : undefined}>
+                      <OpcionSiNo valor={deseaJersey} onSi={() => { setDeseaJersey(true); setErrorKit(''); }} onNo={() => { setDeseaJersey(false); setErrorKit(''); setErrorTalla(''); }} />
+                    </div>
+                    {errorKit
+                      ? <p className="insc-error"><i className="ti ti-alert-circle" aria-hidden="true" /> {errorKit}</p>
+                      : <p className="insc-ayuda">Si lo pides, se suman {fmtMoney(evento.kit.precio)} al total.</p>}
+                  </div>
+
+                  {deseaJersey === true && (
+                    <>
+                      <div className="insc-campo ancho">
+                        <span className="insc-etiqueta">Talla *</span>
+                        <div id="grupo-talla" tabIndex={-1} role="radiogroup" aria-label="Talla del kit" className={`kit-rejilla${errorTalla ? ' insc-grupo-error' : ''}`}>
+                          {opcionesTalla.map((t, idx) => (
+                            <TallaOpcion
+                              key={t}
+                              indice={idx}
+                              talla={t}
+                              quedan={quedan(t, 'titular')}
+                              controlado={kitConTallas}
+                              activa={tallaKit === t}
+                              onClick={() => { setTallaKit(t); setErrorTalla(''); }}
+                            />
+                          ))}
                         </div>
-                        <div className="part-form-group">
-                          <label htmlFor="i-documento">Documento</label>
+                        {errorTalla && <p className="insc-error"><i className="ti ti-alert-circle" aria-hidden="true" /> {errorTalla}</p>}
+                      </div>
+                      <div className="insc-campos">
+                        <Campo id="dorsal" etiqueta="Dorsal preferido (opcional)" icono="ti-hash" ok={!!dorsalPreferido}
+                          ayuda="Del 1 al 99999. Si ya está tomado, te asignamos otro.">
                           <input
-                            id="i-documento"
-                            required
-                            className={errorInvDocumento ? 'part-input-error' : undefined}
-                            aria-invalid={!!errorInvDocumento}
+                            id="dorsal"
+                            className="insc-input insc-input-dorsal"
+                            placeholder="Ej: 42"
                             inputMode="numeric"
-                            value={invDocumento}
-                            onChange={(e) => {
-                              const raw = e.target.value;
-                              const limpio = raw.replace(/\D/g, '');
-                              setErrorInvDocumento(/\D/.test(raw) ? 'Este campo solo permite números.' : '');
-                              setInvDocumento(limpio);
-                            }}
+                            maxLength={5}
+                            value={dorsalPreferido}
+                            onChange={(e) => setDorsalPreferido(limpiarDorsal(e.target.value))}
                           />
-                          {errorInvDocumento && <p className="part-form-error">{errorInvDocumento}</p>}
-                        </div>
-                        <div className="part-form-group">
-                          <label htmlFor="i-nombre">Nombre</label>
-                          <input
-                            id="i-nombre"
-                            required
-                            className={errorInvNombre ? 'part-input-error' : undefined}
-                            aria-invalid={!!errorInvNombre}
-                            value={invNombre}
-                            onChange={(e) => {
-                              const raw = e.target.value;
-                              const limpio = soloLetras(raw);
-                              setErrorInvNombre(limpio.replace(/\s/g, '').length < raw.replace(/\s/g, '').length ? 'Este campo solo permite letras.' : '');
-                              setInvNombre(limpio);
-                            }}
-                          />
-                          {errorInvNombre && <p className="part-form-error">{errorInvNombre}</p>}
-                        </div>
-                        <div className="part-form-group">
-                          <label htmlFor="i-apellido">Apellido</label>
-                          <input
-                            id="i-apellido"
-                            required
-                            className={errorInvApellido ? 'part-input-error' : undefined}
-                            aria-invalid={!!errorInvApellido}
-                            value={invApellido}
-                            onChange={(e) => {
-                              const raw = e.target.value;
-                              const limpio = soloLetras(raw);
-                              setErrorInvApellido(limpio.replace(/\s/g, '').length < raw.replace(/\s/g, '').length ? 'Este campo solo permite letras.' : '');
-                              setInvApellido(limpio);
-                            }}
-                          />
-                          {errorInvApellido && <p className="part-form-error">{errorInvApellido}</p>}
-                        </div>
-                        <div className="part-form-group">
-                          <label htmlFor="i-rh">RH</label>
-                          <select id="i-rh" value={invRh} onChange={(e) => setInvRh(e.target.value)}>
-                            {RH_OPCIONES.map((o) => <option key={o} value={o}>{o}</option>)}
-                          </select>
-                        </div>
-                        <div className="part-form-group">
-                          <label htmlFor="i-telefono">Teléfono</label>
-                          <input
-                            id="i-telefono"
-                            type="tel"
-                            required
-                            className={errorInvTelefono ? 'part-input-error' : undefined}
-                            aria-invalid={!!errorInvTelefono}
-                            value={invTelefono}
-                            onChange={(e) => {
-                              const raw = e.target.value;
-                              const limpio = soloNumeros(raw);
-                              setErrorInvTelefono(/[^0-9]/.test(raw) ? 'Este campo solo permite números.' : '');
-                              setInvTelefono(limpio);
-                            }}
-                          />
-                          {errorInvTelefono && <p className="part-form-error">{errorInvTelefono}</p>}
-                        </div>
-                        <div className="part-form-group">
-                          <label htmlFor="i-fecha-nac">Fecha de nacimiento</label>
-                          <input id="i-fecha-nac" type="date" required min={rangoNacimientoInvitado().min} max={rangoNacimientoInvitado().max} className={errorInvFechaNac ? 'part-input-error' : undefined} aria-invalid={!!errorInvFechaNac} value={invFechaNacimiento} onChange={(e) => { setInvFechaNacimiento(e.target.value); setErrorInvFechaNac(''); }} />
-                          {errorInvFechaNac && <p className="part-form-error">{errorInvFechaNac}</p>}
-                        </div>
-                        <div className="part-form-group">
-                          <label htmlFor="i-correo">Correo (opcional)</label>
-                          <input id="i-correo" type="email" value={invCorreo} onChange={(e) => setInvCorreo(e.target.value)} />
-                        </div>
+                        </Campo>
                       </div>
+                    </>
+                  )}
+                </Seccion>
+              )}
 
-                      <div className="part-form-hint" style={{ margin: '0 0 .75rem' }}>
-                        El invitado paga su propia inscripción: se suman {fmtMoney(evento.precio)} al total.
+              <Seccion numero={siguiente()} icono="ti-heartbeat" titulo="Salud" subtitulo="Opcional. Solo lo ve el equipo de primeros auxilios del evento.">
+                <Campo
+                  id="condiciones"
+                  etiqueta="Condiciones médicas, alergias o medicamentos"
+                  ancho
+                  error={avisoCondiciones}
+                  ayuda={<span className="insc-contador">{condicionesMedicas.length}/{MAX_MEDICO}</span>}
+                >
+                  <textarea
+                    id="condiciones"
+                    className="insc-input insc-textarea"
+                    rows={3}
+                    maxLength={MAX_MEDICO}
+                    placeholder="Ej: Asma leve, alergia a la penicilina…"
+                    value={condicionesMedicas}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      const limpio = limpiarTextoLibre(raw);
+                      setCondicionesMedicas(limpio);
+                      if (limpio.length < raw.length && raw.length <= MAX_MEDICO) setAvisoCondiciones(SIN_SIMBOLOS);
+                    }}
+                    {...detectarEspeciales(() => setAvisoCondiciones(SIN_SIMBOLOS), () => setAvisoCondiciones(''))}
+                  />
+                </Campo>
+              </Seccion>
+
+              <Seccion numero={siguiente()} icono="ti-users-plus" titulo="¿Corres acompañado?" subtitulo="Inscribe a un invitado en la misma compra.">
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={mostrarInvitado}
+                  className={`insc-interruptor${mostrarInvitado ? ' activo' : ''}`}
+                  title={mostrarInvitado ? 'Quitar el invitado' : 'Agregar un invitado'}
+                  onClick={() => setMostrarInvitado((v) => !v)}
+                >
+                  <span className="insc-interruptor-pista" aria-hidden="true"><span /></span>
+                  <span className="insc-interruptor-texto">
+                    <strong>{mostrarInvitado ? 'Vas con un invitado' : 'Agregar invitado'}</strong>
+                    <small>Su inscripción cuesta {fmtMoney(evento.precio)} y se suma al total.</small>
+                  </span>
+                </button>
+
+                {mostrarInvitado && (
+                  <div className="insc-invitado">
+                    <div className="insc-campos">
+                      <Campo id="i-tipo-doc" etiqueta="Tipo de documento *" icono="ti-id">
+                        <select
+                          id="i-tipo-doc"
+                          className="insc-input"
+                          value={invTipoDocumento}
+                          onChange={(e) => {
+                            setInvTipoDocumento(e.target.value);
+                            if (invDocumento) setErrorInvDocumento(errorDocumentoInvitado(e.target.value, invDocumento, documento));
+                          }}
+                        >
+                          {Object.entries(TIPOS_DOCUMENTO).map(([valor, t]) => <option key={valor} value={valor}>{t.etiqueta}</option>)}
+                        </select>
+                      </Campo>
+                      <Campo id="i-documento" etiqueta="Número de documento *" icono="ti-numbers" error={errorInvDocumento}
+                        ok={!errorDocumentoInvitado(invTipoDocumento, invDocumento, documento)}
+                        ayuda={`${TIPOS_DOCUMENTO[invTipoDocumento]?.min}–${TIPOS_DOCUMENTO[invTipoDocumento]?.max} dígitos, sin puntos`}>
+                        <input
+                          id="i-documento"
+                          className="insc-input"
+                          inputMode="numeric"
+                          maxLength={12}
+                          placeholder="Solo números"
+                          aria-invalid={!!errorInvDocumento}
+                          value={invDocumento}
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            const limpio = soloNumeros(raw, 12);
+                            setInvDocumento(limpio);
+                            setErrorInvDocumento(/[^\d\s.]/.test(raw) ? SOLO_NUMEROS : errorInvDocumento && errorInvDocumento !== SOLO_NUMEROS ? errorDocumentoInvitado(invTipoDocumento, limpio, documento) : '');
+                          }}
+                          {...detectarEspeciales(() => setErrorInvDocumento(SOLO_NUMEROS))}
+                          onBlur={() => invDocumento && setErrorInvDocumento(errorDocumentoInvitado(invTipoDocumento, invDocumento, documento))}
+                        />
+                      </Campo>
+                      <Campo id="i-nombre" etiqueta="Nombre *" icono="ti-user" error={errorInvNombre} ok={!errorNombre(invNombre)}>
+                        <input
+                          id="i-nombre"
+                          className="insc-input"
+                          maxLength={50}
+                          placeholder="Ej: Andrés"
+                          aria-invalid={!!errorInvNombre}
+                          value={invNombre}
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            const limpio = soloLetras(raw);
+                            setInvNombre(limpio);
+                            setErrorInvNombre(quitoCaracteres(raw, limpio) ? SOLO_LETRAS : errorInvNombre && errorInvNombre !== SOLO_LETRAS ? errorNombre(limpio) : '');
+                          }}
+                          {...detectarEspeciales(() => setErrorInvNombre(SOLO_LETRAS))}
+                          onBlur={() => invNombre && setErrorInvNombre(errorNombre(invNombre))}
+                        />
+                      </Campo>
+                      <Campo id="i-apellido" etiqueta="Apellido *" icono="ti-user" error={errorInvApellido} ok={!errorNombre(invApellido)}>
+                        <input
+                          id="i-apellido"
+                          className="insc-input"
+                          maxLength={50}
+                          placeholder="Ej: Rojas"
+                          aria-invalid={!!errorInvApellido}
+                          value={invApellido}
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            const limpio = soloLetras(raw);
+                            setInvApellido(limpio);
+                            setErrorInvApellido(quitoCaracteres(raw, limpio) ? SOLO_LETRAS : errorInvApellido && errorInvApellido !== SOLO_LETRAS ? errorNombre(limpio) : '');
+                          }}
+                          {...detectarEspeciales(() => setErrorInvApellido(SOLO_LETRAS))}
+                          onBlur={() => invApellido && setErrorInvApellido(errorNombre(invApellido))}
+                        />
+                      </Campo>
+                      <Campo id="i-telefono" etiqueta="Celular *" icono="ti-device-mobile" error={errorInvTelefono} ok={!errorCelular(invTelefono)}
+                        ayuda={`${invTelefono.length}/10 dígitos`}>
+                        <input
+                          id="i-telefono"
+                          type="tel"
+                          inputMode="numeric"
+                          className="insc-input"
+                          maxLength={10}
+                          placeholder="3001234567"
+                          aria-invalid={!!errorInvTelefono}
+                          value={invTelefono}
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            const limpio = soloNumeros(raw);
+                            setInvTelefono(limpio);
+                            setErrorInvTelefono(/[^\d\s]/.test(raw) ? SOLO_NUMEROS : errorInvTelefono && errorInvTelefono !== SOLO_NUMEROS ? errorCelular(limpio) : '');
+                          }}
+                          {...detectarEspeciales(() => setErrorInvTelefono(SOLO_NUMEROS))}
+                          onBlur={() => invTelefono && setErrorInvTelefono(errorCelular(invTelefono))}
+                        />
+                      </Campo>
+                      <Campo id="i-fecha-nac" etiqueta="Fecha de nacimiento *" icono="ti-cake" error={errorInvFechaNac}
+                        ok={!errorNacimientoInvitado(invFechaNacimiento)} ayuda={`Entre ${EDAD_MIN_INVITADO} y ${EDAD_MAX_INVITADO} años`}>
+                        <input
+                          id="i-fecha-nac"
+                          type="date"
+                          className="insc-input"
+                          min={rangoNacimientoInvitado().min}
+                          max={rangoNacimientoInvitado().max}
+                          aria-invalid={!!errorInvFechaNac}
+                          value={invFechaNacimiento}
+                          onChange={(e) => { setInvFechaNacimiento(e.target.value); setErrorInvFechaNac(''); }}
+                          onBlur={() => invFechaNacimiento && setErrorInvFechaNac(errorNacimientoInvitado(invFechaNacimiento))}
+                        />
+                      </Campo>
+                      <Campo id="i-correo" etiqueta="Correo (opcional)" icono="ti-mail" error={errorInvCorreo} ok={!!invCorreo && !errorCorreo(invCorreo)}>
+                        <input
+                          id="i-correo"
+                          type="email"
+                          className="insc-input"
+                          maxLength={80}
+                          placeholder="nombre@correo.com"
+                          aria-invalid={!!errorInvCorreo}
+                          value={invCorreo}
+                          onChange={(e) => {
+                            const limpio = limpiarCorreo(e.target.value);
+                            setInvCorreo(limpio);
+                            if (errorInvCorreo) setErrorInvCorreo(errorCorreo(limpio));
+                          }}
+                          onBlur={() => setErrorInvCorreo(errorCorreo(invCorreo))}
+                        />
+                      </Campo>
+                      <div className="insc-campo">
+                        <span className="insc-etiqueta">RH del invitado *</span>
+                        <Pastillas id="i-rh" etiqueta="RH del invitado" opciones={RH_OPCIONES.map((o) => ({ valor: o, etiqueta: o }))} valor={invRh} columnas={4} onCambio={setInvRh} />
                       </div>
+                    </div>
 
-                      {evento.kit && (
-                        <div className="part-form-group" style={{ marginBottom: 0 }}>
-                          <label>¿El invitado desea el kit?</label>
-                          <p className="part-form-hint" style={{ marginTop: 0 }}>
-                            Si lo pide, se suman {fmtMoney(evento.kit.precio)} al total.
-                          </p>
-                          <OpcionSiNo valor={invDeseaKit} onSi={() => setInvDeseaKit(true)} onNo={() => { setInvDeseaKit(false); setInvTallaKit(''); setInvDorsal(''); setErrorInvTalla(''); }} />
-                          {invDeseaKit && (
-                            <>
-                            <div id="grupo-inv-talla" tabIndex={-1} role="radiogroup" aria-label="Talla del kit del invitado" className={`kit-rejilla${errorInvTalla ? ' part-group-error' : ''}`}>
+                    {evento.kit && (
+                      <div className="insc-campo ancho insc-invitado-kit">
+                        <span className="insc-etiqueta">¿El invitado quiere el kit?</span>
+                        <OpcionSiNo valor={invDeseaKit} onSi={() => setInvDeseaKit(true)} onNo={() => { setInvDeseaKit(false); setInvTallaKit(''); setInvDorsal(''); setErrorInvTalla(''); setErrorInvDorsal(''); }} />
+                        <p className="insc-ayuda">Si lo pide, se suman {fmtMoney(evento.kit.precio)} al total.</p>
+                        {invDeseaKit && (
+                          <>
+                            <div id="grupo-inv-talla" tabIndex={-1} role="radiogroup" aria-label="Talla del kit del invitado" className={`kit-rejilla${errorInvTalla ? ' insc-grupo-error' : ''}`}>
                               {opcionesTalla.map((t, idx) => (
                                 <TallaOpcion
                                   key={t}
@@ -1299,107 +1587,116 @@ function InscriptionWizard() {
                                 />
                               ))}
                             </div>
-                            {errorInvTalla && <p className="part-form-error">{errorInvTalla}</p>}
-                            <div className="part-form-group" style={{ marginTop: '1rem', marginBottom: 0 }}>
-                              <label htmlFor="inv-dorsal">Número de dorsal preferido del invitado (opcional, sujeto a disponibilidad)</label>
-                              <input id="inv-dorsal" placeholder="Ej: 43" inputMode="numeric" value={invDorsal} onChange={(e) => setInvDorsal(e.target.value.replace(/\D/g, ''))} />
-                              <br></br>
-                              <br></br>
-                              <div className="part-form-hint" style={{ marginBottom: 0 }}>Si el número ya está tomado, se asignará uno automáticamente.</div>
+                            {errorInvTalla && <p className="insc-error"><i className="ti ti-alert-circle" aria-hidden="true" /> {errorInvTalla}</p>}
+                            <div className="insc-campos">
+                              <Campo id="inv-dorsal" etiqueta="Dorsal preferido del invitado (opcional)" icono="ti-hash" error={errorInvDorsal}
+                                ok={!!invDorsal && !errorDorsalInvitado(invDorsal)} ayuda="Si ya está tomado, le asignamos otro.">
+                                <input
+                                  id="inv-dorsal"
+                                  className="insc-input insc-input-dorsal"
+                                  placeholder="Ej: 43"
+                                  inputMode="numeric"
+                                  maxLength={5}
+                                  value={invDorsal}
+                                  onChange={(e) => {
+                                    const limpio = limpiarDorsal(e.target.value);
+                                    setInvDorsal(limpio);
+                                    setErrorInvDorsal(errorDorsalInvitado(limpio));
+                                  }}
+                                />
+                              </Campo>
                             </div>
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </Seccion>
+
+              <div className="insc-acciones">
+                <div className="insc-acciones-total">
+                  <span>Total</span>
+                  <strong>{fmtMoney(total)}</strong>
                 </div>
+                <button title="Continuar al paso del pago" type="submit" className="insc-btn insc-btn-primario insc-btn-grande" disabled={yaInscrito || perfilIncompleto}>
+                  Continuar al pago <i className="ti ti-arrow-right" aria-hidden="true" />
+                </button>
               </div>
-
-              {msg && (
-                <div className={`part-form-alert ${msg.tipo}`} key={msg.id}>
-                  <span className="part-alert-icon">{msg.tipo === 'ok' ? '✅' : '⚠️'}</span>
-                  {msg.texto}
-                  <div className="part-alert-timer" style={{ animationDuration: `${duracionMsg}ms` }} />
-                </div>
-              )}
-
-              <button title="Continuar al paso del pago" type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={yaInscrito || perfilIncompleto}>
-                Continuar al pago <i className="ti ti-arrow-right" aria-hidden="true" />
-              </button>
             </form>
           )}
 
+          {/* ---------------- PASO 2: pago ---------------- */}
           {step === 2 && (
-            <div className="part-card">
-              <div className="part-card-head">
-                <span className="part-card-head-icon"><i className="ti ti-credit-card" aria-hidden="true" /></span>
-                <h3>Método de pago</h3>
-              </div>
-              <div className="part-card-body">
-                <p className="part-form-hint" style={{ margin: '0 0 .9rem' }}>Elige cómo quieres pagar tu inscripción. Todos los métodos son seguros.</p>
-
-                <div className="part-pay-tabs">
-                  <button title="Pagar por transferencia bancaria" type="button" className={`part-pay-tab${metodoPago === 'transferencia' ? ' active' : ''}`} onClick={() => setMetodoPago('transferencia')}>
-                    <i className="ti ti-building-bank" aria-hidden="true" /> Transferencia
-                  </button>
-                  <button title="Pagar con Nequi o Daviplata" type="button" className={`part-pay-tab${metodoPago === 'nequi' ? ' active' : ''}`} onClick={() => setMetodoPago('nequi')}>
-                    <i className="ti ti-device-mobile" aria-hidden="true" /> Nequi / Daviplata
-                  </button>
-                  <button title="Pagar en efectivo" type="button" className={`part-pay-tab${metodoPago === 'efectivo' ? ' active' : ''}`} onClick={() => setMetodoPago('efectivo')}>
-                    <i className="ti ti-cash" aria-hidden="true" /> Efectivo
-                  </button>
+            <div className="insc-form">
+              <Seccion numero={1} icono="ti-wallet" titulo="¿Cómo quieres pagar?" subtitulo="Todos los métodos son seguros.">
+                <div className="insc-metodos" role="radiogroup" aria-label="Método de pago">
+                  {METODOS.map((m) => (
+                    <button
+                      key={m.valor}
+                      type="button"
+                      role="radio"
+                      aria-checked={metodoPago === m.valor}
+                      title={`Pagar con ${m.titulo}`}
+                      className="insc-metodo"
+                      onClick={() => setMetodoPago(m.valor)}
+                    >
+                      <i className={`ti ${m.icono}`} aria-hidden="true" />
+                      <strong>{m.titulo}</strong>
+                      <small>{m.detalle}</small>
+                      <i className="ti ti-circle-check-filled insc-metodo-check" aria-hidden="true" />
+                    </button>
+                  ))}
                 </div>
+              </Seccion>
 
-                {metodoPago === 'transferencia' && (
-                  <div className="part-pay-bank">
-                    <div className="part-pay-bank-title"><i className="ti ti-building-bank" aria-hidden="true" /> Datos bancarios para transferencia</div>
-                    <div className="part-pay-bank-row"><span>Banco</span><strong>{DATOS_PAGO.banco}</strong></div>
-                    <div className="part-pay-bank-row"><span>Tipo de cuenta</span><strong>{DATOS_PAGO.tipoCuenta}</strong></div>
-                    <div className="part-pay-bank-row">
-                      <span>N.º de cuenta</span>
-                      <strong>{DATOS_PAGO.cuenta} <button title="Copiar el número de cuenta" type="button" className="part-pay-copy" onClick={() => navigator.clipboard.writeText(DATOS_PAGO.cuentaDigitos)}>Copiar</button></strong>
+              {metodoPago === 'efectivo' ? (
+                <Seccion numero={2} icono="ti-cash" titulo="Pago en efectivo">
+                  <div className="insc-banner info">
+                    <i className="ti ti-map-pin-dollar" aria-hidden="true" />
+                    <div>
+                      <strong>Paga el día del evento</strong>
+                      <p>Acércate al punto de inscripción en {evento.ubicacion} y paga {fmtMoney(total)} en efectivo. Tu cupo queda <b>pendiente</b> hasta ese momento.</p>
                     </div>
-                    <div className="part-pay-bank-row"><span>Titular</span><strong>{DATOS_PAGO.titular}</strong></div>
-                    <div className="part-pay-bank-row">
-                      <span>NIT</span>
-                      <strong>{DATOS_PAGO.nit} <button title="Copiar el NIT" type="button" className="part-pay-copy" onClick={() => navigator.clipboard.writeText(DATOS_PAGO.nit.replace(/\./g, ''))}>Copiar</button></strong>
-                    </div>
-                    <div className="part-pay-bank-row"><span>Referencia (poner en descripción)</span><strong className="part-pay-ref">{referenciaPago}</strong></div>
                   </div>
-                )}
-
-                {metodoPago === 'nequi' && (
-                  <div className="part-pay-bank">
-                    <div className="part-pay-bank-title"><i className="ti ti-device-mobile" aria-hidden="true" /> Datos para Nequi / Daviplata</div>
-                    <div className="part-pay-bank-row">
-                      <span>Número</span>
-                      <strong>{DATOS_PAGO.nequiVisible} <button title="Copiar el número de Nequi o Daviplata" type="button" className="part-pay-copy" onClick={() => navigator.clipboard.writeText(DATOS_PAGO.nequi)}>Copiar</button></strong>
-                    </div>
-                    <div className="part-pay-bank-row"><span>Titular</span><strong>{DATOS_PAGO.titular}</strong></div>
-                    <div className="part-pay-bank-row"><span>Referencia (poner en el mensaje)</span><strong className="part-pay-ref">{referenciaPago}</strong></div>
-                  </div>
-                )}
-
-                {metodoPago === 'efectivo' && (
-                  <div className="part-pay-bank">
-                    <div className="part-pay-bank-title"><i className="ti ti-cash" aria-hidden="true" /> Pago en efectivo</div>
-                    <p className="part-form-hint" style={{ margin: 0 }}>Acércate al punto de inscripción del evento el día indicado y paga en efectivo. Tu cupo queda pendiente hasta ese momento.</p>
-                  </div>
-                )}
-
-                {metodoPago !== 'efectivo' && (
-                  <>
-                    <div className="part-pay-warning">
-                      <i className="ti ti-alert-triangle" aria-hidden="true" />
-                      <span>Realiza la transferencia por el valor exacto y adjunta el comprobante. Tu inscripción quedará en estado <strong>pendiente</strong> hasta que validemos el pago.</span>
+                </Seccion>
+              ) : (
+                <>
+                  <Seccion numero={2} icono={metodoPago === 'nequi' ? 'ti-device-mobile' : 'ti-building-bank'} titulo="Haz el pago a SKYED" subtitulo="Copia los datos y paga desde tu app.">
+                    <div className="insc-monto">
+                      <span>Valor exacto a pagar</span>
+                      <strong>{fmtMoney(total)}</strong>
                     </div>
 
-                    <div className={`part-form-group${errorComprobante ? ' part-group-error part-comprobante-error' : ''}`}>
-                      <label htmlFor="comprobante">Comprobante de pago *</label>
+                    <div className="insc-datos-pago">
+                      {metodoPago === 'nequi' ? (
+                        <>
+                          <DatoPago etiqueta="Número Nequi / Daviplata" valor={DATOS_PAGO.nequiVisible} copiar={DATOS_PAGO.nequi} destacado />
+                          <DatoPago etiqueta="Titular" valor={DATOS_PAGO.titular} />
+                        </>
+                      ) : (
+                        <>
+                          <DatoPago etiqueta="Banco" valor={`${DATOS_PAGO.banco} · ${DATOS_PAGO.tipoCuenta}`} />
+                          <DatoPago etiqueta="Número de cuenta" valor={DATOS_PAGO.cuenta} copiar={DATOS_PAGO.cuentaDigitos} destacado />
+                          <DatoPago etiqueta="Titular" valor={DATOS_PAGO.titular} />
+                          <DatoPago etiqueta="NIT" valor={DATOS_PAGO.nit} copiar={DATOS_PAGO.nit.replace(/\./g, '')} />
+                        </>
+                      )}
+                      <DatoPago etiqueta={metodoPago === 'nequi' ? 'Referencia (en el mensaje)' : 'Referencia (en la descripción)'} valor={referenciaPago} copiar={referenciaPago} />
+                    </div>
+
+                    <ol className="insc-como">
+                      <li><span>1</span><p>Transfiere <b>{fmtMoney(total)}</b> exactos.</p></li>
+                      <li><span>2</span><p>Escribe la referencia <b>{referenciaPago}</b>.</p></li>
+                      <li><span>3</span><p>Toma captura del comprobante <b>con el código QR</b>.</p></li>
+                    </ol>
+                  </Seccion>
+
+                  <Seccion numero={3} icono="ti-receipt" titulo="Sube tu comprobante" subtitulo="Lo revisamos al instante: que tenga el QR y que el pago sea a SKYED.">
+                    <div id="zona-comprobante" className={errorComprobante ? 'insc-grupo-error' : undefined}>
                       <label
                         htmlFor="comprobante"
-                        className={`part-pay-upload${arrastrando ? ' dragover' : ''}`}
+                        className={`insc-subida${arrastrando ? ' arrastrando' : ''}${validandoComprobante ? ' validando' : ''}${comprobante ? ' lista' : ''}`}
                         onDragOver={(e) => { e.preventDefault(); if (!validandoComprobante) setArrastrando(true); }}
                         onDragLeave={() => setArrastrando(false)}
                         onDrop={(e) => {
@@ -1409,18 +1706,31 @@ function InscriptionWizard() {
                           if (e.dataTransfer.files?.[0]) manejarComprobante(e.dataTransfer.files[0]);
                         }}
                       >
-                        {validandoComprobante && <style>{ESTILOS_VALIDANDO}</style>}
-                        <i className={validandoComprobante ? 'ti ti-loader-2 part-spin' : 'ti ti-cloud-upload'} aria-hidden="true" />
                         {validandoComprobante ? (
-                          <span role="status" aria-live="polite">
-                            Validando comprobante (QR y datos de la transacción)…{progresoValidacion !== null ? ` ${progresoValidacion}%` : ''}
-                          </span>
+                          <>
+                            <span className="insc-subida-icono"><i className="ti ti-scan insc-giro" aria-hidden="true" /></span>
+                            <strong role="status" aria-live="polite">
+                              Revisando tu comprobante…{progresoValidacion !== null ? ` ${progresoValidacion}%` : ''}
+                            </strong>
+                            <span className="insc-subida-barra" aria-hidden="true">
+                              <span style={{ width: `${progresoValidacion ?? 15}%` }} />
+                            </span>
+                            <small>Buscando el QR y leyendo los datos del pago</small>
+                          </>
                         ) : comprobante ? (
-                          <span>{comprobante.name}</span>
+                          <>
+                            {vistaComprobante && <img className="insc-subida-vista" src={vistaComprobante} alt="Vista previa del comprobante" />}
+                            <span className="insc-subida-ok">
+                              <strong><i className="ti ti-circle-check-filled" aria-hidden="true" /> Comprobante validado</strong>
+                              <small>QR detectado{verificacion?.datos.destino === true ? ' · pago a la cuenta de SKYED' : ''}</small>
+                              <small className="insc-subida-nombre">{comprobante.name} · haz clic para cambiarlo</small>
+                            </span>
+                          </>
                         ) : (
                           <>
-                            <span>Arrastra tu comprobante aquí o haz clic</span>
-                            <span className="part-pay-upload-hint">Captura completa con el QR · JPG, PNG o WEBP · Máximo 15 MB</span>
+                            <span className="insc-subida-icono"><i className="ti ti-cloud-upload" aria-hidden="true" /></span>
+                            <strong>Arrastra tu comprobante aquí o haz clic</strong>
+                            <small>Captura completa con el QR · JPG, PNG o WEBP · Máximo 15 MB</small>
                           </>
                         )}
                       </label>
@@ -1428,7 +1738,7 @@ function InscriptionWizard() {
                         id="comprobante"
                         type="file"
                         accept=".jpg,.jpeg,.png,.webp"
-                        style={{ display: 'none' }}
+                        className="insc-solo-lector"
                         disabled={validandoComprobante}
                         onChange={(e) => {
                           manejarComprobante(e.target.files?.[0] ?? null);
@@ -1436,20 +1746,18 @@ function InscriptionWizard() {
                           e.target.value = '';
                         }}
                       />
-                      {!validandoComprobante && comprobante && (
-                        <p className="part-form-hint" style={{ margin: '.4rem 0 0', color: '#16a34a' }}>
-                          <i className="ti ti-circle-check" aria-hidden="true" /> Comprobante validado: QR detectado{verificacion?.datos.destino === true ? ' y pago a la cuenta de SKYED' : ''}.
-                        </p>
+                      {errorComprobante && !comprobante && !avisoComprobante && (
+                        <p className="insc-error"><i className="ti ti-alert-circle" aria-hidden="true" /> Sube el comprobante para continuar.</p>
                       )}
 
                       {avisoComprobante && !validandoComprobante && (
-                        <div id="aviso-comprobante" className={`part-pay-alerta ${avisoComprobante.tipo}`} role="alert">
-                          <i className={`ti ${avisoComprobante.tipo === 'error' ? 'ti-alert-octagon' : 'ti-alert-triangle'} part-pay-alerta-icono`} aria-hidden="true" />
-                          <div className="part-pay-alerta-cuerpo">
+                        <div id="aviso-comprobante" className={`insc-aviso ${avisoComprobante.tipo}`} role="alert">
+                          <i className={`ti ${avisoComprobante.tipo === 'error' ? 'ti-alert-octagon' : 'ti-alert-triangle'} insc-aviso-icono`} aria-hidden="true" />
+                          <div className="insc-aviso-cuerpo">
                             <strong>{avisoComprobante.titulo}</strong>
                             <p>{avisoComprobante.detalle}</p>
                             {avisoComprobante.mostrarCuenta && (
-                              <ul className="part-pay-alerta-cuenta">
+                              <ul className="insc-aviso-cuenta">
                                 {metodoPago === 'nequi' ? (
                                   <li><span>Nequi / Daviplata</span><b>{DATOS_PAGO.nequiVisible}</b></li>
                                 ) : (
@@ -1459,211 +1767,195 @@ function InscriptionWizard() {
                                   </>
                                 )}
                                 <li><span>Titular</span><b>{DATOS_PAGO.titular}</b></li>
-                                <li><span>Valor a pagar</span><b>${total.toLocaleString('es-CO')}</b></li>
+                                <li><span>Valor a pagar</span><b>{fmtMoney(total)}</b></li>
                               </ul>
                             )}
                           </div>
-                          <button type="button" className="part-pay-alerta-cerrar" title="Cerrar este aviso" aria-label="Cerrar este aviso" onClick={() => setAvisoComprobante(null)}>
+                          <button type="button" className="insc-aviso-cerrar" title="Cerrar este aviso" aria-label="Cerrar este aviso" onClick={() => setAvisoComprobante(null)}>
                             <i className="ti ti-x" aria-hidden="true" />
                           </button>
                         </div>
                       )}
                     </div>
-                  </>
-                )}
+                  </Seccion>
+                </>
+              )}
 
-                {msg && (
-                  <div className={`part-form-alert ${msg.tipo}`} key={msg.id}>
-                    <span className="part-alert-icon">{msg.tipo === 'ok' ? '✅' : '⚠️'}</span>
-                    {msg.texto}
-                    <div className="part-alert-timer" style={{ animationDuration: `${duracionMsg}ms` }} />
-                  </div>
-                )}
-
-                <div style={{ display: 'flex', gap: '.6rem' }}>
-                  <button title="Volver al paso anterior" type="button" className="btn btn-outline" onClick={() => setStep(1)}>Volver</button>
-                  <button title="Revisar los datos de tu inscripción" type="button" className="btn btn-primary" disabled={validandoComprobante} onClick={irARevision}>
-                    Revisar inscripción <i className="ti ti-arrow-right" aria-hidden="true" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {step === 3 && !done && (
-            <div className="part-card">
-              <div className="part-card-head">
-                <span className="part-card-head-icon"><i className="ti ti-clipboard-check" aria-hidden="true" /></span>
-                <h3>Resumen de inscripción</h3>
-              </div>
-              <div className="part-card-body">
-                <p className="part-form-hint" style={{ margin: '0 0 .9rem' }}>Revisa que todo esté correcto antes de confirmar tu lugar.</p>
-
-                <div className="part-review-block">
-                  <div className="part-review-title">Evento</div>
-                  <div className="part-review-row"><span>Nombre</span><strong>{evento.nombre}</strong></div>
-                  <div className="part-review-row"><span>Fecha</span><strong>{evento.fecha} · {evento.hora}</strong></div>
-                  <div className="part-review-row"><span>Lugar</span><strong>{evento.ubicacion}</strong></div>
-                  <div className="part-review-row">
-                    <span>Categoría competencia</span>
-                    <strong>{categorias.find((c) => c.id === categoriaId)?.nombre || '—'}</strong>
-                  </div>
-                </div>
-
-                <div className="part-review-block">
-                  <div className="part-review-title">Participante</div>
-                  <div className="part-review-row"><span>Nombre</span><strong>{user?.name}</strong></div>
-                  <div className="part-review-row"><span>Documento</span><strong>{documento}</strong></div>
-                  <div className="part-review-row"><span>Correo</span><strong>{user?.email}</strong></div>
-                  <div className="part-review-row"><span>Kit</span><strong>{deseaJersey && evento?.kit ? 'Incluido' : 'Sin kit'}</strong></div>
-                  <div className="part-review-row"><span>Dorsal preferido</span><strong>{dorsalPreferido || '—'}</strong></div>
-                  {mostrarInvitado && (
-                    <>
-                      <div className="part-review-row"><span>Invitado</span><strong>{`${invNombre} ${invApellido}`.trim()}</strong></div>
-                      <div className="part-review-row"><span>Kit del invitado</span><strong>{invDeseaKit ? `Talla ${invTallaKit}` : 'Sin kit'}</strong></div>
-                      <div className="part-review-row"><span>Dorsal preferido del invitado</span><strong>{invDeseaKit && invDorsal ? invDorsal : '—'}</strong></div>
-                    </>
-                  )}
-                </div>
-
-                <div className="part-review-block">
-                  <div className="part-review-title">Pago</div>
-                  <div className="part-review-row">
-                    <span>Método</span>
-                    <strong>{metodoPago === 'transferencia' ? 'Transferencia bancaria' : metodoPago === 'nequi' ? 'Nequi / Daviplata' : 'Efectivo'}</strong>
-                  </div>
-                  {comprobante && (
-                    <div className="part-review-row"><span>Comprobante</span><strong>{comprobante.name}</strong></div>
-                  )}
-                  <div className="part-review-total"><span>Total a pagar</span><strong>{fmtMoney(total)}</strong></div>
-                </div>
-
-                <div className="part-review-terms">
-                  <strong>Términos y condiciones de inscripción SKYED</strong>
-                  <p style={{ margin: '.5rem 0 0' }}>
-                    Al confirmar tu inscripción aceptas que: (1) la inscripción es personal e intransferible;
-                    (2) SKYED no realiza reembolsos una vez confirmada la inscripción, salvo cancelación oficial
-                    del evento; (3) participas bajo tu propia responsabilidad y cuentas con aptitud física adecuada
-                    para la modalidad elegida; (4) autorizas a SKYED a usar fotografías y videos del evento en los
-                    que aparezcas para fines promocionales.
-                  </p>
-                </div>
-
-                <label className={`part-review-check${errorTerminos ? ' part-group-error' : ''}`}>
-                  <input type="checkbox" checked={aceptaTerminos} onChange={(e) => { setAceptaTerminos(e.target.checked); setErrorTerminos(!e.target.checked); }} />
-                  <span>
-                    Acepto los{' '}
-                    <button title="Leer los términos y condiciones" type="button" className="part-link-terminos" onClick={() => setTermsOpen(true)}>
-                      términos y condiciones
-                    </button>
-                    {' '}y la{' '}
-                    <button title="Leer la política de privacidad" type="button" className="part-link-terminos" onClick={() => setTermsOpen(true)}>
-                      política de privacidad
-                    </button>
-                    {' '}*
-                  </span>
-                </label>
-                {!aceptaTerminos && <p className="part-form-hint" style={{ margin: '0 0 .7rem' }}>Debes aceptar los términos para continuar</p>}
-
-                <label className={`part-review-check${errorCondicionFisica ? ' part-group-error' : ''}`}>
-                  <input type="checkbox" checked={aceptaCondicionFisica} onChange={(e) => { setAceptaCondicionFisica(e.target.checked); setErrorCondicionFisica(!e.target.checked); }} />
-                  <span>Declaro estar en condiciones físicas adecuadas para participar en el evento y no tengo contraindicaciones médicas que me impidan hacerlo.</span>
-                </label>
-                {!aceptaCondicionFisica && <p className="part-form-hint" style={{ margin: '0 0 .9rem' }}>Debes confirmar tu estado de salud</p>}
-
-                {msg && (
-                  <div className={`part-form-alert ${msg.tipo}`} key={msg.id}>
-                    <span className="part-alert-icon">{msg.tipo === 'ok' ? '✅' : '⚠️'}</span>
-                    {msg.texto}
-                    <div className="part-alert-timer" style={{ animationDuration: `${duracionMsg}ms` }} />
-                  </div>
-                )}
-
-                <div style={{ display: 'flex', gap: '.6rem' }}>
-                  <button title="Volver al paso del pago" type="button" className="btn btn-outline" onClick={() => setStep(2)}>
-                    <i className="ti ti-arrow-left" aria-hidden="true" /> Volver al pago
-                  </button>
-                  <button title={enviando ? 'Enviando…' : 'Confirmar tu inscripción'}
-                    type="button"
-                    className="btn btn-primary"
-                    disabled={enviando}
-                    onClick={confirmarInscripcion}
-                  >
-                    <i className="ti ti-lock" aria-hidden="true" /> {enviando ? 'Enviando…' : pagoPendienteComprobante !== null ? 'Reintentar subida del comprobante' : 'Confirmar inscripción'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ASUNCIÓN: pantalla de éxito reconstruida — no tengo el
-              contenido original que se perdió. Compárala con la que
-              recuperes de la Línea de Tiempo/git si quieres el diseño
-              exacto de antes (p. ej. si mostraba el QR aquí mismo). */}
-          {step === 3 && done && (
-            <div className="part-card">
-              <div className="part-card-body" style={{ textAlign: 'center', padding: '2.5rem 1.5rem' }}>
-                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✅</div>
-                <h2 style={{ margin: '0 0 .5rem' }}>¡Inscripción confirmada!</h2>
-                <p className="part-form-hint" style={{ margin: '0 0 1.5rem' }}>
-                  Te enviamos un correo con tu código QR de entrada. También puedes verlo cuando quieras desde tu perfil.
-                </p>
-                <button title="Ver mi entrada con el código QR" type="button" className="btn btn-primary" onClick={() => nav(`/deportivo/perfil?entrada=${evento.id}`)}>
-                  Ver mi entrada <i className="ti ti-arrow-right" aria-hidden="true" />
+              <div className="insc-acciones">
+                <button title="Volver al paso anterior" type="button" className="insc-btn insc-btn-secundario" onClick={() => setStep(1)}>
+                  <i className="ti ti-arrow-left" aria-hidden="true" /> Volver
+                </button>
+                <button title="Revisar los datos de tu inscripción" type="button" className="insc-btn insc-btn-primario insc-btn-grande" disabled={validandoComprobante} onClick={irARevision}>
+                  Revisar inscripción <i className="ti ti-arrow-right" aria-hidden="true" />
                 </button>
               </div>
             </div>
           )}
+
+          {/* ---------------- PASO 3: confirmar ---------------- */}
+          {step === 3 && !done && (
+            <div className="insc-form">
+              <Seccion numero={1} icono="ti-clipboard-check" titulo="Revisa tu inscripción" subtitulo="Si algo está mal, edítalo antes de confirmar.">
+                <div className="insc-resumen">
+                  <div className="insc-resumen-bloque">
+                    <header><span><i className="ti ti-flag" aria-hidden="true" /> Carrera</span></header>
+                    <dl>
+                      <div><dt>Evento</dt><dd>{evento.nombre}</dd></div>
+                      <div><dt>Fecha</dt><dd>{fmtFecha(evento.fecha)} · {fmtHora(evento.hora)}</dd></div>
+                      <div><dt>Lugar</dt><dd>{evento.ubicacion}</dd></div>
+                      <div><dt>Categoría</dt><dd>{categoriaElegida?.nombre || '—'}</dd></div>
+                    </dl>
+                  </div>
+
+                  <div className="insc-resumen-bloque">
+                    <header>
+                      <span><i className="ti ti-user" aria-hidden="true" /> Corredor</span>
+                      <button type="button" className="insc-enlace" title="Editar tus datos" onClick={() => setStep(1)}><i className="ti ti-pencil" aria-hidden="true" /> Editar</button>
+                    </header>
+                    <dl>
+                      <div><dt>Nombre</dt><dd>{user?.name}</dd></div>
+                      <div><dt>Documento</dt><dd>{documento}</dd></div>
+                      <div><dt>RH</dt><dd>{rh}</dd></div>
+                      <div><dt>Emergencia</dt><dd>{contactoEmergenciaNombre} · {contactoEmergenciaTelefono}</dd></div>
+                      {evento.kit && <div><dt>Kit</dt><dd>{deseaJersey ? `Talla ${tallaKit}${dorsalPreferido ? ` · dorsal ${dorsalPreferido}` : ''}` : 'Sin kit'}</dd></div>}
+                      {mostrarInvitado && (
+                        <div><dt>Invitado</dt><dd>{`${invNombre} ${invApellido}`.trim()}{evento.kit ? (invDeseaKit ? ` · kit talla ${invTallaKit}` : ' · sin kit') : ''}</dd></div>
+                      )}
+                    </dl>
+                  </div>
+
+                  <div className="insc-resumen-bloque">
+                    <header>
+                      <span><i className="ti ti-credit-card" aria-hidden="true" /> Pago</span>
+                      <button type="button" className="insc-enlace" title="Cambiar el método de pago" onClick={() => setStep(2)}><i className="ti ti-pencil" aria-hidden="true" /> Editar</button>
+                    </header>
+                    <dl>
+                      <div><dt>Método</dt><dd>{nombreMetodo}</dd></div>
+                      {comprobante && <div><dt>Comprobante</dt><dd className="insc-ok-texto"><i className="ti ti-circle-check-filled" aria-hidden="true" /> Validado</dd></div>}
+                      <div><dt>Referencia</dt><dd>{referenciaPago}</dd></div>
+                    </dl>
+                    <div className="insc-resumen-total"><span>Total</span><strong>{fmtMoney(total)}</strong></div>
+                  </div>
+                </div>
+              </Seccion>
+
+              <Seccion numero={2} icono="ti-shield-check" titulo="Antes de la salida" subtitulo="Lee y acepta para confirmar tu cupo.">
+                <div className="insc-terminos">
+                  <p>
+                    Al confirmar aceptas que: la inscripción es <b>personal e intransferible</b>; SKYED <b>no hace reembolsos</b> una vez
+                    confirmada, salvo cancelación oficial del evento; participas bajo tu propia responsabilidad; y autorizas el uso de
+                    fotos y videos del evento con fines promocionales.
+                  </p>
+                </div>
+
+                <label className={`insc-check${errorTerminos ? ' con-error' : ''}${aceptaTerminos ? ' marcado' : ''}`}>
+                  <input type="checkbox" checked={aceptaTerminos} onChange={(e) => { setAceptaTerminos(e.target.checked); setErrorTerminos(!e.target.checked); }} />
+                  <span className="insc-check-caja" aria-hidden="true"><i className="ti ti-check" /></span>
+                  <span>
+                    Acepto los{' '}
+                    <button title="Leer los términos y condiciones" type="button" className="insc-enlace" onClick={() => setTermsOpen(true)}>términos y condiciones</button>
+                    {' '}y la{' '}
+                    <button title="Leer la política de privacidad" type="button" className="insc-enlace" onClick={() => setTermsOpen(true)}>política de privacidad</button> *
+                  </span>
+                </label>
+
+                <label className={`insc-check${errorCondicionFisica ? ' con-error' : ''}${aceptaCondicionFisica ? ' marcado' : ''}`}>
+                  <input type="checkbox" checked={aceptaCondicionFisica} onChange={(e) => { setAceptaCondicionFisica(e.target.checked); setErrorCondicionFisica(!e.target.checked); }} />
+                  <span className="insc-check-caja" aria-hidden="true"><i className="ti ti-check" /></span>
+                  <span>Declaro estar en condiciones físicas adecuadas para participar y no tengo contraindicaciones médicas que me lo impidan. *</span>
+                </label>
+              </Seccion>
+
+              <div className="insc-acciones">
+                <button title="Volver al paso del pago" type="button" className="insc-btn insc-btn-secundario" disabled={enviando} onClick={() => setStep(2)}>
+                  <i className="ti ti-arrow-left" aria-hidden="true" /> Volver
+                </button>
+                <button
+                  title={enviando ? 'Enviando…' : 'Confirmar tu inscripción'}
+                  type="button"
+                  className="insc-btn insc-btn-primario insc-btn-grande insc-btn-salida"
+                  disabled={enviando}
+                  onClick={confirmarInscripcion}
+                >
+                  {enviando
+                    ? <><i className="ti ti-loader-2 insc-giro" aria-hidden="true" /> Enviando…</>
+                    : pagoPendienteComprobante !== null
+                      ? <><i className="ti ti-refresh" aria-hidden="true" /> Reintentar subida del comprobante</>
+                      : <><i className="ti ti-flag" aria-hidden="true" /> Confirmar inscripción</>}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ---------------- Listo ---------------- */}
+          {step === 3 && done && (
+            <div className="insc-meta">
+              <div className="insc-meta-bandera" aria-hidden="true" />
+              <div className="insc-meta-icono"><i className="ti ti-trophy" aria-hidden="true" /></div>
+              <h2>¡Estás en la línea de salida!</h2>
+              <p>
+                Tu inscripción a <b>{evento.nombre}</b> quedó registrada.
+                {metodoPago === 'efectivo'
+                  ? ' Recuerda pagar en efectivo en el punto de inscripción.'
+                  : ' Validaremos tu pago y te avisaremos cuando quede confirmado.'}
+              </p>
+              <p className="insc-meta-sub">Tu código QR de entrada estará en tu perfil y te llegará al correo.</p>
+              <div className="insc-meta-acciones">
+                <button title="Ver mi entrada con el código QR" type="button" className="insc-btn insc-btn-primario insc-btn-grande" onClick={() => nav(`/deportivo/perfil?entrada=${evento.id}`)}>
+                  <i className="ti ti-qrcode" aria-hidden="true" /> Ver mi entrada
+                </button>
+                <Link className="insc-btn insc-btn-secundario" to="/deportivo/eventos" title="Ver más eventos">Más eventos</Link>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* ASUNCIÓN: tarjeta lateral reconstruida — mismo problema,
-            no tengo el original. Ajusta clases/estructura si difiere
-            de lo que tenías. */}
-        <div className="part-card" style={{ position: 'sticky', top: '1.5rem' }}>
-          {evento.imagen_url && (
-            <img src={evento.imagen_url} alt={evento.nombre} style={{ width: '100%', height: 160, objectFit: 'cover', borderRadius: '12px 12px 0 0' }} />
-          )}
-          <div className="part-card-body">
-            <span className="part-badge" style={{ display: 'inline-block', marginBottom: '.5rem' }}>{evento.categoria}</span>
-            <h3 style={{ margin: '0 0 .75rem' }}>{evento.nombre}</h3>
-            <div className="part-form-hint" style={{ display: 'flex', alignItems: 'center', gap: '.4rem', margin: '0 0 .35rem' }}>
-              <i className="ti ti-calendar" aria-hidden="true" /> {evento.fecha}
-            </div>
-            <div className="part-form-hint" style={{ display: 'flex', alignItems: 'center', gap: '.4rem', margin: '0 0 .35rem' }}>
-              <i className="ti ti-clock" aria-hidden="true" /> {evento.hora}
-            </div>
-            <div className="part-form-hint" style={{ display: 'flex', alignItems: 'center', gap: '.4rem', margin: '0 0 .35rem' }}>
-              <i className="ti ti-map-pin" aria-hidden="true" /> {evento.ubicacion}
-            </div>
-            <div className="part-form-hint" style={{ display: 'flex', alignItems: 'center', gap: '.4rem', margin: '0 0 .9rem' }}>
-              <i className="ti ti-users" aria-hidden="true" /> {evento.cupos_disponibles} cupos disponibles
-            </div>
-
-            <div style={{ borderTop: '1px solid var(--border, #e5e7eb)', paddingTop: '.75rem' }}>
-              <div className="part-review-row"><span>Inscripción</span><strong>{fmtMoney(evento.precio)}</strong></div>
-              <div className="part-review-row"><span>Kit de bienvenida</span><strong>{deseaJersey && evento.kit ? fmtMoney(evento.kit.precio) : 'No incluido'}</strong></div>
-              {mostrarInvitado && (
-                <>
-                  <div className="part-review-row"><span>Inscripción del invitado</span><strong>{fmtMoney(precioInvitado)}</strong></div>
-                  <div className="part-review-row"><span>Kit del invitado</span><strong>{invDeseaKit ? fmtMoney(precioKitInvitado) : 'No incluido'}</strong></div>
-                </>
-              )}
-            </div>
-            <div className="part-review-total"><span>Total</span><strong>{fmtMoney(total)}</strong></div>
-
-            <span
-              className="part-badge"
-              style={{
-                display: 'inline-block', marginTop: '.75rem',
-                background: evento.cupos_disponibles > 0 ? 'color-mix(in srgb, #16a34a 15%, transparent)' : 'color-mix(in srgb, #dc2626 15%, transparent)',
-                color: evento.cupos_disponibles > 0 ? '#16a34a' : '#dc2626',
-              }}
-            >
-              {evento.cupos_disponibles > 0 ? 'Cupos disponibles' : 'Sin cupos'}
+        {/* ===================== Resumen (ticket) ===================== */}
+        <aside className="insc-ticket" aria-label="Resumen de tu inscripción">
+          <div className="insc-ticket-cab">
+            <span><i className="ti ti-ticket" aria-hidden="true" /> Tu inscripción</span>
+            <span className={`insc-cupos${evento.cupos_disponibles > 0 ? '' : ' agotado'}`}>
+              <span className="insc-cupos-punto" aria-hidden="true" />
+              {evento.cupos_disponibles > 0 ? `${evento.cupos_disponibles} cupos` : 'Sin cupos'}
             </span>
           </div>
-        </div>
+
+          <div className="insc-ticket-evento">
+            {evento.imagen_url && <img src={evento.imagen_url} alt="" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />}
+            <div>
+              <strong>{evento.nombre}</strong>
+              <span>{fmtFecha(evento.fecha)}</span>
+              {categoriaElegida && <span className="insc-ticket-cat"><i className="ti ti-medal" aria-hidden="true" /> {categoriaElegida.nombre}</span>}
+            </div>
+          </div>
+
+          <div className="insc-ticket-corte" aria-hidden="true" />
+
+          <ul className="insc-ticket-lineas">
+            <li><span>Inscripción</span><b>{fmtMoney(evento.precio)}</b></li>
+            {evento.kit && <li><span>Kit{deseaJersey && tallaKit ? ` · ${tallaKit}` : ''}</span><b>{deseaJersey ? fmtMoney(precioKit) : '—'}</b></li>}
+            {mostrarInvitado && <li><span>Invitado</span><b>{fmtMoney(precioInvitado)}</b></li>}
+            {mostrarInvitado && evento.kit && <li><span>Kit invitado{invDeseaKit && invTallaKit ? ` · ${invTallaKit}` : ''}</span><b>{invDeseaKit ? fmtMoney(precioKitInvitado) : '—'}</b></li>}
+          </ul>
+
+          <div className="insc-ticket-total">
+            <span>Total</span>
+            <strong key={total}>{fmtMoney(total)}</strong>
+          </div>
+
+          <p className="insc-ticket-nota">
+            <i className="ti ti-shield-check" aria-hidden="true" /> Tu cupo se confirma cuando validamos el pago.
+          </p>
+        </aside>
       </div>
+
+      {msg && (
+        <div className={`part-form-alert ${msg.tipo}`} key={msg.id} role={msg.tipo === 'error' ? 'alert' : 'status'}>
+          <span className="part-alert-icon">{msg.tipo === 'ok' ? '✅' : '⚠️'}</span>
+          {msg.texto}
+          <div className="part-alert-timer" style={{ animationDuration: `${duracionMsg}ms` }} />
+        </div>
+      )}
 
       <TermsModal
         isOpen={termsOpen}
