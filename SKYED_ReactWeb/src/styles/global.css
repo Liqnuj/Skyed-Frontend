@@ -1010,6 +1010,14 @@ transform: translateY(0) !important;
 opacity: 1 !important;
 }
 
+/* Oculto (opacity 0) el toast sigue en la esquina superior derecha: sin esto
+   "se comía" los clics de lo que queda debajo, como la X del panel de
+   accesibilidad en las páginas de SKYED Deportivo. */
+.toast:not(.show) {
+pointer-events: none !important;
+visibility: hidden;
+}
+
 /* BARRITA DE DURACIÓN ANIMADA */
 .toast::after {
 content: '';
