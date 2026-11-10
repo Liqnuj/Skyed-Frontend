@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { ImagePlus, Loader2, Pencil, Plus, Trash2, Upload, Users, X } from "lucide-react";
 import { apiFetch } from "../../services/api";
 import ExportMenu from "../shared/ExportMenu";
@@ -139,8 +140,8 @@ function TableSection({
   );
 }
 
-function Campo({ label, children }: { label: string; children: ReactNode }) {
-  return <label className="admin-field"><span>{label}</span>{children}</label>;
+function Campo({ label, children, ancho = false }: { label: string; children: ReactNode; ancho?: boolean }) {
+  return <label className="admin-field" style={ancho ? { gridColumn: "1 / -1" } : undefined}><span>{label}</span>{children}</label>;
 }
 
 function Dialogo({
@@ -156,7 +157,11 @@ function Dialogo({
   closeOnBackdrop?: boolean;
   children: ReactNode;
 }) {
-  return (
+  // .admin-main crea su propio contexto de apilamiento (z-index: 1), así que un modal montado ahí
+  // queda por debajo del header y del sidebar. Se monta en .deportivo-admin, igual que los modales
+  // de Admin.tsx (kits, eventos, resultados…), que conserva el modo oscuro y las variables del panel.
+  const destino = document.querySelector(".deportivo-admin") ?? document.body;
+  return createPortal(
     <div className="admin-modal-backdrop" onMouseDown={(e) => {
       if (closeOnBackdrop && e.target === e.currentTarget) onClose();
     }}>
@@ -169,7 +174,8 @@ function Dialogo({
         </div>
         {children}
       </div>
-    </div>
+    </div>,
+    destino,
   );
 }
 
@@ -287,7 +293,7 @@ function PatrocinadorForm({
       onClose={onClose}
     >
       <form className="modal-form" onSubmit={submit} noValidate>
-        <div className="admin-form-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 14 }}>
+        <div className="form-grid">
           <Campo label="Nombre">
             <input required maxLength={100} value={form.nombre_p} onChange={(e) => set("nombre_p", e.target.value)} />
           </Campo>
@@ -298,7 +304,7 @@ function PatrocinadorForm({
               <option value="inhabilitado">Inhabilitado</option>
             </select>
           </Campo>
-          <Campo label="Logo (imagen) *">
+          <Campo label="Logo (imagen) *" ancho>
             <div data-validacion="logo-patrocinador">
               <div
                 className={`admin-dropzone ${arrastrandoLogo ? "is-dragover" : ""} ${subiendoLogo ? "is-uploading" : ""}`}
@@ -370,7 +376,7 @@ function PatrocinadorForm({
           <Campo label="Página web">
             <input maxLength={120} value={form.pagina_web_p} onChange={(e) => set("pagina_web_p", e.target.value)} placeholder="https://…" />
           </Campo>
-          <Campo label="Aporte o patrocinio">
+          <Campo label="Aporte o patrocinio" ancho>
             <input required maxLength={100} value={form.aporte_p} onChange={(e) => set("aporte_p", e.target.value)} />
           </Campo>
         </div>
@@ -449,7 +455,7 @@ function AsignarPatrocinadorModal({
     >
       <div className="modal-form">
         <form onSubmit={submit} noValidate>
-          <div className="admin-form-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 14 }}>
+          <div className="form-grid">
             <Campo label="Evento">
               <select required value={eventoId} disabled={!puedeEditar} onChange={(e) => setEventoId(e.target.value)}>
                 <option value="">Selecciona un evento</option>
@@ -537,7 +543,7 @@ function RutaForm({
       onClose={onClose}
     >
       <form className="modal-form" onSubmit={submit} noValidate>
-        <div className="admin-form-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 14 }}>
+        <div className="form-grid">
           <Campo label="Nombre">
             <input required maxLength={100} value={form.nombre_re} onChange={(e) => set("nombre_re", e.target.value)} />
           </Campo>
@@ -560,7 +566,7 @@ function RutaForm({
           <Campo label="Archivo GPX (URL o ruta)">
             <input maxLength={255} value={form.archivo_gpx_re} onChange={(e) => set("archivo_gpx_re", e.target.value)} placeholder="https://… o rutas/archivo.gpx" />
           </Campo>
-          <Campo label="Descripción">
+          <Campo label="Descripción" ancho>
             <textarea required maxLength={255} rows={3} value={form.descripcion_re} onChange={(e) => set("descripcion_re", e.target.value)} />
           </Campo>
         </div>
@@ -618,7 +624,7 @@ function EstacionForm({
       onClose={onClose}
     >
       <form className="modal-form" onSubmit={submit} noValidate>
-        <div className="admin-form-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 14 }}>
+        <div className="form-grid">
           <Campo label="Nombre">
             <input required maxLength={100} value={form.nombre_est} onChange={(e) => set("nombre_est", e.target.value)} />
           </Campo>
@@ -643,7 +649,7 @@ function EstacionForm({
               <option value="cerrada">Cerrada</option>
             </select>
           </Campo>
-          <Campo label="Descripción">
+          <Campo label="Descripción" ancho>
             <textarea required maxLength={255} rows={3} value={form.descripcion_pest} onChange={(e) => set("descripcion_pest", e.target.value)} />
           </Campo>
         </div>
