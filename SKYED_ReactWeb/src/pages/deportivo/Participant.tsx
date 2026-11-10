@@ -45,6 +45,8 @@ interface Pago {
 
 interface Qr {
   codigo: string | null;
+  /** QR para retirar el kit ("KIT-…"); null si nadie de la inscripción pidió kit. */
+  codigo_kit?: string | null;
   estado: string | null;
   fecha_uso?: string | null;
   usos_permitidos?: number | null;
@@ -229,7 +231,7 @@ function estadoEntregaKit(e: EntregaKitEstado | null | undefined) {
 
 // Dibuja el QR en el propio navegador (sin servicios externos, así carga siempre
 // y el código de entrada no sale de la aplicación).
-function QrImagen({ codigo }: { codigo: string }) {
+function QrImagen({ codigo, tamano = 230 }: { codigo: string; tamano?: number }) {
   const [src, setSrc] = useState('');
   const [error, setError] = useState(false);
 
@@ -237,15 +239,15 @@ function QrImagen({ codigo }: { codigo: string }) {
     let activo = true;
     setSrc('');
     setError(false);
-    QRCode.toDataURL(codigo, { width: 260, margin: 1, errorCorrectionLevel: 'M' })
+    QRCode.toDataURL(codigo, { width: tamano * 2, margin: 1, errorCorrectionLevel: 'M' })
       .then((url) => { if (activo) setSrc(url); })
       .catch(() => { if (activo) setError(true); });
     return () => { activo = false; };
-  }, [codigo]);
+  }, [codigo, tamano]);
 
   if (error) return <p style={{ color: '#111', padding: '1rem', margin: 0 }}>No se pudo generar el QR. Usa el código de abajo.</p>;
-  if (!src) return <div style={{ width: 230, height: 230 }} aria-busy="true" />;
-  return <img src={src} alt="Código QR de la inscripción" width={230} height={230} />;
+  if (!src) return <div style={{ width: tamano, height: tamano }} aria-busy="true" />;
+  return <img src={src} alt="Código QR de la inscripción" width={tamano} height={tamano} />;
 }
 
 function estadoPill(estado: string) {
@@ -1348,6 +1350,232 @@ function EventRow({
   );
 }
 
+/* ---------- Pases con código QR: entrada al evento y retiro del kit ---------- */
+
+/** "07:00:00" -> "7:00 a. m." */
+function fmtHoraCorta(hora: string | null | undefined) {
+  const m = /^(\d{1,2}):(\d{2})/.exec(String(hora ?? ''));
+  if (!m) return hora ?? '';
+  return new Date(2000, 0, 1, Number(m[1]), Number(m[2])).toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit' });
+}
+
+/** Código del pase con botón de copiar (por si la cámara del staff no lo lee). */
+function CodigoPase({ codigo }: { codigo: string }) {
+  const [copiado, setCopiado] = useState(false);
+  const temporizador = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(temporizador.current), []);
+
+  const copiar = async () => {
+    try {
+      await navigator.clipboard.writeText(codigo);
+    } catch {
+      const campo = document.createElement('textarea');
+      campo.value = codigo;
+      campo.style.position = 'fixed';
+      campo.style.opacity = '0';
+      document.body.appendChild(campo);
+      campo.select();
+      try { document.execCommand('copy'); } catch { /* sin soporte */ }
+      document.body.removeChild(campo);
+    }
+    setCopiado(true);
+    clearTimeout(temporizador.current);
+    temporizador.current = setTimeout(() => setCopiado(false), 1800);
+  };
+
+  return (
+    <div className="pase-codigo">
+      <span className="pase-codigo-etiqueta">Código</span>
+      <code style={{ userSelect: 'all' }}>{codigo}</code>
+      <button type="button" className={`pase-copiar${copiado ? ' ok' : ''}`} title="Copiar el código" onClick={copiar}>
+        <i className={`ti ${copiado ? 'ti-check' : 'ti-copy'}`} aria-hidden="true" /> {copiado ? 'Copiado' : 'Copiar'}
+      </button>
+      <span role="status" aria-live="polite" className="pase-solo-lector">{copiado ? 'Código copiado' : ''}</span>
+    </div>
+  );
+}
+
+/**
+ * Los pases de una inscripción en una sola ventana:
+ *  - "Entrada al evento": el QR de asistencia del día del evento (siempre).
+ *  - "Retiro del kit": solo si alguien de la inscripción pidió kit. Con él el
+ *    staff ve las tallas y marca el kit como entregado (días antes del evento).
+ */
+function PasesQr({ insc, darkMode, onCerrar }: { insc: Inscripcion; darkMode: boolean; onCerrar: () => void }) {
+  const { user } = useAuth();
+  const qr = insc.qr!;
+  const inv = insc.invitado;
+  const evento = insc.evento;
+  const codigoKit = qr.codigo_kit ?? null;
+
+  // Kits pedidos en la inscripción (el tuyo y/o el del invitado).
+  const kits = [
+    insc.desea_kit ? { quien: 'Tú', talla: insc.talla_camiseta, entrega: insc.entrega_kit } : null,
+    inv?.desea_kit
+      ? { quien: `${inv.nombre ?? ''} ${inv.apellido ?? ''}`.trim() || 'Invitado', talla: inv.talla_kit, entrega: insc.entrega_kit_invitado }
+      : null,
+  ].filter((k): k is { quien: string; talla: string | null | undefined; entrega: EntregaKitEstado | null | undefined } => k !== null);
+  const kitsPendientes = kits.filter((k) => k.entrega?.estado !== 'entregado').length;
+
+  // Si aún falta recoger el kit, se abre primero ese pase (es lo siguiente que debe hacer).
+  const [pase, setPase] = useState<'entrada' | 'kit'>(codigoKit && kitsPendientes > 0 && qr.estado !== 'usado' ? 'kit' : 'entrada');
+
+  // Escape cierra la ventana.
+  useEffect(() => {
+    const alTeclear = (e: KeyboardEvent) => { if (e.key === 'Escape') onCerrar(); };
+    window.addEventListener('keydown', alTeclear);
+    return () => window.removeEventListener('keydown', alTeclear);
+  }, [onCerrar]);
+
+  const pagoPendiente = insc.estado === 'pendiente' || qr.estado === 'pendiente';
+  const cancelada = insc.estado === 'cancelada' || qr.estado === 'cancelado';
+  const usosPermitidos = Number(qr.usos_permitidos) || 1;
+  const usosRealizados = Number(qr.usos_realizados) || 0;
+
+  // Sello encima del QR cuando todavía no sirve o ya se usó.
+  const selloEntrada = cancelada
+    ? { icono: 'ti-ban', texto: 'Inscripción cancelada' }
+    : pagoPendiente
+      ? { icono: 'ti-hourglass-high', texto: 'Se activa cuando validemos tu pago' }
+      : qr.estado === 'usado'
+        ? { icono: 'ti-circle-check', texto: 'Ya ingresaste al evento' }
+        : null;
+  const selloKit = cancelada
+    ? { icono: 'ti-ban', texto: 'Inscripción cancelada' }
+    : pagoPendiente
+      ? { icono: 'ti-hourglass-high', texto: 'Se activa cuando validemos tu pago' }
+      : kitsPendientes === 0
+        ? { icono: 'ti-circle-check', texto: kits.length > 1 ? 'Kits entregados' : 'Kit entregado' }
+        : null;
+
+  const estadoEntrada = cancelada
+    ? { clase: 'error', texto: 'Cancelada' }
+    : pagoPendiente
+      ? { clase: 'espera', texto: 'Pago por validar' }
+      : qr.estado === 'usado'
+        ? { clase: 'usado', texto: 'Usada' }
+        : { clase: 'ok', texto: usosPermitidos > 1 ? `Válida · ${usosRealizados} de ${usosPermitidos} ingresos` : 'Válida' };
+  const estadoKit = cancelada
+    ? { clase: 'error', texto: 'Cancelada' }
+    : pagoPendiente
+      ? { clase: 'espera', texto: 'Pago por validar' }
+      : kitsPendientes === 0
+        ? { clase: 'usado', texto: 'Entregado' }
+        : { clase: 'ok', texto: kitsPendientes === 1 ? '1 kit por recoger' : `${kitsPendientes} kits por recoger` };
+
+  const esKit = pase === 'kit' && !!codigoKit;
+  const codigo = esKit ? codigoKit! : (qr.codigo ?? '');
+  const sello = esKit ? selloKit : selloEntrada;
+  const estado = esKit ? estadoKit : estadoEntrada;
+
+  return (
+    <div className={`mod-deportivo part-qr-overlay pase-fondo${darkMode ? ' dark-mode' : ''}`} onClick={onCerrar}>
+      <div
+        className={`pase${esKit ? ' pase-kit' : ''}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label={esKit ? 'Código QR para retirar el kit' : 'Código QR de entrada al evento'}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button type="button" className="pase-cerrar" title="Cerrar" aria-label="Cerrar" onClick={onCerrar}>
+          <i className="ti ti-x" aria-hidden="true" />
+        </button>
+
+        <header className="pase-cab">
+          <span className="pase-marca"><i className="ti ti-bike" aria-hidden="true" /> SKYED Deportivo</span>
+          <h3>{evento?.nombre || 'Tu evento'}</h3>
+          <p>
+            {evento?.fecha && <span><i className="ti ti-calendar-event" aria-hidden="true" /> {fmtFechaLarga(evento.fecha)}</span>}
+            {evento?.hora && <span><i className="ti ti-clock" aria-hidden="true" /> {fmtHoraCorta(evento.hora)}</span>}
+            {evento?.ubicacion && <span><i className="ti ti-map-pin" aria-hidden="true" /> {evento.ubicacion}</span>}
+          </p>
+        </header>
+
+        {codigoKit && (
+          <div className="pase-selector" role="tablist" aria-label="Elige el código QR">
+            <button type="button" role="tab" aria-selected={!esKit} title="Ver el QR de entrada al evento" onClick={() => setPase('entrada')}>
+              <i className="ti ti-ticket" aria-hidden="true" /> Entrada al evento
+            </button>
+            <button type="button" role="tab" aria-selected={esKit} title="Ver el QR para retirar el kit" onClick={() => setPase('kit')}>
+              <i className="ti ti-shirt-sport" aria-hidden="true" /> Retiro del kit
+              {kitsPendientes > 0 && !pagoPendiente && !cancelada && <span className="pase-punto" aria-label="Pendiente" />}
+            </button>
+          </div>
+        )}
+
+        <div className="pase-cuerpo" key={pase}>
+          <div className="pase-titulo">
+            <strong><i className={`ti ${esKit ? 'ti-shirt-sport' : 'ti-ticket'}`} aria-hidden="true" /> {esKit ? 'Retiro del kit' : 'Entrada al evento'}</strong>
+            <span className={`pase-estado ${estado.clase}`}>{estado.texto}</span>
+          </div>
+
+          <div className={`pase-qr${sello ? ' inactivo' : ''}`}>
+            <span className="pase-esquina a" aria-hidden="true" />
+            <span className="pase-esquina b" aria-hidden="true" />
+            <span className="pase-esquina c" aria-hidden="true" />
+            <span className="pase-esquina d" aria-hidden="true" />
+            <QrImagen codigo={codigo} tamano={240} />
+            {sello && (
+              <div className="pase-sello">
+                <i className={`ti ${sello.icono}`} aria-hidden="true" />
+                <span>{sello.texto}</span>
+              </div>
+            )}
+          </div>
+
+          <CodigoPase codigo={codigo} />
+
+          {esKit ? (
+            <>
+              <ul className="pase-kits">
+                {kits.map((k) => {
+                  const entregado = k.entrega?.estado === 'entregado';
+                  return (
+                    <li key={k.quien}>
+                      <span className="pase-kits-quien"><i className="ti ti-user" aria-hidden="true" /> {k.quien}</span>
+                      <span className="pase-kits-talla">Talla <b>{k.talla || '—'}</b></span>
+                      <span className={`pase-estado ${entregado ? 'usado' : 'ok'}`}>{entregado ? 'Entregado' : 'Por recoger'}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+              {(evento?.kit?.lugar_entrega || evento?.kit?.fecha_entrega) && (
+                <dl className="pase-datos">
+                  {evento?.kit?.lugar_entrega && <div><dt>Dónde</dt><dd>{evento.kit.lugar_entrega}</dd></div>}
+                  {evento?.kit?.fecha_entrega && <div><dt>Cuándo</dt><dd>{fmtFechaLarga(evento.kit.fecha_entrega)}</dd></div>}
+                </dl>
+              )}
+              <p className="pase-ayuda">
+                <i className="ti ti-info-circle" aria-hidden="true" />
+                Muestra este código en el punto de entrega del kit y lleva tu documento.
+                {kits.length > 1 ? ' Con él se entregan los kits de las dos personas.' : ''}
+              </p>
+            </>
+          ) : (
+            <>
+              <dl className="pase-datos">
+                <div><dt>Participante</dt><dd>{user?.name || '—'}</dd></div>
+                {insc.numero_dorsal != null && <div><dt>Dorsal</dt><dd className="pase-dorsal">#{insc.numero_dorsal}</dd></div>}
+                {insc.categoria?.nombre && <div><dt>Categoría</dt><dd>{insc.categoria.nombre}</dd></div>}
+                {inv && <div><dt>Invitado</dt><dd>{`${inv.nombre ?? ''} ${inv.apellido ?? ''}`.trim() || '—'}</dd></div>}
+                <div><dt>Sirve para</dt><dd>{usosPermitidos > 1 ? `${usosPermitidos} ingresos (tú y tu invitado)` : '1 ingreso'}</dd></div>
+              </dl>
+              <p className="pase-ayuda">
+                <i className="ti ti-info-circle" aria-hidden="true" />
+                Muestra este código en el punto de control el día del evento.
+              </p>
+            </>
+          )}
+        </div>
+
+        <footer className="pase-pie">
+          <i className="ti ti-sun" aria-hidden="true" /> Sube el brillo de la pantalla para que lo lean más rápido.
+        </footer>
+      </div>
+    </div>
+  );
+}
+
 function DetalleInscripcion({
   insc, verQr, onVerQr, onCerrarQr, onVolver, onCancelar,
 }: {
@@ -1596,7 +1824,7 @@ function DetalleInscripcion({
                 style={{ margin: 0 }}
                 onClick={onVerQr}
               >
-                <i className="ti ti-qrcode" aria-hidden="true" /> Ver mi QR
+                <i className="ti ti-qrcode" aria-hidden="true" /> {insc.qr?.codigo_kit ? 'Ver mis códigos QR' : 'Ver mi QR'}
               </button>
             )}
             {onCancelar && (
@@ -1624,22 +1852,7 @@ function DetalleInscripcion({
         )}
 
         {insc.qr?.codigo && verQr && createPortal(
-                    <div className={`mod-deportivo part-qr-overlay${darkMode ? ' dark-mode' : ''}`} onClick={onCerrarQr}>
-            <div className="part-qr-modal" onClick={(e) => e.stopPropagation()}>
-              <button title="Cerrar" className="part-qr-close" onClick={onCerrarQr} aria-label="Cerrar">
-                <i className="ti ti-x" aria-hidden="true" />
-              </button>
-              <div className="part-qr-glow">
-                <QrImagen codigo={insc.qr.codigo} />
-              </div>
-              <CodigoCopiable codigo={insc.qr.codigo} />
-              <p className="part-qr-hint">
-                {insc.qr.estado === 'usado'
-                  ? 'Este QR ya fue escaneado y no sirve para volver a ingresar.'
-                  : 'Muestra este código en el punto de control el día del evento.'}
-              </p>
-            </div>
-          </div>,
+          <PasesQr insc={insc} darkMode={darkMode} onCerrar={onCerrarQr} />,
           document.body,
         )}
       </div>
