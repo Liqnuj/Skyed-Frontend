@@ -251,11 +251,12 @@ const formatDate = (value?: string | null) => {
 const nombreDe = (p?: Persona) =>
   p ? `${p.nombre_u ?? ""} ${p.apellido_u ?? ""}`.trim() || "—" : "—";
 
-const hoy = () => new Date().toISOString().slice(0, 10);
-
 /** Fecha local en formato YYYY-MM-DD (sin el corrimiento de zona horaria de toISOString). */
 const isoLocal = (f: Date) =>
   `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, "0")}-${String(f.getDate()).padStart(2, "0")}`;
+
+/** Hoy en hora local (toISOString usa UTC y en Colombia cambia de día desde las 7:00 p. m.). */
+const hoy = () => isoLocal(new Date());
 
 /** Días antes del evento en que puede empezar la entrega del kit. */
 const DIAS_ENTREGA_KIT = 10;
@@ -1938,7 +1939,18 @@ function EventoModal({ item, kits, onClose, onSave, notify, onKitCreado }: {
   const [saving, setSaving] = useState(false);
   const set = (campo: keyof typeof form, valor: string) => setForm(f => ({ ...f, [campo]: valor }));
 
+  // Un evento que ya pasó conserva su fecha original (para poder corregir otros datos),
+  // pero no se puede mover a otra fecha anterior a hoy.
+  const fechaOriginal = item?.fecha?.slice(0, 10) ?? "";
+  const eventoYaPasado = !!fechaOriginal && fechaOriginal < hoy();
+
   const submit = async (e: React.FormEvent) => {
+    if (form.fecha_e && form.fecha_e < hoy() && form.fecha_e !== fechaOriginal) {
+      e.preventDefault();
+      notify("La fecha del evento no puede ser anterior a hoy.", "error");
+      e.currentTarget.querySelector<HTMLElement>('input[type="date"]')?.focus();
+      return;
+    }
     const camposAdicionales = form.imagen_e ? [] : [{
       etiqueta: "Foto del evento",
       elemento: e.currentTarget.querySelector<HTMLElement>('[data-validacion="imagen-evento"]'),
@@ -1980,7 +1992,7 @@ function EventoModal({ item, kits, onClose, onSave, notify, onKitCreado }: {
         </Field>
 
         <Field label="Fecha">
-          <input required type="date" min={item ? undefined : hoy()} value={form.fecha_e} onChange={e => set("fecha_e", e.target.value)} />
+          <input required type="date" min={eventoYaPasado ? undefined : hoy()} value={form.fecha_e} onChange={e => set("fecha_e", e.target.value)} />
         </Field>
 
         <Field label="Hora de salida">
@@ -3124,7 +3136,11 @@ function KitModal({ item, eventos, onClose, onSave, notify, desdeEvento = false,
   const esNuevo = !item;
   // La entrega va desde 10 días antes del evento hasta el día del evento.
   const fechaDelEvento = fechaEvento ?? eventos.find(ev => String(ev.id) === form.id_e)?.fecha?.slice(0, 10);
-  const rangoEntrega = rangoEntregaKit(fechaDelEvento);
+  const rangoBase = rangoEntregaKit(fechaDelEvento);
+  // En un kit nuevo la entrega no puede quedar en el pasado, aunque el rango de 10 días antes del evento ya haya empezado.
+  const rangoEntrega = rangoBase && esNuevo && rangoBase.min < hoy() && hoy() <= rangoBase.max
+    ? { ...rangoBase, min: hoy() }
+    : rangoBase;
 
   const submit = async (e: React.FormEvent) => {
     const camposAdicionales: Array<{ etiqueta: string; elemento: HTMLElement | null }> = [];
