@@ -17,7 +17,7 @@ import Inscription from './pages/deportivo/Inscription';
 import MyEntry from './pages/deportivo/MyEntry';
 import Results from './pages/deportivo/Results';
 import Notifications from './pages/deportivo/Notifications';
-import AboutSport from './pages/deportivo/About';
+import AboutSport from './pages/deportivo/AboutJournal';
 import Kit from './pages/deportivo/Kit';
 import Checkout from './pages/deportivo/Checkout';
 import SocialHome from './pages/social/SocialHome';
