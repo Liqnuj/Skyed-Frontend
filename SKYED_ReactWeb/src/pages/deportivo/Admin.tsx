@@ -2611,9 +2611,6 @@ function ControlAcceso({ notify, onValidado }: { notify: Avisar; onValidado: () 
     setValidando(false);
   };
 
-  // El QR es solo para la asistencia: los kits se entregan días antes,
-  // desde Kits → Entregas kits.
-
   const iniciarCamara = async () => {
     if (!navigator.mediaDevices?.getUserMedia) {
       notify("Este navegador no permite usar la cámara. Escribe el código manualmente.");
@@ -2653,6 +2650,7 @@ function ControlAcceso({ notify, onValidado }: { notify: Avisar; onValidado: () 
   };
 
   return (
+    <>
     <section className="section-view">
       <div className="section-header">
         <div>
@@ -2717,6 +2715,197 @@ function ControlAcceso({ notify, onValidado }: { notify: Avisar; onValidado: () 
               ))}
             </div>
           </>}
+        </div>
+      </div>
+    </section>
+    <ControlKit notify={notify} onValidado={onValidado} />
+    </>
+  );
+}
+
+/* ================================================================
+   CONTROL DE ACCESO: RETIRO DEL KIT (QR "KIT-…")
+================================================================ */
+
+type KitPersona = {
+  id_inv: number | null;
+  rol: string;
+  nombre: string | null;
+  documento?: string | number | null;
+  talla?: string | null;
+  estado: string;
+};
+type KitConsulta = {
+  codigo: string;
+  evento?: { id: number; nombre: string };
+  kit?: string | null;
+  kits: KitPersona[];
+  pendientes: number;
+};
+
+function ControlKit({ notify, onValidado }: { notify: Avisar; onValidado: () => void }) {
+  const [codigo, setCodigo] = useState("");
+  const [consultando, setConsultando] = useState(false);
+  const [entregando, setEntregando] = useState(false);
+  const [consulta, setConsulta] = useState<KitConsulta | null>(null);
+  const [errorKit, setErrorKit] = useState("");
+  const [camara, setCamara] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const frameRef = useRef<number | null>(null);
+
+  const detenerCamara = () => {
+    if (frameRef.current) cancelAnimationFrame(frameRef.current);
+    frameRef.current = null;
+    streamRef.current?.getTracks().forEach(t => t.stop());
+    streamRef.current = null;
+    setCamara(false);
+  };
+
+  // Apaga la cámara al salir de la sección.
+  useEffect(() => detenerCamara, []);
+
+  const aConsulta = (cod: string, res: any): KitConsulta => ({
+    codigo: cod,
+    evento: res.evento,
+    kit: res.kit,
+    kits: res.kits ?? [],
+    pendientes: res.pendientes ?? 0,
+  });
+
+  const consultar = async (valor: string) => {
+    const limpio = valor.trim();
+    if (!limpio || consultando) return;
+    setConsultando(true);
+    setErrorKit("");
+    try {
+      const res = await apiFetch("/qr/kit/consultar", { method: "POST", body: JSON.stringify({ codigo_kit: limpio }) });
+      setConsulta(aConsulta(limpio, res));
+    } catch (err) {
+      setConsulta(null);
+      setErrorKit(err instanceof Error ? err.message : "No se pudo consultar el código del kit.");
+    }
+    setCodigo("");
+    setConsultando(false);
+  };
+
+  const entregar = async () => {
+    if (!consulta || entregando) return;
+    setEntregando(true);
+    try {
+      const res = await apiFetch("/qr/kit/entregar", { method: "POST", body: JSON.stringify({ codigo_kit: consulta.codigo }) });
+      setConsulta(aConsulta(consulta.codigo, res));
+      notify(res.message ?? "Kit entregado.");
+      onValidado();
+    } catch (err) {
+      setErrorKit(err instanceof Error ? err.message : "No se pudo registrar la entrega.");
+      setConsulta(null);
+    }
+    setEntregando(false);
+  };
+
+  const iniciarCamara = async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      notify("Este navegador no permite usar la cámara. Escribe el código manualmente.");
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      streamRef.current = stream;
+      setCamara(true);
+      const video = videoRef.current!;
+      video.srcObject = stream;
+      await video.play();
+
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d", { willReadFrequently: true })!;
+      const leer = () => {
+        if (!streamRef.current) return;
+        if (video.readyState === video.HAVE_ENOUGH_DATA) {
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const qr = jsQR(img.data, img.width, img.height);
+          if (qr?.data) {
+            detenerCamara();
+            consultar(qr.data);
+            return;
+          }
+        }
+        frameRef.current = requestAnimationFrame(leer);
+      };
+      frameRef.current = requestAnimationFrame(leer);
+    } catch {
+      detenerCamara();
+      notify("No se pudo abrir la cámara. Revisa el permiso del navegador o escribe el código.");
+    }
+  };
+
+  return (
+    <section className="section-view" style={{ marginTop: 32 }}>
+      <div className="section-header">
+        <div>
+          <span className="card-kicker">ENTREGA DE KITS</span>
+          <h2>Validar retiro del kit con QR</h2>
+        </div>
+      </div>
+      <div className="qr-check">
+        <div className="admin-card">
+          <p style={{ margin: 0 }}>
+            Escanea el QR de "Retiro del kit" del participante o escribe el código que aparece debajo de él.
+            Primero verás quién retira y de qué talla; luego confirmas la entrega.
+            Solo funciona si el pago está confirmado.
+          </p>
+          <form className="qr-check-form" noValidate onSubmit={e => { if (validarFormularioDeportivo(e, notify)) consultar(codigo); }}>
+            <input
+              required
+              value={codigo}
+              onChange={e => setCodigo(e.target.value.slice(0, 255))}
+              placeholder="Código del kit (KIT-…)"
+              aria-label="Código del QR del kit"
+            />
+            <button title={consultando ? "Consultando…" : "Consultar el código del kit"} className="primary-btn" disabled={consultando}>
+              {consultando ? <Loader2 size={16} className="admin-spin" /> : <ScanLine size={16} />} Validar
+            </button>
+          </form>
+          <div style={{ marginTop: 12 }}>
+            {camara
+              ? <button title="Apagar la cámara" type="button" className="secondary-btn" onClick={detenerCamara}><CameraOff size={15} /> Apagar cámara</button>
+              : <button title="Escanear el código QR del kit con la cámara" type="button" className="secondary-btn" onClick={iniciarCamara}><Camera size={15} /> Escanear con la cámara</button>}
+          </div>
+          <video ref={videoRef} className="qr-video" muted playsInline hidden={!camara} />
+        </div>
+
+        <div className="admin-card">
+          {consulta ? (
+            <div className={`qr-result ${consulta.pendientes > 0 ? "ok" : ""}`} role="status">
+              <strong>{consulta.pendientes > 0 ? "✓ Kit por entregar" : "Los kits ya fueron entregados"}</strong>
+              {consulta.evento?.nombre && <p>{consulta.evento.nombre}{consulta.kit ? ` · ${consulta.kit}` : ""}</p>}
+              {consulta.kits.map((k, i) => (
+                <p key={i}>
+                  {k.rol === "invitado" ? "Invitado" : "Titular"}: {k.nombre ?? "—"}
+                  {k.documento ? ` · Doc. ${k.documento}` : ""} · Talla {k.talla || "—"} · {k.estado === "entregado" ? "Entregado" : "Por entregar"}
+                </p>
+              ))}
+              {consulta.pendientes > 0 && (
+                <button title="Confirmar la entrega del kit" type="button" className="primary-btn" style={{ marginTop: 10 }} disabled={entregando} onClick={entregar}>
+                  {entregando ? <Loader2 size={16} className="admin-spin" /> : <Package size={16} />}{" "}
+                  {consulta.pendientes === 1 ? "Entregar kit" : `Entregar ${consulta.pendientes} kits`}
+                </button>
+              )}
+            </div>
+          ) : errorKit ? (
+            <div className="qr-result error" role="status">
+              <strong>✕ No se puede entregar</strong>
+              <p>{errorKit}</p>
+            </div>
+          ) : (
+            <div className="qr-result" role="status">
+              <strong>Esperando un código…</strong>
+              <p>Aquí verás quién retira el kit y su talla.</p>
+            </div>
+          )}
         </div>
       </div>
     </section>
