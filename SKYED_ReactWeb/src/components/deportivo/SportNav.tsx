@@ -28,6 +28,7 @@ const { user } = useAuth();
       // Los administradores no tienen perfil de participante.
       opciones: esAdmin ? [] : [
         { to: '/deportivo/perfil', icono: 'ti-layout-dashboard', titulo: 'Mi perfil', detalle: 'Resumen y estadísticas' },
+        { to: '/deportivo/notificaciones', icono: 'ti-bell', titulo: 'Notificaciones', detalle: 'Avisos de pagos, inscripciones y reservas' },
       ],
     },
     {
@@ -62,13 +63,13 @@ const { user } = useAuth();
         <div className="nav-cta">
 {user ? (
   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-    {!esAdmin && <SportBell />}
     <AccountMenu
       tema="deportivo"
       grupos={grupos}
       rol={esAdmin ? 'Administrador' : 'Ciclista SKYED'}
       alSalirIrA="/deportivo"
     />
+    {!esAdmin && <SportBell />}
   </div>
   
 )  : (

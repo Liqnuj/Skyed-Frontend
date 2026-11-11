@@ -123,7 +123,7 @@ export default function NotificationBell() {
 
       <div className="nb-panel" role="dialog" aria-label="Notificaciones">
         <div className="nb-head">
-          <strong>Notificaciones</strong>
+          <strong>Notificaciones{noLeidas > 0 && <span className="nb-count">{noLeidas > 9 ? '9+' : noLeidas}</span>}</strong>
           {noLeidas > 0 && (
             <button title="Marcar todas las notificaciones como leídas" type="button" className="nb-link" onClick={marcarTodas}>
               Marcar todas como leídas
@@ -165,6 +165,11 @@ export default function NotificationBell() {
             </button>
           ))}
         </div>
+
+        <button title="Ver todas tus notificaciones" type="button" className="nb-all"
+          onClick={() => { setAbierto(false); navigate('/social/notificaciones'); }}>
+          Ver todas <i className="ti ti-arrow-right" aria-hidden="true" />
+        </button>
       </div>
     </div>
   );

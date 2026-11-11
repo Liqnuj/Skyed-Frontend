@@ -67,6 +67,7 @@ export default function SocialUserMenu() {
 
   const opciones: { to: string; icono: string; titulo: string; detalle: string }[] = esAdmin ? [] : [
     { to: '/social/perfil', icono: 'ti-layout-dashboard', titulo: 'Mi perfil', detalle: 'Resumen de tu cuenta' },
+    { to: '/social/notificaciones', icono: 'ti-bell', titulo: 'Notificaciones', detalle: 'Avisos de tus reservas y PQR' },
     { to: '/social/reservar', icono: 'ti-calendar-event', titulo: 'Cotizar reserva', detalle: 'Estimación de costos y disponibilidad' },
   ];
   opciones.push({ to: '/social/ayuda', icono: 'ti-help-circle', titulo: 'Centro de ayuda', detalle: 'Guías y preguntas frecuentes' });

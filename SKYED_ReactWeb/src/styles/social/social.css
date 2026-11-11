@@ -900,9 +900,11 @@
 }.mod-social.dark-mode .product-badge {
   background: #2a2420;
   color: #f0ebe5;
-}.mod-social.dark-mode section {
+}
+/* .mod-social.dark-mode section {
   background: var(--plum);
-}.mod-social.dark-mode .section-title {
+} */
+.mod-social.dark-mode .section-title {
   color: #f0ebe5;
 }.mod-social.dark-mode .promo-strip .promo-card:nth-child(1) {
   background: #2a2420;
