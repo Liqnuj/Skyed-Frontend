@@ -3,8 +3,9 @@
   position: relative; display: grid; place-items: center;
   width: 40px; height: 40px; border: 0; border-radius: 50%;
   font-size: 1.25rem; cursor: pointer;
-  color: inherit; background: color-mix(in srgb, var(--accent, #2c9caf) 12%, transparent);
+  color: var(--accent); background: none;
   transition: background .15s;
+  border: 1px solid var(--accent);
 }
 .sb-btn:hover { background: color-mix(in srgb, var(--accent, #2c9caf) 24%, transparent); }
 .sb-badge {
