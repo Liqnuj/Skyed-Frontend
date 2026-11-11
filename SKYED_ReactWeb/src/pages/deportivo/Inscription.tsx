@@ -63,11 +63,11 @@ const PARENTESCOS = [
   { valor: 'otro', etiqueta: 'Otro', icono: 'ti-user' },
 ];
 
-const TIPOS_DOCUMENTO: Record<string, { etiqueta: string; min: number; max: number }> = {
-  CC: { etiqueta: 'Cédula de ciudadanía', min: 6, max: 10 },
-  TI: { etiqueta: 'Tarjeta de identidad', min: 10, max: 11 },
-  CE: { etiqueta: 'Cédula de extranjería', min: 6, max: 10 },
-  PA: { etiqueta: 'Pasaporte', min: 5, max: 12 },
+const TIPOS_DOCUMENTO: Record<string, { etiqueta: string; numero: string; min: number; max: number; letras?: boolean }> = {
+  CC: { etiqueta: 'Cédula de ciudadanía', numero: 'Número de cédula', min: 6, max: 10 },
+  TI: { etiqueta: 'Tarjeta de identidad', numero: 'Número de tarjeta de identidad', min: 10, max: 11 },
+  CE: { etiqueta: 'Cédula de extranjería', numero: 'Número de cédula de extranjería', min: 6, max: 10 },
+  PA: { etiqueta: 'Pasaporte', numero: 'Número de pasaporte', min: 5, max: 12, letras: true },
 };
 
 const METODOS: Array<{ valor: MetodoPago; titulo: string; detalle: string; icono: string }> = [
@@ -140,6 +140,12 @@ function soloNumeros(s: string, max = 10) {
   return s.replace(/\D/g, '').slice(0, max);
 }
 
+/** Documento: solo números, o letras y números (en mayúscula) si es pasaporte. */
+function limpiarDocumento(s: string, tipo: string, max = 12) {
+  if (TIPOS_DOCUMENTO[tipo]?.letras) return s.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, max);
+  return soloNumeros(s, max);
+}
+
 /** Dorsal: solo números, sin ceros a la izquierda, de 1 a 99999. */
 function limpiarDorsal(s: string) {
   return s.replace(/\D/g, '').replace(/^0+/, '').slice(0, 5);
@@ -159,6 +165,11 @@ function limpiarTextoLibre(s: string) {
     .slice(0, MAX_MEDICO);
 }
 
+/** Pone en mayúscula la primera letra del texto (ignora espacios iniciales). */
+function primeraMayuscula(s: string) {
+  return s.replace(/^(\s*)(\S)/, (_, esp: string, c: string) => esp + c.toUpperCase());
+}
+
 /** ¿Al limpiar se quitó algo distinto de espacios? (para avisar qué no se permite) */
 function quitoCaracteres(antes: string, despues: string) {
   return despues.replace(/\s/g, '').length < antes.replace(/\s/g, '').length;
@@ -167,7 +178,7 @@ function quitoCaracteres(antes: string, despues: string) {
 const SOLO_LETRAS = 'Solo se permiten letras y espacios.';
 const SOLO_NUMEROS = 'Solo se permiten números.';
 const SIN_SIMBOLOS = 'No se permiten símbolos como < > { } [ ] $ \\ | " \' ; =';
-
+const SOLO_ALFANUM = 'Solo se permiten letras y números, sin espacios.';
 /** Caracteres que el filtro global (utils/seguridadTexto.ts) quita antes de que React los vea. */
 const ESPECIALES = /[<>"'`;\\|&{}[\]^~=$＜＞＂＇；＆＝｜＄]/;
 
@@ -221,11 +232,12 @@ function errorNombre(v: string) {
 
 function errorDocumentoInvitado(tipo: string, v: string, documentoTitular: string) {
   const reglas = TIPOS_DOCUMENTO[tipo] ?? TIPOS_DOCUMENTO.CC;
+  const unidad = reglas.letras ? 'caracteres' : 'dígitos';
   if (!v) return 'Este campo es obligatorio.';
   if (v.length < reglas.min || v.length > reglas.max) {
     return reglas.min === reglas.max
-      ? `La ${reglas.etiqueta.toLowerCase()} debe tener ${reglas.min} dígitos.`
-      : `Debe tener entre ${reglas.min} y ${reglas.max} dígitos.`;
+      ? `La ${reglas.etiqueta.toLowerCase()} debe tener ${reglas.min} ${unidad}.`
+      : `Debe tener entre ${reglas.min} y ${reglas.max} ${unidad}.`;
   }
   if (documentoTitular && v === String(documentoTitular)) return 'Es tu mismo documento: el invitado debe ser otra persona.';
   return '';
@@ -524,6 +536,7 @@ function InscriptionWizard() {
   const [invTipoDocumento, setInvTipoDocumento] = useState('CC');
   const [invDocumento, setInvDocumento] = useState('');
   const [errorInvDocumento, setErrorInvDocumento] = useState('');
+  const invAlfa = !!TIPOS_DOCUMENTO[invTipoDocumento]?.letras;
   const [invNombre, setInvNombre] = useState('');
   const [errorInvNombre, setErrorInvNombre] = useState('');
   const [invApellido, setInvApellido] = useState('');
@@ -598,10 +611,10 @@ function InscriptionWizard() {
       if (draft.deseaJersey !== undefined && draft.deseaJersey !== null) setDeseaJersey(draft.deseaJersey);
       if (draft.dorsalPreferido) setDorsalPreferido(limpiarDorsal(String(draft.dorsalPreferido)));
       if (draft.tallaKit) setTallaKit(draft.tallaKit);
-      if (draft.condicionesMedicas) setCondicionesMedicas(limpiarTextoLibre(String(draft.condicionesMedicas)));
+      if (draft.condicionesMedicas) setCondicionesMedicas(primeraMayuscula(limpiarTextoLibre(String(draft.condicionesMedicas))));
       if (draft.mostrarInvitado) setMostrarInvitado(draft.mostrarInvitado);
       if (draft.invTipoDocumento && TIPOS_DOCUMENTO[draft.invTipoDocumento]) setInvTipoDocumento(draft.invTipoDocumento);
-      if (draft.invDocumento) setInvDocumento(soloNumeros(String(draft.invDocumento), 12));
+      if (draft.invDocumento) setInvDocumento(limpiarDocumento(String(draft.invDocumento), draft.invTipoDocumento || 'CC'));
       if (draft.invNombre) setInvNombre(soloLetras(String(draft.invNombre)));
       if (draft.invApellido) setInvApellido(soloLetras(String(draft.invApellido)));
       if (draft.invRh) setInvRh(draft.invRh);
@@ -1406,12 +1419,13 @@ function InscriptionWizard() {
                     id="condiciones"
                     className="insc-input insc-textarea"
                     rows={3}
+                    autoCapitalize="sentences"
                     maxLength={MAX_MEDICO}
                     placeholder="Ej: Asma leve, alergia a la penicilina…"
                     value={condicionesMedicas}
                     onChange={(e) => {
                       const raw = e.target.value;
-                      const limpio = limpiarTextoLibre(raw);
+                      const limpio = primeraMayuscula(limpiarTextoLibre(raw));
                       setCondicionesMedicas(limpio);
                       if (limpio.length < raw.length && raw.length <= MAX_MEDICO) setAvisoCondiciones(SIN_SIMBOLOS);
                     }}
@@ -1445,31 +1459,42 @@ function InscriptionWizard() {
                           className="insc-input"
                           value={invTipoDocumento}
                           onChange={(e) => {
-                            setInvTipoDocumento(e.target.value);
-                            if (invDocumento) setErrorInvDocumento(errorDocumentoInvitado(e.target.value, invDocumento, documento));
+                            const nuevoTipo = e.target.value;
+                            const limpio = limpiarDocumento(invDocumento, nuevoTipo);
+                            setInvTipoDocumento(nuevoTipo);
+                            setInvDocumento(limpio);
+                            setErrorInvDocumento(limpio ? errorDocumentoInvitado(nuevoTipo, limpio, documento) : '');
                           }}
                         >
                           {Object.entries(TIPOS_DOCUMENTO).map(([valor, t]) => <option key={valor} value={valor}>{t.etiqueta}</option>)}
                         </select>
                       </Campo>
-                      <Campo id="i-documento" etiqueta="Número de documento *" icono="ti-numbers" error={errorInvDocumento}
+                      <Campo id="i-documento" etiqueta={`${TIPOS_DOCUMENTO[invTipoDocumento]?.numero} *`} icono={invAlfa ? 'ti-id' : 'ti-numbers'} error={errorInvDocumento}
                         ok={!errorDocumentoInvitado(invTipoDocumento, invDocumento, documento)}
-                        ayuda={`${TIPOS_DOCUMENTO[invTipoDocumento]?.min}–${TIPOS_DOCUMENTO[invTipoDocumento]?.max} dígitos, sin puntos`}>
+                        ayuda={`${TIPOS_DOCUMENTO[invTipoDocumento]?.min}–${TIPOS_DOCUMENTO[invTipoDocumento]?.max} ${invAlfa ? 'letras o números, sin espacios' : 'dígitos, sin puntos'}`}>
                         <input
                           id="i-documento"
                           className="insc-input"
-                          inputMode="numeric"
+                          inputMode={invAlfa ? 'text' : 'numeric'}
+                          autoCapitalize={invAlfa ? 'characters' : undefined}
                           maxLength={12}
-                          placeholder="Solo números"
+                          placeholder={invAlfa ? 'Ej: AB123456' : 'Solo números'}
                           aria-invalid={!!errorInvDocumento}
                           value={invDocumento}
                           onChange={(e) => {
                             const raw = e.target.value;
-                            const limpio = soloNumeros(raw, 12);
+                            const limpio = limpiarDocumento(raw, invTipoDocumento);
+                            const aviso = invAlfa ? SOLO_ALFANUM : SOLO_NUMEROS;
+                            const invalido = invAlfa ? /[^a-zA-Z0-9]/.test(raw) : /[^\d\s.]/.test(raw);
                             setInvDocumento(limpio);
-                            setErrorInvDocumento(/[^\d\s.]/.test(raw) ? SOLO_NUMEROS : errorInvDocumento && errorInvDocumento !== SOLO_NUMEROS ? errorDocumentoInvitado(invTipoDocumento, limpio, documento) : '');
+                            setErrorInvDocumento(
+                              invalido ? aviso
+                              : errorInvDocumento && errorInvDocumento !== SOLO_NUMEROS && errorInvDocumento !== SOLO_ALFANUM
+                                ? errorDocumentoInvitado(invTipoDocumento, limpio, documento)
+                                : ''
+                            );
                           }}
-                          {...detectarEspeciales(() => setErrorInvDocumento(SOLO_NUMEROS))}
+                          {...detectarEspeciales(() => setErrorInvDocumento(invAlfa ? SOLO_ALFANUM : SOLO_NUMEROS))}
                           onBlur={() => invDocumento && setErrorInvDocumento(errorDocumentoInvitado(invTipoDocumento, invDocumento, documento))}
                         />
                       </Campo>
@@ -1899,7 +1924,11 @@ function InscriptionWizard() {
                   ? ' Recuerda pagar en efectivo en el punto de inscripción.'
                   : ' Validaremos tu pago y te avisaremos cuando quede confirmado.'}
               </p>
-              <p className="insc-meta-sub">Tu código QR de entrada estará en tu perfil y te llegará al correo.</p>
+              <p className="insc-meta-sub">
+                {evento.kit && (deseaJersey === true || (mostrarInvitado && invDeseaKit))
+                  ? 'Tus códigos QR (entrada al evento y retiro del kit) estarán en tu perfil y te llegarán al correo cuando validemos tu pago.'
+                  : 'Tu código QR de entrada estará en tu perfil y te llegará al correo cuando validemos tu pago.'}
+              </p>
               <div className="insc-meta-acciones">
                 <button title="Ver mi entrada con el código QR" type="button" className="insc-btn insc-btn-primario insc-btn-grande" onClick={() => nav(`/deportivo/perfil?entrada=${evento.id}`)}>
                   <i className="ti ti-qrcode" aria-hidden="true" /> Ver mi entrada

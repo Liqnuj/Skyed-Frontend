@@ -54,9 +54,10 @@ interface Qr {
   usos_realizados?: number | null;
 }
 
-// Si el QR ya se escaneó (aunque sea una vez) la persona ya entró al evento
-// y el backend no deja cancelar: aquí se esconde el botón para no ofrecerlo.
-function qrYaUsado(insc: { qr: Qr | null }) {
+// No se ofrece cancelar si el pago ya fue validado (inscripción confirmada)
+// o si el QR ya se escaneó (la persona ya entró al evento).
+function qrYaUsado(insc: { qr: Qr | null; estado?: string | null; pago?: { estado?: string | null } | null }) {
+  if (insc.estado === 'confirmada' || insc.pago?.estado === 'confirmado') return true;
   const qr = insc.qr;
   if (!qr) return false;
   return qr.estado === 'usado' || !!qr.fecha_uso || (qr.usos_realizados ?? 0) > 0;
@@ -670,6 +671,45 @@ function FotoPerfilMenu({
   );
 }
 
+/** Filas por página en las listas del perfil. */
+const POR_PAGINA = 10;
+
+/** Botones Anterior / números / Siguiente. No se muestra si todo cabe en una página. */
+function PaginadorPart({ actual, ultima, total, onCambiar }: {
+  actual: number;
+  ultima: number;
+  total: number;
+  onCambiar: (pagina: number) => void;
+}) {
+  if (ultima <= 1) return null;
+  const desde = (actual - 1) * POR_PAGINA + 1;
+  const hasta = Math.min(actual * POR_PAGINA, total);
+  const numeros: Array<number | '…'> = [];
+  for (let n = 1; n <= ultima; n++) {
+    if (n === 1 || n === ultima || Math.abs(n - actual) <= 1) numeros.push(n);
+    else if (numeros[numeros.length - 1] !== '…') numeros.push('…');
+  }
+  return (
+    <div role="navigation" aria-label="Paginación" className="ppg-barra">
+      <button type="button" className="ppg-btn" disabled={actual <= 1} onClick={() => onCambiar(actual - 1)}>Anterior</button>
+      {numeros.map((n, i) => n === '…'
+        ? <span key={`p${i}`} className="ppg-puntos" aria-hidden="true">…</span>
+        : (
+          <button
+            key={n}
+            type="button"
+            className={`ppg-btn${n === actual ? ' ppg-activo' : ''}`}
+            aria-current={n === actual ? 'page' : undefined}
+            aria-label={`Ir a la página ${n}`}
+            onClick={() => onCambiar(n)}
+          >{n}</button>
+        ))}
+      <button type="button" className="ppg-btn" disabled={actual >= ultima} onClick={() => onCambiar(actual + 1)}>Siguiente</button>
+      <span className="ppg-resumen">Mostrando {desde}–{hasta} de {total}</span>
+    </div>
+  );
+}
+
 export default function Participant() {
   return (
     <Protected>
@@ -706,6 +746,7 @@ function ParticipantPanel() {
   const [filtrosHist, setFiltrosHist] = useState<Filtros>(FILTROS_HIST);
   const [filtrosRes, setFiltrosRes] = useState<Filtros>(FILTROS_RES);
   const [soloPremio, setSoloPremio] = useState(false);
+  const [paginas, setPaginas] = useState<Record<string, number>>({});
 
   const [infoOpen, setInfoOpen] = useState(false);
 
@@ -843,6 +884,24 @@ useEffect(() => {
     return p != null && (min === null || p < min) ? p : min;
   }, null);
   const totalPremios = filasRes.reduce((n, i) => n + (i.resultado?.premios.length ?? 0), 0);
+
+  // ----- Paginación: corta cada lista en páginas de POR_PAGINA -----
+  const paginar = <T,>(clave: string, lista: T[]) => {
+    const ultima = Math.max(1, Math.ceil(lista.length / POR_PAGINA));
+    const actual = Math.min(Math.max(1, paginas[clave] ?? 1), ultima);
+    const desde = (actual - 1) * POR_PAGINA;
+    return { items: lista.slice(desde, desde + POR_PAGINA), actual, ultima, total: lista.length };
+  };
+  const irAPagina = (clave: string) => (n: number) => setPaginas((p) => ({ ...p, [clave]: n }));
+  const pagHist = paginar('historial', filasHistFiltradas);
+  const pagRes = paginar('resultados', filasResFiltradas);
+  const pagInsc = paginar<{ i: Inscripcion; pasada: boolean }>('inscripciones', [
+    ...proximasFiltradas.map((i) => ({ i, pasada: false })),
+    ...pasadasFiltradas.map((i) => ({ i, pasada: true })),
+  ]);
+  const pagProximas = pagInsc.items.filter((x) => !x.pasada).map((x) => x.i);
+  const pagPasadas = pagInsc.items.filter((x) => x.pasada).map((x) => x.i);
+  useEffect(() => { setPaginas({}); }, [filtrosInsc, filtrosHist, filtrosRes, soloPremio, tab]);
 
   const initials = (user?.name || 'SK').split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
 
@@ -1063,7 +1122,7 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
                   </button>
                 </div>
               )}
-              {filasHistFiltradas.map((f) =>
+              {pagHist.items.map((f) =>
                 f.h ? (
                   <div className="part-event-row" key={f.key}>
                     <div className="part-event-row-img">{(f.h.evento?.nombre || '?')[0].toUpperCase()}</div>
@@ -1082,6 +1141,7 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
                   <EventRow key={f.key} insc={f.insc!} onVerDetalle={() => abrirDetalle(f.insc!)} />
                 ),
               )}
+              <PaginadorPart actual={pagHist.actual} ultima={pagHist.ultima} total={pagHist.total} onCambiar={irAPagina('historial')} />
             </>
           )}
 
@@ -1147,7 +1207,7 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
                       </button>
                     </div>
                   )}
-                  {filasResFiltradas.map((i) => {
+                  {pagRes.items.map((i) => {
                     const r = i.resultado!;
                     const pillCls = r.estado === 'oficial' ? 'ok' : r.estado === 'descalificado' ? 'warn' : 'pending';
                     const bg = i.evento?.imagen_url ? { backgroundImage: `url(${i.evento.imagen_url})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined;
@@ -1173,6 +1233,7 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
                       </div>
                     );
                   })}
+                  <PaginadorPart actual={pagRes.actual} ultima={pagRes.ultima} total={pagRes.total} onCambiar={irAPagina('resultados')} />
                 </>
               )}
             </>
@@ -1205,23 +1266,24 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
                   </button>
                 </div>
               )}
-              {(proximasFiltradas.length > 0 || proximas.length === 0) && (
+              {(pagProximas.length > 0 || proximas.length === 0) && (
                 <p className="part-section-label">Eventos confirmados</p>
               )}
               {!loadError && proximas.length === 0 && (
                 <div className="part-empty-row">No tienes inscripciones activas.</div>
               )}
-              {proximasFiltradas.map((i) => (
+              {pagProximas.map((i) => (
                 <EventRow key={i.id} insc={i} onVerDetalle={() => abrirDetalle(i)} onCancelar={qrYaUsado(i) ? undefined : () => pedirCancelacion(i)} />
               ))}
-              {pasadasFiltradas.length > 0 && (
+              {pagPasadas.length > 0 && (
                 <>
                   <p className="part-section-label">Eventos pasados</p>
-                  {pasadasFiltradas.map((i) => (
+                  {pagPasadas.map((i) => (
                     <EventRow key={i.id} insc={i} onVerDetalle={() => abrirDetalle(i)} />
                   ))}
                 </>
               )}
+              <PaginadorPart actual={pagInsc.actual} ultima={pagInsc.ultima} total={pagInsc.total} onCambiar={irAPagina('inscripciones')} />
               <div style={{ textAlign: 'center', padding: '1rem 0' }}>
                 <Link title="Explorar más eventos" to="/deportivo/eventos" className="btn btn-primary">Explorar más eventos →</Link>
               </div>
