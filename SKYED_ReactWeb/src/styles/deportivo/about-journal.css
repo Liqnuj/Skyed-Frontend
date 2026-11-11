@@ -1,0 +1,360 @@
+.about-journal {
+  --field-ink: #101c2a;
+  --field-navy: #071b31;
+  --field-paper: #f3f3ee;
+  --field-blue: #2c9caf;
+  --field-cyan: #7ed3e1;
+  --field-coral: #f06b51;
+  --field-muted: #596674;
+  --field-border: #cbd2d5;
+  --field-card: #fff;
+  color: var(--field-ink);
+  background: var(--field-paper);
+}
+
+.about-journal .journal-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 24px;
+  color: var(--field-blue);
+  font-size: .75rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.about-journal .journal-marquee {
+  overflow: hidden;
+  padding: 18px 0;
+  color: #fff;
+  background: var(--field-navy);
+}
+
+.about-journal .journal-marquee__track {
+  display: flex;
+  width: max-content;
+  animation: journal-marquee 70s linear infinite;
+}
+
+.about-journal .journal-marquee__group,
+.about-journal .journal-marquee__set {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.about-journal .journal-marquee__group { white-space: nowrap; }
+.about-journal .journal-marquee__set {
+  gap: 28px;
+  padding-right: 28px;
+}
+
+.about-journal .journal-marquee__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 28px;
+  white-space: nowrap;
+  font-size: .75rem;
+  font-weight: 850;
+}
+
+.about-journal .journal-marquee i { color: var(--field-cyan); font-size: .9rem; font-style: normal; }
+
+.about-journal .field-note {
+  position: relative;
+  padding: 90px max(7vw, calc((100vw - 1260px) / 2)) 116px;
+  background: var(--field-paper);
+}
+
+.about-journal .field-note__index {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 52px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--field-border);
+  color: var(--field-muted);
+  font-size: .68rem;
+  font-weight: 800;
+}
+
+.about-journal .field-note__body {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, .75fr);
+  align-items: center;
+  gap: 8vw;
+}
+
+.about-journal .field-note__copy { position: relative; z-index: 1; }
+.about-journal .field-note .journal-eyebrow { color: var(--field-coral); }
+
+.about-journal .field-note h2,
+.about-journal .ride-worlds__heading h2,
+.about-journal .ride-log__heading h2 {
+  margin: 0 0 25px;
+  color: var(--field-ink);
+  font-size: 3.8rem;
+  line-height: 1.02;
+}
+
+.about-journal .field-note h2 em,
+.about-journal .ride-worlds__heading h2 em,
+.about-journal .ride-log__heading h2 em {
+  color: var(--field-blue);
+  font-weight: 400;
+}
+
+.about-journal .field-note__copy > p:not(.journal-eyebrow) {
+  max-width: 560px;
+  margin: 0 0 14px;
+  color: var(--field-muted);
+  font-size: 1rem;
+  line-height: 1.85;
+}
+
+.about-journal .field-note__figure { position: relative; z-index: 1; margin: 0; }
+.about-journal .field-note__figure img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  object-position: 54% center;
+}
+
+.about-journal .field-note__figure figcaption {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 11px;
+  color: var(--field-muted);
+  font-size: .68rem;
+}
+
+.about-journal .field-note__figure figcaption span { color: var(--field-coral); font-weight: 850; }
+.about-journal .field-note__year {
+  position: absolute;
+  right: 5vw;
+  bottom: 2px;
+  color: rgba(44, 156, 175, .1);
+  font-size: 14rem;
+  font-weight: 700;
+  line-height: .8;
+  pointer-events: none;
+}
+
+.about-journal .ride-worlds {
+  padding: 100px max(7vw, calc((100vw - 1260px) / 2)) 112px;
+  color: #fff;
+  background: var(--field-navy);
+}
+
+.about-journal .ride-worlds__heading {
+  display: grid;
+  grid-template-columns: 1fr minmax(250px, .55fr);
+  align-items: end;
+  column-gap: 48px;
+  margin-bottom: 42px;
+}
+
+.about-journal .ride-worlds__heading .journal-eyebrow { grid-column: 1 / -1; color: var(--field-coral); }
+.about-journal .ride-worlds__heading h2 { margin: 0; color: #fff; }
+.about-journal .ride-worlds__heading h2 em { color: var(--field-cyan); }
+.about-journal .ride-worlds__heading > p:last-child { max-width: 360px; margin: 0 0 5px; color: rgba(255, 255, 255, .72); line-height: 1.7; }
+
+.about-journal .ride-worlds__grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.about-journal .ride-card {
+  position: relative;
+  min-height: 420px;
+  grid-column: span 7;
+  isolation: isolate;
+  overflow: hidden;
+  color: #fff;
+  background: #173853;
+}
+
+.about-journal .ride-card--2,
+.about-journal .ride-card--3 { grid-column: span 5; }
+.about-journal .ride-card--4 { grid-column: span 7; }
+
+.about-journal .ride-card > img,
+.about-journal .ride-card__veil {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.about-journal .ride-card > img { object-fit: cover; transition: transform .75s cubic-bezier(.2, .7, .2, 1); }
+.about-journal .ride-card:hover > img { transform: scale(1.045); }
+.about-journal .ride-card__veil { background: linear-gradient(0deg, rgba(4, 17, 30, .88), rgba(4, 17, 30, .05) 74%); }
+.about-journal .ride-card__number { position: absolute; top: 20px; left: 22px; color: #fff; font-size: .7rem; font-weight: 850; }
+.about-journal .ride-card__number span { color: rgba(255, 255, 255, .65); }
+.about-journal .ride-card__content { position: absolute; right: 28px; bottom: 28px; left: 28px; }
+.about-journal .ride-card__content > svg { margin-bottom: 14px; color: var(--field-cyan); }
+.about-journal .ride-card__content h3 { margin: 0 0 6px; color: #fff; font-size: 2.4rem; }
+.about-journal .ride-card__content p { margin: 0; color: rgba(255, 255, 255, .82); font-size: .88rem; }
+.about-journal .field-manifesto {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, .8fr);
+  gap: 7vw;
+  overflow: hidden;
+  padding: 104px max(7vw, calc((100vw - 1260px) / 2));
+  color: var(--field-navy);
+  background: var(--field-blue);
+}
+
+.about-journal .field-manifesto::before {
+  position: absolute;
+  z-index: 0;
+  inset: 0 0 0 auto;
+  width: 48%;
+  background: linear-gradient(90deg, rgba(7, 27, 49, .58), rgba(7, 27, 49, .86)), url('/assets/deportivo/event5.jpg') center 42% / cover;
+  clip-path: polygon(20% 0, 100% 0, 100% 100%, 0 100%);
+  content: '';
+}
+
+.about-journal .field-manifesto__heading { position: relative; z-index: 1; }
+.about-journal .field-manifesto .journal-eyebrow { color: #09263b; }
+.about-journal .field-manifesto h2 { max-width: 680px; margin: 0; color: #fff; font-size: 4.2rem; line-height: .99; }
+.about-journal .field-manifesto h2 em { color: #09263b; font-weight: 400; }
+.about-journal .field-manifesto__columns { position: relative; z-index: 1; display: grid; gap: 22px; align-content: center; }
+.about-journal .field-manifesto__columns article { padding-top: 13px; border-top: 1px solid rgba(255, 255, 255, .48); }
+.about-journal .field-manifesto__columns span { color: #fff; font-size: .68rem; font-weight: 850; }
+.about-journal .field-manifesto__columns p { margin: 12px 0 0; color: #fff; font-size: 1.05rem; line-height: 1.7; }
+.about-journal .field-manifesto__mark { position: absolute; right: 30px; bottom: -34px; color: rgba(7, 27, 49, .12); transform: rotate(-12deg); }
+
+.about-journal .ride-log {
+  padding: 104px max(7vw, calc((100vw - 1260px) / 2)) 112px;
+  background: var(--field-paper);
+}
+
+.about-journal .ride-log__heading { max-width: 760px; }
+.about-journal .ride-log__heading .journal-eyebrow { color: var(--field-coral); }
+.about-journal .ride-log__heading > p:last-child { max-width: 520px; color: var(--field-muted); line-height: 1.7; }
+.about-journal .ride-log__years { display: flex; align-items: end; gap: clamp(14px, 4vw, 56px); margin: 48px 0 22px; border-bottom: 1px solid var(--field-border); }
+.about-journal .ride-log__years button { position: relative; display: grid; min-width: 58px; min-height: 58px; place-items: center; padding: 0 0 15px; color: var(--field-muted); border: 0; background: transparent; cursor: pointer; font-size: .83rem; font-weight: 850; }
+.about-journal .ride-log__years button::after { position: absolute; right: 0; bottom: -1px; left: 0; height: 3px; background: transparent; content: ''; transition: background .2s ease; }
+.about-journal .ride-log__years button.is-active { color: var(--field-ink); }
+.about-journal .ride-log__years button.is-active::after { background: var(--field-coral); }
+.about-journal .ride-log__years button:focus-visible { outline: 2px solid var(--field-blue); outline-offset: 3px; }
+
+.about-journal .ride-log__story { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(280px, .8fr); gap: 6vw; align-items: center; }
+.about-journal .ride-log__image { position: relative; min-height: 400px; margin: 0; overflow: hidden; background: var(--field-navy); }
+.about-journal .ride-log__image img { display: block; width: 100%; height: 100%; min-height: 400px; object-fit: cover; animation: journal-photo-in .6s ease both; }
+.about-journal .ride-log__image figcaption { position: absolute; right: 14px; bottom: 14px; left: 14px; padding: 11px 14px; color: #fff; background: rgba(7, 27, 49, .82); font-size: .72rem; }
+.about-journal .ride-log__text { padding: 28px 0; }
+.about-journal .ride-log__year { color: var(--field-coral); font-size: 4.4rem; line-height: 1; }
+.about-journal .ride-log__text h3 { margin: 18px 0 12px; color: var(--field-ink); font-size: 2.4rem; line-height: 1.05; }
+.about-journal .ride-log__text > p { max-width: 430px; margin: 0; color: var(--field-muted); font-size: 1rem; line-height: 1.8; }
+.about-journal .ride-log__location { display: flex; align-items: center; gap: 8px; margin-top: 25px; color: var(--field-blue); font-size: .72rem; font-weight: 850; text-transform: uppercase; }
+
+.mod-deportivo.dark-mode .about-journal {
+  --field-ink: #f4f8fb;
+  --field-paper: #07131f;
+  --field-muted: #b8c7d4;
+  --field-border: rgba(126, 211, 225, .22);
+  --field-card: #0d1d2b;
+  color: #f4f8fb;
+  background: var(--field-paper);
+}
+
+.mod-deportivo.dark-mode .about-journal .field-note,
+.mod-deportivo.dark-mode .about-journal .ride-log { color: #f4f8fb; background: #07131f; }
+.mod-deportivo.dark-mode .about-journal .field-manifesto {
+  color: #f4f8fb;
+  background-color: #10283a;
+}
+.mod-deportivo.dark-mode .about-journal .field-manifesto .journal-eyebrow,
+.mod-deportivo.dark-mode .about-journal .field-manifesto h2 em,
+.mod-deportivo.dark-mode .about-journal .field-manifesto__columns span { color: #7ed3e1; }
+.mod-deportivo.dark-mode .about-journal .field-manifesto h2,
+.mod-deportivo.dark-mode .about-journal .field-manifesto__columns p { color: #f4f8fb; }
+.mod-deportivo.dark-mode .about-journal .field-manifesto__columns article { border-top-color: rgba(126, 211, 225, .38); }
+.mod-deportivo.dark-mode .about-journal .field-manifesto__mark { color: rgba(126, 211, 225, .08); }
+.mod-deportivo.dark-mode .about-journal .field-note h2,
+.mod-deportivo.dark-mode .about-journal .ride-worlds__heading h2,
+.mod-deportivo.dark-mode .about-journal .ride-log__heading h2,
+.mod-deportivo.dark-mode .about-journal .ride-log__text h3 { color: #f4f8fb; }
+.mod-deportivo.dark-mode .about-journal .field-note h2 em,
+.mod-deportivo.dark-mode .about-journal .ride-worlds__heading h2 em,
+.mod-deportivo.dark-mode .about-journal .ride-log__heading h2 em { color: #7ed3e1; }
+.mod-deportivo.dark-mode .about-journal .ride-log__years button.is-active { color: #f4f8fb; }
+.mod-deportivo.dark-mode .about-journal .field-note__year { color: rgba(126, 211, 225, .08); }
+
+@keyframes journal-photo-in { from { opacity: .7; transform: scale(1.035); } to { opacity: 1; transform: scale(1); } }
+@keyframes journal-marquee { to { transform: translateX(-50%); } }
+
+@media (max-width: 900px) {
+  .about-journal .field-note,
+  .about-journal .ride-worlds,
+  .about-journal .ride-log { padding-right: 34px; padding-left: 34px; }
+  .about-journal .field-note__body { grid-template-columns: minmax(0, 1fr) minmax(250px, .8fr); gap: 34px; }
+  .about-journal .field-note h2,
+  .about-journal .ride-worlds__heading h2,
+  .about-journal .ride-log__heading h2 { font-size: 3.2rem; }
+  .about-journal .ride-card { min-height: 360px; }
+  .about-journal .field-manifesto { padding-right: 34px; padding-left: 34px; }
+  .about-journal .field-manifesto h2 { font-size: 3.5rem; }
+  .about-journal .ride-log__story { gap: 32px; }
+}
+
+@media (max-width: 620px) {
+  .about-journal .journal-marquee { padding: 14px 0; }
+  .about-journal .journal-marquee__set { gap: 16px; padding-right: 16px; }
+  .about-journal .journal-marquee__item { gap: 16px; font-size: .64rem; }
+  .about-journal .field-note { padding: 62px 22px 74px; }
+  .about-journal .field-note__index { margin-bottom: 35px; font-size: .57rem; }
+  .about-journal .field-note__body { grid-template-columns: 1fr; gap: 28px; }
+  .about-journal .field-note h2,
+  .about-journal .ride-worlds__heading h2,
+  .about-journal .ride-log__heading h2 { font-size: 2.65rem; }
+  .about-journal .field-note__copy > p:not(.journal-eyebrow) { font-size: .94rem; }
+  .about-journal .field-note__figure { width: 88%; margin-left: auto; }
+  .about-journal .field-note__year { right: 16px; bottom: 14px; font-size: 7rem; }
+  .about-journal .ride-worlds { padding: 64px 18px 72px; }
+  .about-journal .ride-worlds__heading { grid-template-columns: 1fr; gap: 15px; margin: 0 4px 28px; }
+  .about-journal .ride-worlds__heading .journal-eyebrow { margin-bottom: 0; }
+  .about-journal .ride-worlds__heading > p:last-child { max-width: 330px; }
+  .about-journal .ride-worlds__grid { grid-template-columns: 1fr; gap: 10px; }
+  .about-journal .ride-card,
+  .about-journal .ride-card--2,
+  .about-journal .ride-card--3,
+  .about-journal .ride-card--4 { min-height: 390px; grid-column: auto; }
+  .about-journal .ride-card__content { right: 22px; bottom: 22px; left: 22px; }
+  .about-journal .field-manifesto { grid-template-columns: 1fr; gap: 36px; padding: 66px 22px; }
+  .about-journal .field-manifesto::before {
+    inset: auto 0 0;
+    width: 100%;
+    height: 48%;
+    background-image: linear-gradient(0deg, rgba(7, 27, 49, .88), rgba(7, 27, 49, .58)), url('/assets/deportivo/event5.jpg');
+    clip-path: none;
+  }
+  .about-journal .field-manifesto h2 { font-size: 3rem; }
+  .about-journal .field-manifesto__columns p { font-size: .95rem; }
+  .about-journal .ride-log { padding: 68px 22px 76px; }
+  .about-journal .ride-log__years { justify-content: space-between; gap: 6px; margin: 34px 0 18px; }
+  .about-journal .ride-log__years button { min-width: 44px; min-height: 52px; font-size: .72rem; }
+  .about-journal .ride-log__story { grid-template-columns: 1fr; gap: 14px; }
+  .about-journal .ride-log__image,
+  .about-journal .ride-log__image img { min-height: 290px; }
+  .about-journal .ride-log__text { padding: 18px 0 0; }
+  .about-journal .ride-log__year { font-size: 3.5rem; }
+  .about-journal .ride-log__text h3 { font-size: 2rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .about-journal .journal-cover__photo,
+  .about-journal .journal-cover__copy,
+  .about-journal .journal-marquee__track,
+  .about-journal .ride-log__image img { animation: none; }
+  .about-journal .ride-card > img,
+  .about-journal .journal-cover__link { transition: none; }
+}
