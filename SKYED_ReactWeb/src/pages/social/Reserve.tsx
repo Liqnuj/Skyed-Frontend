@@ -48,6 +48,15 @@ export default function Reserve() {
   const [fguests, setFguests] = useState('');
   const [fbudget, setFbudget] = useState('');
   const [flocation, setFlocation] = useState(''); // Nuevo estado para Ubicación
+  // Datos opcionales que ayudan a planificar (el cliente puede dejarlos vacíos).
+  const [fflexible, setFflexible] = useState(false);
+  const [fdateTo, setFdateTo] = useState('');
+  const [ftime, setFtime] = useState('');
+  const [fduration, setFduration] = useState('');
+  const [fservicios, setFservicios] = useState<number[]>([]);
+  const [catalogo, setCatalogo] = useState<Array<{ id: number; nombre: string }>>([]);
+  // Hoy en Colombia (para no permitir fechas pasadas en el calendario).
+  const hoy = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date());
   const [fmessage, setFmessage] = useState('');
 
   const [tiposEvento, setTiposEvento] = useState<TipoEvento[]>([]);
@@ -102,23 +111,23 @@ export default function Reserve() {
       fetchTiposEvento();
     }, []);
 
+  // EFECTO 3: Servicios que el cliente puede pedir (opcional)
+  useEffect(() => {
+    apiFetch('/servicios?per_page=200')
+      .then((r) => {
+        const lista = Array.isArray(r) ? r : r?.data ?? [];
+        setCatalogo(
+          lista
+            .map((s: any) => ({ id: Number(s.id ?? s.id_s), nombre: String(s.nombre ?? s.nombre_s ?? '') }))
+            .filter((s: { id: number; nombre: string }) => s.id && s.nombre),
+        );
+      })
+      .catch(() => setCatalogo([]));
+  }, []);
+
   function showToast(msg: string, icon = '✓') {
     setToast({ msg, icon, show: true });
     window.setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 4000);
-  }
-
-  // Hoy en la hora del usuario (AAAA-MM-DD). No se usa toISOString porque devuelve la fecha en UTC
-  // y en la noche marcaría "mañana".
-  const hoy = () => new Date().toLocaleDateString('en-CA');
-
-  // El calendario ya bloquea los días pasados, pero una fecha escrita a mano se salta ese límite.
-  function cambiarFecha(valor: string) {
-    if (valor && valor < hoy()) {
-      setFdate('');
-      showToast('La fecha del evento no puede ser anterior a hoy', '⚠️');
-      return;
-    }
-    setFdate(valor);
   }
 
   async function submitForm(e: FormEvent) {
@@ -142,10 +151,6 @@ export default function Reserve() {
       showToast('Nombre y apellido solo pueden tener letras y máximo 20 caracteres', '⚠️');
       return;
     }
-    if (fdate < hoy()) {
-      showToast('La fecha del evento no puede ser anterior a hoy', '⚠️');
-      return;
-    }
     if (phone && !/^\d+$/.test(phone)) {
       showToast('El teléfono solo puede contener números', '⚠️');
       return;
@@ -156,6 +161,18 @@ export default function Reserve() {
     }
     if (!validateEmail(email)) {
       showToast('Ingresa un correo electrónico válido', '⚠️');
+      return;
+    }
+    if (fdate < hoy) {
+      showToast('La fecha del evento no puede ser anterior a hoy', '⚠️');
+      return;
+    }
+    if (fflexible && fdateTo && fdateTo < fdate) {
+      showToast('La fecha final no puede ser anterior a la fecha estimada', '⚠️');
+      return;
+    }
+    if (fduration && (!/^\d+$/.test(fduration) || Number(fduration) < 1 || Number(fduration) > 72)) {
+      showToast('La duración debe estar entre 1 y 72 horas', '⚠️');
       return;
     }
 
@@ -169,7 +186,12 @@ export default function Reserve() {
             invitados_rese: guests,
             presupuesto_rese: fbudget,
             ubicacion_rese: location,
-            Observaciones_rese: fmessage
+            Observaciones_rese: fmessage,
+            // Opcionales: solo se envían si el cliente los llenó.
+            ...(fflexible && fdateTo ? { fecha_hasta_rese: fdateTo } : {}),
+            ...(ftime ? { hora_aprox_rese: ftime } : {}),
+            ...(fduration ? { duracion_horas_rese: Number(fduration) } : {}),
+            ...(fservicios.length ? { servicios_solicitados: fservicios.map((id) => ({ id_s: id })) } : {}),
           })
         });
 
@@ -182,25 +204,24 @@ export default function Reserve() {
         setFbudget('');
         setFlocation('');
         setFmessage('');
-        
+        setFflexible(false);
+        setFdateTo('');
+        setFtime('');
+        setFduration('');
+        setFservicios([]);
+
+        // Si no hay sesión, también se limpian los datos de contacto.
+        if (!user) {
+          setFname('');
+          setLname('');
+          setFphone('');
+          setFemail('');
+        }
       } catch (error) {
-        showToast('Error al enviar la solicitud. Intenta de nuevo.', '⚠️');
+        // Se conserva lo escrito para que el cliente corrija sin volver a empezar.
+        showToast(error instanceof Error && error.message ? error.message : 'Error al enviar la solicitud. Intenta de nuevo.', '⚠️');
         console.error(error);
       }
-
-    // Limpiar campos (opcional, podrías no limpiar los de contacto si el user está logueado)
-    if (!user) {
-      setFname('');
-      setLname('');
-      setFphone('');
-      setFemail('');
-    }
-    setFtype('');
-    setFdate('');
-    setFguests('');
-    setFbudget('');
-    setFlocation('');
-    setFmessage('');
   }
 
   return (
@@ -337,7 +358,46 @@ export default function Reserve() {
                   </div>
                   <div className="form-group">
                     <label>Fecha estimada</label>
-                    <input type="date" id="fdate" value={fdate} min={hoy()} onChange={(e) => cambiarFecha(e.target.value)} />
+                    <input type="date" id="fdate" min={hoy} value={fdate} onChange={(e) => setFdate(e.target.value)} />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group span-two">
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={fflexible}
+                        onChange={(e) => { setFflexible(e.target.checked); if (!e.target.checked) setFdateTo(''); }}
+                      />
+                      Mi fecha es flexible (aún no la tengo definida)
+                    </label>
+                    {fflexible && (
+                      <>
+                        <label style={{ marginTop: 10 }}>Podría ser hasta el (opcional)</label>
+                        <input type="date" id="fdateTo" min={fdate || hoy} value={fdateTo} onChange={(e) => setFdateTo(e.target.value)} />
+                        <small style={{ opacity: 0.7 }}>Nuestro equipo te propondrá una fecha dentro de ese rango.</small>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Hora aproximada (opcional)</label>
+                    <input type="time" id="ftime" value={ftime} onChange={(e) => setFtime(e.target.value)} />
+                  </div>
+                  <div className="form-group">
+                    <label>Duración en horas (opcional)</label>
+                    <input
+                      type="text"
+                      id="fduration"
+                      placeholder="Ej: 6"
+                      inputMode="numeric"
+                      maxLength={2}
+                      value={fduration}
+                      onChange={(e) => setFduration(e.target.value.replace(/\D/g, '').slice(0, 2))}
+                    />
                   </div>
                 </div>
 
@@ -379,6 +439,26 @@ export default function Reserve() {
                     </div>
                 </div>
 
+                {catalogo.length > 0 && (
+                  <div className="form-group">
+                    <label>Servicios que te interesan (opcional)</label>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 16px' }}>
+                      {catalogo.map((s) => (
+                        <label key={s.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                          <input
+                            type="checkbox"
+                            checked={fservicios.includes(s.id)}
+                            onChange={(e) =>
+                              setFservicios((prev) => (e.target.checked ? [...prev, s.id] : prev.filter((x) => x !== s.id)))
+                            }
+                          />
+                          {s.nombre}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="form-group">
                   <label>Cuéntanos tu visión</label>
                   <textarea
@@ -389,7 +469,7 @@ export default function Reserve() {
                   />
                 </div>
 
-                <button title="Enviar tu solicitud de cotización" className="form-submit" type="submit">
+                <button className="form-submit" type="submit">
                   ✦ Enviar solicitud
                 </button>
               </form>

@@ -242,9 +242,10 @@ export default function AdminReservaDetalle({ id, onBack, onChanged, notify, con
     setCargando(true);
     void cargar();
     reservaService.responsables().then(setResponsables).catch(() => setResponsables([]));
-    apiFetch('/ambientes').then((r) => setAmbientes(r.data ?? [])).catch(() => setAmbientes([]));
-    apiFetch('/servicios').then((r) => setCatalogo(
-      (r.data ?? []).map((s: any) => ({ id_s: s.id_s, nombre_s: s.nombre_s ?? s.nombre })),
+    apiFetch('/ambientes?per_page=200').then((r) => setAmbientes(r.data ?? [])).catch(() => setAmbientes([]));
+    // El catálogo responde { id, nombre }; por si algún día cambia, también se acepta { id_s, nombre_s }.
+    apiFetch('/servicios?per_page=200').then((r) => setCatalogo(
+      (r.data ?? []).map((s: any) => ({ id_s: s.id ?? s.id_s, nombre_s: s.nombre ?? s.nombre_s })),
     )).catch(() => setCatalogo([]));
   }, [cargar]);
 
