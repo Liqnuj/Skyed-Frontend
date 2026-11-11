@@ -3,6 +3,7 @@ import SocialWrapper from '../../components/social/SocialWrapper';
 import CanvasParticles from '../../components/social/CanvasParticles';
 import { useAuth } from '../../context/AuthContext'; // Importamos el contexto de autenticación
 import { apiFetch } from '../../services/api';
+import '../../styles/social/reservaForm.css';
 
 function capitalizeName(raw: string) {
   let cleaned = raw
@@ -293,6 +294,15 @@ export default function Reserve() {
             <div className="booking-form reveal" id="contactForm">
               <div className="form-title">Solicita tu cotización gratuita</div>
               <form onSubmit={submitForm}>
+                {/* 1 · DATOS DE CONTACTO */}
+                <div className="rsv-seccion primera">
+                  <span className="rsv-num">1</span>
+                  <div>
+                    <h4>Tus datos</h4>
+                    <p>Para enviarte la propuesta</p>
+                  </div>
+                </div>
+
                 <div className="form-row">
                   <div className="form-group">
                     <label>Nombre</label>
@@ -318,7 +328,10 @@ export default function Reserve() {
                       onBlur={(e) => setLname(capitalizeName(e.target.value))}
                     />
                   </div>
-                  <div className="form-group span-two">
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
                     <label>Teléfono / WhatsApp</label>
                     <input
                       type="text"
@@ -329,19 +342,25 @@ export default function Reserve() {
                       onChange={(e) => setFphone(sanitizeNumeric(e.target.value))}
                     />
                   </div>
-                </div>
-
-                <div className="form-row">
-                    <div className="form-group span-two">
+                  <div className="form-group">
                     <label>Correo electrónico</label>
                     <input
-                        type="email"
-                        id="femail"
-                        placeholder="tu@correo.com"
-                        value={femail}
-                        onChange={(e) => setFemail(e.target.value)}
+                      type="email"
+                      id="femail"
+                      placeholder="tu@correo.com"
+                      value={femail}
+                      onChange={(e) => setFemail(e.target.value)}
                     />
-                    </div>
+                  </div>
+                </div>
+
+                {/* 2 · EL EVENTO */}
+                <div className="rsv-seccion">
+                  <span className="rsv-num">2</span>
+                  <div>
+                    <h4>Tu evento</h4>
+                    <p>Qué quieres celebrar y cuándo</p>
+                  </div>
                 </div>
 
                 <div className="form-row">
@@ -362,42 +381,35 @@ export default function Reserve() {
                   </div>
                 </div>
 
-                <div className="form-row">
-                  <div className="form-group span-two">
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-                      <input
-                        type="checkbox"
-                        checked={fflexible}
-                        onChange={(e) => { setFflexible(e.target.checked); if (!e.target.checked) setFdateTo(''); }}
-                      />
-                      Mi fecha es flexible (aún no la tengo definida)
-                    </label>
-                    {fflexible && (
-                      <>
-                        <label style={{ marginTop: 10 }}>Podría ser hasta el (opcional)</label>
-                        <input type="date" id="fdateTo" min={fdate || hoy} value={fdateTo} onChange={(e) => setFdateTo(e.target.value)} />
-                        <small style={{ opacity: 0.7 }}>Nuestro equipo te propondrá una fecha dentro de ese rango.</small>
-                      </>
-                    )}
-                  </div>
-                </div>
+                <label className="rsv-switch">
+                  <input
+                    type="checkbox"
+                    checked={fflexible}
+                    onChange={(e) => { setFflexible(e.target.checked); if (!e.target.checked) setFdateTo(''); }}
+                  />
+                  <span className="rsv-switch-track" aria-hidden="true" />
+                  <span className="rsv-switch-texto">
+                    <strong>Mi fecha es flexible</strong>
+                    <small>Aún no la tengo definida; puede ser dentro de un rango de días.</small>
+                  </span>
+                </label>
 
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Hora aproximada (opcional)</label>
-                    <input type="time" id="ftime" value={ftime} onChange={(e) => setFtime(e.target.value)} />
+                {fflexible && (
+                  <div className="rsv-rango">
+                    <div className="form-group">
+                      <label>Podría ser hasta el (opcional)</label>
+                      <input type="date" id="fdateTo" min={fdate || hoy} value={fdateTo} onChange={(e) => setFdateTo(e.target.value)} />
+                      <span className="rsv-ayuda">Nuestro equipo te propondrá una fecha dentro de ese rango.</span>
+                    </div>
                   </div>
-                  <div className="form-group">
-                    <label>Duración en horas (opcional)</label>
-                    <input
-                      type="text"
-                      id="fduration"
-                      placeholder="Ej: 6"
-                      inputMode="numeric"
-                      maxLength={2}
-                      value={fduration}
-                      onChange={(e) => setFduration(e.target.value.replace(/\D/g, '').slice(0, 2))}
-                    />
+                )}
+
+                {/* 3 · DETALLES */}
+                <div className="rsv-seccion">
+                  <span className="rsv-num">3</span>
+                  <div>
+                    <h4>Detalles</h4>
+                    <p>Para dimensionar tu propuesta</p>
                   </div>
                 </div>
 
@@ -424,45 +436,80 @@ export default function Reserve() {
                     />
                   </div>
                 </div>
-                
-                <div className="form-row">
-                    <div className="form-group span-two">
-                        <label>Presupuesto aprox.</label>
-                        {/* Se ajustan los values a formato numérico para que cuadre con DECIMAL en BD */}
-                        <select id="fbudget" value={fbudget} onChange={(e) => setFbudget(e.target.value)}>
-                        <option value="">Seleccionar...</option>
-                        <option value="5000000">Menos de $10M COP</option>
-                        <option value="15000000">$10M – $20M COP</option>
-                        <option value="30000000">$20M – $40M COP</option>
-                        <option value="50000000">Más de $40M COP</option>
-                        </select>
-                    </div>
-                </div>
-
-                {catalogo.length > 0 && (
-                  <div className="form-group">
-                    <label>Servicios que te interesan (opcional)</label>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 16px' }}>
-                      {catalogo.map((s) => (
-                        <label key={s.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
-                          <input
-                            type="checkbox"
-                            checked={fservicios.includes(s.id)}
-                            onChange={(e) =>
-                              setFservicios((prev) => (e.target.checked ? [...prev, s.id] : prev.filter((x) => x !== s.id)))
-                            }
-                          />
-                          {s.nombre}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
                 <div className="form-group">
-                  <label>Cuéntanos tu visión</label>
+                  <label>Presupuesto aprox.</label>
+                  {/* Se ajustan los values a formato numérico para que cuadre con DECIMAL en BD */}
+                  <select id="fbudget" value={fbudget} onChange={(e) => setFbudget(e.target.value)}>
+                    <option value="">Seleccionar...</option>
+                    <option value="5000000">Menos de $10M COP</option>
+                    <option value="15000000">$10M – $20M COP</option>
+                    <option value="30000000">$20M – $40M COP</option>
+                    <option value="50000000">Más de $40M COP</option>
+                  </select>
+                </div>
+
+                {/* OPCIONAL: ayuda a planificar, se puede dejar cerrado */}
+                <details className="rsv-opcional">
+                  <summary>
+                    Más detalles que nos ayudan a planificar
+                    <span className="rsv-tag">Opcional</span>
+                  </summary>
+                  <div className="rsv-opcional-cuerpo">
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Hora aproximada</label>
+                        <input type="time" id="ftime" value={ftime} onChange={(e) => setFtime(e.target.value)} />
+                      </div>
+                      <div className="form-group">
+                        <label>Duración en horas</label>
+                        <input
+                          type="text"
+                          id="fduration"
+                          placeholder="Ej: 6"
+                          inputMode="numeric"
+                          maxLength={2}
+                          value={fduration}
+                          onChange={(e) => setFduration(e.target.value.replace(/\D/g, '').slice(0, 2))}
+                        />
+                      </div>
+                    </div>
+
+                    {catalogo.length > 0 && (
+                      <>
+                        <span className="rsv-sublabel">Servicios que te interesan</span>
+                        <div className="rsv-chips" role="group" aria-label="Servicios que te interesan">
+                          {catalogo.map((s) => (
+                            <label key={s.id} className="rsv-chip">
+                              <input
+                                type="checkbox"
+                                checked={fservicios.includes(s.id)}
+                                onChange={(e) =>
+                                  setFservicios((prev) => (e.target.checked ? [...prev, s.id] : prev.filter((x) => x !== s.id)))
+                                }
+                              />
+                              <span>{s.nombre}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </details>
+
+                {/* 4 · VISIÓN */}
+                <div className="rsv-seccion">
+                  <span className="rsv-num">4</span>
+                  <div>
+                    <h4>Tu visión</h4>
+                    <p>Cuéntanos cómo lo imaginas</p>
+                  </div>
+                </div>
+
+                <div className="form-group">
                   <textarea
                     id="fmessage"
+                    aria-label="Cuéntanos tu visión"
                     placeholder="¿Qué imaginas para tu evento? Tema, estilo, detalles especiales..."
                     value={fmessage}
                     onChange={(e) => setFmessage(e.target.value)}
@@ -472,6 +519,7 @@ export default function Reserve() {
                 <button className="form-submit" type="submit">
                   ✦ Enviar solicitud
                 </button>
+                <p className="rsv-nota">Tus datos solo se usan para contactarte sobre tu evento.</p>
               </form>
             </div>
           </div>
