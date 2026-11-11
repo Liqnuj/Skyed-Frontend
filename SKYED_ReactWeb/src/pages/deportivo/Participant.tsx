@@ -1609,6 +1609,41 @@ function DetalleInscripcion({
     insc.entrega_kit_invitado ?? (confirmada && inv?.desea_kit ? kitPendiente : null)
   );
 
+  // Detalle de lo pagado: inscripción, kit, invitado y kit del invitado (solo lo que sí hubo).
+  const desglose = insc.desglose_precios;
+  const nombreInvitado = inv ? `${inv.nombre ?? ''} ${inv.apellido ?? ''}`.trim() : '';
+  const filasPago: Array<{ concepto: string; detalle?: string; valor: number }> = [];
+  if (desglose) {
+    filasPago.push({ concepto: 'Inscripción', valor: Number(desglose.inscripcion) || 0 });
+    if (insc.desea_kit) {
+      filasPago.push({
+        concepto: 'Kit de bienvenida',
+        detalle: insc.talla_camiseta ? `Talla ${insc.talla_camiseta}` : undefined,
+        valor: precioKit,
+      });
+    }
+    if (inv) {
+      filasPago.push({
+        concepto: 'Inscripción del invitado',
+        detalle: nombreInvitado || undefined,
+        valor: Number(desglose.invitado) || 0,
+      });
+      if (inv.desea_kit) {
+        filasPago.push({
+          concepto: 'Kit del invitado',
+          detalle: inv.talla_kit ? `Talla ${inv.talla_kit}` : undefined,
+          valor: precioKitInvitado,
+        });
+      }
+    }
+  }
+  const sumaFilas = filasPago.reduce((acc, f) => acc + f.valor, 0);
+  // Si el servidor no trajo ningún valor por concepto (todo en 0), no se inventan montos:
+  // se listan los conceptos y solo se muestra el total realmente pagado.
+  const hayMontos = sumaFilas > 0;
+  const ajustePago = hayMontos ? Math.round((Number(insc.precio_pagado) || 0) - sumaFilas) : 0;
+  const lineaPago = '1px solid color-mix(in srgb, currentColor 12%, transparent)';
+
   return (
     <div className="part-card part-detail-card part-detail-anim">
       <div className="part-detail-hero">
@@ -1801,6 +1836,35 @@ function DetalleInscripcion({
                     </div>
                   )}
                 </div>
+              </div>
+            </div>
+          </>
+        )}
+        {filasPago.length > 0 && (
+          <>
+            <h3 style={{ margin: '1.5rem 0 .75rem', fontSize: '1rem' }}>Detalle de lo que pagaste</h3>
+            <div className="part-detail-info-item" style={{ display: 'block' }}>
+              {filasPago.map((f) => (
+                <div
+                  key={f.concepto}
+                  style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', padding: '.55rem 0', borderBottom: lineaPago }}
+                >
+                  <span>
+                    {f.concepto}
+                    {f.detalle && <span className="part-label"> · {f.detalle}</span>}
+                  </span>
+                  {hayMontos && <strong>{fmtMoney(f.valor)}</strong>}
+                </div>
+              ))}
+              {ajustePago !== 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', padding: '.55rem 0', borderBottom: lineaPago }}>
+                  <span>{ajustePago < 0 ? 'Descuento' : 'Otros cargos'}</span>
+                  <strong>{ajustePago < 0 ? '-' : ''}{fmtMoney(Math.abs(ajustePago))}</strong>
+                </div>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', padding: '.75rem 0 .15rem', fontSize: '1.05rem' }}>
+                <strong>Total</strong>
+                <strong>{fmtMoney(insc.precio_pagado)}</strong>
               </div>
             </div>
           </>
