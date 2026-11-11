@@ -12,6 +12,7 @@ import { errorContrasena } from '../../utils/validaciones';
 import { validarFormularioDeportivo } from '../../utils/validarFormularioDeportivo';
 import '../../styles/deportivo/participante.css';
 import '../../styles/shared/nosotrosMotion.css';
+import '../../styles/deportivo/headerHero.css';
 // import '../../styles/deportivo/filtros-participante.css';
 import { createPortal } from 'react-dom';
 
@@ -916,7 +917,7 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
 
   return (
     <>
-      <div className="part-header">
+      <div className="part-header part-header--hero">
         <div className="part-header-inner">
           <div className="part-avatar-wrap">
             {user?.foto_url ? (

@@ -1,0 +1,78 @@
+/* SkyedSocial — Encabezado animado (Perfil y Notificaciones).
+   Mismo fondo que el hero de PQR y Eventos: degradado morado + partículas
+   doradas flotando (componente CanvasParticles). Va importado DESPUÉS de perfil.css. */
+
+.mod-social .pf-header.pf-header--anim,
+.mod-social.dark-mode .pf-header.pf-header--anim {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(150deg, #0D0519 0%, #1A0A2E 40%, #2D1454 70%, #1A0A2E 100%);
+  background-size: 220% 220%;
+  animation: pf-hero-shift 18s ease-in-out infinite;
+  border-bottom: 1px solid rgba(201, 168, 76, .25);
+}
+
+/* Resplandor suave que respira detrás del contenido */
+.mod-social .pf-header--anim .pf-hero-glow {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 60% 70% at 18% 55%, rgba(139, 34, 82, .30), transparent 70%),
+    radial-gradient(ellipse 50% 60% at 85% 40%, rgba(201, 168, 76, .10), transparent 70%);
+  animation: pf-hero-glow 9s ease-in-out infinite alternate;
+}
+
+/* Canvas de partículas (CanvasParticles lo dimensiona con el encabezado) */
+.mod-social #pfParticles {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* El contenido queda por encima del fondo */
+.mod-social .pf-header--anim .pf-header-inner,
+.mod-social .pf-header--anim .pf-tabs {
+  position: relative;
+  z-index: 2;
+}
+
+/* Fondo oscuro en modo claro y oscuro => textos claros en ambos */
+.mod-social .pf-header--anim .pf-meta h1 { color: #fff; }
+.mod-social .pf-header--anim .pf-handle { color: rgba(255, 255, 255, .65); }
+.mod-social .pf-header--anim .pf-badge {
+  background: rgba(255, 255, 255, .08);
+  color: var(--gold-light, var(--gold));
+}
+.mod-social .pf-header--anim .pf-tabs button { color: rgba(255, 255, 255, .6); }
+.mod-social .pf-header--anim .pf-tabs button:hover { color: #fff; }
+.mod-social .pf-header--anim .pf-tabs button.active { color: #fff; border-bottom-color: var(--gold); }
+.mod-social .pf-header--anim .pf-actions .btn-sm-outline {
+  color: #fff;
+  border-color: rgba(255, 255, 255, .45);
+}
+.mod-social .pf-header--anim .pf-actions .btn-sm-outline:hover {
+  background: rgba(255, 255, 255, .12);
+  color: #fff;
+}
+.mod-social .pf-header--anim .pf-actions .btn-sm-outline:disabled { opacity: .5; }
+
+@keyframes pf-hero-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
+}
+@keyframes pf-hero-glow {
+  from { opacity: .55; transform: scale(1); }
+  to   { opacity: 1;   transform: scale(1.08); }
+}
+
+/* Accesibilidad: sin movimiento si el usuario lo pide */
+@media (prefers-reduced-motion: reduce) {
+  .mod-social .pf-header.pf-header--anim { animation: none; }
+  .mod-social .pf-header--anim .pf-hero-glow { animation: none; }
+  .mod-social #pfParticles { display: none; }
+}

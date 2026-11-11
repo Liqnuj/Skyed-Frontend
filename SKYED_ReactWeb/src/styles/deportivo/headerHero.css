@@ -1,0 +1,88 @@
+/* SKYED Deportivo — Encabezado estilo "Sobre nosotros" para Perfil y Notificaciones.
+   Degradado azul que se mueve + dos ruedas de bicicleta girando.
+   Se activa con la clase extra `part-header--hero`. Importar DESPUÉS de participante.css. */
+
+.mod-deportivo .part-header.part-header--hero,
+.mod-deportivo.dark-mode .part-header.part-header--hero {
+  position: relative;
+  overflow: hidden;
+  color: #fff;
+  /* Modo claro: mismo degradado que .page-header de "Sobre nosotros" */
+  background: linear-gradient(135deg, #091d36, #0749a7);
+  background-size: 220% 220%;
+  border-bottom: 0;
+  padding: 2.4rem 1.5rem 0;
+  animation: ph-pan 16s ease-in-out infinite;
+}
+
+/* Modo oscuro: mismo degradado que "Sobre nosotros" en modo oscuro
+   (en modo oscuro --primary es casi blanco, por eso no se usan las variables). */
+.mod-deportivo.dark-mode .part-header.part-header--hero {
+  background: linear-gradient(135deg, #071a2b, #104a70);
+  background-size: 220% 220%;
+}
+
+/* Ruedas (mismo SVG de "Sobre nosotros", trazo blanco) */
+.mod-deportivo .part-header.part-header--hero::before,
+.mod-deportivo .part-header.part-header--hero::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200' fill='none' stroke='white' stroke-width='1.4' stroke-linecap='round'%3E%3Ccircle cx='100' cy='100' r='96'/%3E%3Ccircle cx='100' cy='100' r='90' stroke-dasharray='1.5 4.5'/%3E%3Ccircle cx='100' cy='100' r='11'/%3E%3Ccircle cx='100' cy='100' r='4' fill='white'/%3E%3Cpath d='M112.0 100.0L188.0 100.0M111.1 104.6L181.3 133.7M108.5 108.5L162.2 162.2M104.6 111.1L133.7 181.3M100.0 112.0L100.0 188.0M95.4 111.1L66.3 181.3M91.5 108.5L37.8 162.2M88.9 104.6L18.7 133.7M88.0 100.0L12.0 100.0M88.9 95.4L18.7 66.3M91.5 91.5L37.8 37.8M95.4 88.9L66.3 18.7M100.0 88.0L100.0 12.0M104.6 88.9L133.7 18.7M108.5 91.5L162.2 37.8M111.1 95.4L181.3 66.3'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.mod-deportivo .part-header.part-header--hero::before {
+  width: 360px; height: 360px; right: -90px; top: -90px;
+  opacity: .13; animation: ph-spin 38s linear infinite;
+}
+.mod-deportivo .part-header.part-header--hero::after {
+  width: 230px; height: 230px; left: -60px; bottom: -100px;
+  opacity: .10; animation: ph-spin-rev 28s linear infinite;
+}
+.mod-deportivo .part-header.part-header--hero > * { position: relative; z-index: 1; }
+
+/* Textos claros sobre el fondo azul */
+.mod-deportivo .part-header.part-header--hero .part-meta h1 { color: #fff; font-weight: 800; }
+.mod-deportivo .part-header.part-header--hero .part-handle { color: rgba(255, 255, 255, .78); }
+.mod-deportivo .part-header.part-header--hero .part-badge { color: #7fe3ee; }
+
+/* Avatar y botón de cámara */
+.mod-deportivo .part-header.part-header--hero .part-avatar { border: 3px solid rgba(255, 255, 255, .25); }
+.mod-deportivo .part-header.part-header--hero .part-avatar-edit { border-color: #0a2b57; }
+.mod-deportivo .part-header.part-header--hero .nt-head-ico { border: 3px solid rgba(255, 255, 255, .25); }
+
+/* Botones */
+.mod-deportivo .part-header.part-header--hero .btn-outline {
+  background: transparent; color: #fff; border-color: rgba(255, 255, 255, .6);
+}
+.mod-deportivo .part-header.part-header--hero .btn-outline:hover {
+  background: rgba(255, 255, 255, .14); color: #fff; border-color: #fff;
+}
+.mod-deportivo .part-header.part-header--hero .btn-primary {
+  background: var(--accent); border-color: var(--accent); color: #fff;
+}
+.mod-deportivo .part-header.part-header--hero .btn-primary:hover {
+  background: color-mix(in srgb, var(--accent) 80%, #fff); color: #fff;
+}
+.mod-deportivo .part-header.part-header--hero .btn:disabled { opacity: .5; }
+
+/* Pestañas (Perfil) */
+.mod-deportivo .part-header.part-header--hero .part-tab-btn,
+.mod-deportivo.dark-mode .part-header.part-header--hero .part-tab-btn { color: rgba(255, 255, 255, .68); }
+.mod-deportivo .part-header.part-header--hero .part-tab-btn:hover { color: #fff; }
+.mod-deportivo .part-header.part-header--hero .part-tab-btn.active,
+.mod-deportivo.dark-mode .part-header.part-header--hero .part-tab-btn.active {
+  color: #fff; border-bottom-color: #7fe3ee;
+}
+
+@keyframes ph-pan {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
+}
+@keyframes ph-spin     { to { transform: rotate(360deg); } }
+@keyframes ph-spin-rev { to { transform: rotate(-360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .mod-deportivo .part-header.part-header--hero,
+  .mod-deportivo .part-header.part-header--hero::before,
+  .mod-deportivo .part-header.part-header--hero::after { animation: none !important; }
+}

@@ -35,13 +35,15 @@
   box-shadow: 0 0 0 2px var(--white);
 }
 
+/* ---------- Panel ---------- */
 .mod-social .nb-panel {
   position: absolute; top: calc(100% + 14px); right: 0;
-  width: 340px; max-width: calc(100vw - 24px);
+  width: 380px; max-width: calc(100vw - 24px);
+  display: flex; flex-direction: column;
   background: var(--white);
   border: 1px solid var(--border);
-  border-radius: 20px;
-  box-shadow: 0 24px 60px rgba(26, 10, 46, .18), 0 2px 8px rgba(26, 10, 46, .06);
+  border-radius: 22px; overflow: hidden;
+  box-shadow: 0 28px 70px rgba(26, 10, 46, .20), 0 2px 10px rgba(26, 10, 46, .06);
   z-index: 1100;
   opacity: 0; visibility: hidden; pointer-events: none;
   transform: translateY(-8px) scale(.98); transform-origin: top right;
@@ -51,90 +53,130 @@
   opacity: 1; visibility: visible; pointer-events: auto; transform: none;
 }
 
+/* Encabezado */
 .mod-social .nb-head {
   display: flex; align-items: center; justify-content: space-between; gap: .75rem;
-  padding: .9rem 1.1rem;
-  border-radius: 19px 19px 0 0;
-  background: linear-gradient(135deg, var(--plum), var(--plum-light));
-  color: #fff;
+  padding: 1.05rem 1.25rem .95rem;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 11%, var(--white)), var(--white));
+  border-bottom: 1px solid var(--border);
+  color: var(--plum);
+}
+.mod-social .nb-head strong {
+  display: inline-flex; align-items: center; gap: .55rem;
+  font-family: 'Playfair Display', serif; font-size: 1.12rem; font-weight: 700; letter-spacing: .005em;
+}
+.mod-social .nb-count {
+  min-width: 22px; height: 22px; padding: 0 .4rem; border-radius: 11px;
+  display: inline-grid; place-items: center;
+  background: var(--accent); color: #fff;
+  font-family: inherit; font-size: .72rem; font-weight: 700; line-height: 1;
 }
 .mod-social .nb-link {
-  background: none; border: 0; padding: 0; cursor: pointer;
-  color: var(--gold-light); font: inherit; font-size: .78rem; text-decoration: underline;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border: 0; border-radius: 50px; padding: .38rem .8rem; cursor: pointer;
+  color: var(--accent); font: inherit; font-size: .76rem; font-weight: 600; text-decoration: none;
+  transition: background .15s;
 }
+.mod-social .nb-link:hover { background: color-mix(in srgb, var(--accent) 18%, transparent); }
 
-.mod-social .nb-list { max-height: 380px; overflow-y: auto; padding: .35rem; }
-.mod-social .nb-empty { margin: 0; padding: 1.4rem 1rem; text-align: center; font-size: .88rem; color: var(--text-muted); }
+/* Lista */
+.mod-social .nb-list {
+  max-height: 400px; overflow-y: auto; padding: .6rem;
+  display: flex; flex-direction: column; gap: .35rem;
+  scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--accent) 40%, transparent) transparent;
+}
+.mod-social .nb-empty { margin: 0; padding: 2rem 1rem; text-align: center; font-size: .92rem; line-height: 1.6; color: var(--text-muted); }
 
 .mod-social .nb-item {
-  width: 100%; display: flex; align-items: flex-start; gap: .7rem;
-  padding: .7rem .75rem; border: 0; border-radius: 14px;
-  background: transparent; color: var(--text-dark);
+  position: relative; width: 100%;
+  display: flex; align-items: flex-start; gap: .9rem;
+  padding: .95rem 2rem .95rem 1rem;
+  border: 1px solid transparent; border-radius: 16px;
+  background: transparent; color: var(--plum);
   text-align: left; cursor: pointer; font: inherit;
+  transition: background .15s, border-color .15s;
 }
 .mod-social .nb-item:hover,
-.mod-social .nb-item:focus-visible { background: var(--blush); }
-.mod-social .nb-item.unread { background: rgba(201, 168, 76, .12); }
+.mod-social .nb-item:focus-visible {
+  background: color-mix(in srgb, var(--accent) 7%, var(--white));
+  border-color: color-mix(in srgb, var(--accent) 18%, transparent);
+  outline: none;
+}
+.mod-social .nb-item.unread {
+  background: color-mix(in srgb, var(--accent) 9%, var(--white));
+  border-color: color-mix(in srgb, var(--accent) 28%, transparent);
+}
+/* punto de "sin leer" */
+.mod-social .nb-item.unread::after {
+  content: ''; position: absolute; top: 1.1rem; right: 1rem;
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+}
 
 .mod-social .nb-icon {
-  width: 34px; height: 34px; flex-shrink: 0; border-radius: 50%;
+  width: 42px; height: 42px; flex-shrink: 0; border-radius: 13px;
   display: flex; align-items: center; justify-content: center;
-  background: var(--plum); color: var(--gold-light);
-}
-.mod-social .nb-text { display: flex; flex-direction: column; gap: .15rem; min-width: 0; font-size: .84rem; line-height: 1.35; }
-.mod-social .nb-text strong { font-size: .88rem; }
-.mod-social .nb-text small { color: var(--text-muted); }
-
-/* Modo oscuro */
-.mod-social.dark-mode .nb-panel { background: #221830; border-color: rgba(255, 255, 255, .1); box-shadow: 0 24px 60px rgba(0, 0, 0, .45); }
-.mod-social.dark-mode .nb-badge { box-shadow: 0 0 0 2px #221830; }
-.mod-social.dark-mode .nb-item { color: rgba(255, 255, 255, .88); }
-.mod-social.dark-mode .nb-item:hover,
-.mod-social.dark-mode .nb-item:focus-visible { background: rgba(255, 255, 255, .06); }
-.mod-social.dark-mode .nb-item.unread { background: rgba(201, 168, 76, .14); }
-.mod-social.dark-mode .nb-text small,
-.mod-social.dark-mode .nb-empty { color: rgba(255, 255, 255, .5); }
-
-/* Modo claro: el panel usa el morado de acento del módulo, y la campana, su
-   círculo, los íconos y el enlace conservan el dorado del logo (igual que en
-   modo oscuro). Sobre fondo claro se usa un dorado más profundo para que se vea. */
-.mod-social:not(.dark-mode) {
-  --nb-oro-tinta: #9a7616;
-}
-.mod-social:not(.dark-mode) .nb-btn {
-  background: var(--white);
-  border: 1.5px solid var(--gold);
-  box-sizing: border-box;
-  color: var(--nb-oro-tinta);
-}
-.mod-social:not(.dark-mode) .nb-btn:hover {
-  background: var(--gold-pale);
-}
-.mod-social:not(.dark-mode) .nb-panel {
-  border-color: color-mix(in srgb, var(--gold) 45%, var(--border));
-}
-.mod-social:not(.dark-mode) .nb-head {
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-}
-.mod-social:not(.dark-mode) .nb-link { color: var(--gold-light); }
-.mod-social:not(.dark-mode) .nb-item:hover,
-.mod-social:not(.dark-mode) .nb-item:focus-visible {
+  font-size: 1.15rem;
   background: color-mix(in srgb, var(--accent) 12%, var(--white));
+  color: var(--accent);
 }
-.mod-social:not(.dark-mode) .nb-item.unread {
-  background: color-mix(in srgb, var(--accent) 7%, var(--white));
+.mod-social .nb-text { display: flex; flex-direction: column; gap: .3rem; min-width: 0; line-height: 1.5; }
+.mod-social .nb-text strong { font-size: .95rem; font-weight: 700; line-height: 1.35; letter-spacing: .005em; }
+.mod-social .nb-text > span {
+  font-size: .86rem; line-height: 1.55; color: var(--text-muted);
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
 }
-.mod-social:not(.dark-mode) .nb-icon {
-  background: var(--gold-pale);
-  border: 1.5px solid var(--gold);
-  box-sizing: border-box;
-  color: var(--nb-oro-tinta);
+.mod-social .nb-text small { font-size: .76rem; font-weight: 600; letter-spacing: .02em; color: color-mix(in srgb, var(--accent) 75%, var(--text-muted)); }
+
+/* Pie: ver todas */
+.mod-social .nb-all {
+  width: 100%; display: flex; align-items: center; justify-content: center; gap: .45rem;
+  padding: .95rem 1rem; border: 0; border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--accent) 5%, var(--white)); cursor: pointer;
+  font: inherit; font-size: .88rem; font-weight: 700; letter-spacing: .01em; color: var(--accent);
+  transition: background .15s;
 }
+.mod-social .nb-all:hover { background: color-mix(in srgb, var(--accent) 12%, var(--white)); }
+.mod-social .nb-all i { transition: transform .15s; }
+.mod-social .nb-all:hover i { transform: translateX(3px); }
+
+/* ---------- Modo oscuro ---------- */
+.mod-social.dark-mode .nb-panel {
+  background: #1a0d28; border-color: rgba(201, 168, 76, .22);
+  box-shadow: 0 28px 70px rgba(0, 0, 0, .55), 0 0 0 1px rgba(255, 255, 255, .03);
+}
+.mod-social.dark-mode .nb-badge { box-shadow: 0 0 0 2px #1a0d28; }
+.mod-social.dark-mode .nb-head {
+  background: linear-gradient(135deg, #2a1442, #1a0d28);
+  border-bottom-color: rgba(255, 255, 255, .08); color: #fff;
+}
+.mod-social.dark-mode .nb-count { background: var(--gold); color: #1a0a2e; }
+.mod-social.dark-mode .nb-link { background: rgba(201, 168, 76, .14); color: var(--gold-light); }
+.mod-social.dark-mode .nb-link:hover { background: rgba(201, 168, 76, .24); }
+.mod-social.dark-mode .nb-item { color: rgba(255, 255, 255, .92); }
+.mod-social.dark-mode .nb-item:hover,
+.mod-social.dark-mode .nb-item:focus-visible { background: rgba(255, 255, 255, .05); border-color: rgba(255, 255, 255, .08); }
+.mod-social.dark-mode .nb-item.unread { background: rgba(201, 168, 76, .10); border-color: rgba(201, 168, 76, .28); }
+.mod-social.dark-mode .nb-item.unread::after { background: var(--gold); box-shadow: 0 0 0 3px rgba(201, 168, 76, .22); }
+.mod-social.dark-mode .nb-icon { background: rgba(201, 168, 76, .14); color: var(--gold-light); }
+.mod-social.dark-mode .nb-text > span,
+.mod-social.dark-mode .nb-empty { color: rgba(255, 255, 255, .68); }
+.mod-social.dark-mode .nb-text small { color: var(--gold-light); opacity: .85; }
+.mod-social.dark-mode .nb-all { background: rgba(255, 255, 255, .03); border-top-color: rgba(255, 255, 255, .08); color: var(--gold-light); }
+.mod-social.dark-mode .nb-all:hover { background: rgba(255, 255, 255, .07); }
+
+/* Campana (modo claro): círculo y ícono dorados */
+.mod-social:not(.dark-mode) { --nb-oro-tinta: #9a7616; }
+.mod-social:not(.dark-mode) .nb-btn {
+  background: var(--white); border: 1.5px solid var(--gold);
+  box-sizing: border-box; color: var(--nb-oro-tinta);
+}
+.mod-social:not(.dark-mode) .nb-btn:hover { background: var(--gold-pale); }
 
 /* Celular: el panel ocupa el ancho de la pantalla */
 @media (max-width: 768px) {
   .mod-social .nb-panel { position: fixed; top: 72px; left: 12px; right: 12px; width: auto; max-width: none; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .mod-social .nb-panel, .mod-social .nb-btn { transition: none; }
+  .mod-social .nb-panel, .mod-social .nb-btn, .mod-social .nb-item, .mod-social .nb-all i { transition: none; }
 }

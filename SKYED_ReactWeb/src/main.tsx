@@ -27,6 +27,7 @@ import AboutSocial from './pages/social/nosotros';
 import Reserve from './pages/social/Reserve';
 import PQR from './pages/social/PQR';
 import Perfil from './pages/social/Perfil';
+import SocialNotifications from './pages/social/SocialNotifications';
 import Admin from './pages/social/Admin';
 import AdminDeportivo from './pages/deportivo/Admin';
 import AdminRedirect from './components/AdminRedirect';
@@ -84,6 +85,7 @@ function App(){
               <Route path="/social/reservar" element={<Reserve/>}/>
               <Route path="/social/pqr" element={<PQR/>}/>
               <Route path="/social/perfil" element={<Perfil/>}/>
+              <Route path="/social/notificaciones" element={<SocialNotifications/>}/>
             </Route>
 
             {/* Cada panel exige su propio rol de administrador. */}

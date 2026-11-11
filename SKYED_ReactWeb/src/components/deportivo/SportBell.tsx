@@ -106,7 +106,7 @@ export default function SportBell() {
       {open && (
         <div className="sb-panel" role="dialog" aria-label="Notificaciones">
           <div className="sb-head">
-            <strong>Notificaciones</strong>
+            <strong>Notificaciones{noLeidas > 0 && <span className="sb-count">{noLeidas > 9 ? '9+' : noLeidas}</span>}</strong>
             {noLeidas > 0 && (
               <button type="button" onClick={leerTodas}>Marcar todas</button>
             )}

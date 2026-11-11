@@ -153,11 +153,11 @@
 
 .mod-social .pf-card {
   background: var(--white);
-  border: 1px solid var(--border, rgba(0,0,0,.08));
+  border: 1px solid var(--accent);
   border-radius: 16px;
   overflow: hidden;
 }
-.mod-social.dark-mode .pf-card { background: var(--plum-mid, #241238); border-color: rgba(255,255,255,.08); }
+.mod-social.dark-mode .pf-card { background: none; border:1px solid var(--accent); }
 
 .mod-social .pf-card-head {
   padding: .9rem 1.1rem;
@@ -182,7 +182,7 @@
   font-size: calc(.88rem * var(--fs-scale, 1));
 }
 .mod-social .pf-stat-row:last-child { border-bottom: none; }
-.mod-social .pf-label { color: var(--text-muted); }
+.mod-social .pf-label { color: #000000b7; }
 
 .mod-social .pf-stats-strip {
   display: grid;

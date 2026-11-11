@@ -6,6 +6,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Protected from '../../components/Protected';
 import SocialWrapper from '../../components/social/SocialWrapper';
 import Toast from '../../components/social/Toast';
+import CanvasParticles from '../../components/social/CanvasParticles';
 import type { ToastMsg } from '../../components/social/Toast';
 import { useAuth } from '../../context/AuthContext';
 import { apiFetch } from '../../services/api';
@@ -17,6 +18,7 @@ import { prepararImagen } from '../../utils/prepararImagen';
 import { errorContrasena } from '../../utils/validaciones';
 import '../../styles/social/perfil.css';
 import '../../styles/social/pqrDetalle.css';
+import '../../styles/social/headerAnimado.css';
 
 type TabId = 'resumen' | 'pqr' | 'reservas' | 'ajustes';
 const TABS: TabId[] = ['resumen', 'pqr', 'reservas', 'ajustes'];
@@ -1725,7 +1727,9 @@ function PerfilPanel() {
 
   return (
     <>
-      <div className="pf-header">
+      <div className="pf-header pf-header--anim">
+        <div className="pf-hero-glow" aria-hidden="true" />
+        <CanvasParticles id="pfParticles" />
         <div className="pf-header-inner">
           <div className="pf-avatar-wrap">
             {user?.foto_url ? (
