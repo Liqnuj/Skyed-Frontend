@@ -1,0 +1,249 @@
+/* Formulario de reserva del cliente: secciones, interruptor, chips y bloque opcional.
+   Solo afecta a las clases nuevas (rsv-*) y a la tarjeta del formulario de reserva. */
+
+/* Tarjeta: en modo claro el fondo casi transparente no se distinguía de la página. */
+.mod-social .booking-grid .booking-form {
+  background: #ffffff;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  box-shadow: 0 24px 60px rgba(26, 10, 46, 0.1);
+}
+.mod-social.dark-mode .booking-grid .booking-form {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: none;
+}
+
+/* Evita que los campos se salgan de su columna. */
+.mod-social .booking-form .form-row > .form-group { min-width: 0; margin-bottom: 0; }
+.mod-social .booking-form .form-row { align-items: start; }
+
+/* ---------- encabezado de cada sección ---------- */
+.mod-social .booking-form .rsv-seccion {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin: 2rem 0 1.15rem;
+  padding-top: 1.6rem;
+  border-top: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.mod-social .booking-form .rsv-seccion.primera { margin-top: 0; padding-top: 0; border-top: 0; }
+
+.mod-social .booking-form .rsv-num {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--accent);
+  color: #fff;
+  font-size: calc(0.85rem * var(--fs-scale, 1));
+  font-weight: 800;
+}
+.mod-social .booking-form .rsv-seccion h4 {
+  margin: 0;
+  font-size: calc(1.02rem * var(--fs-scale, 1));
+  font-weight: 700;
+  color: var(--plum);
+}
+.mod-social .booking-form .rsv-seccion p {
+  margin: 0.1rem 0 0;
+  font-size: calc(0.8rem * var(--fs-scale, 1));
+  color: rgba(47, 45, 45, 0.6);
+}
+.mod-social.dark-mode .booking-form .rsv-seccion h4 { color: rgba(255, 255, 255, 0.92); }
+.mod-social.dark-mode .booking-form .rsv-seccion p { color: rgba(255, 255, 255, 0.55); }
+
+/* ---------- interruptor "fecha flexible" ---------- */
+.mod-social .booking-form .rsv-switch {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  margin: 1rem 0 0.25rem;
+  padding: 0.9rem 1rem;
+  border: 1px dashed color-mix(in srgb, var(--accent) 50%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+.mod-social .booking-form .rsv-switch:hover { background: color-mix(in srgb, var(--accent) 9%, transparent); }
+
+.mod-social .booking-form .rsv-switch input {
+  position: absolute !important;
+  opacity: 0;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  pointer-events: none;
+}
+.mod-social .booking-form .rsv-switch-track {
+  flex: 0 0 42px;
+  height: 24px;
+  margin-top: 2px;
+  border-radius: 999px;
+  background: rgba(120, 120, 120, 0.35);
+  position: relative;
+  transition: background 0.25s;
+}
+.mod-social .booking-form .rsv-switch-track::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.25s;
+}
+.mod-social .booking-form .rsv-switch input:checked + .rsv-switch-track { background: var(--accent); }
+.mod-social .booking-form .rsv-switch input:checked + .rsv-switch-track::after { transform: translateX(18px); }
+.mod-social .booking-form .rsv-switch input:focus-visible + .rsv-switch-track { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+.mod-social .booking-form .rsv-switch-texto strong {
+  display: block;
+  font-size: calc(0.9rem * var(--fs-scale, 1));
+  color: var(--plum);
+}
+.mod-social .booking-form .rsv-switch-texto small {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: calc(0.78rem * var(--fs-scale, 1));
+  color: rgba(47, 45, 45, 0.6);
+  line-height: 1.4;
+}
+.mod-social.dark-mode .booking-form .rsv-switch-texto strong { color: rgba(255, 255, 255, 0.92); }
+.mod-social.dark-mode .booking-form .rsv-switch-texto small { color: rgba(255, 255, 255, 0.55); }
+
+.mod-social .booking-form .rsv-rango {
+  margin: 0.9rem 0 0.25rem;
+  padding-left: 1rem;
+  border-left: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
+}
+.mod-social .booking-form .rsv-rango .form-group { margin-bottom: 0.25rem; }
+.mod-social .booking-form .rsv-ayuda {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: calc(0.76rem * var(--fs-scale, 1));
+  color: rgba(47, 45, 45, 0.55);
+}
+.mod-social.dark-mode .booking-form .rsv-ayuda { color: rgba(255, 255, 255, 0.5); }
+
+/* ---------- bloque opcional desplegable ---------- */
+.mod-social .booking-form .rsv-opcional {
+  margin: 1.4rem 0 0.5rem;
+  padding: 0 1.1rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--accent) 4%, transparent);
+}
+.mod-social .booking-form .rsv-opcional summary {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 1rem 0;
+  list-style: none;
+  cursor: pointer;
+  font-size: calc(0.92rem * var(--fs-scale, 1));
+  font-weight: 700;
+  color: var(--plum);
+}
+.mod-social .booking-form .rsv-opcional summary::-webkit-details-marker { display: none; }
+.mod-social .booking-form .rsv-opcional summary::after {
+  content: '+';
+  margin-left: auto;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+  font-size: 1.1rem;
+  line-height: 1;
+}
+.mod-social .booking-form .rsv-opcional[open] summary::after { content: '–'; }
+.mod-social .booking-form .rsv-opcional[open] summary {
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  margin-bottom: 1.1rem;
+}
+.mod-social.dark-mode .booking-form .rsv-opcional summary { color: rgba(255, 255, 255, 0.92); }
+.mod-social .booking-form .rsv-opcional-cuerpo { padding-bottom: 0.4rem; }
+.mod-social .booking-form .rsv-opcional-cuerpo .form-row { margin-bottom: 1rem; }
+
+.mod-social .booking-form .rsv-tag {
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+  font-size: calc(0.68rem * var(--fs-scale, 1));
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ---------- servicios como chips ---------- */
+.mod-social .booking-form .rsv-sublabel {
+  display: block;
+  margin: 0.4rem 0 0.6rem;
+  font-size: calc(0.8rem * var(--fs-scale, 1));
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: rgba(30, 29, 29, 0.65);
+}
+.mod-social.dark-mode .booking-form .rsv-sublabel { color: rgba(255, 255, 255, 0.842); }
+
+.mod-social .booking-form .rsv-chips { display: flex; flex-wrap: wrap; gap: 0.55rem; }
+.mod-social .booking-form .rsv-chip { position: relative; cursor: pointer; }
+.mod-social .booking-form .rsv-chip input {
+  position: absolute !important;
+  opacity: 0;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  pointer-events: none;
+}
+.mod-social .booking-form .rsv-chip span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.95rem;
+  border: 1.5px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--plum);
+  font-size: calc(0.85rem * var(--fs-scale, 1));
+  font-weight: 600;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.mod-social .booking-form .rsv-chip:hover span { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.mod-social .booking-form .rsv-chip input:checked + span {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.mod-social .booking-form .rsv-chip input:checked + span::before { content: '✓'; font-size: 0.8em; }
+.mod-social .booking-form .rsv-chip input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mod-social.dark-mode .booking-form .rsv-chip span { color: rgba(255, 255, 255, 0.85); }
+.mod-social.dark-mode .booking-form .rsv-chip input:checked + span { color: #fff; }
+
+/* ---------- pie ---------- */
+.mod-social .booking-form .rsv-nota {
+  margin: 0.9rem 0 0;
+  text-align: center;
+  font-size: calc(0.78rem * var(--fs-scale, 1));
+  color: rgba(47, 45, 45, 0.55);
+}
+.mod-social.dark-mode .booking-form .rsv-nota { color: rgba(255, 255, 255, 0.5); }
+.mod-social .booking-form .form-submit { margin-top: 1.25rem; }
+
+@media (max-width: 768px) {
+  .mod-social .booking-form .rsv-seccion { margin: 1.6rem 0 1rem; padding-top: 1.3rem; }
+  .mod-social .booking-form .rsv-opcional { padding: 0 0.9rem; }
+  .mod-social .booking-form .form-row > .form-group { margin-bottom: 1rem; }
+}
