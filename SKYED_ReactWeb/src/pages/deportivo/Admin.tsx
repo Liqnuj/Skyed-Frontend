@@ -40,9 +40,6 @@ import {
   X,
   LifeBuoy,
   BarChart3,
-  CircleCheck,
-  CircleX,
-  CircleHelp,
 } from "lucide-react";
 import { ResumenEventoModal, Indicador, BarraProgreso, ListaValores } from "../../components/shared/ResumenEvento";
 
@@ -60,7 +57,7 @@ import { useConfirmacion } from "../../components/shared/ConfirmDialog";
 import { useAvisos, type Avisar } from "../../components/shared/Avisos";
 import { CargandoPanel, NumeroAnimado } from "../../components/shared/AdminMotion";
 import AdminFooter from "../../components/shared/AdminFooter";
-import { RolesModal, RolesDeUsuario, UsuarioModal, EditarUsuarioModal, puedeEditarUsuario, Avatar, esAdmin, esSuperAdminRoles, perteneceAlModulo, type UsuarioFila } from "../../components/deportivo/UsuariosAdmin";
+import { RolesModal, RolesDeUsuario, UsuarioModal, EditarUsuarioModal, puedeEditarUsuario, Avatar, esAdmin, perteneceAlModulo, type UsuarioFila } from "../../components/deportivo/UsuariosAdmin";
 import AdminCatalogos, { type CatalogoDeportivo } from "../../components/deportivo/AdminCatalogos";
 import AsistentesPanel from "../../features/asistentes/AsistentesPanel";
 import { usePermisos } from "../../context/PermisosContext";
@@ -153,10 +150,6 @@ type Pago = {
   metodo_pago_p?: string | null;
   referencia_p?: string | null;
   comprobante_p?: string | null;
-  /** Número de la transacción en Nequi o el banco, leído del comprobante. */
-  referencia_transaccion_p?: string | null;
-  /** Lo que se revisó automáticamente al subir el comprobante. */
-  verificacion_comprobante_p?: RevisionComprobante | null;
   monto_p?: number | string | null;
   fecha_p?: string | null;
   estado_p: "pendiente" | "confirmado" | "rechazado" | "cancelado";
@@ -170,6 +163,21 @@ type Pago = {
     usuario?: Persona;
     evento?: { id_e: number; nombre_e: string; fecha_e?: string };
     qr?: { codigo_qr: string; estado_qr: string } | null;
+    desea_kit_i?: boolean | null;
+    talla_camiseta_i?: string | null;
+    precio_pagado_i?: number | string | null;
+    desglose_precios?: {
+      inscripcion?: number | string | null;
+      kit?: number | string | null;
+      invitado?: number | string | null;
+      kit_invitado?: number | string | null;
+    } | null;
+    invitado?: {
+      nombre_inv?: string | null;
+      apellido_inv?: string | null;
+      desea_kit_inv?: boolean | null;
+      talla_kit_inv?: string | null;
+    } | null;
   };
 };
 
@@ -196,26 +204,6 @@ type Ingreso = {
   nombre?: string;
   evento?: string;
   entrada?: string;
-  /** "kit" cuando fue la entrega de un kit (no una entrada al evento). */
-  tipo?: "entrada" | "kit";
-};
-
-/** Lo que devuelve /qr/kit/consultar y /qr/kit/entregar. */
-type KitPorQr = {
-  rol: "titular" | "invitado";
-  nombre: string | null;
-  documento?: string | number | null;
-  talla?: string | null;
-  estado: string;
-  fecha_entrega?: string | null;
-  entregado_por?: string | null;
-};
-type ConsultaKit = {
-  message: string;
-  evento?: { id: number; nombre: string };
-  kit?: string | null;
-  kits: KitPorQr[];
-  pendientes: number;
 };
 
 const CATEGORIAS_EVENTO: Array<{ value: string; label: string }> = [
@@ -251,12 +239,11 @@ const formatDate = (value?: string | null) => {
 const nombreDe = (p?: Persona) =>
   p ? `${p.nombre_u ?? ""} ${p.apellido_u ?? ""}`.trim() || "—" : "—";
 
+const hoy = () => new Date().toISOString().slice(0, 10);
+
 /** Fecha local en formato YYYY-MM-DD (sin el corrimiento de zona horaria de toISOString). */
 const isoLocal = (f: Date) =>
   `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, "0")}-${String(f.getDate()).padStart(2, "0")}`;
-
-/** Hoy en hora local (toISOString usa UTC y en Colombia cambia de día desde las 7:00 p. m.). */
-const hoy = () => isoLocal(new Date());
 
 /** Días antes del evento en que puede empezar la entrega del kit. */
 const DIAS_ENTREGA_KIT = 10;
@@ -348,15 +335,15 @@ const normalizarTiempo = (value: string) => {
 const plural = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno : varios}`;
 
 type CifrasEventoDeportivo = {
-  inscritos: number; confirmadas: number; pendientes: number; canceladas: number; invitados: number; cupos_ocupados: number;
-  recaudado: number; recaudado_canceladas: number; por_validar: number;
+  inscritos: number; confirmadas: number; pendientes: number; invitados: number; cupos_ocupados: number;
+  recaudado: number; por_validar: number;
   desglose: { inscripciones: number; kits: number; invitados: number };
   asistencia: { esperados: number; asistieron: number };
   kits: { pedidos: number; entregados: number };
 };
 
 const CIFRAS_VACIAS: CifrasEventoDeportivo = {
-  inscritos: 0, confirmadas: 0, pendientes: 0, canceladas: 0, invitados: 0, cupos_ocupados: 0, recaudado: 0, recaudado_canceladas: 0, por_validar: 0,
+  inscritos: 0, confirmadas: 0, pendientes: 0, invitados: 0, cupos_ocupados: 0, recaudado: 0, por_validar: 0,
   desglose: { inscripciones: 0, kits: 0, invitados: 0 }, asistencia: { esperados: 0, asistieron: 0 }, kits: { pedidos: 0, entregados: 0 },
 };
 
@@ -384,17 +371,16 @@ function ResumenDeportivo({ evento, cifras, onClose }: { evento: Evento; cifras?
       <Indicador
         titulo="Inscritos"
         valor={c.inscritos}
-        detalle={`${plural(c.confirmadas, "confirmado", "confirmados")} · ${c.pendientes} con el pago por validar${c.canceladas ? ` · ${plural(c.canceladas, "cancelada", "canceladas")}` : ""}${c.invitados ? ` · ${c.invitados} con invitado` : ""}`}
+        detalle={`${plural(c.confirmadas, "confirmado", "confirmados")} · ${c.pendientes} con el pago por validar${c.invitados ? ` · ${c.invitados} con invitado` : ""}`}
       />
       <Indicador titulo="Ocupación de cupos" valor={`${c.cupos_ocupados} de ${totalCupos}`} detalle={evento.cupos_disponibles === 1 ? "Queda 1 cupo libre." : `Quedan ${evento.cupos_disponibles} cupos libres.`}>
         <BarraProgreso actual={c.cupos_ocupados} total={totalCupos} etiqueta="Cupos ocupados" />
       </Indicador>
-      <Indicador titulo="Dinero recaudado" valor={money(c.recaudado)} detalle="Pagos confirmados; no descuenta devoluciones." ancho>
+      <Indicador titulo="Dinero recaudado" valor={money(c.recaudado)} detalle="Solo pagos confirmados." ancho>
         <ListaValores filas={[
           { nombre: "Inscripciones", valor: money(c.desglose.inscripciones) },
           { nombre: "Kits", valor: money(c.desglose.kits) },
           { nombre: "Invitados", valor: money(c.desglose.invitados) },
-          ...(c.recaudado_canceladas > 0 ? [{ nombre: "De inscripciones canceladas (sin devolución registrada)", valor: money(c.recaudado_canceladas), destacado: true }] : []),
           ...(c.por_validar > 0 ? [{ nombre: "Por validar (aún no cuenta)", valor: money(c.por_validar), destacado: true }] : []),
         ]} />
       </Indicador>
@@ -428,11 +414,9 @@ function CeldasCifrasEvento({ cifras }: { cifras?: CifrasEventoDeportivo }) {
       <strong>{c.inscritos}</strong>
       {c.invitados > 0 && <small>+{c.invitados} {c.invitados === 1 ? "invitado" : "invitados"}</small>}
       {c.pendientes > 0 && <small className="evt-pendiente">{c.pendientes} por confirmar</small>}
-      {c.canceladas > 0 && <small>{c.canceladas} {c.canceladas === 1 ? "cancelada" : "canceladas"}</small>}
     </td>
-    <td className="evt-cifra" title="Suma pagos confirmados; no descuenta devoluciones">
+    <td className="evt-cifra" title="Solo cuenta los pagos confirmados">
       <strong>{money(c.recaudado)}</strong>
-      {c.recaudado_canceladas > 0 && <small className="evt-pendiente" title="Pago confirmado asociado a una inscripción cancelada; no hay devolución registrada.">{money(c.recaudado_canceladas)} de canceladas</small>}
       {c.por_validar > 0 && <small className="evt-pendiente">{money(c.por_validar)} por validar</small>}
     </td>
   </>;
@@ -813,7 +797,6 @@ function AdminFotoMenu({
 
 function AdminPage() {
   const { user, logout, updateFotoUrl } = useAuth();
-  const esSuperAdmin = esSuperAdminRoles(user?.roles ?? []);
   const controlPermisos = usePermisos();
   const puedeEditar = (seccion: string) => controlPermisos.puede(seccionDelegable(seccion), "editar");
   const puedeEliminar = (seccion: string) => controlPermisos.puede(seccionDelegable(seccion), "eliminar");
@@ -1535,7 +1518,7 @@ function AdminPage() {
               )}
             </>}
           >
-            <thead><tr><th>Participante</th><th>Evento</th><th>Fecha inscripción</th><th>Estado inscripción</th><th>Monto</th><th>Método</th><th>Estado pago</th><th>Acciones</th></tr></thead>
+            <thead><tr><th>Participante</th><th>Evento</th><th>Inscripción</th><th>Monto</th><th>Método</th><th>Pago</th><th>Acciones</th></tr></thead>
             <tbody>
               {visiblePagos.map(p => (
                 <tr key={p.id_pago}>
@@ -1545,12 +1528,6 @@ function AdminPage() {
                   </td>
                   <td>{p.inscripcion?.evento?.nombre_e ?? "—"}</td>
                   <td>{formatDate(p.inscripcion?.fecha_i)}</td>
-                  <td className="evt-cifra">
-                    <Badge value={p.inscripcion?.estado_i ?? "sin inscripción"} />
-                    {p.estado_p === "confirmado" && p.inscripcion?.estado_i === "cancelada" && (
-                      <small className="evt-pendiente" title="El pago sigue confirmado aunque la inscripción y el cupo están cancelados.">Pago sin devolución registrada</small>
-                    )}
-                  </td>
                   <td>{money(p.monto_p)}</td>
                   <td>{human(p.metodo_pago_p ?? "—")}</td>
                   <td><Badge value={p.estado_p} /></td>
@@ -1563,7 +1540,7 @@ function AdminPage() {
                   </div></td>
                 </tr>
               ))}
-              {!visiblePagos.length && <tr><td colSpan={8}>No hay inscripciones con este filtro.</td></tr>}
+              {!visiblePagos.length && <tr><td colSpan={7}>No hay inscripciones con este filtro.</td></tr>}
             </tbody>
           </SectionTable>
         )}
@@ -1711,7 +1688,7 @@ function AdminPage() {
             action={puedeEditar("usuarios") ? "Nuevo usuario" : undefined}
             onAction={() => { setEditing(null); setModal("usuario"); }}
             toolbar={<>
-              {puedeEditar("usuarios") && esSuperAdmin && <button type="button" className="secondary-btn" title="Asignar o quitar roles a los usuarios" onClick={() => { setEditing(null); setModal("roles"); }}>
+              {puedeEditar("usuarios") && <button type="button" className="secondary-btn" title="Asignar o quitar roles a los usuarios" onClick={() => { setEditing(null); setModal("roles"); }}>
                 <ShieldCheck size={15} /> Gestionar roles
               </button>}
               {filtroSelect(filtroRolUsuario, setFiltroRolUsuario, "Filtrar por rol", "Todos los roles",
@@ -1749,9 +1726,9 @@ function AdminPage() {
                       <button type="button" className="usr-btn-roles usr-btn-editar" disabled={!puedeEditarUsuario(u, user)} title={puedeEditarUsuario(u, user) ? `Editar los datos de ${u.nombre_u}` : "Solo el super administrador puede editar a otro administrador"} onClick={() => { setEditing({ id_u: u.id_u }); setModal("editar-usuario"); }}>
                         <Pencil size={14} /> Editar
                       </button>
-                      {esSuperAdmin && <button type="button" className="usr-btn-roles" title={`Gestionar los roles de ${u.nombre_u}`} onClick={() => { setEditing({ id_u: u.id_u }); setModal("roles"); }}>
-                        <ShieldCheck size={14} /> Roles
-                      </button>}
+                      <button type="button" className="usr-btn-roles" title={esAdmin(u) && u.id_u !== user.id ? `Ver los roles de ${u.nombre_u} (es administrador)` : `Gestionar los roles de ${u.nombre_u}`} onClick={() => { setEditing({ id_u: u.id_u }); setModal("roles"); }}>
+                        <ShieldCheck size={14} /> {esAdmin(u) && u.id_u !== user.id ? "Ver roles" : "Roles"}
+                      </button>
                     </div>
                     )}
                   </td>
@@ -1841,12 +1818,11 @@ function AdminPage() {
         />
       )}
 
-      {modal === "roles" && puedeEditar("usuarios") && esSuperAdmin && (
+      {modal === "roles" && puedeEditar("usuarios") && (
         <RolesModal
           users={users}
           inicialId={editing?.id_u ?? null}
           yoId={user.id}
-          esSuperAdmin={esSuperAdmin}
           onClose={closeModal}
           notify={notify}
           confirmar={confirmar}
@@ -1868,7 +1844,6 @@ function AdminPage() {
       {modal === "usuario" && puedeEditar("usuarios") && (
         <UsuarioModal
           modulo="deportivo"
-          esSuperAdmin={esSuperAdmin}
           existentes={users}
           onClose={closeModal}
           notify={notify}
@@ -1939,18 +1914,7 @@ function EventoModal({ item, kits, onClose, onSave, notify, onKitCreado }: {
   const [saving, setSaving] = useState(false);
   const set = (campo: keyof typeof form, valor: string) => setForm(f => ({ ...f, [campo]: valor }));
 
-  // Un evento que ya pasó conserva su fecha original (para poder corregir otros datos),
-  // pero no se puede mover a otra fecha anterior a hoy.
-  const fechaOriginal = item?.fecha?.slice(0, 10) ?? "";
-  const eventoYaPasado = !!fechaOriginal && fechaOriginal < hoy();
-
   const submit = async (e: React.FormEvent) => {
-    if (form.fecha_e && form.fecha_e < hoy() && form.fecha_e !== fechaOriginal) {
-      e.preventDefault();
-      notify("La fecha del evento no puede ser anterior a hoy.", "error");
-      e.currentTarget.querySelector<HTMLElement>('input[type="date"]')?.focus();
-      return;
-    }
     const camposAdicionales = form.imagen_e ? [] : [{
       etiqueta: "Foto del evento",
       elemento: e.currentTarget.querySelector<HTMLElement>('[data-validacion="imagen-evento"]'),
@@ -1992,7 +1956,7 @@ function EventoModal({ item, kits, onClose, onSave, notify, onKitCreado }: {
         </Field>
 
         <Field label="Fecha">
-          <input required type="date" min={eventoYaPasado ? undefined : hoy()} value={form.fecha_e} onChange={e => set("fecha_e", e.target.value)} />
+          <input required type="date" min={item ? undefined : hoy()} value={form.fecha_e} onChange={e => set("fecha_e", e.target.value)} />
         </Field>
 
         <Field label="Hora de salida">
@@ -2206,57 +2170,6 @@ function CategoriasModal({ evento, onClose, notify, confirmar, permitirEditar, p
    PAGOS
 ================================================================ */
 
-type RevisionComprobante = {
-  qr?: boolean | null;
-  qr_legible?: boolean | null;
-  destino?: boolean | null;
-  monto?: boolean | null;
-  monto_leido?: number | null;
-  monto_esperado?: number | null;
-  incluye_referencia?: boolean | null;
-};
-
-/** Una línea de la revisión: ✓ sí, ✗ no, ? no se pudo leer. */
-function ItemRevision({ ok, texto }: { ok: boolean | null | undefined; texto: string }) {
-  const Icono = ok === true ? CircleCheck : ok === false ? CircleX : CircleHelp;
-  const color = ok === true ? "#16a34a" : ok === false ? "#dc2626" : "var(--admin-muted, #94a3b8)";
-  return (
-    <li style={{ display: "flex", alignItems: "center", gap: 7, listStyle: "none" }}>
-      <Icono size={15} color={color} aria-hidden="true" />
-      <span>{texto}</span>
-    </li>
-  );
-}
-
-/**
- * Resumen de lo que se revisó automáticamente al subir el comprobante.
- * Es una ayuda: el pago se confirma siempre revisando la cuenta.
- */
-function RevisionDelComprobante({ pago }: { pago: Pago }) {
-  const v = pago.verificacion_comprobante_p;
-  if (!v) return null;
-  const montoTexto = v.monto === true
-    ? `Valor correcto (${money(v.monto_leido)})`
-    : v.monto === false
-      ? `El valor no coincide: se leyó ${money(v.monto_leido)} y el total es ${money(v.monto_esperado)}`
-      : "No se pudo leer el valor";
-  return (
-    <div className="message-box">
-      <span>Revisión automática del comprobante</span>
-      <ul style={{ margin: "8px 0 0", padding: 0, display: "grid", gap: 5, fontSize: 12 }}>
-        <ItemRevision ok={v.qr} texto={v.qr ? "Tiene el código QR del comprobante" : "Sin código QR"} />
-        <ItemRevision ok={v.destino} texto={v.destino === true ? "El pago es a la cuenta de SKYED" : v.destino === false ? "No se ve un pago a la cuenta de SKYED" : "No se pudo leer a quién se pagó"} />
-        <ItemRevision ok={v.monto} texto={montoTexto} />
-        {pago.referencia_transaccion_p && <ItemRevision ok={true} texto={`N.º de transacción: ${pago.referencia_transaccion_p} (no se ha usado en otra inscripción)`} />}
-        {v.incluye_referencia !== null && v.incluye_referencia !== undefined && (
-          <ItemRevision ok={v.incluye_referencia} texto={v.incluye_referencia ? `Incluye la referencia ${pago.referencia_p}` : `No se ve la referencia ${pago.referencia_p ?? ""} (Nequi no siempre la muestra)`} />
-        )}
-      </ul>
-      <p style={{ opacity: .75 }}>Es una ayuda: confirma siempre en la cuenta que el dinero llegó antes de aprobar.</p>
-    </div>
-  );
-}
-
 function PagoModal({ item, onClose, onCambiar, permitirCambiar }: {
   item: Pago;
   onClose: () => void;
@@ -2282,6 +2195,29 @@ function PagoModal({ item, onClose, onCambiar, permitirCambiar }: {
     return () => { cancelado = true; };
   }, [item.id_pago, tieneImagen]);
 
+  // Detalle de lo pagado: solo los conceptos que sí hubo (kit, invitado, kit del invitado).
+  const desglose = ins?.desglose_precios;
+  const inv = ins?.invitado;
+  const nombreInv = inv ? `${inv.nombre_inv ?? ""} ${inv.apellido_inv ?? ""}`.trim() : "";
+  const filasPago: { concepto: string; detalle?: string; valor: number }[] = [];
+  if (desglose) {
+    filasPago.push({ concepto: "Inscripción", valor: Number(desglose.inscripcion) || 0 });
+    if (ins?.desea_kit_i) {
+      filasPago.push({ concepto: "Kit de bienvenida", detalle: ins.talla_camiseta_i ? `Talla ${ins.talla_camiseta_i}` : undefined, valor: Number(desglose.kit) || 0 });
+    }
+    if (inv) {
+      filasPago.push({ concepto: "Inscripción del invitado", detalle: nombreInv || undefined, valor: Number(desglose.invitado) || 0 });
+      if (inv.desea_kit_inv) {
+        filasPago.push({ concepto: "Kit del invitado", detalle: inv.talla_kit_inv ? `Talla ${inv.talla_kit_inv}` : undefined, valor: Number(desglose.kit_invitado) || 0 });
+      }
+    }
+  }
+  const sumaFilas = filasPago.reduce((acc, f) => acc + f.valor, 0);
+  const hayMontos = sumaFilas > 0;
+  const totalPagado = Number(item.monto_p ?? ins?.precio_pagado_i) || 0;
+  const ajustePago = hayMontos ? Math.round(totalPagado - sumaFilas) : 0;
+  const lineaPago = "1px solid color-mix(in srgb, currentColor 12%, transparent)";
+
   return <Modal title={nombreDe(ins?.usuario)} subtitle={ins?.evento?.nombre_e ?? ""} onClose={onClose}>
     <div className="pqr-detail">
       <div className="pqr-meta">
@@ -2301,6 +2237,27 @@ function PagoModal({ item, onClose, onCambiar, permitirCambiar }: {
           {item.comprobante_p && !tieneImagen ? ` · Comprobante: ${item.comprobante_p}` : ""}
         </p>
       </div>
+      {filasPago.length > 0 && (
+        <div className="message-box">
+          <span>Detalle de lo que pagó</span>
+          {filasPago.map(f => (
+            <div key={f.concepto} style={{ display: "flex", justifyContent: "space-between", gap: "1rem", padding: ".5rem 0", borderBottom: lineaPago }}>
+              <span>{f.concepto}{f.detalle ? ` · ${f.detalle}` : ""}</span>
+              {hayMontos && <strong>{money(f.valor)}</strong>}
+            </div>
+          ))}
+          {ajustePago !== 0 && (
+            <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", padding: ".5rem 0", borderBottom: lineaPago }}>
+              <span>{ajustePago < 0 ? "Descuento" : "Otros cargos"}</span>
+              <strong>{ajustePago < 0 ? "-" : ""}{money(Math.abs(ajustePago))}</strong>
+            </div>
+          )}
+          <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", padding: ".65rem 0 .1rem" }}>
+            <strong>Total</strong>
+            <strong>{money(totalPagado)}</strong>
+          </div>
+        </div>
+      )}
       <div className="message-box">
         <span>Comprobante</span>
         {!tieneImagen
@@ -2323,7 +2280,6 @@ function PagoModal({ item, onClose, onCambiar, permitirCambiar }: {
                 </a>
               </>}
       </div>
-      <RevisionDelComprobante pago={item} />
       <div className="message-box">
         <span>Contacto de emergencia</span>
         <p>
@@ -2504,9 +2460,6 @@ function ControlAcceso({ notify, onValidado }: { notify: Avisar; onValidado: () 
   const [validando, setValidando] = useState(false);
   const [resultado, setResultado] = useState<Ingreso | null>(null);
   const [historial, setHistorial] = useState<Ingreso[]>([]);
-  // QR del kit escaneado: se muestran las tallas y se espera la confirmación del staff.
-  const [kitPorEntregar, setKitPorEntregar] = useState<{ codigo: string; datos: ConsultaKit } | null>(null);
-  const [entregandoKit, setEntregandoKit] = useState(false);
   const [camara, setCamara] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -2523,75 +2476,10 @@ function ControlAcceso({ notify, onValidado }: { notify: Avisar; onValidado: () 
   // Apaga la cámara al salir de la sección.
   useEffect(() => detenerCamara, []);
 
-  const anotar = (ingreso: Ingreso) => {
-    setResultado(ingreso);
-    setHistorial(h => [ingreso, ...h].slice(0, 8));
-  };
-
-  const ahora = () => new Date().toLocaleTimeString("es-CO", { hour: "numeric", minute: "2-digit" });
-
-  const lineaKit = (k: KitPorQr) =>
-    `${k.rol === "invitado" ? "Invitado" : "Titular"}: ${k.nombre ?? "—"}${k.documento ? ` · Doc. ${k.documento}` : ""} · Talla ${k.talla ?? "—"}${k.estado === "entregado" ? " · ya entregado" : ""}`;
-
-  /** QR del kit: primero se consulta (tallas y a quién) y el staff confirma la entrega. */
-  const consultarKit = async (codigoKit: string) => {
-    setKitPorEntregar(null);
-    try {
-      const datos: ConsultaKit = await apiFetch("/qr/kit/consultar", { method: "POST", body: JSON.stringify({ codigo_kit: codigoKit }) });
-      if (datos.pendientes > 0) {
-        setResultado(null);
-        setKitPorEntregar({ codigo: codigoKit, datos });
-      } else {
-        anotar({
-          ok: false,
-          tipo: "kit",
-          titulo: "Kit ya entregado",
-          detalle: [datos.evento?.nombre ?? "", ...datos.kits.map(lineaKit)].filter(Boolean),
-          hora: ahora(),
-        });
-      }
-    } catch (err) {
-      anotar({ ok: false, tipo: "kit", titulo: "No se puede entregar el kit", detalle: [err instanceof Error ? err.message : "No se pudo leer el código del kit."], hora: ahora() });
-    }
-  };
-
-  const entregarKit = async () => {
-    if (!kitPorEntregar || entregandoKit) return;
-    setEntregandoKit(true);
-    try {
-      const res: ConsultaKit & { entregados?: number } = await apiFetch("/qr/kit/entregar", { method: "POST", body: JSON.stringify({ codigo_kit: kitPorEntregar.codigo }) });
-      const titular = res.kits.find(k => k.rol === "titular") ?? res.kits[0];
-      anotar({
-        ok: true,
-        tipo: "kit",
-        titulo: res.message || "Kit entregado",
-        detalle: [res.evento?.nombre ?? "", ...res.kits.map(lineaKit)].filter(Boolean),
-        hora: ahora(),
-        nombre: titular?.nombre ?? undefined,
-        evento: res.evento?.nombre,
-        entrada: (res.entregados ?? 1) > 1 ? `${res.entregados} kits` : "Kit",
-      });
-      setKitPorEntregar(null);
-      onValidado();
-    } catch (err) {
-      anotar({ ok: false, tipo: "kit", titulo: "No se pudo entregar el kit", detalle: [err instanceof Error ? err.message : "Intenta de nuevo."], hora: ahora() });
-      setKitPorEntregar(null);
-    } finally {
-      setEntregandoKit(false);
-    }
-  };
-
   const validar = async (valor: string) => {
     const limpio = valor.trim();
     if (!limpio || validando) return;
     setValidando(true);
-    if (/^kit-/i.test(limpio)) {
-      await consultarKit(limpio);
-      setCodigo("");
-      setValidando(false);
-      return;
-    }
-    setKitPorEntregar(null);
     const hora = new Date().toLocaleTimeString("es-CO", { hour: "numeric", minute: "2-digit" });
     let ingreso: Ingreso;
     try {
@@ -2636,13 +2524,14 @@ function ControlAcceso({ notify, onValidado }: { notify: Avisar; onValidado: () 
         hora,
       };
     }
-    anotar(ingreso);
+    setResultado(ingreso);
+    setHistorial(h => [ingreso, ...h].slice(0, 8));
     setCodigo("");
     setValidando(false);
   };
 
-  // Dos QR por inscripción: el de entrada (asistencia del día del evento) y,
-  // si pidió kit, el del kit ("KIT-…"), que se usa días antes al entregarlo.
+  // El QR es solo para la asistencia: los kits se entregan días antes,
+  // desde Kits → Entregas kits.
 
   const iniciarCamara = async () => {
     if (!navigator.mediaDevices?.getUserMedia) {
@@ -2686,28 +2575,27 @@ function ControlAcceso({ notify, onValidado }: { notify: Avisar; onValidado: () 
     <section className="section-view">
       <div className="section-header">
         <div>
-          <span className="card-kicker">CONTROL CON QR</span>
-          <h2>Validar entrada o entregar kit</h2>
+          <span className="card-kicker">DÍA DEL EVENTO</span>
+          <h2>Validar entrada con QR</h2>
         </div>
       </div>
       <div className="qr-check">
         <div className="admin-card">
           <p style={{ margin: 0 }}>
-            Escanea el QR del participante o escribe el código que aparece debajo de él.
-            El QR de <b>Entrada al evento</b> registra la asistencia (una vez por persona; dos si lleva invitado).
-            El de <b>Retiro del kit</b> (empieza por "KIT-") muestra las tallas para entregar el kit.
-            Los dos solo funcionan si el pago está confirmado.
+            Escanea el QR del participante o escribe el código que aparece debajo de él en "Mi entrada".
+            Cada QR sirve una vez por persona: una entrada si va solo el titular y dos si lleva invitado.
+            Solo funciona si el pago está confirmado.
           </p>
           <form className="qr-check-form" noValidate onSubmit={e => { if (validarFormularioDeportivo(e, notify)) validar(codigo); }}>
             <input
               required
               value={codigo}
               onChange={e => setCodigo(e.target.value.slice(0, 255))}
-              placeholder="Código del QR (entrada o KIT-…)"
+              placeholder="Código del QR"
               aria-label="Código del QR"
               autoFocus
             />
-            <button title={validando ? 'Validando…' : 'Validar el código (entrada o kit)'} className="primary-btn" disabled={validando}>
+            <button title={validando ? 'Validando…' : 'Validar el código de entrada'} className="primary-btn" disabled={validando}>
               {validando ? <Loader2 size={16} className="admin-spin" /> : <ScanLine size={16} />} Validar
             </button>
           </form>
@@ -2720,31 +2608,7 @@ function ControlAcceso({ notify, onValidado }: { notify: Avisar; onValidado: () 
         </div>
 
         <div className="admin-card">
-          {kitPorEntregar ? (
-            <div className="qr-result kit" role="status">
-              <strong><Package size={17} style={{ verticalAlign: "-3px" }} /> {kitPorEntregar.datos.message}</strong>
-              <p>{kitPorEntregar.datos.evento?.nombre}{kitPorEntregar.datos.kit ? ` · ${kitPorEntregar.datos.kit}` : ""}</p>
-              <ul className="qr-kits">
-                {kitPorEntregar.datos.kits.map((k, i) => (
-                  <li key={i} className={k.estado === "entregado" ? "hecho" : ""}>
-                    <span className="qr-kits-talla">{k.talla ?? "—"}</span>
-                    <span className="qr-kits-quien">
-                      <b>{k.nombre ?? "—"}</b>
-                      <small>{k.rol === "invitado" ? "Invitado" : "Titular"}{k.documento ? ` · Doc. ${k.documento}` : ""}</small>
-                    </span>
-                    <span className="qr-kits-estado">{k.estado === "entregado" ? "Ya entregado" : "Por entregar"}</span>
-                  </li>
-                ))}
-              </ul>
-              <p style={{ fontSize: 12, opacity: .8 }}>Verifica el documento antes de entregar.</p>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
-                <button type="button" className="primary-btn" disabled={entregandoKit} onClick={entregarKit} title="Marcar los kits como entregados">
-                  {entregandoKit ? <Loader2 size={15} className="admin-spin" /> : <Check size={15} />} Entregar {kitPorEntregar.datos.pendientes > 1 ? `${kitPorEntregar.datos.pendientes} kits` : "kit"}
-                </button>
-                <button type="button" className="secondary-btn" disabled={entregandoKit} onClick={() => setKitPorEntregar(null)} title="No entregar ahora">Cancelar</button>
-              </div>
-            </div>
-          ) : resultado ? (
+          {resultado ? (
             <div className={`qr-result ${resultado.ok ? "ok" : "error"}`} role="status">
               <strong>{resultado.ok ? "✓" : "✕"} {resultado.titulo}</strong>
               {resultado.detalle.map((d, i) => <p key={i}>{d}</p>)}
@@ -2752,7 +2616,7 @@ function ControlAcceso({ notify, onValidado }: { notify: Avisar; onValidado: () 
           ) : (
             <div className="qr-result" role="status">
               <strong>Esperando un código…</strong>
-              <p>Aquí verás si la persona puede ingresar o qué kit entregarle.</p>
+              <p>Aquí verás si la persona puede ingresar.</p>
             </div>
           )}
 
@@ -2763,7 +2627,7 @@ function ControlAcceso({ notify, onValidado }: { notify: Avisar; onValidado: () 
             <div className="resource-list">
               {historial.map((h, i) => (
                 <div className="resource-item" key={i}>
-                  <div className="resource-icon">{h.tipo === "kit" ? <Package size={16} /> : h.ok ? <Check size={16} /> : <X size={16} />}</div>
+                  <div className="resource-icon">{h.ok ? <Check size={16} /> : <X size={16} />}</div>
                   <div className="resource-main">
                     <strong>{h.ok ? (h.nombre ?? h.detalle[0]) : h.titulo}</strong>
                     <span>{h.hora} · {h.ok ? [h.entrada, h.evento].filter(Boolean).join(" · ") : h.detalle[0]}</span>
@@ -3136,11 +3000,7 @@ function KitModal({ item, eventos, onClose, onSave, notify, desdeEvento = false,
   const esNuevo = !item;
   // La entrega va desde 10 días antes del evento hasta el día del evento.
   const fechaDelEvento = fechaEvento ?? eventos.find(ev => String(ev.id) === form.id_e)?.fecha?.slice(0, 10);
-  const rangoBase = rangoEntregaKit(fechaDelEvento);
-  // En un kit nuevo la entrega no puede quedar en el pasado, aunque el rango de 10 días antes del evento ya haya empezado.
-  const rangoEntrega = rangoBase && esNuevo && rangoBase.min < hoy() && hoy() <= rangoBase.max
-    ? { ...rangoBase, min: hoy() }
-    : rangoBase;
+  const rangoEntrega = rangoEntregaKit(fechaDelEvento);
 
   const submit = async (e: React.FormEvent) => {
     const camposAdicionales: Array<{ etiqueta: string; elemento: HTMLElement | null }> = [];
