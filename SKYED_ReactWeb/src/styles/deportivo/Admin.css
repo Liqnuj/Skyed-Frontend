@@ -2148,6 +2148,8 @@
 .deportivo-admin .field-hint-warn {
   color: #d97706 !important;
   font-weight: 700 !important;
+  margin-left: 22px;
+  margin-top: 15px;
 }
 
 .deportivo-admin .admin-thumb {
@@ -2661,4 +2663,30 @@
 .deportivo-admin .admin-foto-list .secondary-btn {
   justify-content: flex-start;
   width: 100%;
+}
+
+
+/* ---- Paginación de tablas (prefijo adp-) ---- */
+.deportivo-admin .adp-barra {
+  position: static;
+  inset: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 14px;
+}
+
+.deportivo-admin .adp-puntos {
+  color: var(--admin-muted);
+  font-size: 12px;
+}
+
+.deportivo-admin .adp-resumen {
+  width: 100%;
+  text-align: center;
+  color: var(--admin-muted);
+  font-size: 12px;
 }

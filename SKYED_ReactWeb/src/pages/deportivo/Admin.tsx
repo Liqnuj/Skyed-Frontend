@@ -579,6 +579,48 @@ function ImageUploadField({
   );
 }
 
+/** Filas por página en las tablas del panel. */
+const POR_PAGINA = 10;
+
+/** Botones de paginación: Anterior, números de página y Siguiente. No se muestra si todo cabe en una página. */
+function Paginador({ actual, ultima, total, onCambiar }: {
+  actual: number;
+  ultima: number;
+  total: number;
+  onCambiar: (pagina: number) => void;
+}) {
+  if (ultima <= 1) return null;
+  const desde = (actual - 1) * POR_PAGINA + 1;
+  const hasta = Math.min(actual * POR_PAGINA, total);
+
+  // Ventana de números alrededor de la página actual, con la primera y la última siempre visibles.
+  const numeros: Array<number | "…"> = [];
+  for (let n = 1; n <= ultima; n++) {
+    if (n === 1 || n === ultima || Math.abs(n - actual) <= 1) numeros.push(n);
+    else if (numeros[numeros.length - 1] !== "…") numeros.push("…");
+  }
+
+  return (
+    <div role="navigation" aria-label="Paginación" className="adp-barra">
+      <button type="button" className="secondary-btn" disabled={actual <= 1} onClick={() => onCambiar(actual - 1)}>Anterior</button>
+      {numeros.map((n, i) => n === "…"
+        ? <span key={`p${i}`} className="adp-puntos" aria-hidden="true">…</span>
+        : (
+          <button
+            key={n}
+            type="button"
+            className={n === actual ? "primary-btn" : "secondary-btn"}
+            aria-current={n === actual ? "page" : undefined}
+            aria-label={`Ir a la página ${n}`}
+            onClick={() => onCambiar(n)}
+          >{n}</button>
+        ))}
+      <button type="button" className="secondary-btn" disabled={actual >= ultima} onClick={() => onCambiar(actual + 1)}>Siguiente</button>
+      <span className="adp-resumen">Mostrando {desde}–{hasta} de {total}</span>
+    </div>
+  );
+}
+
 function SectionTable({
   title,
   action,
@@ -826,6 +868,8 @@ function AdminPage() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [search, setSearch] = useState("");
+  // Página actual de cada tabla (clave = nombre de la sección).
+  const [paginas, setPaginas] = useState<Record<string, number>>({});
   // Avisos arriba a la derecha (verde si salió bien, rojo si no)
   const { avisar: notify, avisos } = useAvisos();
 
@@ -1046,6 +1090,28 @@ function AdminPage() {
       || (filtroRolUsuario === "participante" && r.nombre_rol === "cliente")))
     .filter((u) => !filtroEstadoUsuario || (u.estado_u ?? "activo") === filtroEstadoUsuario)
     .filter((u) => filtered(`${u.nombre_u} ${u.apellido_u ?? ""} ${u.correo_u}`));
+
+  /** Corta una lista en páginas de POR_PAGINA filas y devuelve la que se está viendo. */
+  const paginar = <T,>(clave: string, lista: T[]) => {
+    const ultima = Math.max(1, Math.ceil(lista.length / POR_PAGINA));
+    const actual = Math.min(Math.max(1, paginas[clave] ?? 1), ultima);
+    const desde = (actual - 1) * POR_PAGINA;
+    return { items: lista.slice(desde, desde + POR_PAGINA), actual, ultima, total: lista.length };
+  };
+  const irAPagina = (clave: string) => (n: number) => setPaginas((p) => ({ ...p, [clave]: n }));
+  const pagEventos = paginar("eventos", visibleEventos);
+  const pagPagos = paginar("inscripciones", visiblePagos);
+  const pagResultados = paginar("resultados", visibleResultados);
+  const pagKits = paginar("kits", visibleKits);
+  const pagUsuarios = paginar("usuarios", visibleUsers);
+
+  // Al buscar, filtrar o cambiar de sección se vuelve a la primera página.
+  useEffect(() => { setPaginas({}); }, [
+    section, search, kitsTab,
+    filtroPago, filtroEvento, filtroMetodoPago,
+    filtroCategoriaEvento, filtroEstadoEvento, filtroFechaEvento, filtroCuposEvento,
+    filtroEstadoResultado, filtroStockKit, filtroLugarKit, filtroRolUsuario, filtroEstadoUsuario,
+  ]);
 
   // Opciones que salen de los propios datos
   const metodosPago = Array.from(new Set(pagos.map((p) => p.metodo_pago_p).filter(Boolean) as string[])).sort();
@@ -1377,6 +1443,7 @@ function AdminPage() {
         )}
 
         {section === "eventos" && (
+          <>
           <SectionTable
             title="Gestión de eventos deportivos"
             exportar={<ExportMenu ruta="deportivo/eventos" archivo="skyed-deportivo-eventos" params={{
@@ -1406,13 +1473,13 @@ function AdminPage() {
               {filtroPie(
                 !!(filtroCategoriaEvento || filtroEstadoEvento || filtroFechaEvento || filtroCuposEvento),
                 () => { setFiltroCategoriaEvento(""); setFiltroEstadoEvento(""); setFiltroFechaEvento(""); setFiltroCuposEvento(""); },
-                visibleEventos.length, eventos.length,
+                pagEventos.items.length, visibleEventos.length,
               )}
             </>}
           >
             <thead><tr><th>Foto</th><th>Nombre</th><th>Categoría</th><th>Fecha</th><th>Precio</th><th>Cupos</th><th>Inscritos</th><th>Recaudado</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody>
-              {visibleEventos.map(e => (
+              {pagEventos.items.map(e => (
                 <tr key={e.id}>
                   <td>
                     {e.imagen_url
@@ -1450,6 +1517,8 @@ function AdminPage() {
               {!visibleEventos.length && <tr><td colSpan={10}>{eventos.length ? "No hay eventos con estos filtros." : "No hay eventos deportivos."}</td></tr>}
             </tbody>
           </SectionTable>
+          <Paginador actual={pagEventos.actual} ultima={pagEventos.ultima} total={pagEventos.total} onCambiar={irAPagina("eventos")} />
+          </>
         )}
 
         {section === "patrocinadores" && (
@@ -1492,6 +1561,7 @@ function AdminPage() {
         )}
 
         {section === "inscripciones" && (
+          <>
           <SectionTable
             title="Inscripciones y pagos"
             exportar={<ExportMenu ruta="deportivo/inscripciones-pagos" archivo="skyed-deportivo-inscripciones-pagos" params={{
@@ -1514,13 +1584,13 @@ function AdminPage() {
               {filtroPie(
                 !!(filtroPago !== "todos" || filtroEvento || filtroMetodoPago),
                 () => { setFiltroPago("todos"); setFiltroEvento(""); setFiltroMetodoPago(""); },
-                visiblePagos.length, pagos.length,
+                pagPagos.items.length, visiblePagos.length,
               )}
             </>}
           >
             <thead><tr><th>Participante</th><th>Evento</th><th>Inscripción</th><th>Monto</th><th>Método</th><th>Pago</th><th>Acciones</th></tr></thead>
             <tbody>
-              {visiblePagos.map(p => (
+              {pagPagos.items.map(p => (
                 <tr key={p.id_pago}>
                   <td>
                     <strong>{nombreDe(p.inscripcion?.usuario)}</strong>
@@ -1543,6 +1613,8 @@ function AdminPage() {
               {!visiblePagos.length && <tr><td colSpan={7}>No hay inscripciones con este filtro.</td></tr>}
             </tbody>
           </SectionTable>
+          <Paginador actual={pagPagos.actual} ultima={pagPagos.ultima} total={pagPagos.total} onCambiar={irAPagina("inscripciones")} />
+          </>
         )}
 
         {section === "acceso" && (puedeEditar("acceso")
@@ -1550,6 +1622,7 @@ function AdminPage() {
           : <section className="admin-card"><p>El control de acceso requiere permiso para editar.</p></section>)}
 
         {section === "resultados" && (
+          <>
           <SectionTable
             title="Resultados oficiales"
             exportar={<ExportMenu ruta="deportivo/resultados" archivo="skyed-deportivo-resultados" params={{
@@ -1569,13 +1642,13 @@ function AdminPage() {
               {filtroPie(
                 !!(filtroEvento || filtroEstadoResultado),
                 () => { setFiltroEvento(""); setFiltroEstadoResultado(""); },
-                visibleResultados.length, resultados.length,
+                pagResultados.items.length, visibleResultados.length,
               )}
             </>}
           >
             <thead><tr><th>Pos.</th><th>Participante</th><th>Evento</th><th>Tiempo</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody>
-              {visibleResultados.map(r => (
+              {pagResultados.items.map(r => (
                 <tr key={r.id_r}>
                   <td><strong>{r.posicion_general_r ?? "—"}</strong></td>
                   <td>{nombreDe(r.inscripcion?.usuario)}</td>
@@ -1591,6 +1664,8 @@ function AdminPage() {
               {!visibleResultados.length && <tr><td colSpan={6}>{resultados.length ? "No hay resultados con estos filtros." : "No hay resultados registrados."}</td></tr>}
             </tbody>
           </SectionTable>
+          <Paginador actual={pagResultados.actual} ultima={pagResultados.ultima} total={pagResultados.total} onCambiar={irAPagina("resultados")} />
+          </>
         )}
 
         {section === "kits" && (
@@ -1606,6 +1681,7 @@ function AdminPage() {
           {kitsTab === "entregas" ? (
             <EntregasKit eventos={eventos} search={search} notify={notify} />
           ) : (
+          <>
           <SectionTable
             title="Kits del participante"
             exportar={<ExportMenu ruta="deportivo/kits" archivo="skyed-deportivo-kits" params={{
@@ -1626,13 +1702,13 @@ function AdminPage() {
               {filtroPie(
                 !!(filtroStockKit || filtroLugarKit),
                 () => { setFiltroStockKit(""); setFiltroLugarKit(""); },
-                visibleKits.length, kits.length,
+                pagKits.items.length, visibleKits.length,
               )}
             </>}
           >
             <thead><tr><th>Imagen</th><th>Nombre</th><th>Stock</th><th>Precio</th><th>Entrega</th><th>Lugar</th><th>Contenido</th><th>Evento</th><th>Acciones</th></tr></thead>
             <tbody>
-              {visibleKits.map(k => (
+              {pagKits.items.map(k => (
                 <tr key={k.id_k}>
                   <td>
                     {k.imagen_url
@@ -1662,6 +1738,8 @@ function AdminPage() {
               {!visibleKits.length && <tr><td colSpan={9}>{kits.length ? "No hay kits con estos filtros." : "No hay kits registrados."}</td></tr>}
             </tbody>
           </SectionTable>
+          <Paginador actual={pagKits.actual} ultima={pagKits.ultima} total={pagKits.total} onCambiar={irAPagina("kits")} />
+          </>
           )}
           </>
         )}
@@ -1682,6 +1760,7 @@ function AdminPage() {
         )}
 
         {section === "usuarios" && (
+          <>
           <SectionTable
             title="Usuarios registrados"
             exportar={<ExportMenu ruta="deportivo/usuarios" archivo="skyed-deportivo-usuarios" params={{ q: search, rol: filtroRolUsuario || undefined, estado: filtroEstadoUsuario || undefined }} onMensaje={notify} />}
@@ -1700,13 +1779,13 @@ function AdminPage() {
               {filtroPie(
                 !!(filtroRolUsuario || filtroEstadoUsuario),
                 () => { setFiltroRolUsuario(""); setFiltroEstadoUsuario(""); },
-                visibleUsers.length, usersVisibles.length,
+                pagUsuarios.items.length, visibleUsers.length,
               )}
             </>}
           >
             <thead><tr><th>ID</th><th>Usuario</th><th>Roles</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody>
-              {visibleUsers.map(u => (
+              {pagUsuarios.items.map(u => (
                 <tr key={u.id_u}>
                   <td><span className="usr-id">#{u.id_u}</span></td>
                   <td>
@@ -1737,6 +1816,8 @@ function AdminPage() {
               {!visibleUsers.length && <tr><td colSpan={5}>{usersVisibles.length ? "No hay usuarios con estos filtros." : "La API de usuarios no devolvió registros."}</td></tr>}
             </tbody>
           </SectionTable>
+          <Paginador actual={pagUsuarios.actual} ultima={pagUsuarios.ultima} total={pagUsuarios.total} onCambiar={irAPagina("usuarios")} />
+          </>
         )}
         {section === "ayuda" && (
           <AyudaAdmin modulo="deportivo" />
