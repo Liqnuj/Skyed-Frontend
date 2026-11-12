@@ -9,6 +9,7 @@ import Toast from '../../components/social/Toast';
 import CanvasParticles from '../../components/social/CanvasParticles';
 import type { ToastMsg } from '../../components/social/Toast';
 import { useAuth } from '../../context/AuthContext';
+import { useMenuDesplegable } from '../../hooks/useMenuDesplegable';
 import { apiFetch } from '../../services/api';
 import { pqrService, reservaService, testimonioService, tipoEventoService } from '../../services/socialService';
 import type { MiTestimonio, Pqr, PqrSeguimiento, Reserva, TipoEvento, TipoPqr } from '../../services/socialService';
@@ -22,6 +23,14 @@ import '../../styles/social/headerAnimado.css';
 
 type TabId = 'resumen' | 'pqr' | 'reservas' | 'ajustes';
 const TABS: TabId[] = ['resumen', 'pqr', 'reservas', 'ajustes'];
+
+// Secciones del perfil: las usan la barra de pestañas (escritorio) y el menú vertical (móvil).
+const PERFIL_TABS: Array<{ id: TabId; label: string; title: string; icono: string }> = [
+  { id: 'resumen', label: 'Resumen', title: 'Ver el resumen de tu cuenta', icono: 'ti-layout-dashboard' },
+  { id: 'pqr', label: 'Mis PQR', title: 'Ver mis PQR', icono: 'ti-message-report' },
+  { id: 'reservas', label: 'Mis reservas', title: 'Ver mis reservas', icono: 'ti-calendar-event' },
+  { id: 'ajustes', label: 'Ajustes', title: 'Ver los ajustes de tu cuenta', icono: 'ti-settings' },
+];
 
 function tipoDocumentoLabel(tipo: string | null | undefined) {
   const map: Record<string, string> = {
@@ -1340,6 +1349,10 @@ function PerfilPanel() {
   const setTab = (nueva: TabId) =>
     setSearchParams(nueva === 'resumen' ? {} : { tab: nueva }, { replace: true });
 
+  // Menú vertical de secciones (móvil): se cierra con clic afuera, con Escape o al cambiar de sección.
+  const { abierto: menuTabs, setAbierto: setMenuTabs, contenedorRef: menuTabsRef, botonRef: menuTabsBtnRef } = useMenuDesplegable();
+  const tabActual = PERFIL_TABS.find((t) => t.id === tab) ?? PERFIL_TABS[0];
+
   const esAdmin = user?.roles.includes('adminSocial') ?? false;
 
   const [pqrs, setPqrs] = useState<Pqr[] | null>(null);
@@ -1778,6 +1791,43 @@ function PerfilPanel() {
             Mis reservas{reservasActivas > 0 && <span className="pf-tab-count">{reservasActivas}</span>}
           </button>
           <button title="Ver los ajustes de tu cuenta" className={tab === 'ajustes' ? 'active' : ''} onClick={() => setTab('ajustes')}>Ajustes</button>
+        </div>
+
+        {/* Móvil: las secciones se despliegan como lista vertical (sin scroll horizontal). */}
+        <div className="pf-tabs-movil" ref={menuTabsRef}>
+          <button
+            ref={menuTabsBtnRef}
+            type="button"
+            className="pf-tabs-movil-btn"
+            aria-expanded={menuTabs}
+            aria-controls="pf-tabs-lista"
+            title={menuTabs ? 'Cerrar el menú de secciones' : 'Abrir el menú de secciones'}
+            onClick={() => setMenuTabs((v) => !v)}
+          >
+            <i className={`ti ${tabActual.icono}`} aria-hidden="true" />
+            <span>{tabActual.label}</span>
+            <i className={`ti ${menuTabs ? 'ti-x' : 'ti-menu-2'} pf-tabs-movil-ico`} aria-hidden="true" />
+          </button>
+          {menuTabs && (
+            <div id="pf-tabs-lista" className="pf-tabs-movil-lista" role="group" aria-label="Secciones del perfil">
+              {PERFIL_TABS.map((t) => {
+                const cuenta = t.id === 'pqr' ? pendientesPqr : t.id === 'reservas' ? reservasActivas : 0;
+                return (
+                  <button
+                    type="button"
+                    key={t.id}
+                    title={t.title}
+                    aria-current={tab === t.id ? 'page' : undefined}
+                    className={tab === t.id ? 'active' : ''}
+                    onClick={() => { setTab(t.id); setMenuTabs(false); }}
+                  >
+                    <i className={`ti ${t.icono}`} aria-hidden="true" /> {t.label}
+                    {cuenta > 0 && <span className="pf-tab-count">{cuenta}</span>}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 

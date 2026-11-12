@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, FormEvent } from 'react';
+import { useBloquearScroll } from '../../../hooks/useBloquearScroll';
 import { pqrService } from '../../../services/socialService';
 import type { EstadoPqr, Pqr, PqrSeguimiento } from '../../../services/socialService';
 import { PqrEstadoPill, PqrPlazoChip, PqrStepper, PqrTimeline } from '../../social/pqr/PqrTracker';
@@ -52,6 +53,7 @@ interface Props {
 }
 
 export default function PqrDetalleModal({ pqr, onClose, onCambio }: Props) {
+  useBloquearScroll(true);
   const [texto, setTexto] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState('');

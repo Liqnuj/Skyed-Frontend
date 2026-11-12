@@ -3450,41 +3450,6 @@
    MEJORA RESPONSIVE: SECCIÓN PQRS (MÓVIL)
    ========================================= */
 @media (max-width: 768px) {
-  /* Convertir la lista vertical en una cuadrícula compacta de 2 columnas */
-  .mod-social .pqr-types {
-    display: grid !important;
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 0.6rem !important;
-    margin-bottom: 1.5rem !important;
-  }
-  
-  /* Centrar la última tarjeta (Felicitación) ocupando ambas columnas para equilibrar el diseño */
-  .mod-social .pqr-type-card:last-child {
-    grid-column: 1 / -1 !important;
-  }
-
-  /* Rediseñar la tarjeta para que sea un bloque pequeño, cuadrado y centrado */
-  .mod-social .pqr-type-card {
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: center !important;
-    text-align: center !important;
-    padding: 1rem 0.5rem !important;
-    gap: 0.5rem !important;
-  }
-
-  /* Ocultar la descripción larga para ahorrar mucho espacio de scroll */
-  .mod-social .pqr-type-desc {
-    display: none !important;
-  }
-
-  /* Reducir ligeramente el tamaño del ícono */
-  .mod-social .pqr-type-icon {
-    width: 38px !important;
-    height: 38px !important;
-    font-size: 1.1rem !important;
-  }
-
   /* Compactar el cuadro azul de "Tiempos de respuesta" */
   .mod-social .pqr-info-box {
     padding: 1.25rem !important;
@@ -3798,3 +3763,82 @@
   font-weight: 600;
   cursor: pointer;
 }
+
+/* =========================================
+   MODO CLARO — hamburguesa y menú desplegable del nav (móvil)
+   El modo oscuro conserva sus estilos de arriba.
+   ========================================= */
+/* Las 3 rayitas eran blancas: sobre el nav claro no se veían */
+.mod-social:not(.dark-mode) .hamburger span { background: var(--plum); }
+
+@media (max-width: 768px) {
+  /* Barra con el menú abierto */
+  .mod-social:not(.dark-mode) nav.menu-open {
+    background: #ffffff !important;
+    box-shadow: 0 1px 0 var(--border) !important;
+  }
+  .mod-social:not(.dark-mode) nav.menu-open .brand span { color: var(--plum) !important; }
+  .mod-social:not(.dark-mode) nav.menu-open .hamburger span { background-color: var(--plum) !important; }
+
+  /* Panel desplegable */
+  .mod-social:not(.dark-mode) .nav-links {
+    background: #ffffff !important;
+    border-top: 1px solid var(--border);
+  }
+  .mod-social:not(.dark-mode) .nav-links a {
+    color: var(--plum) !important;
+    border-bottom: 1px solid rgba(26, 10, 46, 0.09);
+  }
+  .mod-social:not(.dark-mode) .nav-links a:hover {
+    color: var(--accent) !important;
+    background: rgba(26, 10, 46, 0.04);
+  }
+  .mod-social:not(.dark-mode) .nav-links a.active {
+    color: var(--plum) !important;
+    background: rgba(201, 168, 76, 0.18) !important;
+    border-left: 4px solid var(--accent);
+  }
+}
+
+/* =========================================
+   PQRS — cajones de categoría (mismo diseño que SkyedDeportivo)
+   Lista vertical con icono, nombre y descripción, en todas las pantallas.
+   ========================================= */
+.mod-social .pqs-types { display: flex; flex-direction: column; gap: .6rem; margin-bottom: 2.5rem; }
+.mod-social .pqs-type {
+  display: flex; align-items: flex-start; gap: .85rem; width: 100%; padding: .85rem 1rem;
+  text-align: left; cursor: pointer; font: inherit; color: var(--plum);
+  background: var(--white);
+  border: 1px solid var(--border); border-radius: 14px;
+  transition: border-color .15s, box-shadow .15s, transform .15s, background .15s;
+}
+.mod-social .pqs-type:hover { border-color: var(--accent); transform: translateY(-1px); }
+.mod-social .pqs-type:focus-visible { outline: 3px solid var(--plum-light); outline-offset: 2px; }
+.mod-social .pqs-type.selected {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 9%, var(--white));
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.mod-social .pqs-type-ico {
+  flex-shrink: 0; width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center;
+  font-size: 1.25rem; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.mod-social .pqs-type.selected .pqs-type-ico { color: #fff; background: var(--accent); }
+.mod-social .pqs-type-txt { display: flex; flex-direction: column; gap: .15rem; min-width: 0; }
+.mod-social .pqs-type-txt strong { font-size: calc(.95rem * var(--fs-scale, 1)); }
+.mod-social .pqs-type-txt small { color: var(--text-mid); font-size: calc(.8rem * var(--fs-scale, 1)); line-height: 1.45; }
+
+/* Modo oscuro */
+.mod-social.dark-mode .pqs-type { color: #fff; background: var(--plum); border-color: rgba(255, 255, 255, .14); }
+.mod-social.dark-mode .pqs-type:hover { border-color: var(--accent); }
+.mod-social.dark-mode .pqs-type:focus-visible { outline-color: var(--gold-light); }
+.mod-social.dark-mode .pqs-type.selected {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 22%, var(--plum));
+}
+.mod-social.dark-mode .pqs-type-ico { color: var(--gold-light); background: rgba(255, 255, 255, .08); }
+.mod-social.dark-mode .pqs-type.selected .pqs-type-ico { color: #fff; background: var(--accent); }
+.mod-social.dark-mode .pqs-type-txt small { color: #c2c2c2; }
+
+@media (prefers-reduced-motion: reduce) { .mod-social .pqs-type { transition: none; } }

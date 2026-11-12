@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { CSSProperties, FormEvent } from 'react';
+import { useBloquearScroll } from '../../../hooks/useBloquearScroll';
 import { pqrService } from '../../../services/socialService';
 import type { Pqr, PqrSeguimiento, TipoPqr } from '../../../services/socialService';
 import { PqrEstadoPill, PqrPlazoChip, PqrStepper, PqrTimeline } from '../../social/pqr/PqrTracker';
@@ -116,6 +117,7 @@ export default function ParticipantePqr() {
 }
 
 function NuevaPqr({ onClose, onCreada }: { onClose: () => void; onCreada: (p: Pqr) => void | Promise<void> }) {
+  useBloquearScroll(true);
   const [tipo, setTipo] = useState<TipoPqr>('peticion');
   const [asunto, setAsunto] = useState('');
   const [mensaje, setMensaje] = useState('');
@@ -178,6 +180,7 @@ function NuevaPqr({ onClose, onCreada }: { onClose: () => void; onCreada: (p: Pq
 }
 
 function DetallePqr({ pqr, onClose, onCambio }: { pqr: Pqr; onClose: () => void; onCambio: (p: Pqr) => void }) {
+  useBloquearScroll(true);
   const [texto, setTexto] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState('');
