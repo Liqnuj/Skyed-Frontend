@@ -28,7 +28,8 @@ const { user } = useAuth();
       // Los administradores no tienen perfil de participante.
       opciones: esAdmin ? [] : [
         { to: '/deportivo/perfil', icono: 'ti-layout-dashboard', titulo: 'Mi perfil', detalle: 'Resumen y estadísticas' },
-        { to: '/deportivo/notificaciones', icono: 'ti-bell', titulo: 'Notificaciones', detalle: 'Avisos de pagos, inscripciones y reservas' },
+{ to: '/deportivo/notificaciones', icono: 'ti-bell', titulo: 'Notificaciones', detalle: 'Avisos de inscripciones, pagos, kits y PQR' },
+{ to: '/deportivo/perfil?tab=pqr', icono: 'ti-message-report', titulo: 'Mis PQR', detalle: 'Peticiones, quejas y sugerencias' },
       ],
     },
     {
@@ -58,6 +59,7 @@ const { user } = useAuth();
           <li><NavLink title="Ir al inicio" to="/deportivo" end onClick={close}>Inicio</NavLink></li>
           <li><NavLink title="Ver los eventos deportivos" to="/deportivo/eventos" onClick={close}>Eventos</NavLink></li>
           <li><NavLink title="Conocer SKYED Deportivo" to="/deportivo/nosotros" onClick={close}>Nosotros</NavLink></li>
+          <li><NavLink title="Peticiones, quejas y sugerencias" to="/deportivo/pqr" onClick={close}>PQRS</NavLink></li>
           <li><Link title="Ir a la sección de contacto" to="/deportivo/nosotros#contactanos" onClick={close}>Contacto</Link></li>
         </ul>
         <div className="nav-cta">

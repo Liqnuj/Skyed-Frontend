@@ -68,6 +68,7 @@ const menuRef = useRef<HTMLDivElement>(null);
                     <button title="Ir al panel de administración deportivo" onClick={irAMiPanel}><i className="ti ti-settings" aria-hidden="true" /> Panel deportivo admin</button>
                   ) : (
                     <button title="Ir a mi perfil" onClick={irAMiPanel}><i className="ti ti-user-circle" aria-hidden="true" /> Perfil</button>
+                    
                   )}
                   <button title="Cerrar tu sesión" onClick={() => { setUserMenuOpen(false); logout(); navigate('/'); }}><i className="ti ti-logout" aria-hidden="true" /> Cerrar sesión</button>
                 </div>

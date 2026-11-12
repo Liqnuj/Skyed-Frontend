@@ -40,7 +40,7 @@ export default function NotificationBell() {
 
   const cargar = useCallback(async () => {
     try {
-      const res = await apiFetch('/notificaciones?per_page=10');
+      const res = await apiFetch('/notificaciones?contexto=social&per_page=10');
       setItems(res.notificaciones?.data ?? []);
       setNoLeidas(res.no_leidas ?? 0);
       setError(false);
@@ -101,7 +101,7 @@ export default function NotificationBell() {
     setItems((prev) => prev.map((x) => ({ ...x, leida: true })));
     setNoLeidas(0);
     try {
-      await apiFetch('/notificaciones/leer-todas', { method: 'PATCH' });
+      await apiFetch('/notificaciones/leer-todas?contexto=social', { method: 'PATCH' });
     } catch {
       void cargar();
     }

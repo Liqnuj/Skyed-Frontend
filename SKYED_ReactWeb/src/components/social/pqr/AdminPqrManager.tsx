@@ -354,7 +354,7 @@ function CasoPqr({
 
   // Se monta en la raíz del panel (como los demás modales) para quedar por
   // encima de la cabecera y conservar las variables de tema del admin.
-  const raiz = document.querySelector('.social-admin') ?? document.body;
+  const raiz = document.querySelector('.social-admin, .deportivo-admin') ?? document.body;
 
   return createPortal(
     <div

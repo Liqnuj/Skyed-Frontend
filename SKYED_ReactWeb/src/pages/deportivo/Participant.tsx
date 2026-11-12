@@ -15,9 +15,10 @@ import '../../styles/shared/nosotrosMotion.css';
 import '../../styles/deportivo/headerHero.css';
 // import '../../styles/deportivo/filtros-participante.css';
 import { createPortal } from 'react-dom';
+import MisPqrDeportivo from '../../components/deportivo/pqr/MisPqrDeportivo';
 
 
-type TabId = 'resumen' | 'historial' | 'inscripciones' | 'resultados' | 'ajustes';
+type TabId = 'resumen' | 'historial' | 'inscripciones' | 'resultados' | 'pqr' | 'ajustes';
 
 interface EventoInscrito {
   id: number;
@@ -720,7 +721,7 @@ export default function Participant() {
   );
 }
 
-const TABS: TabId[] = ['resumen', 'historial', 'inscripciones', 'resultados', 'ajustes'];
+const TABS: TabId[] = ['resumen', 'historial', 'inscripciones', 'resultados', 'pqr', 'ajustes'];
 
 function ParticipantPanel() {
   const { user, updateFotoUrl } = useAuth();
@@ -1018,16 +1019,30 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         </div>
 
         <div className="part-tabs" role="tablist">
-          {(['resumen', 'historial', 'inscripciones', 'resultados', 'ajustes'] as TabId[]).map((t) => (
-            <button title={t === 'resumen' ? 'Ver el resumen' : t === 'historial' ? 'Ver el historial' : t === 'inscripciones' ? 'Ver mis inscripciones' : t === 'resultados' ? 'Ver mis resultados' : 'Ver los ajustes de tu cuenta'}
-              key={t}
-              role="tab"
-              className={`part-tab-btn${tab === t ? ' active' : ''}`}
-              onClick={() => setTab(t)}
-            >
-              {t === 'resumen' ? 'Resumen' : t === 'historial' ? 'Historial' : t === 'inscripciones' ? 'Inscripciones' : t === 'resultados' ? 'Resultados' : 'Ajustes'}
-            </button>
-          ))}
+{(['resumen', 'historial', 'inscripciones', 'resultados', 'pqr', 'ajustes'] as TabId[]).map((t) => (
+  <button
+    title={
+      t === 'resumen' ? 'Ver el resumen'
+      : t === 'historial' ? 'Ver el historial'
+      : t === 'inscripciones' ? 'Ver mis inscripciones'
+      : t === 'resultados' ? 'Ver mis resultados'
+      : t === 'pqr' ? 'Ver mis PQR'
+      : 'Ver los ajustes de tu cuenta'
+    }
+    key={t}
+    role="tab"
+    className={`part-tab-btn${tab === t ? ' active' : ''}`}
+    onClick={() => setTab(t)}
+  >
+    {t === 'resumen' ? 'Resumen'
+      : t === 'historial' ? 'Historial'
+      : t === 'inscripciones' ? 'Inscripciones'
+      : t === 'resultados' ? 'Resultados'
+      : t === 'pqr' ? 'PQR'
+      : 'Ajustes'}
+  </button>
+))}
+
         </div>
       </div>
 
@@ -1301,6 +1316,7 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
             />
           )}
 
+{tab === 'pqr' && <MisPqrDeportivo conEncabezado />}
           {tab === 'ajustes' && <AjustesTab />}
         </div>
       </div>

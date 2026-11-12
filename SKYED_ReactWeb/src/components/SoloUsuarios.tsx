@@ -28,7 +28,12 @@ export default function SoloUsuarios({ modulo }: { modulo: 'deportivo' | 'social
 
   // El admin social que pulsa "PQRS" va a la sección PQRS de su panel.
   const quierePqr = modulo === 'social' && /^\/social\/pqr\/?$/.test(pathname);
-  const destino = quierePqr ? '/social/admin?seccion=pqr' : `/${modulo}/admin`;
+  const quierePqrDep = modulo === 'deportivo' && /^\/deportivo\/pqr\/?$/.test(pathname);
+  const destino = quierePqr
+    ? '/social/admin?seccion=pqr'
+    : quierePqrDep
+      ? '/deportivo/admin?seccion=pqr'
+      : `/${modulo}/admin`;
 
   return <Navigate to={destino} replace />;
 }

@@ -67,7 +67,7 @@ function Contenido() {
     setCargando(true);
     setError(false);
     try {
-      const res: any = await apiFetch(`/notificaciones?per_page=15&page=${p}`);
+      const res: any = await apiFetch(`/notificaciones?contexto=social&per_page=15&page=${p}`);
       const pag = res?.notificaciones;
       const sociales: Notif[] = (pag.data as Notif[]).filter((n) => TIPOS_SOCIAL.includes(n.tipo));
       setItems((prev) => (p === 1 ? sociales : [...prev, ...sociales]));

@@ -623,6 +623,7 @@ export interface CrearPqrPayload {
   tipo_pqr: TipoPqr;
   asunto_pqr: string;
   mensaje_pqr: string;
+  contexto?: 'social' | 'deportivo';
 }
 
 /** Cualquier combinación; el backend exige al menos una. */
@@ -638,9 +639,9 @@ export interface RegistrarSeguimientoPayload {
 
 export const pqrService = {
   /** Las PQR que radicó el usuario actual (aunque sea administrador). */
-  async misPqr(page = 1): Promise<Paginated<Pqr>> {
-    return apiFetch(`/pqr?mias=1&per_page=50&page=${page}`);
-  },
+async misPqr(page = 1, contexto: 'social' | 'deportivo' = 'social'): Promise<Paginated<Pqr>> {
+  return apiFetch(`/pqr?mias=1&per_page=50&page=${page}&contexto=${contexto}`);
+},
 
   /** Una PQR con su seguimiento completo. */
   async obtener(id: number): Promise<Pqr> {
