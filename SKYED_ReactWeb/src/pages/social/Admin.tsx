@@ -44,6 +44,8 @@ import { useAuth } from "../../context/AuthContext";
 import { useAccessibility } from "../../context/AccessibilityContext";
 import AccessibilityWidget from "../../components/shared/AccessibilityWidget";
 import ExportMenu from "../../components/shared/ExportMenu";
+import { Paginacion, paginar } from "../../components/shared/Paginacion";
+import { capitalizar } from "../../utils/texto";
 import type { ExportFiltro } from "../../components/shared/ExportMenu";
 import AdminAjustes from "../../components/shared/AdminAjustes";
 import CopiasSeguridad from "../../components/shared/CopiasSeguridad";
@@ -279,13 +281,14 @@ const formatDate = (value?: string | null) => {
 ================================================================ */
 
 const sanitizeName = (value: string, maxLength = 50) =>
-  value
-    .replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñÜü\s-]/g, "")
-    .replace(/\s{2,}/g, " ")
-    .slice(0, maxLength);
+  capitalizar(
+    value
+      .replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñÜü\s-]/g, "")
+      .replace(/\s{2,}/g, " ")
+  ).slice(0, maxLength);
 
 const sanitizeDescription = (value: string, maxLength = 120) =>
-  value.slice(0, maxLength);
+  capitalizar(value).slice(0, maxLength);
 
 const sanitizeInteger = (value: string, maxLength = 7) =>
   value.replace(/\D/g, "").slice(0, maxLength);
@@ -457,12 +460,14 @@ function SectionTable({
   action,
   onAction,
   exportar,
+  pie,
   children,
 }: {
   title: string;
   action?: string;
   onAction?: () => void;
   exportar?: React.ReactNode;
+  pie?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
@@ -488,6 +493,7 @@ function SectionTable({
         <div className="table-scroll">
           <table className="admin-table">{children}</table>
         </div>
+        {pie}
       </div>
     </section>
   );
@@ -726,6 +732,9 @@ function AdminPage() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [pagina, setPagina] = useState(1);
+  // Al buscar o cambiar de sección se vuelve a la página 1.
+  useEffect(() => { setPagina(1); }, [search, section]);
   // Avisos arriba a la derecha (verde si salió bien, rojo si no)
   const { avisar: notify, avisos } = useAvisos();
   const [loading, setLoading] = useState(true); // true desde el inicio: sin "flash" de tarjetas en cero
@@ -787,6 +796,11 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     !controlPermisos.esAsistente && saved.modal && saved.editId == null && saved.modal !== "pqr" ? saved.modal : null
   );
   const [editing, setEditing] = useState<any>(null);
+  const [crearLugarDesdeEvento, setCrearLugarDesdeEvento] = useState(false);
+  const [lugarNuevoId, setLugarNuevoId] = useState<number | null>(null);
+  useEffect(() => {
+    if (modal !== "evento") { setLugarNuevoId(null); setCrearLugarDesdeEvento(false); }
+  }, [modal]);
 
   const loadAll = async () => {
     setLoading(true);
@@ -928,6 +942,11 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
   const usersModulo = users.filter((u) => perteneceAlModulo(u, "social"));
   const visibleUsers = usersModulo.filter((u) => filtered(`${u.nombre_u} ${u.apellido_u ?? ""} ${u.correo_u}`));
 
+  const pagAmbientes = paginar(visibleAmbientes, pagina);
+  const pagServicios = paginar(visibleServicios, pagina);
+  const pagEventos = paginar(visibleEventos, pagina);
+  const pagUsers = paginar(visibleUsers, pagina);
+
 
   const stats = useMemo(() => ({
     users: usersModulo.length,
@@ -992,11 +1011,29 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
   const accent = "#9c02ae"; // color de marca del panel
   const scale = parseInt(fontSize, 10) / 16;
 
-  const createAmbiente = async (data: any) => {
-    await apiFetch("/ambientes", { method: "POST", body: JSON.stringify(data) });
+  const createAmbiente = async (data: any, opciones?: { idEvento?: number; desdeEvento?: boolean }) => {
+    const res: any = await apiFetch("/ambientes", { method: "POST", body: JSON.stringify(data) });
+    const idNuevo: number | null = res?.data?.id_a ?? res?.id_a ?? null;
+    if (opciones?.idEvento && idNuevo) {
+      const ev = eventos.find((x) => x.id_er === opciones.idEvento);
+      if (ev) {
+        await apiFetch(`/eventos-sociales/${ev.id_er}`, {
+          method: "PUT",
+          body: JSON.stringify({
+            nombre_er: ev.nombre_er,
+            descripcion_er: ev.descripcion_er ?? undefined,
+            fecha_er: ev.fecha_er?.slice(0, 10),
+            imagen_er: ev.imagen_er ?? null,
+            id_a: idNuevo,
+            id_tipo_eves: ev.id_tipo_eves,
+          }),
+        });
+      }
+    }
     notify("Ambiente creado correctamente");
-    setModal(null);
+    if (!opciones?.desdeEvento) setModal(null);
     await loadAll();
+    return idNuevo;
   };
 
   const updateAmbiente = async (id: number, data: any) => {
@@ -1340,14 +1377,15 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         {section === "lugares" && (
 <SectionTable
             title="Gestión de ambientes"
-            action={puedeEditar("lugares") ? "Nuevo ambiente" : undefined}
+            action={puedeEditar("lugares") ? "Nuevo Lugar" : undefined}
             onAction={() => { setEditing(null); setModal("ambiente"); }}
             exportar={<ExportMenu ruta="social/ambientes" archivo="skyed-social-ambientes" params={{ q: search }} onMensaje={notify} />}
+            pie={<Paginacion pag={pagAmbientes} onCambiar={setPagina} />}
           >
 
             <thead><tr><th>Foto</th><th>ID</th><th>Nombre</th><th>Capacidad</th><th>Precio referencia</th><th>Acciones</th></tr></thead>
             <tbody>
-              {visibleAmbientes.map(a => (
+              {pagAmbientes.filas.map(a => (
                 <tr key={a.id_a}>
                   <td>
                     {a.imagen_principal_a
@@ -1373,10 +1411,11 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
             action={puedeEditar("servicios") ? "Nuevo servicio" : undefined}
             onAction={() => { setEditing(null); setModal("servicio"); }}
             exportar={<ExportMenu ruta="social/servicios" archivo="skyed-social-servicios" params={{ q: search }} onMensaje={notify} />}
+            pie={<Paginacion pag={pagServicios} onCambiar={setPagina} />}
           >
             <thead><tr><th>ID</th><th>Nombre</th><th>Descripción</th><th>Ambientes</th><th>Acciones</th></tr></thead>
             <tbody>
-              {visibleServicios.map(s => {
+              {pagServicios.filas.map(s => {
                 const id = s.id_s ?? s.id!;
                 return <tr key={id}>
                   <td>#{id}</td>
@@ -1400,10 +1439,11 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
             action={puedeEditar("eventos") ? "Nuevo evento" : undefined}
             onAction={() => { setEditing(null); setModal("evento"); }}
             exportar={<ExportMenu ruta="social/eventos" archivo="skyed-social-eventos" params={{ q: search }} filtros={[FILTRO_ESTADO_EVENTO, ...FILTROS_FECHA]} onMensaje={notify} />}
+            pie={<Paginacion pag={pagEventos} onCambiar={setPagina} />}
           >
             <thead><tr><th>Foto</th><th>ID</th><th>Nombre</th><th>Fecha</th><th>Reservas</th><th>Ingresos</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody>
-              {visibleEventos.map(e => {
+              {pagEventos.filas.map(e => {
                 const imageUrl = e.imagen_er ?? e.ambiente?.imagen_principal_a ?? undefined;
 
                 return (
@@ -1492,10 +1532,11 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
           
             action={puedeEditar("usuarios") ? "Nuevo usuario" : undefined}
             onAction={() => { setEditing(null); setModal("usuario"); }}
+            pie={<Paginacion pag={pagUsers} onCambiar={setPagina} />}
           >
             <thead><tr><th>ID</th><th>Usuario</th><th>Roles</th><th>Estado</th>{puedeEditar("usuarios") && <th>Acciones</th>}</tr></thead>
             <tbody>
-              {visibleUsers.map(u => (
+              {pagUsers.filas.map(u => (
                 <tr key={u.id_u}>
                   <td><span className="usr-id">#{u.id_u}</span></td>
                   <td>
@@ -1543,6 +1584,7 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
       {modal === "ambiente" && puedeEditar("lugares") && (
         <AmbienteModal
           item={editing}
+          eventos={eventos}
           onClose={() => setModal(null)}
           onSave={editing ? data => updateAmbiente(editing.id_a, data) : createAmbiente}
           notify={notify}
@@ -1566,6 +1608,20 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
           tipos={tipos}
           onClose={() => setModal(null)}
           onSave={editing ? data => updateEvento(editing.id_er, data) : createEvento}
+          notify={notify}
+          onCrearLugar={puedeEditar("lugares") ? () => setCrearLugarDesdeEvento(true) : undefined}
+          lugarNuevoId={lugarNuevoId}
+        />
+      )}
+
+      {modal === "evento" && crearLugarDesdeEvento && (
+        <AmbienteModal
+          onClose={() => setCrearLugarDesdeEvento(false)}
+          onSave={async (data) => {
+            const id = await createAmbiente(data, { desdeEvento: true });
+            setLugarNuevoId(id);
+            setCrearLugarDesdeEvento(false);
+          }}
           notify={notify}
         />
       )}
@@ -1627,7 +1683,7 @@ function Kpi({ icon, label, value, compact, formato }: { icon: React.ReactNode; 
   return <div className="kpi-card"><div className="kpi-icon">{icon}</div><span>{label}</span><strong className={compact ? "compact" : ""}>{contenido}</strong></div>;
 }
 
-function AmbienteModal({ item, onClose, onSave, notify }: { item?: Ambiente; onClose: () => void; onSave: (data: any) => Promise<void>; notify: Avisar }) {
+function AmbienteModal({ item, eventos, onClose, onSave, notify }: { item?: Ambiente; eventos?: EventoSocial[]; onClose: () => void; onSave: (data: any, opciones?: { idEvento?: number }) => Promise<any>; notify: Avisar }) {
   const [form, setForm] = useState({
     nombre_a: item?.nombre_a ?? "",
     descripcion_a: item?.descripcion_a ?? "",
@@ -1636,6 +1692,9 @@ function AmbienteModal({ item, onClose, onSave, notify }: { item?: Ambiente; onC
     imagen_principal_a: item?.imagen_principal_a ?? "",
   });
   const [saving, setSaving] = useState(false);
+  const [idEvento, setIdEvento] = useState("");
+  const hoy = new Date().toLocaleDateString("en-CA");
+  const eventosLibres = (eventos ?? []).filter((e) => e.estado_er === "activo" && (!e.fecha_er || e.fecha_er.slice(0, 10) >= hoy));
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1658,13 +1717,13 @@ function AmbienteModal({ item, onClose, onSave, notify }: { item?: Ambiente; onC
         capacidad_a: capacidad,
         precio_referencia_a: precio,
         imagen_principal_a: imagen,
-      });
+      }, { idEvento: idEvento ? Number(idEvento) : undefined });
     } finally {
       setSaving(false);
     }
   };
 
-  return <Modal title={item ? "Editar ambiente" : "Nuevo ambiente"} subtitle="Los cambios se guardan directamente en PostgreSQL." onClose={onClose}>
+  return <Modal title={item ? "Editar lugar" : "Nuevo lugar"} subtitle="Los cambios se guardan directamente en PostgreSQL." onClose={onClose}>
     <form className="modal-form" onSubmit={submit}>
       <div className="form-grid">
         <Field label="Nombre">
@@ -1714,6 +1773,22 @@ function AmbienteModal({ item, onClose, onSave, notify }: { item?: Ambiente; onC
           <small className="field-hint">{form.descripcion_a.length}/120 caracteres</small>
         </Field>
       </div>
+
+      {!item && eventos && (
+        <Field label="Evento (opcional)">
+          <select value={idEvento} onChange={(e) => setIdEvento(e.target.value)}>
+            <option value="">Sin evento</option>
+            {eventosLibres.map((ev) => (
+              <option key={ev.id_er} value={ev.id_er}>
+                {ev.nombre_er}{ev.fecha_er ? ` · ${formatDate(ev.fecha_er)}` : ""}
+              </option>
+            ))}
+          </select>
+          <small className="field-hint">
+            {idEvento ? "El evento se moverá a este lugar al guardar." : "Eventos activos que aún no han pasado."}
+          </small>
+        </Field>
+      )}
 
       <Field label="Foto principal (obligatoria)">
         <ImageUploadField
@@ -1791,7 +1866,7 @@ function ServicioModal({ item, onClose, onSave }: { item?: Servicio; onClose: ()
   </Modal>;
 }
 
-function EventoModal({ item, ambientes, tipos, onClose, onSave, notify }: { item?: EventoSocial; ambientes: Ambiente[]; tipos: TipoEvento[]; onClose: () => void; onSave: (data: any) => Promise<void>; notify: Avisar }) {
+function EventoModal({ item, ambientes, tipos, onClose, onSave, notify, onCrearLugar, lugarNuevoId }: { item?: EventoSocial; ambientes: Ambiente[]; tipos: TipoEvento[]; onClose: () => void; onSave: (data: any) => Promise<void>; notify: Avisar; onCrearLugar?: () => void; lugarNuevoId?: number | null }) {
   const [form, setForm] = useState({
     nombre_er: item?.nombre_er ?? "",
     descripcion_er: item?.descripcion_er ?? "",
@@ -1801,6 +1876,15 @@ function EventoModal({ item, ambientes, tipos, onClose, onSave, notify }: { item
     id_tipo_eves: item?.id_tipo_eves?.toString() ?? "",
   });
   const [saving, setSaving] = useState(false);
+  const hoy = (() => {
+    const d = new Date();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${d.getFullYear()}-${mm}-${dd}`;
+  })();
+  useEffect(() => {
+    if (lugarNuevoId) setForm((f) => ({ ...f, id_a: String(lugarNuevoId) }));
+  }, [lugarNuevoId]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1809,6 +1893,10 @@ function EventoModal({ item, ambientes, tipos, onClose, onSave, notify }: { item
     const descripcion = sanitizeDescription(form.descripcion_er).trim();
 
     if (!nombre || !form.id_a || !form.id_tipo_eves) return;
+    if (!item && form.fecha_er && form.fecha_er < hoy) {
+      notify("La fecha del evento no puede ser anterior a hoy.", "error");
+      return;
+    }
 
     setSaving(true);
     try {
@@ -1843,6 +1931,7 @@ function EventoModal({ item, ambientes, tipos, onClose, onSave, notify }: { item
         <Field label="Fecha">
           <input
             type="date"
+            min={item ? undefined : hoy}
             value={form.fecha_er}
             onChange={e => setForm({...form, fecha_er:e.target.value})}
           />
@@ -1853,6 +1942,9 @@ function EventoModal({ item, ambientes, tipos, onClose, onSave, notify }: { item
             <option value="">Seleccionar…</option>
             {ambientes.map(a => <option key={a.id_a} value={a.id_a}>{a.nombre_a}</option>)}
           </select>
+          {onCrearLugar && (
+            <button type="button" className="secondary-btn" onClick={onCrearLugar}>+ Crear lugar</button>
+          )}
         </Field>
 
         <Field label="Tipo de evento">
@@ -2149,7 +2241,7 @@ function AdminPqrManager({
                   maxLength={2000}
                   value={texto}
                   placeholder="Escribe tu respuesta al cliente"
-                  onChange={(e) => setTexto(e.target.value)}
+                  onChange={(e) => setTexto(capitalizar(e.target.value))}
                 />
                 <p className="apqr-hint">Al enviar un mensaje, la solicitud pasa a En proceso.</p>
                 <div className="apqr-reply-actions">

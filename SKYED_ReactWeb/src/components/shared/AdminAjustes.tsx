@@ -7,6 +7,7 @@ import { prepararImagen } from '../../utils/prepararImagen';
 import {
   errorContrasena, errorDocumento, errorTelefono, ayudaDocumento, maxDocumento, soloLetras, soloDigitos,
 } from '../../utils/validaciones';
+import { capitalizar } from '../../utils/texto';
 import '../../styles/shared/adminAjustes.css';
 import type { Avisar } from './Avisos';
 
@@ -379,11 +380,11 @@ export default function AdminAjustes({ avisos, notify }: Props) {
             <div className="form-grid">
               <label className="admin-field">
                 <span>Nombre</span>
-                <input value={nombre} onChange={(e) => setNombre(soloLetras(e.target.value))} required maxLength={50} />
+                <input value={nombre} onChange={(e) => setNombre(capitalizar(soloLetras(e.target.value)))} required maxLength={50} />
               </label>
               <label className="admin-field">
                 <span>Apellido</span>
-                <input value={apellido} onChange={(e) => setApellido(soloLetras(e.target.value))} required maxLength={50} />
+                <input value={apellido} onChange={(e) => setApellido(capitalizar(soloLetras(e.target.value)))} required maxLength={50} />
               </label>
               <label className="admin-field">
                 <span>Tipo de documento</span>
@@ -433,7 +434,7 @@ export default function AdminAjustes({ avisos, notify }: Props) {
               </label>
               <label className="admin-field">
                 <span>Ciudad</span>
-                <input value={ciudad} maxLength={80} onChange={(e) => setCiudad(e.target.value.slice(0, 80))} placeholder="Ej: Sogamoso" />
+                <input value={ciudad} maxLength={80} onChange={(e) => setCiudad(capitalizar(e.target.value.slice(0, 80)))} placeholder="Ej: Sogamoso" />
               </label>
             </div>
             {errDatos && <p className="aj-error" role="alert">{errDatos}</p>}
