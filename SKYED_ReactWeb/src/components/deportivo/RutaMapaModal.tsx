@@ -13,7 +13,7 @@ import { apiConfig, getToken } from "../../services/api";
  *  - cualquier otra URL externa (se pide directo; puede fallar por CORS)
  * Lo de storage se pide por la API con el token, así no hay problema de CORS.
  */
-async function leerGpx(valor: string): Promise<string> {
+export async function leerGpx(valor: string): Promise<string> {
   const enStorage = valor.match(/(?:^|\/storage\/)(rutas-gpx\/[A-Za-z0-9._-]+\.gpx)$/);
   let res: Response;
   if (enStorage) {
@@ -30,7 +30,7 @@ async function leerGpx(valor: string): Promise<string> {
   return res.text();
 }
 
-function extraerPuntos(texto: string): [number, number][] {
+export function extraerPuntos(texto: string): [number, number][] {
   const xml = new DOMParser().parseFromString(texto, "application/xml");
   if (xml.querySelector("parsererror")) throw new Error("El archivo GPX no es válido.");
   return Array.from(xml.querySelectorAll("trkpt, rtept"))

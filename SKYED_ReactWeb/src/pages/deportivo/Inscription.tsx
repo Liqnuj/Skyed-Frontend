@@ -4,6 +4,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import Protected from '../../components/Protected';
 import SportWrapper from '../../components/deportivo/SportWrapper';
 import TermsModal from '../../components/shared/TermsModal';
+import VerRutaEvento from '../../components/deportivo/VerRutaEvento';
 import { useAuth } from '../../context/AuthContext';
 import { apiFetch } from '../../services/api';
 import { prepararImagen } from '../../utils/prepararImagen';
@@ -1149,6 +1150,12 @@ function InscriptionWizard() {
             {evento.distancia && <li><i className="ti ti-route" aria-hidden="true" /> {evento.distancia}</li>}
             {evento.desnivel && <li><i className="ti ti-mountain" aria-hidden="true" /> {evento.desnivel}</li>}
           </ul>
+
+          <div style={{ marginTop: '1rem' }}>
+            <VerRutaEvento eventoId={evento.id} className="insc-btn insc-btn-secundario">
+              <i className="ti ti-map-2" aria-hidden="true" /> Ver ruta
+            </VerRutaEvento>
+          </div>
         </div>
       </header>
 

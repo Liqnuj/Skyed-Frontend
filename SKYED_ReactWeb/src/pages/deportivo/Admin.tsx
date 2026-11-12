@@ -1201,10 +1201,9 @@ const [pqrTotal, setPqrTotal] = useState(0);
 
   const gruposNavegacion: Array<{ titulo: string; secciones: Section[] }> = [
     { titulo: "PRINCIPAL", secciones: ["inicio", "eventos", "usuarios", "inscripciones"] },
-    { titulo: "GESTIÓN", secciones: ["acceso", "kits", "patrocinadores", "resultados"] },
+    { titulo: "GESTIÓN", secciones: ["acceso", "kits", "patrocinadores", "resultados", "pqr"] },
     { titulo: "LOGÍSTICA", secciones: ["rutas", "estaciones"] },
     { titulo: "CUENTA", secciones: ["asistentes", "copias", "ajustes", "ayuda"] },
-    { titulo: "GESTIÓN", secciones: ["acceso", "kits", "patrocinadores", "resultados", "pqr"] },
   ];
   const conteosNavegacion: Partial<Record<Section, number>> = {
     eventos: eventos.length,
