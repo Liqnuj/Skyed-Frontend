@@ -14,6 +14,7 @@ import {
 } from '../../../utils/pqr';
 import { PqrEstadoPill, PqrPlazoChip, PqrStepper, PqrTimeline } from './PqrTracker';
 import ExportMenu from '../../shared/ExportMenu';
+import { Paginacion, paginar } from '../../shared/Paginacion';
 import type { Avisar } from '../../shared/Avisos';
 
 
@@ -43,6 +44,9 @@ export default function AdminPqrManager({ pqrs, resumen, total, search, onChange
   const [filtro, setFiltro] = useState<Filtro>('todas');
   const [tipo, setTipo] = useState<TipoPqr | ''>('');
   const [abierta, setAbierta] = useState<number | null>(null);
+  const [pagina, setPagina] = useState(1);
+  // Al cambiar filtros o buscar se vuelve a la página 1.
+  useEffect(() => { setPagina(1); }, [filtro, tipo, search]);
 
   const vencidas = useMemo(() => pqrs.filter((p) => p.vencida).length, [pqrs]);
 
@@ -67,6 +71,8 @@ export default function AdminPqrManager({ pqrs, resumen, total, search, onChange
     const peso = (p: Pqr) => (esFinal(p.estado_pqr) ? 2 : p.vencida ? 0 : 1);
     return [...lista].sort((a, b) => peso(a) - peso(b));
   }, [pqrs, filtro, tipo, search]);
+
+  const pag = paginar(visibles, pagina);
 
   const tarjetas: { key: Filtro; label: string; estado: EstadoPqr; alerta?: boolean }[] = [
     { key: 'todas', label: 'Todas', estado: 'abierto' },
@@ -144,7 +150,7 @@ export default function AdminPqrManager({ pqrs, resumen, total, search, onChange
               </tr>
             </thead>
             <tbody>
-              {visibles.map((p) => (
+              {pag.filas.map((p) => (
                 <tr
                   key={p.id_pqr}
                   className="pqrx-row"
@@ -196,6 +202,7 @@ export default function AdminPqrManager({ pqrs, resumen, total, search, onChange
             </tbody>
           </table>
         </div>
+        <Paginacion pag={pag} onCambiar={setPagina} />
       </div>
 
       {abierta !== null && (

@@ -5,6 +5,7 @@ import { formVacio, validarAsistente, type ErroresAsistente, type FormAsistente 
 import { MAX_CORREO, MAX_NOMBRE, MAX_TELEFONO } from './constantes';
 import type { Asistente, Modulo, Permisos } from '../../types/permisos';
 import { sanitizeName, soloDigitos, normalizarCorreo, maxDocumento } from '../../utils/validaciones';
+import { capitalizar } from '../../utils/texto';
 import '../../styles/shared/asistentes.css';
 
 const MAYUS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -145,14 +146,14 @@ export default function AsistenteModal({
             <label className={`admin-field ${visible('nombre') ? 'asist-invalido' : ''}`}>
               <span>Nombre</span>
               <input data-invalido={visible('nombre') ? 'true' : undefined} maxLength={MAX_NOMBRE} value={form.nombre}
-                onChange={(event) => set('nombre', sanitizeName(event.target.value, MAX_NOMBRE))}
+                onChange={(event) => set('nombre', capitalizar(sanitizeName(event.target.value, MAX_NOMBRE)))}
                 onBlur={() => setTocados((actual) => ({ ...actual, nombre: true }))} />
               {visible('nombre') && <small className="asist-error" role="alert">{visible('nombre')}</small>}
             </label>
             <label className={`admin-field ${visible('apellido') ? 'asist-invalido' : ''}`}>
               <span>Apellido</span>
               <input data-invalido={visible('apellido') ? 'true' : undefined} maxLength={MAX_NOMBRE} value={form.apellido}
-                onChange={(event) => set('apellido', sanitizeName(event.target.value, MAX_NOMBRE))}
+                onChange={(event) => set('apellido', capitalizar(sanitizeName(event.target.value, MAX_NOMBRE)))}
                 onBlur={() => setTocados((actual) => ({ ...actual, apellido: true }))} />
               {visible('apellido') && <small className="asist-error" role="alert">{visible('apellido')}</small>}
             </label>
