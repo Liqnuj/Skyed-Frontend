@@ -784,14 +784,8 @@ export default function AdminCatalogos({
   }, [eventos, seccion]);
 
   useEffect(() => {
-    if ((seccion === "estaciones" || seccion === "rutas") && !eventoId) {
-  setRutas([]);
-  setEstaciones([]);
-  setCargando(false);
-  return () => { vigente = false; };
-}
     let vigente = true;
-    if (seccion === "estaciones" && !eventoId) {
+    if ((seccion === "estaciones" || seccion === "rutas") && !eventoId) {
       setRutas([]);
       setEstaciones([]);
       setCargando(false);

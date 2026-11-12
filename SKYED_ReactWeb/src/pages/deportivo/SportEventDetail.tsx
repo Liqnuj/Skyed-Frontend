@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import SiteHeader from '../../components/SiteHeader';
 import SiteFooter from '../../components/SiteFooter';
+import VerRutaEvento from '../../components/deportivo/VerRutaEvento';
 import { eventoDeportivoService, type EventoDeportivo } from '../../services/deportivoService';
 
 export default function SportEventDetail() {
@@ -50,6 +51,7 @@ export default function SportEventDetail() {
               </ul>
               <div style={{ marginTop: 20, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                 <Link title="Inscribirme a este evento" className="button" to={`/deportivo/inscripcion/${event.id}`}>Inscribirme</Link>
+                <VerRutaEvento eventoId={event.id} className="button outline">Ver ruta</VerRutaEvento>
                 <Link title="Volver a la lista de eventos" className="button outline" to="/deportivo/eventos">Volver a eventos</Link>
               </div>
             </div>
