@@ -76,3 +76,97 @@
   .mod-social .pf-header--anim .pf-hero-glow { animation: none; }
   .mod-social #pfParticles { display: none; }
 }
+
+/* Menú vertical de secciones del perfil (solo móvil): reemplaza la barra de
+   pestañas para que no haya scroll horizontal. Mismo diseño que SkyedDeportivo
+   con la paleta morado + dorado de SkyedSocial. */
+.mod-social .pf-tabs-movil { display: none; }
+
+@media (max-width: 640px) {
+  .mod-social .pf-header--anim .pf-tabs { display: none; }
+
+  .mod-social .pf-header--anim .pf-tabs-movil {
+    display: block;
+    position: relative;
+    z-index: 3;
+    max-width: 1200px;
+    margin: .3rem auto 0;
+    padding: 0 1.1rem 1rem;
+  }
+
+  .mod-social .pf-tabs-movil-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+    padding: .8rem 1rem;
+    border-radius: 12px;
+    cursor: pointer;
+    font: inherit;
+    font-size: calc(1rem * var(--fs-scale, 1));
+    font-weight: 800;
+    text-align: left;
+    color: #fff;
+    background: rgba(255, 255, 255, .1);
+    border: 1px solid rgba(255, 255, 255, .25);
+    transition: background .2s ease;
+  }
+  .mod-social .pf-tabs-movil-btn:hover { background: rgba(255, 255, 255, .16); }
+  .mod-social .pf-tabs-movil-btn:focus-visible { outline: 3px solid var(--gold-light, #E8C97A); outline-offset: 2px; }
+  .mod-social .pf-tabs-movil-btn > i:first-child { color: var(--gold-light, #E8C97A); font-size: 1.2rem; }
+  .mod-social .pf-tabs-movil-ico { margin-left: auto; font-size: 1.35rem; }
+
+  .mod-social .pf-tabs-movil-lista {
+    position: static;
+    margin-top: .5rem;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: rgba(13, 5, 25, .97);
+    border: 1px solid rgba(255, 255, 255, .12);
+    border-radius: 14px;
+    box-shadow: 0 18px 40px -18px rgba(0, 0, 0, .7);
+    animation: pfTabsMovil .2s ease both;
+  }
+  .mod-social .pf-tabs-movil-lista button {
+    display: flex;
+    align-items: center;
+    gap: .7rem;
+    width: 100%;
+    padding: 1rem 1.1rem;
+    cursor: pointer;
+    text-align: left;
+    font: inherit;
+    font-size: calc(1rem * var(--fs-scale, 1));
+    font-weight: 700;
+    color: #fff;
+    background: none;
+    border: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, .08);
+  }
+  .mod-social .pf-tabs-movil-lista button:last-child { border-bottom: 0; }
+  .mod-social .pf-tabs-movil-lista button i { color: rgba(255, 255, 255, .55); font-size: 1.15rem; }
+  .mod-social .pf-tabs-movil-lista button:hover { background: rgba(255, 255, 255, .06); }
+  .mod-social .pf-tabs-movil-lista button:focus-visible { outline: 3px solid var(--gold-light, #E8C97A); outline-offset: -3px; }
+  .mod-social .pf-tabs-movil-lista button.active { color: var(--gold-light, #E8C97A); background: rgba(201, 168, 76, .12); }
+  .mod-social .pf-tabs-movil-lista button.active i { color: var(--gold-light, #E8C97A); }
+  .mod-social .pf-tabs-movil-lista .pf-tab-count { margin-left: auto; }
+
+  /* Modo claro: lista blanca con texto morado (el botón queda sobre el encabezado oscuro) */
+  .mod-social:not(.dark-mode) .pf-tabs-movil-lista {
+    background: #ffffff;
+    border-color: var(--border);
+    box-shadow: 0 18px 40px -18px rgba(26, 10, 46, .45);
+  }
+  .mod-social:not(.dark-mode) .pf-tabs-movil-lista button {
+    color: var(--plum);
+    border-bottom-color: rgba(26, 10, 46, .09);
+  }
+  .mod-social:not(.dark-mode) .pf-tabs-movil-lista button i { color: var(--text-muted); }
+  .mod-social:not(.dark-mode) .pf-tabs-movil-lista button:hover { background: rgba(26, 10, 46, .05); }
+  .mod-social:not(.dark-mode) .pf-tabs-movil-lista button:focus-visible { outline-color: var(--plum-light); }
+  .mod-social:not(.dark-mode) .pf-tabs-movil-lista button.active { color: #7a5a12; background: rgba(201, 168, 76, .18); }
+  .mod-social:not(.dark-mode) .pf-tabs-movil-lista button.active i { color: #9a7418; }
+}
+@keyframes pfTabsMovil { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .mod-social .pf-tabs-movil-lista { animation: none; } }

@@ -100,6 +100,66 @@
   border-bottom-color: var(--accent);
 }
 
+/* Menú vertical de secciones del perfil (solo móvil) */
+.mod-deportivo .part-tabs-movil { display: none; }
+
+@media (max-width: 640px) {
+  .mod-deportivo .part-tabs { display: none; }
+  .mod-deportivo .part-tabs-movil { display: block; position: relative; max-width: 1100px; margin: .3rem auto 0; padding-bottom: 1rem; }
+
+  .mod-deportivo .part-tabs-movil-btn {
+    width: 100%; display: flex; align-items: center; gap: .65rem;
+    padding: .8rem 1rem; border-radius: 12px; cursor: pointer;
+    font: inherit; font-size: calc(1rem * var(--fs-scale, 1)); font-weight: 800; text-align: left;
+    color: #fff; background: rgba(255, 255, 255, .1); border: 1px solid rgba(255, 255, 255, .25);
+    transition: background .2s ease;
+  }
+  .mod-deportivo .part-tabs-movil-btn:hover { background: rgba(255, 255, 255, .16); }
+  .mod-deportivo .part-tabs-movil-btn:focus-visible { outline: 3px solid #7fe3ee; outline-offset: 2px; }
+  .mod-deportivo .part-tabs-movil-btn > i:first-child { color: #7fe3ee; font-size: 1.2rem; }
+  .mod-deportivo .part-tabs-movil-ico { margin-left: auto; font-size: 1.35rem; }
+
+  .mod-deportivo .part-tabs-movil-lista {
+    position: static; margin-top: .5rem; display: flex; flex-direction: column; overflow: hidden;
+    background: rgba(8, 13, 22, .97); border: 1px solid rgba(255, 255, 255, .12); border-radius: 14px;
+    box-shadow: 0 18px 40px -18px rgba(0, 0, 0, .7);
+    animation: partTabsMovil .2s ease both;
+  }
+  .mod-deportivo .part-tabs-movil-lista button {
+    display: flex; align-items: center; gap: .7rem; width: 100%;
+    padding: 1rem 1.1rem; cursor: pointer; text-align: left;
+    font: inherit; font-size: calc(1rem * var(--fs-scale, 1)); font-weight: 700;
+    color: #fff; background: none; border: 0; border-bottom: 1px solid rgba(255, 255, 255, .08);
+  }
+  .mod-deportivo .part-tabs-movil-lista button:last-child { border-bottom: 0; }
+  .mod-deportivo .part-tabs-movil-lista button i { color: rgba(255, 255, 255, .55); font-size: 1.15rem; }
+  .mod-deportivo .part-tabs-movil-lista button:hover { background: rgba(255, 255, 255, .06); }
+  .mod-deportivo .part-tabs-movil-lista button:focus-visible { outline: 3px solid #7fe3ee; outline-offset: -3px; }
+  .mod-deportivo .part-tabs-movil-lista button.active { color: #7fe3ee; background: rgba(127, 227, 238, .09); }
+  .mod-deportivo .part-tabs-movil-lista button.active i { color: #7fe3ee; }
+
+  /* Modo claro: lista blanca con texto oscuro (el botón queda sobre el encabezado azul oscuro) */
+  .mod-deportivo:not(.dark-mode) .part-tabs-movil-lista {
+    background: #ffffff;
+    border-color: var(--border, #e3e8ef);
+    box-shadow: 0 18px 40px -18px rgba(9, 29, 54, .45);
+  }
+  .mod-deportivo:not(.dark-mode) .part-tabs-movil-lista button {
+    color: var(--text, #0f172a);
+    border-bottom-color: rgba(15, 23, 42, .09);
+  }
+  .mod-deportivo:not(.dark-mode) .part-tabs-movil-lista button i { color: var(--muted, #5b6775); }
+  .mod-deportivo:not(.dark-mode) .part-tabs-movil-lista button:hover { background: rgba(9, 29, 54, .05); }
+  .mod-deportivo:not(.dark-mode) .part-tabs-movil-lista button:focus-visible { outline-color: var(--primary-2, #0749a7); }
+  .mod-deportivo:not(.dark-mode) .part-tabs-movil-lista button.active {
+    color: #0b6b7c;
+    background: color-mix(in srgb, var(--accent) 14%, #ffffff);
+  }
+  .mod-deportivo:not(.dark-mode) .part-tabs-movil-lista button.active i { color: #0b6b7c; }
+}
+@keyframes partTabsMovil { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .mod-deportivo .part-tabs-movil-lista { animation: none; } }
+
 .mod-deportivo .part-body {
   max-width: 1100px;
   margin: 0 auto;
@@ -2092,7 +2152,7 @@
    PASES CON CÓDIGO QR (.pase) — perfil del participante
    "Entrada al evento" (siempre) y "Retiro del kit" (si pidió kit).
    ===================================================================== */
-.part-qr-overlay.pase-fondo { padding: 1rem; overflow-y: auto; }
+.part-qr-overlay.pase-fondo { padding: 1rem; overflow-y: auto; overscroll-behavior: contain; }
 
 .pase {
   --p-card: #ffffff;
@@ -2129,6 +2189,30 @@
   --p-acento-2: #2c9caf;
 }
 .dark-mode .pase.pase-kit { --p-acento: #60a5fa; --p-acento-2: #3b82f6; }
+
+/* Cuerpo del pase: en pantallas angostas todo va apilado; desde 640px el QR queda
+   a la izquierda y el código + datos a la derecha, para verlo todo sin scroll. */
+.pase-layout { width: 100%; display: flex; flex-direction: column; align-items: center; gap: .9rem; }
+.pase-col-qr { display: flex; justify-content: center; }
+.pase-col-info { width: 100%; display: flex; flex-direction: column; align-items: center; gap: .9rem; min-width: 0; }
+
+@media (min-width: 640px) {
+  .pase { max-width: 780px; }
+  .pase-layout {
+    display: grid; grid-template-columns: auto minmax(0, 1fr);
+    align-items: center; gap: 1.6rem;
+  }
+  .pase-col-qr { padding: 6px; }
+  .pase-col-info { align-items: stretch; gap: .75rem; }
+}
+/* Ventanas de poca altura (portátiles pequeños, celular en horizontal): QR más compacto */
+@media (min-width: 640px) and (max-height: 700px) {
+  .pase-qr { padding: 12px; }
+  .pase-qr img { width: min(200px, 34vh); }
+  .pase-cuerpo { gap: .7rem; padding-top: .8rem; padding-bottom: .9rem; }
+  .pase-cab { padding-top: 1rem; padding-bottom: .8rem; }
+  .pase-pie { padding-top: .65rem; padding-bottom: .7rem; }
+}
 
 .pase-solo-lector { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 

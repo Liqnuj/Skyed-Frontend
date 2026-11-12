@@ -14,16 +14,18 @@ interface PqrType {
   type: PqrTypeKey;
   label: string;
   icon: string;
+  /** Icono de Tabler para los cajones de categoría (icon sigue siendo el emoji del resto de la página). */
+  ti: string;
   name: string;
   desc: string;
 }
 
 const pqrTypes: PqrType[] = [
-  { type: 'peticion', label: 'Petición', icon: '📋', name: 'Petición', desc: 'Solicitud de información, documentos o aclaración sobre tu evento.' },
-  { type: 'queja', label: 'Queja', icon: '⚠️', name: 'Queja', desc: 'Inconformidad con la atención, coordinación o proceso de tu evento.' },
-  { type: 'reclamo', label: 'Reclamo', icon: '🔴', name: 'Reclamo', desc: 'Inconformidad con el servicio prestado que requiere solución o compensación.' },
-  { type: 'sugerencia', label: 'Sugerencia', icon: '💡', name: 'Sugerencia', desc: 'Propuesta para mejorar nuestros servicios o procesos.' },
-  { type: 'felicitacion', label: 'Felicitación', icon: '🌟', name: 'Felicitación', desc: 'Reconocimiento al equipo o a un servicio que superó tus expectativas.' },
+  { type: 'peticion', label: 'Petición', icon: '📋', ti: 'ti-file-text', name: 'Petición', desc: 'Pide información, un documento o una aclaración sobre tu evento.' },
+  { type: 'queja', label: 'Queja', icon: '⚠️', ti: 'ti-alert-triangle', name: 'Queja', desc: 'Inconformidad con la atención o con la organización de tu evento.' },
+  { type: 'reclamo', label: 'Reclamo', icon: '🔴', ti: 'ti-flag-3', name: 'Reclamo', desc: 'El servicio no salió como se acordó y necesitas una solución o compensación.' },
+  { type: 'sugerencia', label: 'Sugerencia', icon: '💡', ti: 'ti-bulb', name: 'Sugerencia', desc: 'Una idea para mejorar nuestros servicios o procesos.' },
+  { type: 'felicitacion', label: 'Felicitación', icon: '🌟', ti: 'ti-star', name: 'Felicitación', desc: 'Reconoce al equipo o a un servicio que superó tus expectativas.' },
 ];
 
 // Mismos plazos que muestra el cuadro "Tiempos de respuesta" de esta página.
@@ -143,20 +145,25 @@ function PQRForm() {
               <p style={{ fontSize: '.88rem', color: 'var(--text-muted)', margin: '.75rem 0 1.5rem', lineHeight: 1.6 }}>
                 Selecciona la categoría que mejor describe tu solicitud para que podamos darte la respuesta adecuada.
               </p>
-              <div className="pqr-types" id="pqrTypes">
+              <div className="pqs-types" id="pqrTypes" role="radiogroup" aria-label="Tipo de solicitud">
                 {pqrTypes.map((t) => (
-                  <div
+                  <button
                     key={t.type}
-                    className={`pqr-type-card${selectedType === t.type ? ' selected' : ''}`}
+                    type="button"
+                    role="radio"
+                    aria-checked={selectedType === t.type}
+                    className={`pqs-type${selectedType === t.type ? ' selected' : ''}`}
                     data-type={t.type}
                     onClick={() => setSelectedType(t.type)}
                   >
-                    <div className="pqr-type-icon">{t.icon}</div>
-                    <div>
-                      <div className="pqr-type-name">{t.name}</div>
-                      <div className="pqr-type-desc">{t.desc}</div>
-                    </div>
-                  </div>
+                    <span className="pqs-type-ico">
+                      <i className={`ti ${t.ti}`} aria-hidden="true" />
+                    </span>
+                    <span className="pqs-type-txt">
+                      <strong>{t.name}</strong>
+                      <small>{t.desc}</small>
+                    </span>
+                  </button>
                 ))}
               </div>
               <div className="pqr-info-box">

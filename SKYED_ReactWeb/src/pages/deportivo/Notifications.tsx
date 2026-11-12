@@ -160,19 +160,6 @@ function Contenido() {
               <div className="part-stat-row"><span className="part-label">Cargadas</span><b>{items.length}</b></div>
             </div>
           </div>
-
-          <div className="part-card">
-            <div className="part-card-head">
-              <span className="part-card-head-icon"><i className="ti ti-bolt" aria-hidden="true" /></span>
-              <h3>Accesos rápidos</h3>
-            </div>
-            <div className="part-card-body nt-links">
-              <Link to="/deportivo/perfil?tab=inscripciones"><i className="ti ti-clipboard-check" aria-hidden="true" /> Mis inscripciones</Link>
-              <Link to="/deportivo/mi-entrada"><i className="ti ti-qrcode" aria-hidden="true" /> Mi entrada</Link>
-              <Link to="/deportivo/resultados"><i className="ti ti-trophy" aria-hidden="true" /> Resultados</Link>
-              <Link to="/deportivo/ayuda"><i className="ti ti-help-circle" aria-hidden="true" /> Centro de ayuda</Link>
-            </div>
-          </div>
         </aside>
 
         {/* ===== Columna principal: filtros + lista ===== */}

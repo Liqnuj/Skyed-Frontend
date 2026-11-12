@@ -3022,3 +3022,36 @@
 }
 .mod-deportivo.dark-mode .event-card .btn-ghost{color:var(--accent)}
 .mod-deportivo.dark-mode .event-card .btn-ghost:hover{color:#fff}
+
+/* =========================================
+   MODO CLARO — menú desplegable del nav (móvil)
+   El modo oscuro conserva sus estilos de arriba.
+   ========================================= */
+@media (max-width: 860px) {
+  .mod-deportivo:not(.dark-mode) .nav-links {
+    background-color: #ffffff !important;
+    border-top: 1px solid var(--border) !important;
+    box-shadow: 0 15px 30px rgba(9, 29, 54, 0.18) !important;
+  }
+
+  .mod-deportivo:not(.dark-mode) .nav-links a {
+    color: var(--text) !important;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.09) !important;
+  }
+
+  .mod-deportivo:not(.dark-mode) .nav-links a:hover {
+    background: rgba(9, 29, 54, 0.05) !important;
+    color: var(--primary-2) !important;
+  }
+
+  /* Ítem activo: fondo teñido con el acento + barra lateral */
+  .mod-deportivo:not(.dark-mode) .nav-links a.active {
+    background: color-mix(in srgb, var(--accent) 14%, #ffffff) !important;
+    border-left-color: var(--accent) !important;
+    color: var(--primary) !important;
+  }
+
+  .mod-deportivo:not(.dark-mode) .nav-links li:last-child a {
+    border-bottom: none !important;
+  }
+}

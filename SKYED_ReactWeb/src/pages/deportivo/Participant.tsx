@@ -6,6 +6,8 @@ import SportWrapper from '../../components/deportivo/SportWrapper';
 import CodigoCopiable from '../../components/deportivo/CodigoCopiable';
 import { useAuth } from '../../context/AuthContext';
 import { useAccessibility } from '../../context/AccessibilityContext';
+import { useBloquearScroll } from '../../hooks/useBloquearScroll';
+import ParticipantePqr from '../../components/deportivo/pqr/ParticipantePqr';
 import { apiFetch } from '../../services/api';
 import { prepararImagen } from '../../utils/prepararImagen';
 import { errorContrasena } from '../../utils/validaciones';
@@ -15,7 +17,6 @@ import '../../styles/shared/nosotrosMotion.css';
 import '../../styles/deportivo/headerHero.css';
 // import '../../styles/deportivo/filtros-participante.css';
 import { createPortal } from 'react-dom';
-import MisPqrDeportivo from '../../components/deportivo/pqr/MisPqrDeportivo';
 
 
 type TabId = 'resumen' | 'historial' | 'inscripciones' | 'resultados' | 'pqr' | 'ajustes';
@@ -538,6 +539,7 @@ function FotoPerfilMenu({
   const { darkMode } = useAccessibility();
   const [menu, setMenu] = useState(false);
   const [viendo, setViendo] = useState(false);
+  useBloquearScroll(viendo);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const botonRef = useRef<HTMLButtonElement>(null);
   const listaRef = useRef<HTMLDivElement>(null);
@@ -723,6 +725,16 @@ export default function Participant() {
 
 const TABS: TabId[] = ['resumen', 'historial', 'inscripciones', 'resultados', 'pqr', 'ajustes'];
 
+// Secciones del perfil: las usan la barra de pestañas (escritorio) y el menú vertical (móvil).
+const PERFIL_TABS: Array<{ id: TabId; label: string; title: string; icono: string }> = [
+  { id: 'resumen', label: 'Resumen', title: 'Ver el resumen', icono: 'ti-layout-dashboard' },
+  { id: 'historial', label: 'Historial', title: 'Ver el historial', icono: 'ti-history' },
+  { id: 'inscripciones', label: 'Inscripciones', title: 'Ver mis inscripciones', icono: 'ti-ticket' },
+  { id: 'resultados', label: 'Resultados', title: 'Ver mis resultados', icono: 'ti-trophy' },
+  { id: 'pqr', label: 'PQR', title: 'Ver mis PQR', icono: 'ti-message-report' },
+  { id: 'ajustes', label: 'Ajustes', title: 'Ver los ajustes de tu cuenta', icono: 'ti-settings' },
+];
+
 function ParticipantPanel() {
   const { user, updateFotoUrl } = useAuth();
   const { darkMode } = useAccessibility();
@@ -741,6 +753,26 @@ function ParticipantPanel() {
   const [verQr, setVerQr] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [cancelarInsc, setCancelarInsc] = useState<Inscripcion | null>(null);
+  useBloquearScroll(!!cancelarInsc);
+
+  // Menú vertical de secciones (móvil): se cierra con clic afuera o con Escape.
+  const [menuTabs, setMenuTabs] = useState(false);
+  const menuTabsRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!menuTabs) return;
+    const alHacerClic = (e: MouseEvent | TouchEvent) => {
+      if (!menuTabsRef.current?.contains(e.target as Node)) setMenuTabs(false);
+    };
+    const alTeclear = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenuTabs(false); };
+    document.addEventListener('mousedown', alHacerClic);
+    document.addEventListener('touchstart', alHacerClic);
+    document.addEventListener('keydown', alTeclear);
+    return () => {
+      document.removeEventListener('mousedown', alHacerClic);
+      document.removeEventListener('touchstart', alHacerClic);
+      document.removeEventListener('keydown', alTeclear);
+    };
+  }, [menuTabs]);
   const [cancelando, setCancelando] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [filtrosInsc, setFiltrosInsc] = useState<Filtros>(FILTROS_INSC);
@@ -1019,30 +1051,49 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         </div>
 
         <div className="part-tabs" role="tablist">
-{(['resumen', 'historial', 'inscripciones', 'resultados', 'pqr', 'ajustes'] as TabId[]).map((t) => (
-  <button
-    title={
-      t === 'resumen' ? 'Ver el resumen'
-      : t === 'historial' ? 'Ver el historial'
-      : t === 'inscripciones' ? 'Ver mis inscripciones'
-      : t === 'resultados' ? 'Ver mis resultados'
-      : t === 'pqr' ? 'Ver mis PQR'
-      : 'Ver los ajustes de tu cuenta'
-    }
-    key={t}
-    role="tab"
-    className={`part-tab-btn${tab === t ? ' active' : ''}`}
-    onClick={() => setTab(t)}
-  >
-    {t === 'resumen' ? 'Resumen'
-      : t === 'historial' ? 'Historial'
-      : t === 'inscripciones' ? 'Inscripciones'
-      : t === 'resultados' ? 'Resultados'
-      : t === 'pqr' ? 'PQR'
-      : 'Ajustes'}
-  </button>
-))}
+          {PERFIL_TABS.map((t) => (
+            <button title={t.title}
+              key={t.id}
+              role="tab"
+              aria-selected={tab === t.id}
+              className={`part-tab-btn${tab === t.id ? ' active' : ''}`}
+              onClick={() => setTab(t.id)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
 
+        {/* Móvil: las secciones se despliegan como lista vertical, igual que el menú de navegación. */}
+        <div className="part-tabs-movil" ref={menuTabsRef}>
+          <button
+            type="button"
+            className="part-tabs-movil-btn"
+            aria-expanded={menuTabs}
+            aria-controls="part-tabs-lista"
+            title={menuTabs ? 'Cerrar el menú de secciones' : 'Abrir el menú de secciones'}
+            onClick={() => setMenuTabs((v) => !v)}
+          >
+            <i className={`ti ${(PERFIL_TABS.find((t) => t.id === tab) ?? PERFIL_TABS[0]).icono}`} aria-hidden="true" />
+            <span>{(PERFIL_TABS.find((t) => t.id === tab) ?? PERFIL_TABS[0]).label}</span>
+            <i className={`ti ${menuTabs ? 'ti-x' : 'ti-menu-2'} part-tabs-movil-ico`} aria-hidden="true" />
+          </button>
+          {menuTabs && (
+            <div id="part-tabs-lista" className="part-tabs-movil-lista" role="group" aria-label="Secciones del perfil">
+              {PERFIL_TABS.map((t) => (
+                <button
+                  type="button"
+                  key={t.id}
+                  title={t.title}
+                  aria-current={tab === t.id ? 'page' : undefined}
+                  className={tab === t.id ? 'active' : ''}
+                  onClick={() => { setTab(t.id); setMenuTabs(false); }}
+                >
+                  <i className={`ti ${t.icono}`} aria-hidden="true" /> {t.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -1316,7 +1367,7 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
             />
           )}
 
-{tab === 'pqr' && <MisPqrDeportivo conEncabezado />}
+          {tab === 'pqr' && <ParticipantePqr />}
           {tab === 'ajustes' && <AjustesTab />}
         </div>
       </div>
@@ -1482,6 +1533,7 @@ function CodigoPase({ codigo }: { codigo: string }) {
  */
 function PasesQr({ insc, darkMode, onCerrar }: { insc: Inscripcion; darkMode: boolean; onCerrar: () => void }) {
   const { user } = useAuth();
+  useBloquearScroll(true);
   const qr = insc.qr!;
   const inv = insc.invitado;
   const evento = insc.evento;
@@ -1588,6 +1640,8 @@ function PasesQr({ insc, darkMode, onCerrar }: { insc: Inscripcion; darkMode: bo
             <span className={`pase-estado ${estado.clase}`}>{estado.texto}</span>
           </div>
 
+          <div className="pase-layout">
+          <div className="pase-col-qr">
           <div className={`pase-qr${sello ? ' inactivo' : ''}`}>
             <span className="pase-esquina a" aria-hidden="true" />
             <span className="pase-esquina b" aria-hidden="true" />
@@ -1601,7 +1655,9 @@ function PasesQr({ insc, darkMode, onCerrar }: { insc: Inscripcion; darkMode: bo
               </div>
             )}
           </div>
+          </div>
 
+          <div className="pase-col-info">
           <CodigoPase codigo={codigo} />
 
           {esKit ? (
@@ -1645,6 +1701,8 @@ function PasesQr({ insc, darkMode, onCerrar }: { insc: Inscripcion; darkMode: bo
               </p>
             </>
           )}
+          </div>
+          </div>
         </div>
 
         <footer className="pase-pie">
@@ -2019,6 +2077,7 @@ function AjustesTab() {
   
   // Estados para el flujo de dos pasos
   const [verModal, setVerModal] = useState(false);
+  useBloquearScroll(verModal || confirmarEliminar);
   const [verificando, setVerificando] = useState(false);
   const [enviando, setEnviando] = useState(false);
   

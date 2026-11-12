@@ -166,20 +166,6 @@ function Contenido() {
               <div className="pf-stat-row"><span className="pf-label">De reservas</span><b>{cuenta('reserva')}</b></div>
             </div>
           </div>
-
-          <div className="pf-card">
-            <div className="pf-card-head ns-card-head">
-              <span className="ns-card-ico"><i className="ti ti-bolt" aria-hidden="true" /></span>
-              <h3>Accesos rápidos</h3>
-            </div>
-            <div className="pf-card-body ns-links">
-              <Link to="/social/perfil?tab=reservas"><i className="ti ti-calendar-event" aria-hidden="true" /> Mis reservas</Link>
-              <Link to="/social/perfil?tab=pqr"><i className="ti ti-message-report" aria-hidden="true" /> Mis PQR</Link>
-              <Link to="/social/pqr"><i className="ti ti-plus" aria-hidden="true" /> Nueva PQR</Link>
-              <Link to="/social/reservar"><i className="ti ti-calculator" aria-hidden="true" /> Cotizar reserva</Link>
-              <Link to="/social/ayuda"><i className="ti ti-help-circle" aria-hidden="true" /> Centro de ayuda</Link>
-            </div>
-          </div>
         </aside>
 
         {/* ===== Columna principal: filtros + lista ===== */}
