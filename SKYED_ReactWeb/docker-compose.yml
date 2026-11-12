@@ -1,0 +1,40 @@
+# docker-compose.yml (Repositorio: Skyed-Frontend / carpeta SKYED_ReactWeb)
+#
+# Docker Compose para DESARROLLO LOCAL
+# -----------------------------------------------------------------
+# Stack: React 19 + Vite sobre Node 22 Alpine
+#
+# Levanta primero el backend (Skyed-Backend) y detén tu "npm run dev" local
+# si está usando el puerto 5173.
+
+services:
+    #--- Servicio de la SPA (React + Vite) ---#
+    frontend:
+        build:
+            context: .
+            dockerfile: .docker/node/Dockerfile
+        container_name: skyed_frontend
+        restart: unless-stopped
+        working_dir: /app
+        ports:
+            # La aplicación queda en http://localhost:5173
+            - "${VITE_PORT:-5173}:5173"
+        volumes:
+            # 1. Sincroniza el código para que la recarga en caliente (HMR) funcione al instante
+            - ./:/app:cached
+            # 2. node_modules vive dentro del contenedor (Linux): no se pisa con el
+            #    node_modules de Windows, que trae binarios distintos.
+            - /app/node_modules
+        environment:
+            # El navegador (no el contenedor) es quien llama a la API, por eso es localhost:8000.
+            # Ojo: sin los < > que trae la guía al copiarla de Notion.
+            - VITE_API_URL=${VITE_API_URL:-http://localhost:8000/api}
+            # Vigila los cambios de archivos por sondeo (necesario con carpetas de Windows/WSL)
+            - CHOKIDAR_USEPOLLING=true
+        networks:
+            - skyed_net
+
+# --- Conexión a la red compartida con el backend ---
+networks:
+    skyed_net:
+        external: true # Creada con: docker network create skyed_net
