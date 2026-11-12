@@ -1,6 +1,7 @@
+import RutaMapaModal from "./RutaMapaModal";
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { ImagePlus, Loader2, Pencil, Plus, Trash2, Upload, Users, X } from "lucide-react";
+import { ImagePlus, Loader2, Map as MapIcon, Pencil, Plus, Trash2, Upload, Users, X } from "lucide-react";
 import { apiFetch } from "../../services/api";
 import ExportMenu from "../shared/ExportMenu";
 import type { Avisar } from "../shared/Avisos";
@@ -8,9 +9,11 @@ import type { OpcionesConfirmacion } from "../shared/ConfirmDialog";
 import { prepararImagen } from "../../utils/prepararImagen";
 import { limpiarCampoValidacion, validarFormularioDeportivo } from "../../utils/validarFormularioDeportivo";
 
+const MAX_GPX_MB = 5;
+
 export type CatalogoDeportivo = "patrocinadores" | "rutas" | "estaciones";
 
-type EventoOpcion = { id: number; nombre: string };
+export type EventoOpcion = { id: number; nombre: string; distancia?: string | null };
 
 type Patrocinador = {
   id_p: number;
@@ -28,20 +31,19 @@ type Patrocinador = {
   }>;
 };
 
-type RutaEvento = {
+export type RutaEvento = {
   id_re: number;
-  id_e: number;
+  id_e: number | null;
   nombre_re: string;
   estado_re?: string | null;
   distancia_re?: string | null;
   desnivel_re?: string | null;
   descripcion_re?: string | null;
   archivo_gpx_re?: string | null;
-  precio_re?: number | string | null;
   evento?: { id_e: number; nombre_e: string };
 };
 
-type Estacion = {
+export type Estacion = {
   id_est: number;
   id_e: number;
   nombre_est?: string | null;
@@ -73,6 +75,7 @@ type RegistroEliminable =
 
 const TIPOS_ESTACION = [
   ["hidratacion", "Hidratación"],
+  ["ambulancia", "Ambulancia"],
   ["primeros_auxilios", "Primeros auxilios"],
   ["control", "Control"],
   ["meta", "Meta"],
@@ -496,56 +499,102 @@ function AsignarPatrocinadorModal({
   );
 }
 
-function RutaForm({
+export function RutaForm({
   item,
+  eventos,
+  eventoInicialId = "",
   onClose,
   onSave,
+  onCreada,
   notify,
 }: {
   item?: RutaEvento;
+  eventos: EventoOpcion[];
+  eventoInicialId?: string;
   onClose: () => void;
-  onSave: (datos: Record<string, unknown>) => Promise<boolean>;
+  onSave: (datos: Record<string, unknown>) => Promise<boolean | RutaEvento>;
+  onCreada?: (ruta: RutaEvento) => void;
   notify: Avisar;
 }) {
   const [form, setForm] = useState({
+    id_e: item?.id_e == null ? eventoInicialId : String(item.id_e),
     nombre_re: item?.nombre_re ?? "",
     estado_re: item?.estado_re ?? "activo",
     distancia_re: item?.distancia_re ?? "",
     desnivel_re: item?.desnivel_re ?? "",
     descripcion_re: item?.descripcion_re ?? "",
     archivo_gpx_re: item?.archivo_gpx_re ?? "",
-    precio_re: item?.precio_re == null ? "" : String(item.precio_re),
   });
   const [guardando, setGuardando] = useState(false);
+  const [subiendoGpx, setSubiendoGpx] = useState(false);
+  const gpxInputRef = useRef<HTMLInputElement>(null);
   const set = (key: keyof typeof form, value: string) => setForm((f) => ({ ...f, [key]: value }));
 
+  const subirGpx = async (archivo?: File) => {
+    if (!archivo || subiendoGpx) return;
+    if (!/\.gpx$/i.test(archivo.name)) {
+      notify("El archivo debe ser un .gpx.", "error");
+      return;
+    }
+    if (archivo.size > MAX_GPX_MB * 1024 * 1024) {
+      notify(`El archivo GPX no debe superar ${MAX_GPX_MB} MB.`, "error");
+      return;
+    }
+    setSubiendoGpx(true);
+    try {
+      const datos = new FormData();
+      datos.append("gpx", archivo);
+      const respuesta = await apiFetch("/deportivo/gpx", { method: "POST", body: datos });
+      set("archivo_gpx_re", respuesta.url ?? respuesta.path);
+    } catch (err) {
+      notify(err instanceof Error ? err.message : "No se pudo subir el archivo GPX.", "error");
+    } finally {
+      setSubiendoGpx(false);
+      if (gpxInputRef.current) gpxInputRef.current.value = "";
+    }
+  };
+
   const submit = async (e: FormEvent) => {
+    if (subiendoGpx) {
+      e.preventDefault();
+      notify("Espera a que termine de subir el archivo GPX antes de guardar.", "error");
+      return;
+    }
     if (!validarFormularioDeportivo(e, notify)) return;
     if (guardando) return;
     setGuardando(true);
     const guardado = await onSave({
+      id_e: form.id_e ? Number(form.id_e) : null,
       nombre_re: form.nombre_re.trim(),
       estado_re: form.estado_re,
       distancia_re: form.distancia_re.trim() || null,
       desnivel_re: form.desnivel_re.trim() || null,
       descripcion_re: form.descripcion_re.trim() || null,
       archivo_gpx_re: form.archivo_gpx_re.trim() || null,
-      precio_re: form.precio_re === "" ? null : Number(form.precio_re),
     });
     setGuardando(false);
-    if (guardado) onClose();
+    if (guardado) {
+      if (typeof guardado === "object") onCreada?.(guardado);
+      onClose();
+    }
   };
 
   return (
     <Dialogo
       title={item ? "Editar ruta" : "Nueva ruta"}
-      subtitle="La ruta quedará asociada al evento seleccionado."
+      subtitle="Puedes guardar la ruta sin asignarla o vincularla a un evento."
       onClose={onClose}
     >
       <form className="modal-form" onSubmit={submit} noValidate>
         <div className="form-grid">
           <Campo label="Nombre">
             <input required maxLength={100} value={form.nombre_re} onChange={(e) => set("nombre_re", e.target.value)} />
+          </Campo>
+          <Campo label="Evento asociado (opcional)">
+            <select value={form.id_e} onChange={(e) => set("id_e", e.target.value)}>
+              <option value="">Sin asignar</option>
+              {eventos.map((evento) => <option key={evento.id} value={evento.id}>{evento.nombre}</option>)}
+            </select>
           </Campo>
           <Campo label="Estado">
             <select required value={form.estado_re} onChange={(e) => set("estado_re", e.target.value)}>
@@ -560,11 +609,34 @@ function RutaForm({
           <Campo label="Desnivel">
             <input required maxLength={45} value={form.desnivel_re} onChange={(e) => set("desnivel_re", e.target.value)} placeholder="Ej. 850 m" />
           </Campo>
-          <Campo label="Precio (COP)">
-            <input required type="number" min="0" step="0.01" value={form.precio_re} onChange={(e) => set("precio_re", e.target.value)} />
-          </Campo>
-          <Campo label="Archivo GPX (URL o ruta)">
-            <input maxLength={255} value={form.archivo_gpx_re} onChange={(e) => set("archivo_gpx_re", e.target.value)} placeholder="https://… o rutas/archivo.gpx" />
+          <Campo label="Archivo GPX (sube un archivo o pega una URL)">
+            <div style={{ display: "flex", gap: 8 }}>
+              <input
+                style={{ flex: 1, minWidth: 0 }}
+                maxLength={255}
+                value={form.archivo_gpx_re}
+                onChange={(e) => set("archivo_gpx_re", e.target.value)}
+                placeholder="https://… o rutas/archivo.gpx"
+                disabled={subiendoGpx}
+              />
+              <input
+                ref={gpxInputRef}
+                type="file"
+                accept=".gpx,application/gpx+xml,application/xml,text/xml"
+                aria-label="Seleccionar archivo GPX"
+                hidden
+                onChange={(e) => void subirGpx(e.target.files?.[0])}
+              />
+              <button
+                type="button"
+                className="secondary-btn"
+                disabled={subiendoGpx}
+                onClick={() => gpxInputRef.current?.click()}
+              >
+                {subiendoGpx ? <Loader2 size={14} className="admin-spin" /> : <Upload size={14} />}
+                {subiendoGpx ? "Subiendo…" : "Subir .gpx"}
+              </button>
+            </div>
           </Campo>
           <Campo label="Descripción" ancho>
             <textarea required maxLength={255} rows={3} value={form.descripcion_re} onChange={(e) => set("descripcion_re", e.target.value)} />
@@ -576,21 +648,26 @@ function RutaForm({
   );
 }
 
-function EstacionForm({
+export function EstacionForm({
   item,
+  eventos,
+  eventoInicialId = "",
   onClose,
   onSave,
   notify,
 }: {
   item?: Estacion;
+  eventos: EventoOpcion[];
+  eventoInicialId?: string;
   onClose: () => void;
   onSave: (datos: Record<string, unknown>) => Promise<boolean>;
   notify: Avisar;
 }) {
   const [form, setForm] = useState({
+    id_e: String(item?.id_e ?? eventoInicialId),
     nombre_est: item?.nombre_est ?? "",
     tipo_est: item?.tipo_est ?? "general",
-    kilometro_est: item?.kilometro_est ?? "",
+    kilometro_est: item?.kilometro_est?.match(/[\d.,]+/)?.[0]?.replace(",", ".") ?? "",
     latitud_est: item?.latitud_est == null ? "" : String(item.latitud_est),
     longitud_est: item?.longitud_est == null ? "" : String(item.longitud_est),
     descripcion_pest: item?.descripcion_pest ?? "",
@@ -598,6 +675,8 @@ function EstacionForm({
   });
   const [guardando, setGuardando] = useState(false);
   const set = (key: keyof typeof form, value: string) => setForm((f) => ({ ...f, [key]: value }));
+  const eventoSeleccionado = eventos.find((evento) => String(evento.id) === form.id_e);
+  const distanciaMaxima = eventoSeleccionado?.distancia?.match(/[\d.,]+/)?.[0]?.replace(",", ".");
 
   const submit = async (e: FormEvent) => {
     if (!validarFormularioDeportivo(e, notify)) return;
@@ -605,9 +684,10 @@ function EstacionForm({
     if (guardando) return;
     setGuardando(true);
     const guardado = await onSave({
+      id_e: Number(form.id_e),
       nombre_est: form.nombre_est.trim(),
       tipo_est: form.tipo_est,
-      kilometro_est: form.kilometro_est.trim() || null,
+      kilometro_est: form.kilometro_est === "" ? null : Number(form.kilometro_est),
       latitud_est: form.latitud_est === "" ? null : Number(form.latitud_est),
       longitud_est: form.longitud_est === "" ? null : Number(form.longitud_est),
       descripcion_pest: form.descripcion_pest.trim() || null,
@@ -625,6 +705,12 @@ function EstacionForm({
     >
       <form className="modal-form" onSubmit={submit} noValidate>
         <div className="form-grid">
+          <Campo label="Evento">
+            <select required value={form.id_e} onChange={(e) => { set("id_e", e.target.value); set("kilometro_est", ""); }}>
+              <option value="">Selecciona un evento</option>
+              {eventos.map((evento) => <option key={evento.id} value={evento.id}>{evento.nombre}</option>)}
+            </select>
+          </Campo>
           <Campo label="Nombre">
             <input required maxLength={100} value={form.nombre_est} onChange={(e) => set("nombre_est", e.target.value)} />
           </Campo>
@@ -633,8 +719,8 @@ function EstacionForm({
               {TIPOS_ESTACION.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
             </select>
           </Campo>
-          <Campo label="Kilómetro">
-            <input required maxLength={20} value={form.kilometro_est} onChange={(e) => set("kilometro_est", e.target.value)} placeholder="Ej. 12.5 km" />
+          <Campo label={distanciaMaxima ? `Kilómetro (máximo ${distanciaMaxima} km)` : "Kilómetro (opcional)"}>
+            <input type="number" min="0" max={distanciaMaxima} step="0.1" required={!!distanciaMaxima} value={form.kilometro_est} onChange={(e) => set("kilometro_est", e.target.value)} placeholder="Ej. 12.5" />
           </Campo>
           <Campo label="Latitud">
             <input required type="number" min="-90" max="90" step="any" value={form.latitud_est} onChange={(e) => set("latitud_est", e.target.value)} />
@@ -679,24 +765,33 @@ export default function AdminCatalogos({
   const [patrocinadores, setPatrocinadores] = useState<Patrocinador[]>([]);
   const [rutas, setRutas] = useState<RutaEvento[]>([]);
   const [estaciones, setEstaciones] = useState<Estacion[]>([]);
-  const [eventoId, setEventoId] = useState("");
+  const [eventoId, setEventoId] = useState(seccion === "rutas" ? "__sin_asignar" : "");
   const [modal, setModal] = useState<ModalState>(null);
   const [patrocinadorEventos, setPatrocinadorEventos] = useState<Patrocinador | null>(null);
   const [cargando, setCargando] = useState(true);
   const [errorCarga, setErrorCarga] = useState("");
   const [recarga, setRecarga] = useState(0);
+  const [verGpx, setVerGpx] = useState<{ gpx: string; nombre: string } | null>(null);
 
   useEffect(() => {
     if (!eventos.length) {
-      setEventoId("");
+      setEventoId(seccion === "rutas" ? "__sin_asignar" : "");
       return;
     }
-    setEventoId((actual) => eventos.some((evento) => String(evento.id) === actual) ? actual : String(eventos[0].id));
-  }, [eventos]);
+    setEventoId((actual) => actual === "__sin_asignar" || eventos.some((evento) => String(evento.id) === actual)
+      ? actual
+      : String(eventos[0].id));
+  }, [eventos, seccion]);
 
   useEffect(() => {
+    if ((seccion === "estaciones" || seccion === "rutas") && !eventoId) {
+  setRutas([]);
+  setEstaciones([]);
+  setCargando(false);
+  return () => { vigente = false; };
+}
     let vigente = true;
-    if (seccion !== "patrocinadores" && !eventoId) {
+    if (seccion === "estaciones" && !eventoId) {
       setRutas([]);
       setEstaciones([]);
       setCargando(false);
@@ -705,7 +800,9 @@ export default function AdminCatalogos({
 
     const ruta = seccion === "patrocinadores"
       ? "/patrocinadores"
-      : `/eventos/${eventoId}/${seccion}`;
+      : seccion === "rutas" && eventoId === "__sin_asignar"
+        ? "/rutas-disponibles?per_page=200"
+        : `/eventos/${eventoId}/${seccion}`;
     setCargando(true);
     setErrorCarga("");
     const cargar = async () => {
@@ -776,29 +873,40 @@ export default function AdminCatalogos({
     );
 
   const guardarRuta = (datos: Record<string, unknown>) => {
-    if (!eventoId) {
-      notify("Selecciona un evento para guardar la ruta.", "error");
-      return Promise.resolve(false);
-    }
     const item = modal?.tipo === "ruta" ? modal.item : undefined;
+    const eventoRuta = datos.id_e ? Number(datos.id_e) : null;
+    const payload = { ...datos };
+    if (item) {
+      return completarAccion(
+        `/rutas/${item.id_re}`,
+        "PUT",
+        payload,
+        "Ruta actualizada.",
+      );
+    }
+
+    delete payload.id_e;
     return completarAccion(
-      item ? `/rutas/${item.id_re}` : `/eventos/${eventoId}/rutas`,
-      item ? "PUT" : "POST",
-      datos,
-      item ? "Ruta actualizada." : "Ruta creada.",
+      eventoRuta ? `/eventos/${eventoRuta}/rutas` : "/rutas",
+      "POST",
+      payload,
+      eventoRuta ? "Ruta creada y asignada al evento." : "Ruta creada sin asignar.",
     );
   };
 
   const guardarEstacion = (datos: Record<string, unknown>) => {
-    if (!eventoId) {
+    const eventoEstacion = Number(datos.id_e || (eventoId === "__sin_asignar" ? "" : eventoId));
+    if (!eventoEstacion) {
       notify("Selecciona un evento para guardar la estación.", "error");
       return Promise.resolve(false);
     }
     const item = modal?.tipo === "estacion" ? modal.item : undefined;
+    const payload = { ...datos };
+    delete payload.id_e;
     return completarAccion(
-      item ? `/estaciones/${item.id_est}` : `/eventos/${eventoId}/estaciones`,
+      item ? `/estaciones/${item.id_est}` : `/eventos/${eventoEstacion}/estaciones`,
       item ? "PUT" : "POST",
-      datos,
+      item ? { ...payload, id_e: eventoEstacion } : payload,
       item ? "Estación actualizada." : "Estación creada.",
     );
   };
@@ -847,10 +955,12 @@ export default function AdminCatalogos({
   };
 
   const nombreSeccion = seccion === "patrocinadores" ? "Patrocinadores" : seccion === "rutas" ? "Rutas de eventos" : "Estaciones de eventos";
-  const opcionesEventos = eventos.map((evento) => ({ id: evento.id, nombre: evento.nombre }));
-  const sinEventos = seccion !== "patrocinadores" && !eventos.length;
+  const opcionesEventos: EventoOpcion[] = eventos.map((evento) => ({ id: evento.id, nombre: evento.nombre, distancia: evento.distancia }));
+  const sinEventos = seccion === "estaciones" && !eventos.length;
   const toolbar = seccion !== "patrocinadores" ? (
     <select className="admin-select" value={eventoId} onChange={(e) => setEventoId(e.target.value)} aria-label="Filtrar por evento">
+      {seccion === "rutas" && <option value="__sin_asignar">Rutas sin asignar</option>}
+      {seccion === "estaciones" && <option value="">Selecciona un evento</option>}
       {opcionesEventos.map((evento) => <option key={evento.id} value={evento.id}>{evento.nombre}</option>)}
     </select>
   ) : null;
@@ -859,7 +969,9 @@ export default function AdminCatalogos({
     <>
       {errorCarga && <div className="admin-card" role="alert"><p>{errorCarga}</p></div>}
       {sinEventos ? (
-        <section className="admin-card"><p>Crea primero un evento deportivo para administrar sus {seccion === "rutas" ? "rutas" : "estaciones"}.</p></section>
+        <section className="admin-card"><p>Crea primero un evento deportivo para administrar sus estaciones.</p></section>
+      ) : seccion === "estaciones" && !eventoId ? (
+        <section className="admin-card"><p>Selecciona un evento para consultar o crear sus estaciones.</p></section>
       ) : seccion === "patrocinadores" ? (
         <TableSection
           title={nombreSeccion}
@@ -896,18 +1008,22 @@ export default function AdminCatalogos({
           onAction={() => setModal({ tipo: "ruta" })}
           toolbar={toolbar}
         >
-          <thead><tr><th>Nombre</th><th>Distancia</th><th>Desnivel</th><th>Precio</th><th>GPX</th><th>Estado</th><th>Acciones</th></tr></thead>
+          <thead><tr><th>Nombre</th><th>Distancia</th><th>Desnivel</th><th>GPX</th><th>Estado</th><th>Acciones</th></tr></thead>
           <tbody>
-            {cargando ? <tr><td colSpan={7}>Cargando rutas…</td></tr> : visiblesRutas.map((r) => (
+            {cargando ? <tr><td colSpan={6}>Cargando rutas…</td></tr> : visiblesRutas.map((r) => (
               <tr key={r.id_re}>
                 <td><strong>{r.nombre_re}</strong>{r.descripcion_re && <small style={{ display: "block" }}>{r.descripcion_re}</small>}</td>
                 <td>{r.distancia_re ?? "—"}</td>
                 <td>{r.desnivel_re ?? "—"}</td>
-                <td>{r.precio_re == null ? "—" : `$${Number(r.precio_re).toLocaleString("es-CO")}`}</td>
                 <td>{r.archivo_gpx_re ? (
-                  /^https?:\/\//i.test(r.archivo_gpx_re)
-                    ? <a href={r.archivo_gpx_re} target="_blank" rel="noreferrer">Abrir GPX</a>
-                    : r.archivo_gpx_re
+                  <button
+                    type="button"
+                    className="table-action"
+                    title="Ver ruta en el mapa"
+                    onClick={() => setVerGpx({ gpx: r.archivo_gpx_re!, nombre: r.nombre_re })}
+                  >
+                    <MapIcon size={15} />
+                  </button>
                 ) : "—"}</td>
                 <td><span className={`admin-badge ${r.estado_re ?? "activo"}`}>{humanizar(r.estado_re ?? "activo")}</span></td>
                 <td><div className="row-actions">
@@ -916,7 +1032,7 @@ export default function AdminCatalogos({
                 </div></td>
               </tr>
             ))}
-            {!cargando && !visiblesRutas.length && <tr><td colSpan={7}>{rutas.length ? "No hay rutas que coincidan con la búsqueda." : "Este evento todavía no tiene rutas."}</td></tr>}
+            {!cargando && !visiblesRutas.length && <tr><td colSpan={6}>{rutas.length ? "No hay rutas que coincidan con la búsqueda." : "Este evento todavía no tiene rutas."}</td></tr>}
           </tbody>
         </TableSection>
       ) : (
@@ -952,10 +1068,18 @@ export default function AdminCatalogos({
         <PatrocinadorForm item={modal.item} onClose={() => setModal(null)} onSave={guardarPatrocinador} notify={notify} />
       )}
       {modal?.tipo === "ruta" && (
-        <RutaForm item={modal.item} onClose={() => setModal(null)} onSave={guardarRuta} notify={notify} />
+        <RutaForm item={modal.item} eventos={opcionesEventos} eventoInicialId={eventoId === "__sin_asignar" ? "" : eventoId} onClose={() => setModal(null)} onSave={guardarRuta} notify={notify} />
       )}
       {modal?.tipo === "estacion" && (
-        <EstacionForm item={modal.item} onClose={() => setModal(null)} onSave={guardarEstacion} notify={notify} />
+        <EstacionForm item={modal.item} eventos={opcionesEventos} eventoInicialId={eventoId} onClose={() => setModal(null)} onSave={guardarEstacion} notify={notify} />
+      )}
+      {verGpx && (
+        <RutaMapaModal
+          gpx={verGpx.gpx}
+          nombre={verGpx.nombre}
+          onClose={() => setVerGpx(null)}
+          onError={(texto) => notify(texto, "error")}
+        />
       )}
       {patrocinadorEventos && (
         <AsignarPatrocinadorModal
