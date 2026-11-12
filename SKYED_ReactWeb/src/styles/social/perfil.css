@@ -890,7 +890,11 @@
 @media (max-width: 600px) {
   .mod-social .pfx-form-row { grid-template-columns: 1fr; }
 }
-.mod-social.dark-mode .pfx-field select option { color: #111; }
+.mod-social.dark-mode .pfx-field select { color-scheme: dark; }
+.mod-social.dark-mode .pfx-field select option {
+  background-color: var(--plum-mid);
+  color: var(--white);
+}
 
 /* Tarjeta "Cuenta" y confirmación de desactivar cuenta */
 .mod-social .pfx-card-danger .pfx-chip { background: rgba(220, 38, 38, .12); color: #dc2626; }

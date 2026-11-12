@@ -61,7 +61,7 @@ import { useAvisos, type Avisar } from "../../components/shared/Avisos";
 import { CargandoPanel, NumeroAnimado } from "../../components/shared/AdminMotion";
 import AdminFooter from "../../components/shared/AdminFooter";
 import { RolesModal, RolesDeUsuario, UsuarioModal, EditarUsuarioModal, puedeEditarUsuario, Avatar, esAdmin, perteneceAlModulo, type UsuarioFila } from "../../components/deportivo/UsuariosAdmin";
-import AdminCatalogos, { type CatalogoDeportivo } from "../../components/deportivo/AdminCatalogos";
+import AdminCatalogos, { EstacionForm, RutaForm, type CatalogoDeportivo, type EventoOpcion, type RutaEvento } from "../../components/deportivo/AdminCatalogos";
 import AsistentesPanel from "../../features/asistentes/AsistentesPanel";
 import { usePermisos } from "../../context/PermisosContext";
 import { primeraSeccionPermitida } from "../../types/permisos";
@@ -1874,15 +1874,26 @@ const [pqrTotal, setPqrTotal] = useState(0);
         <EventoModal
           item={editing}
           kits={kits}
+          eventos={eventos}
           onClose={closeModal}
           notify={notify}
           onKitCreado={kit => setKits(actual => [...actual, kit])}
-          onSave={data => run(
-            () => editing
-              ? apiFetch(`/eventos/${editing.id}`, { method: "PUT", body: JSON.stringify(data) })
-              : apiFetch("/eventos", { method: "POST", body: JSON.stringify(data) }),
-            editing ? "Evento actualizado" : "Evento creado. Ahora agrégale sus categorías.",
-          )}
+          onSave={async (data, mantenerAbierto, eventoId) => {
+            try {
+              const id = eventoId ?? editing?.id;
+              const respuesta = await apiFetch(id ? `/eventos/${id}` : "/eventos", {
+                method: id ? "PUT" : "POST",
+                body: JSON.stringify(data),
+              });
+              notify(id ? "Evento actualizado" : "Evento creado. Ahora agrégale sus categorías.");
+              if (!mantenerAbierto) closeModal();
+              await loadAll();
+              return respuesta.evento as Evento;
+            } catch (error) {
+              notify(error instanceof Error ? error.message : "No se pudo guardar el evento.", "error");
+              return null;
+            }
+          }}
         />
       )}
 
@@ -1976,16 +1987,55 @@ const [pqrTotal, setPqrTotal] = useState(0);
    EVENTOS
 ================================================================ */
 
-function EventoModal({ item, kits, onClose, onSave, notify, onKitCreado }: {
+function EventoModal({ item, kits, eventos, onClose, onSave, notify, onKitCreado }: {
   item?: Evento | null;
   kits: Kit[];
+  eventos: Evento[];
   onClose: () => void;
-  onSave: (data: any) => Promise<boolean>;
+  onSave: (data: Record<string, unknown>, mantenerAbierto?: boolean, eventoId?: number) => Promise<Evento | null>;
   notify: Avisar;
   /** Un kit creado desde este formulario: se agrega a la lista del panel. */
   onKitCreado: (kit: Kit) => void;
 }) {
   const [creandoKit, setCreandoKit] = useState(false);
+  const [creandoRuta, setCreandoRuta] = useState(false);
+  const [creandoEstacion, setCreandoEstacion] = useState(false);
+  const [eventoActivo, setEventoActivo] = useState<Evento | null>(item ?? null);
+  const [rutas, setRutas] = useState<RutaEvento[]>([]);
+  const [cargandoRutas, setCargandoRutas] = useState(true);
+  const formularioRef = useRef<HTMLFormElement>(null);
+  const accionDespuesDeGuardar = useRef<"estacion" | null>(null);
+
+  useEffect(() => {
+    let vigente = true;
+    const eventoId = eventoActivo?.id ?? item?.id;
+    const query = new URLSearchParams({ per_page: "200" });
+    if (eventoId) query.set("evento_id_e", String(eventoId));
+    setCargandoRutas(true);
+    apiFetch(`/rutas-disponibles?${query}`)
+      .then((respuesta) => {
+        if (!vigente) return;
+        const disponibles: RutaEvento[] = respuesta.data ?? [];
+        setRutas(disponibles);
+        setForm((actual) => {
+          if (disponibles.some((ruta) => String(ruta.id_re) === (actual.ruta_id_re ?? ""))) return actual;
+          const asignada = eventoId ? disponibles.find((ruta) => ruta.id_e === eventoId) : undefined;
+          return { ...actual, ruta_id_re: asignada ? String(asignada.id_re) : "" };
+        });
+      })
+      .catch((error) => {
+        if (vigente) notify(error instanceof Error ? error.message : "No se pudieron cargar las rutas.", "error");
+      })
+      .finally(() => { if (vigente) setCargandoRutas(false); });
+    return () => { vigente = false; };
+  }, [eventoActivo?.id, item?.id]);
+
+  const opcionesEventos: EventoOpcion[] = [
+    ...eventos.map((evento) => ({ id: evento.id, nombre: evento.nombre, distancia: evento.distancia })),
+    ...(eventoActivo && !eventos.some((evento) => evento.id === eventoActivo.id)
+      ? [{ id: eventoActivo.id, nombre: eventoActivo.nombre, distancia: eventoActivo.distancia }]
+      : []),
+  ];
 
   // El kit se guarda ya (sin evento) y queda elegido; al guardar el evento se le asigna.
   const crearKit = async (datos: Record<string, unknown>) => {
@@ -2023,6 +2073,7 @@ function EventoModal({ item, kits, onClose, onSave, notify, onKitCreado }: {
     requisitos_e: item?.requisitos ?? "",
     cupos_disponibles_e: item ? String(item.cupos_disponibles) : "",
     id_k: item?.kit?.id ? String(item.kit.id) : "",
+    ruta_id_re: "",
     imagen_e: item?.imagen ?? "",
   });
   const [preview, setPreview] = usePersistentState(`${DRAFT_PREFIX}evento-img:${item?.id ?? "nuevo"}`, item?.imagen_url ?? "");
@@ -2030,6 +2081,8 @@ function EventoModal({ item, kits, onClose, onSave, notify, onKitCreado }: {
   const set = (campo: keyof typeof form, valor: string) => setForm(f => ({ ...f, [campo]: valor }));
 
   const submit = async (e: React.FormEvent) => {
+    const crearEstacionDespues = accionDespuesDeGuardar.current === "estacion";
+    accionDespuesDeGuardar.current = null;
     const camposAdicionales = form.imagen_e ? [] : [{
       etiqueta: "Foto del evento",
       elemento: e.currentTarget.querySelector<HTMLElement>('[data-validacion="imagen-evento"]'),
@@ -2037,7 +2090,7 @@ function EventoModal({ item, kits, onClose, onSave, notify, onKitCreado }: {
     if (!validarFormularioDeportivo(e, notify, camposAdicionales)) return;
 
     setSaving(true);
-    await onSave({
+    const respuesta = await onSave({
       nombre_e: form.nombre_e.trim(),
       categoria_e: form.categoria_e,
       precio_e: Number(form.precio_e || 0),
@@ -2051,13 +2104,18 @@ function EventoModal({ item, kits, onClose, onSave, notify, onKitCreado }: {
       cupos_disponibles_e: Number(form.cupos_disponibles_e || 0),
       imagen_e: form.imagen_e,
       id_k: form.id_k ? Number(form.id_k) : null,
-    });
+      ruta_id_re: Number(form.ruta_id_re),
+    }, crearEstacionDespues, eventoActivo?.id ?? item?.id);
     setSaving(false);
+    if (crearEstacionDespues && respuesta) {
+      setEventoActivo(respuesta);
+      setCreandoEstacion(true);
+    }
   };
 
   return <>
   <Modal title={item ? "Editar evento" : "Nuevo evento deportivo"} subtitle="Se publica en SKYED Deportivo apenas quede activo." onClose={onClose} closeOnBackdrop={false}>
-    <form className="modal-form" onSubmit={submit} noValidate>
+    <form ref={formularioRef} className="modal-form" onSubmit={submit} noValidate>
       <div className="form-grid">
         <Field label="Nombre">
           <input required maxLength={120} value={form.nombre_e} onChange={e => set("nombre_e", capitalizeFirst(sanitizeText(e.target.value, 120)))} placeholder="Ej. Vuelta al Lago de Tota" />
@@ -2113,6 +2171,23 @@ function EventoModal({ item, kits, onClose, onSave, notify, onKitCreado }: {
           </div>
           <small className="field-hint">Solo aparecen los kits sin evento asignado. Cada kit es de un solo evento.</small>
         </Field>
+
+        <Field label="Ruta obligatoria">
+          <div className="kit-fila">
+            <select required={!item} value={form.ruta_id_re ?? ""} onChange={(e) => set("ruta_id_re", e.target.value)} aria-label="Ruta del evento">
+              <option value="">{cargandoRutas ? "Cargando rutas…" : "Selecciona una ruta"}</option>
+              {rutas.map((ruta) => (
+                <option key={ruta.id_re} value={ruta.id_re}>
+                  {ruta.nombre_re}{ruta.distancia_re ? ` · ${ruta.distancia_re}` : ""}
+                </option>
+              ))}
+            </select>
+            <button type="button" className="crear-kit-btn" onClick={() => setCreandoRuta(true)}>
+              <Plus size={15} /> Crear ruta
+            </button>
+          </div>
+          {!cargandoRutas && !rutas.length && <small className="field-hint">No hay rutas disponibles. Crea una ruta para continuar.</small>}
+        </Field>
       </div>
 
       <Field label="Descripción">
@@ -2142,6 +2217,10 @@ function EventoModal({ item, kits, onClose, onSave, notify, onKitCreado }: {
 
       <div className="modal-actions">
         <button title="Cancelar y cerrar sin guardar" type="button" className="secondary-btn" onClick={onClose}>Cancelar</button>
+        <button type="button" className="secondary-btn" disabled={saving || cargandoRutas} onClick={() => {
+          accionDespuesDeGuardar.current = "estacion";
+          formularioRef.current?.requestSubmit();
+        }}>{saving ? "Guardando…" : "Guardar y crear estación"}</button>
         <button title={saving ? 'Guardando…' : 'Guardar los cambios'} className="primary-btn" disabled={saving}>{saving ? "Guardando…" : "Guardar"}</button>
       </div>
     </form>
@@ -2149,6 +2228,54 @@ function EventoModal({ item, kits, onClose, onSave, notify, onKitCreado }: {
 
   {creandoKit && (
     <KitModal desdeEvento fechaEvento={form.fecha_e} eventos={[]} notify={notify} onClose={() => setCreandoKit(false)} onSave={crearKit} />
+  )}
+  {creandoRuta && (
+    <RutaForm
+      eventos={eventoActivo ? [{ id: eventoActivo.id, nombre: eventoActivo.nombre, distancia: eventoActivo.distancia }] : []}
+      eventoInicialId={eventoActivo ? String(eventoActivo.id) : ""}
+      onClose={() => setCreandoRuta(false)}
+      notify={notify}
+      onSave={async (datos) => {
+        try {
+          const eventoId = datos.id_e ? Number(datos.id_e) : null;
+          const payload = { ...datos };
+          delete payload.id_e;
+          const respuesta = await apiFetch(eventoId ? `/eventos/${eventoId}/rutas` : "/rutas", {
+            method: "POST",
+            body: JSON.stringify(payload),
+          });
+          return respuesta.ruta as RutaEvento;
+        } catch (error) {
+          notify(error instanceof Error ? error.message : "No se pudo crear la ruta.", "error");
+          return false;
+        }
+      }}
+      onCreada={(ruta) => {
+        setRutas((actuales) => [...actuales.filter((existente) => existente.id_re !== ruta.id_re), ruta]);
+        set("ruta_id_re", String(ruta.id_re));
+      }}
+    />
+  )}
+  {creandoEstacion && eventoActivo && (
+    <EstacionForm
+      eventos={opcionesEventos}
+      eventoInicialId={String(eventoActivo.id)}
+      onClose={() => setCreandoEstacion(false)}
+      notify={notify}
+      onSave={async (datos) => {
+        const eventoId = Number(datos.id_e);
+        const payload = { ...datos };
+        delete payload.id_e;
+        try {
+          await apiFetch(`/eventos/${eventoId}/estaciones`, { method: "POST", body: JSON.stringify(payload) });
+          notify("Estación creada y asignada al evento.");
+          return true;
+        } catch (error) {
+          notify(error instanceof Error ? error.message : "No se pudo crear la estación.", "error");
+          return false;
+        }
+      }}
+    />
   )}
   </>;
 }
