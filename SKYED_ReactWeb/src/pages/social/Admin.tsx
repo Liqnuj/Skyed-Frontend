@@ -1977,7 +1977,7 @@ function EventoModal({ item, ambientes, tipos, onClose, onSave, notify, onCrearL
           carpeta="eventos"
           onError={notify}
         />
-        <small className="field-hint">Si no subes una foto, se usará la del ambiente asignado.</small>
+        <small className="field-hint">Si no subes una foto, se usará la del lugar asignado.</small>
       </Field>
 
       <div className="modal-actions">

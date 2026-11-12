@@ -1867,20 +1867,20 @@ function PerfilPanel() {
                   Sin reservas próximas. <Link title="Reservar tu evento" to="/social/reservar">reserva tu evento →</Link>
                 </div>
               ) : (
-                <div className="pfx-list">
+                <div className="pf-list" style={{ width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
                   {reservasProximas.slice(0, 3).map((r) => {
                     const pill = reservaEstadoPill(r.estado_rese);
                     return (
-                      <div className="pfx-item" key={r.id_rese}>
-                        <span className="pfx-chip"><i className="ti ti-calendar-event" aria-hidden="true" /></span>
-                        <div className="pfx-item-main">
-                          <span className="pfx-item-title">{nombreReserva(r)}</span>
-                          <span className="pfx-item-sub">
-                            {fmtFecha(r.fecha_evento_rese)} · {r.invitados_rese} invitados · {fmtMoney(r.total_rese)}
-                          </span>
+                      <button title="Ver el detalle de esta reserva" key={r.id_rese} className="pf-list-item" style={{ width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }} onClick={() => setDetalleReserva(r)}>
+                        <span className="pf-item-icon" aria-hidden="true"><i className="ti ti-calendar-event" /></span>
+                        <div className="pf-list-item-main" style={{ minWidth: 0 }}>
+                          <span className="pf-list-item-title">{nombreReserva(r)}</span>
+                          <span className="pf-list-item-sub">{fmtFecha(r.fecha_evento_rese)} · {r.invitados_rese} invitados · {Number(r.total_rese) > 0 ? fmtMoney(r.total_rese) : 'Total por definir'}</span>
                         </div>
+                        <span className="pf-item-code">Reserva #{r.id_rese}</span>
                         <span className={`pf-pill ${pill.cls}`}>{pill.txt}</span>
-                      </div>
+                        <i className="ti ti-chevron-right pf-item-chevron" aria-hidden="true" />
+                      </button>
                     );
                   })}
                 </div>

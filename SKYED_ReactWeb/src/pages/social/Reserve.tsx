@@ -4,6 +4,7 @@ import CanvasParticles from '../../components/social/CanvasParticles';
 import { useAuth } from '../../context/AuthContext'; // Importamos el contexto de autenticación
 import { apiFetch } from '../../services/api';
 import '../../styles/social/reservaForm.css';
+import { capitalizar } from '../../utils/texto';
 
 function capitalizeName(raw: string) {
   let cleaned = raw
@@ -432,7 +433,7 @@ export default function Reserve() {
                       id="flocation"
                       placeholder="Ciudad o Salón"
                       value={flocation}
-                      onChange={(e) => setFlocation(e.target.value)}
+                      onChange={(e) => setFlocation(capitalizar(e.target.value))}
                     />
                   </div>
                 </div>
@@ -512,7 +513,7 @@ export default function Reserve() {
                     aria-label="Cuéntanos tu visión"
                     placeholder="¿Qué imaginas para tu evento? Tema, estilo, detalles especiales..."
                     value={fmessage}
-                    onChange={(e) => setFmessage(e.target.value)}
+                    onChange={(e) => setFmessage(capitalizar(e.target.value))}
                   />
                 </div>
 
