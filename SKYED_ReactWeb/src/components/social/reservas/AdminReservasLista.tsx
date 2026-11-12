@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { EyeOff, Loader2, RotateCcw, Search } from 'lucide-react';
 import { apiFetch } from '../../../services/api';
 import { reservaService } from '../../../services/socialService';
+import { Paginacion } from '../../shared/Paginacion';
 import type {
   EstadoRese,
   EtapaGestion,
@@ -283,14 +284,10 @@ export default function AdminReservasLista({ tipos, ambientes, onChanged, notify
           </table>
         </div>
 
-        <div className="resx-pie">
-          <span>{cargando ? <Loader2 size={14} className="resx-spin" /> : null} {total} reserva{total === 1 ? '' : 's'}</span>
-          <div>
-            <button type="button" className="link-button" disabled={pagina <= 1 || cargando} onClick={() => setPagina((p) => p - 1)}>← Anterior</button>
-            <span> Página {pagina} de {ultimaPagina} </span>
-            <button type="button" className="link-button" disabled={pagina >= ultimaPagina || cargando} onClick={() => setPagina((p) => p + 1)}>Siguiente →</button>
-          </div>
-        </div>
+        <Paginacion
+          pag={{ actual: pagina, totalPaginas: ultimaPagina, total, porPagina: 15 }}
+          onCambiar={setPagina}
+        />
       </div>
     </section>
   );

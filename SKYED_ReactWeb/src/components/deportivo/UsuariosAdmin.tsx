@@ -29,6 +29,7 @@ import {
   soloDigitos,
   soloLetras,
 } from "../../utils/validaciones";
+import { capitalizar } from "../../utils/texto";
 import type { useConfirmacion } from "../shared/ConfirmDialog";
 import "../../styles/deportivo/AdminUsuarios.css";
 import type { Avisar } from "../shared/Avisos";
@@ -762,7 +763,7 @@ export function UsuarioModal({ modulo = "deportivo", esSuperAdmin = false, exist
               maxLength={50}
               autoComplete="off"
               value={form.nombre}
-              onChange={(e) => set("nombre", soloLetras(e.target.value, 50).replace(/^\s+/, "").replace(/\s{2,}/g, " "))}
+              onChange={(e) => set("nombre", capitalizar(soloLetras(e.target.value, 50).replace(/^\s+/, "").replace(/\s{2,}/g, " ")))}
               onBlur={() => tocar("nombre")}
               placeholder="Ej. Camila"
               {...ariaCampo("nombre")}
@@ -777,7 +778,7 @@ export function UsuarioModal({ modulo = "deportivo", esSuperAdmin = false, exist
               maxLength={50}
               autoComplete="off"
               value={form.apellido}
-              onChange={(e) => set("apellido", soloLetras(e.target.value, 50).replace(/^\s+/, "").replace(/\s{2,}/g, " "))}
+              onChange={(e) => set("apellido", capitalizar(soloLetras(e.target.value, 50).replace(/^\s+/, "").replace(/\s{2,}/g, " ")))}
               onBlur={() => tocar("apellido")}
               placeholder="Ej. Rojas"
               {...ariaCampo("apellido")}
@@ -1133,12 +1134,12 @@ export function EditarUsuarioModal({ usuarioId, yoId, existentes = [], onClose, 
             </label>
             <label className={`admin-field ${claseCampo("nombre")}`}>
               <span>Nombres</span>
-              <input data-campo="nombre" maxLength={50} value={form.nombre} onChange={(e) => set("nombre", soloLetras(e.target.value, 50).replace(/^\s+/, "").replace(/\s{2,}/g, " "))} onBlur={() => tocar("nombre")} {...ariaCampo("nombre")} />
+              <input data-campo="nombre" maxLength={50} value={form.nombre} onChange={(e) => set("nombre", capitalizar(soloLetras(e.target.value, 50).replace(/^\s+/, "").replace(/\s{2,}/g, " ")))} onBlur={() => tocar("nombre")} {...ariaCampo("nombre")} />
               <ErrorCampo id="usr-ed-err-nombre" texto={visible("nombre")} />
             </label>
             <label className={`admin-field ${claseCampo("apellido")}`}>
               <span>Apellidos</span>
-              <input data-campo="apellido" maxLength={50} value={form.apellido} onChange={(e) => set("apellido", soloLetras(e.target.value, 50).replace(/^\s+/, "").replace(/\s{2,}/g, " "))} onBlur={() => tocar("apellido")} {...ariaCampo("apellido")} />
+              <input data-campo="apellido" maxLength={50} value={form.apellido} onChange={(e) => set("apellido", capitalizar(soloLetras(e.target.value, 50).replace(/^\s+/, "").replace(/\s{2,}/g, " ")))} onBlur={() => tocar("apellido")} {...ariaCampo("apellido")} />
               <ErrorCampo id="usr-ed-err-apellido" texto={visible("apellido")} />
             </label>
             <label className={`admin-field ${claseCampo("correo")}`}>
