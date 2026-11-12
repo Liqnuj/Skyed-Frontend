@@ -46,6 +46,8 @@ import AyudaPrincipalInicioPage from './pages/ayuda/AyudaPrincipalInicioPage';
 import AyudaInicioPage from './pages/ayuda/AyudaInicioPage';
 import AyudaCategoriaPage from './pages/ayuda/AyudaCategoriaPage';
 import AyudaArticuloPage from './pages/ayuda/AyudaArticuloPage';
+import PqrDeportivo from './pages/deportivo/Pqr';
+
 
 function App(){
   return (
@@ -73,6 +75,7 @@ function App(){
               <Route path="/deportivo/checkout" element={<Checkout/>}/>
               <Route path="/deportivo/mi-entrada" element={<MyEntry/>}/>
               <Route path="/deportivo/notificaciones" element={<Notifications/>}/>
+              <Route path="/deportivo/pqr" element={<PqrDeportivo/>}/>
               <Route path="/deportivo/perfil" element={<Participant/>}/>
             </Route>
             

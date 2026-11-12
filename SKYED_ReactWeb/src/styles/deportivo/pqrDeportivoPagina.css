@@ -1,0 +1,278 @@
+/* =========================================================
+   SKYED DEPORTIVO — PQRS (página, lista y detalle)
+   Todo bajo .mod-deportivo y con prefijo pqd-. Usa las variables del
+   módulo (--accent, --surface, --text, --muted, --border), así el modo
+   oscuro y el tamaño de letra funcionan solos.
+   ========================================================= */
+
+/* El seguimiento compartido (.pqrx) toma los colores del módulo */
+.mod-deportivo .pqrx {
+  --pq-accent: var(--accent, #2c9caf);
+  --pq-surface: var(--surface, #fff);
+  --pq-surface-2: var(--surface-2, #f4f8fb);
+  --pq-line: var(--border, #e3e8ef);
+  --pq-text: var(--text, #0f172a);
+  --pq-muted: var(--muted, #5b6775);
+}
+
+/* ---------- Encabezado ---------- */
+.mod-deportivo .pqd-hero-ico {
+  width: 84px; height: 84px; flex-shrink: 0; border-radius: 50%;
+  display: grid; place-items: center; color: #fff;
+  font-size: calc(2rem * var(--fs-scale, 1));
+  border: 3px solid rgba(255, 255, 255, .25);
+  background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #0b1b2b));
+}
+@media (max-width: 560px) { .mod-deportivo .pqd-hero-ico { width: 56px; height: 56px; font-size: 1.4rem; } }
+
+/* ---------- Página ---------- */
+.mod-deportivo .pqd-page { max-width: var(--max, 1200px); margin: 0 auto; padding: 1.75rem 1.25rem 3.5rem; }
+.mod-deportivo .pqd-grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 1.75rem; align-items: start; }
+@media (max-width: 900px) { .mod-deportivo .pqd-grid { grid-template-columns: 1fr; } }
+
+.mod-deportivo .pqd-label {
+  display: block; font-size: calc(.74rem * var(--fs-scale, 1)); font-weight: 800;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--accent);
+}
+.mod-deportivo .pqd-label--sm { margin: 1.1rem 0 .5rem; }
+.mod-deportivo .pqd-side-sub { margin: .5rem 0 1.1rem; color: var(--muted); font-size: calc(.9rem * var(--fs-scale, 1)); line-height: 1.55; }
+
+/* ---------- Tipos ---------- */
+.mod-deportivo .pqd-types { display: flex; flex-direction: column; gap: .6rem; }
+.mod-deportivo .pqd-type {
+  display: flex; align-items: flex-start; gap: .85rem; width: 100%; padding: .85rem 1rem;
+  text-align: left; cursor: pointer; font: inherit; color: var(--text);
+  background: var(--surface, #fff);
+  border: 1px solid var(--border); border-radius: 14px;
+  transition: border-color .15s, box-shadow .15s, transform .15s, background .15s;
+}
+.mod-deportivo .pqd-type:hover { border-color: var(--accent); transform: translateY(-1px); }
+.mod-deportivo .pqd-type.selected {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface, #fff));
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.mod-deportivo .pqd-type-ico {
+  flex-shrink: 0; width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center;
+  font-size: 1.25rem; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.mod-deportivo .pqd-type.selected .pqd-type-ico { color: #fff; background: var(--accent); }
+.mod-deportivo .pqd-type-txt { display: flex; flex-direction: column; gap: .15rem; min-width: 0; }
+.mod-deportivo .pqd-type-txt strong { font-size: calc(.95rem * var(--fs-scale, 1)); }
+.mod-deportivo .pqd-type-txt small { color: var(--muted); font-size: calc(.8rem * var(--fs-scale, 1)); line-height: 1.45; }
+
+.mod-deportivo .pqd-info {
+  margin-top: 1.1rem; padding: 1rem 1.1rem; border-radius: 14px;
+  border: 1px dashed color-mix(in srgb, var(--accent) 45%, transparent);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+.mod-deportivo .pqd-info-title { margin: 0 0 .5rem; font-weight: 700; font-size: calc(.88rem * var(--fs-scale, 1)); display: flex; gap: .4rem; align-items: center; }
+.mod-deportivo .pqd-info-title i { color: var(--accent); }
+.mod-deportivo .pqd-info ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: .3rem; font-size: calc(.82rem * var(--fs-scale, 1)); color: var(--muted); }
+.mod-deportivo .pqd-info b { color: var(--text); }
+
+/* ---------- Formulario ---------- */
+.mod-deportivo .pqd-formcard {
+  padding: 1.6rem; border-radius: 20px; background: var(--surface, #fff);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+  box-shadow: var(--shadow);
+}
+.mod-deportivo .pqd-formcard h2 { margin: 0; font-size: calc(1.5rem * var(--fs-scale, 1)); }
+.mod-deportivo .pqd-form-sub { margin: .35rem 0 1rem; color: var(--muted); font-size: calc(.9rem * var(--fs-scale, 1)); }
+.mod-deportivo .pqd-selected {
+  display: inline-flex; align-items: center; gap: .4rem; padding: .3rem .8rem; border-radius: 999px;
+  font-size: calc(.82rem * var(--fs-scale, 1)); font-weight: 700; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.mod-deportivo .pqd-temas { display: flex; flex-wrap: wrap; gap: .4rem; }
+.mod-deportivo .pqd-tema {
+  display: inline-flex; align-items: center; gap: .35rem; height: 34px; padding: 0 .8rem;
+  border-radius: 999px; cursor: pointer; font: inherit; font-size: calc(.8rem * var(--fs-scale, 1));
+  color: var(--text); background: transparent; border: 1px solid var(--border);
+  transition: border-color .15s, background .15s, color .15s;
+}
+.mod-deportivo .pqd-tema i { color: var(--accent); }
+.mod-deportivo .pqd-tema:hover { border-color: var(--accent); }
+.mod-deportivo .pqd-tema.active { color: #fff; background: var(--accent); border-color: var(--accent); }
+.mod-deportivo .pqd-tema.active i { color: #fff; }
+
+.mod-deportivo .pqd-field { display: flex; flex-direction: column; gap: .35rem; margin-top: 1rem; }
+.mod-deportivo .pqd-field > span { font-weight: 700; font-size: calc(.88rem * var(--fs-scale, 1)); }
+.mod-deportivo .pqd-field em { color: #e5484d; font-style: normal; }
+.mod-deportivo .pqd-field input,
+.mod-deportivo .pqd-field textarea {
+  font: inherit; font-size: calc(.95rem * var(--fs-scale, 1)); padding: .7rem .85rem; border-radius: 12px;
+  color: var(--text); background: var(--surface, #fff); border: 1px solid var(--border);
+  transition: border-color .15s, box-shadow .15s; resize: vertical;
+}
+.mod-deportivo .pqd-field input:focus,
+.mod-deportivo .pqd-field textarea:focus {
+  outline: none; border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+.mod-deportivo .pqd-field small { align-self: flex-end; color: var(--muted); font-size: calc(.75rem * var(--fs-scale, 1)); }
+.mod-deportivo .pqd-field small.warn { color: #d97706; font-weight: 700; }
+.mod-deportivo .pqd-privacy { display: flex; gap: .5rem; margin: 1rem 0 0; font-size: calc(.8rem * var(--fs-scale, 1)); color: var(--muted); line-height: 1.5; }
+.mod-deportivo .pqd-privacy i { color: var(--accent); margin-top: .1rem; }
+.mod-deportivo .pqd-submit { width: 100%; margin-top: 1.1rem; justify-content: center; gap: .5rem; }
+.mod-deportivo .pqd-submit:disabled { opacity: .6; cursor: not-allowed; }
+
+.mod-deportivo .pqd-alert {
+  margin: .9rem 0 0; padding: .65rem .9rem; border-radius: 10px; font-size: calc(.86rem * var(--fs-scale, 1));
+  color: #b42318; background: color-mix(in srgb, #e5484d 12%, transparent);
+  border: 1px solid color-mix(in srgb, #e5484d 35%, transparent);
+}
+.mod-deportivo .pqd-alert button { border: 0; background: none; color: inherit; text-decoration: underline; cursor: pointer; font: inherit; }
+.mod-deportivo.dark-mode .pqd-alert { color: #ffb4b0; }
+
+/* ---------- Confirmación ---------- */
+.mod-deportivo .pqd-done { text-align: center; padding: .6rem .2rem; }
+.mod-deportivo .pqd-done-ico {
+  display: inline-grid; place-items: center; width: 72px; height: 72px; border-radius: 50%;
+  font-size: 2rem; color: #fff; background: linear-gradient(135deg, #16a34a, #22c55e);
+  box-shadow: 0 10px 28px rgba(22, 163, 74, .35);
+}
+.mod-deportivo .pqd-done h2 { margin: 1rem 0 .3rem; }
+.mod-deportivo .pqd-done p { margin: .25rem 0; color: var(--muted); }
+.mod-deportivo .pqd-code {
+  display: inline-block; margin: .8rem 0 !important; padding: .45rem 1rem; border-radius: 10px;
+  font-weight: 800; letter-spacing: .04em; color: var(--accent) !important;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 1px dashed var(--accent);
+}
+.mod-deportivo .pqd-done-steps { margin: 1rem auto; max-width: 520px; }
+.mod-deportivo .pqd-done-hint { font-size: calc(.85rem * var(--fs-scale, 1)); }
+.mod-deportivo .pqd-done-actions { display: flex; flex-wrap: wrap; gap: .6rem; justify-content: center; margin-top: 1.1rem; }
+
+/* ---------- Mis solicitudes ---------- */
+.mod-deportivo .pqd-mine-wrap { margin-top: 2.75rem; scroll-margin-top: 90px; }
+.mod-deportivo .pqd-mine-head { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.mod-deportivo .pqd-mine-head h2 { margin: 0; font-size: calc(1.5rem * var(--fs-scale, 1)); }
+.mod-deportivo .pqd-link { color: var(--accent); font-weight: 700; text-decoration: none; font-size: calc(.88rem * var(--fs-scale, 1)); }
+.mod-deportivo .pqd-link:hover { text-decoration: underline; }
+
+.mod-deportivo .pqd-mine-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.1rem; }
+.mod-deportivo .pqd-mine-top h3 { margin: 0; }
+.mod-deportivo .pqd-mine-top p { margin: .25rem 0 0; color: var(--muted); font-size: calc(.9rem * var(--fs-scale, 1)); }
+
+.mod-deportivo .pqd-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem; margin-bottom: 1rem; }
+.mod-deportivo .pqd-stat {
+  display: flex; flex-direction: column; align-items: center; gap: .1rem; padding: .85rem .5rem; border-radius: 14px;
+  background: var(--surface, #fff); border: 1px solid var(--border);
+}
+.mod-deportivo .pqd-stat b { font-size: calc(1.6rem * var(--fs-scale, 1)); color: var(--accent); line-height: 1.1; }
+.mod-deportivo .pqd-stat span { font-size: calc(.78rem * var(--fs-scale, 1)); color: var(--muted); }
+
+.mod-deportivo .pqd-chips { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .9rem; }
+.mod-deportivo .pqd-chip {
+  display: inline-flex; align-items: center; gap: .4rem; height: 34px; padding: 0 .9rem; border-radius: 999px;
+  cursor: pointer; font: inherit; font-size: calc(.82rem * var(--fs-scale, 1)); color: var(--text);
+  background: transparent; border: 1px solid var(--border); transition: border-color .15s, background .15s;
+}
+.mod-deportivo .pqd-chip span { min-width: 1.3rem; padding: .05rem .35rem; border-radius: 999px; text-align: center; font-size: .7rem; font-weight: 700; background: color-mix(in srgb, currentColor 14%, transparent); }
+.mod-deportivo .pqd-chip:hover { border-color: var(--accent); }
+.mod-deportivo .pqd-chip.active { color: #fff; font-weight: 700; background: var(--accent); border-color: var(--accent); }
+
+.mod-deportivo .pqd-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .65rem; }
+.mod-deportivo .pqd-card {
+  display: flex; align-items: center; gap: 1rem; width: 100%; padding: .95rem 1.1rem; text-align: left; cursor: pointer;
+  font: inherit; color: var(--text); background: var(--surface, #fff);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border)); border-radius: 16px;
+  transition: transform .15s, border-color .15s, box-shadow .15s;
+}
+.mod-deportivo .pqd-card:hover { transform: translateY(-1px); border-color: var(--accent); box-shadow: 0 8px 22px color-mix(in srgb, var(--accent) 18%, transparent); }
+.mod-deportivo .pqd-card-ico {
+  flex-shrink: 0; width: 46px; height: 46px; border-radius: 13px; display: grid; place-items: center;
+  font-size: 1.3rem; color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.mod-deportivo .pqd-card-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .15rem; }
+.mod-deportivo .pqd-card-main small { color: var(--muted); font-size: calc(.74rem * var(--fs-scale, 1)); text-transform: uppercase; letter-spacing: .05em; }
+.mod-deportivo .pqd-card-main strong { font-size: calc(1rem * var(--fs-scale, 1)); overflow-wrap: anywhere; }
+.mod-deportivo .pqd-card-main em { font-style: normal; color: var(--muted); font-size: calc(.78rem * var(--fs-scale, 1)); }
+.mod-deportivo .pqd-card-side { display: flex; flex-direction: column; align-items: flex-end; gap: .35rem; }
+.mod-deportivo .pqd-card-go { color: var(--muted); }
+@media (max-width: 640px) {
+  .mod-deportivo .pqd-card { flex-wrap: wrap; }
+  .mod-deportivo .pqd-card-side { flex-direction: row; align-items: center; order: 3; width: 100%; }
+  .mod-deportivo .pqd-card-go { display: none; }
+}
+
+.mod-deportivo .pqd-empty { text-align: center; padding: 2.2rem 1rem; border-radius: 18px; border: 1px dashed color-mix(in srgb, var(--accent) 40%, transparent); }
+.mod-deportivo .pqd-empty-ico { display: inline-grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; font-size: 1.8rem; color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.mod-deportivo .pqd-empty h4 { margin: .8rem 0 .2rem; }
+.mod-deportivo .pqd-empty p { margin: 0 0 1rem; color: var(--muted); }
+.mod-deportivo .pqd-muted { color: var(--muted); }
+.mod-deportivo .pqd-skeletons { display: flex; flex-direction: column; gap: .65rem; }
+.mod-deportivo .pqd-skeleton { height: 82px; border-radius: 16px; background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 8%, transparent), color-mix(in srgb, var(--accent) 18%, transparent), color-mix(in srgb, var(--accent) 8%, transparent)); background-size: 200% 100%; animation: pqd-shimmer 1.4s linear infinite; }
+@keyframes pqd-shimmer { to { background-position: -200% 0; } }
+
+/* ---------- Detalle (modal) ---------- */
+.mod-deportivo .pqd-backdrop { position: fixed; inset: 0; z-index: 3000; display: grid; place-items: center; padding: 1rem; background: rgba(5, 14, 28, .62); backdrop-filter: blur(3px); }
+.mod-deportivo .pqd-modal {
+  width: min(680px, 100%); max-height: 92vh; display: flex; flex-direction: column; overflow: hidden;
+  border-radius: 22px; color: var(--text); background: var(--surface, #fff);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  box-shadow: 0 30px 80px rgba(5, 14, 28, .5);
+}
+.mod-deportivo .pqd-modal-head {
+  display: flex; align-items: flex-start; gap: 1rem; padding: 1.25rem 1.5rem 1.1rem;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%);
+}
+.mod-deportivo .pqd-modal-ico { flex-shrink: 0; width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; font-size: 1.4rem; color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); }
+.mod-deportivo .pqd-modal-title { flex: 1; min-width: 0; }
+.mod-deportivo .pqd-kicker { margin: 0 0 .2rem; font-size: calc(.72rem * var(--fs-scale, 1)); font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+.mod-deportivo .pqd-modal-title h3 { margin: 0; font-size: calc(1.35rem * var(--fs-scale, 1)); line-height: 1.25; overflow-wrap: anywhere; }
+.mod-deportivo .pqd-date { margin: .25rem 0 0; color: var(--muted); font-size: calc(.82rem * var(--fs-scale, 1)); }
+.mod-deportivo .pqd-x { flex-shrink: 0; display: grid; place-items: center; width: 34px; height: 34px; border: 0; border-radius: 50%; font-size: 1.1rem; cursor: pointer; color: var(--muted); background: transparent; transition: background .15s, color .15s; }
+.mod-deportivo .pqd-x:hover { color: var(--accent); background: color-mix(in srgb, var(--accent) 15%, transparent); }
+
+.mod-deportivo .pqd-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 1.2rem 1.5rem 1.4rem; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--accent) 45%, transparent) transparent; }
+.mod-deportivo .pqd-status { padding: 1rem 1.15rem 1.2rem; border-radius: 18px; border: 1px solid color-mix(in srgb, var(--fase, #64748b) 35%, var(--border)); background: color-mix(in srgb, var(--fase, #64748b) 8%, transparent); }
+.mod-deportivo .pqd-status-top { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.mod-deportivo .pqd-status-text { margin: .7rem 0 1.1rem; font-size: calc(.92rem * var(--fs-scale, 1)); line-height: 1.5; }
+.mod-deportivo .pqd-sec { display: flex; align-items: center; gap: .7rem; margin: 1.5rem 0 .9rem; font-size: calc(.72rem * var(--fs-scale, 1)); font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.mod-deportivo .pqd-sec::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.mod-deportivo .pqd-history { padding: .15rem .25rem .5rem; }
+
+.mod-deportivo .pqd-chat { display: flex; flex-direction: column; gap: 1rem; }
+.mod-deportivo .pqd-msg { display: flex; align-items: flex-start; gap: .65rem; max-width: 92%; }
+.mod-deportivo .pqd-msg.yo { align-self: flex-end; flex-direction: row-reverse; }
+.mod-deportivo .pqd-avatar { flex-shrink: 0; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; font-size: .66rem; font-weight: 800; color: #fff; background: linear-gradient(135deg, #091d36, #0749a7); }
+.mod-deportivo .pqd-msg.yo .pqd-avatar { background: var(--accent); }
+.mod-deportivo .pqd-bubble { min-width: 0; padding: .8rem 1rem .9rem; border-radius: 16px; border: 1px solid var(--border); background: var(--surface-2, #f4f8fb); border-top-left-radius: 5px; }
+.mod-deportivo .pqd-msg.yo .pqd-bubble { border-top-left-radius: 16px; border-top-right-radius: 5px; border-color: color-mix(in srgb, var(--accent) 35%, transparent); background: color-mix(in srgb, var(--accent) 13%, transparent); }
+.mod-deportivo .pqd-msg.oficial .pqd-bubble { border-color: color-mix(in srgb, #16a34a 55%, transparent); background: color-mix(in srgb, #16a34a 10%, transparent); }
+.mod-deportivo .pqd-who { display: flex; flex-wrap: wrap; align-items: center; gap: .2rem .55rem; margin-bottom: .35rem; font-size: calc(.74rem * var(--fs-scale, 1)); color: var(--muted); }
+.mod-deportivo .pqd-who b { color: inherit; }
+.mod-deportivo .pqd-badge { display: inline-flex; align-items: center; gap: .25rem; padding: .1rem .55rem; border-radius: 999px; font-size: calc(.68rem * var(--fs-scale, 1)); font-weight: 700; color: #16a34a; background: color-mix(in srgb, #16a34a 15%, transparent); }
+.mod-deportivo.dark-mode .pqd-badge { color: #4ade80; }
+.mod-deportivo .pqd-bubble p { margin: 0; font-size: calc(.93rem * var(--fs-scale, 1)); line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+.mod-deportivo .pqd-wait { display: flex; gap: .6rem; padding: .85rem 1rem; border-radius: 14px; border: 1px dashed color-mix(in srgb, var(--accent) 40%, transparent); font-size: calc(.85rem * var(--fs-scale, 1)); line-height: 1.5; color: var(--muted); margin: 0; }
+.mod-deportivo .pqd-wait i { color: var(--accent); margin-top: .1rem; }
+
+.mod-deportivo .pqd-composer { padding: .9rem 1.5rem 1.1rem; border-top: 1px solid var(--border); background: color-mix(in srgb, var(--accent) 4%, var(--surface, #fff)); }
+.mod-deportivo .pqd-composer-box { display: flex; align-items: flex-end; gap: .6rem; padding: .4rem .4rem .4rem 1rem; border-radius: 18px; border: 1px solid var(--border); background: var(--surface, #fff); transition: border-color .15s, box-shadow .15s; }
+.mod-deportivo .pqd-composer-box:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
+.mod-deportivo .pqd-composer-box textarea { flex: 1; box-sizing: border-box; min-height: 42px; max-height: 120px; padding: .55rem 0; border: 0; outline: none; resize: none; font: inherit; font-size: calc(.93rem * var(--fs-scale, 1)); line-height: 1.5; color: inherit; background: transparent; }
+.mod-deportivo .pqd-send { flex-shrink: 0; display: grid; place-items: center; width: 42px; height: 42px; border: 0; border-radius: 50%; font-size: 1.1rem; color: #fff; background: var(--accent); cursor: pointer; transition: transform .15s, opacity .15s; }
+.mod-deportivo .pqd-send:hover:not(:disabled) { transform: translateY(-1px) scale(1.04); }
+.mod-deportivo .pqd-send:disabled { opacity: .4; cursor: not-allowed; }
+.mod-deportivo .pqd-closed { display: flex; align-items: center; gap: .6rem; padding: .95rem 1.5rem; border-top: 1px solid var(--border); font-size: calc(.86rem * var(--fs-scale, 1)); color: var(--muted); background: var(--surface-2, #f4f8fb); }
+.mod-deportivo .pqd-closed i { color: #16a34a; font-size: 1.1rem; }
+
+.mod-deportivo .pqd-spin { animation: pqd-spin .8s linear infinite; }
+@keyframes pqd-spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 600px) {
+  .mod-deportivo .pqd-modal-head { padding: 1.1rem; }
+  .mod-deportivo .pqd-scroll { padding: 1rem 1.1rem 1.2rem; }
+  .mod-deportivo .pqd-composer, .mod-deportivo .pqd-closed { padding-left: 1.1rem; padding-right: 1.1rem; }
+  .mod-deportivo .pqd-msg { max-width: 100%; }
+  .mod-deportivo .pqd-formcard { padding: 1.2rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mod-deportivo .pqd-spin, .mod-deportivo .pqd-skeleton, .mod-deportivo .pqd-send, .mod-deportivo .pqd-card, .mod-deportivo .pqd-type { animation: none; transition: none; }
+}

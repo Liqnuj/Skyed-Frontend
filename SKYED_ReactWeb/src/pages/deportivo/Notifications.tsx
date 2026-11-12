@@ -14,7 +14,7 @@ import '../../styles/deportivo/notificaciones.css';
 import '../../styles/deportivo/headerHero.css';
 
 /* ---- Tipos: icono, etiqueta y destino (deportivo + los que llegan de Social) ---- */
-type Categoria = 'todas' | 'sin_leer' | 'inscripciones';
+type Categoria = 'todas' | 'sin_leer' | 'inscripciones' | 'pqr';
 
 const ICONO = ICONO_DEPORTIVO;
 const DESTINO = DESTINO_DEPORTIVO;
@@ -29,17 +29,21 @@ const ETIQUETA: Record<string, string> = {
   acceso: 'Acceso',
   evento: 'Evento',
   resultado: 'Resultado',
+  recordatorio: 'Recordatorio', 
+  pqr_deportivo: 'PQR',
 };
 
 const CATEGORIA_DE: Record<string, Categoria> = {
   pago: 'inscripciones', inscripcion: 'inscripciones', kit: 'inscripciones',
   acceso: 'inscripciones', evento: 'inscripciones', resultado: 'inscripciones',
+  recordatorio: 'inscripciones', pqr_deportivo: 'pqr',
 };
 
 const FILTROS: { id: Categoria; label: string; icono: string }[] = [
   { id: 'todas', label: 'Todas', icono: 'ti-inbox' },
   { id: 'sin_leer', label: 'Sin leer', icono: 'ti-mail' },
   { id: 'inscripciones', label: 'Inscripciones', icono: 'ti-clipboard-check' },
+  { id: 'pqr', label: 'PQR', icono: 'ti-message-report' },
 ];
 
 /* ---- Agrupar por fecha: Hoy / Esta semana / Anteriores ---- */
@@ -64,7 +68,7 @@ function Contenido() {
     setCargando(true);
     setError(false);
     try {
-      const res: any = await apiFetch(`/notificaciones?per_page=15&page=${p}`);
+      const res: any = await apiFetch(`/notificaciones?contexto=deportivo&per_page=15&page=${p}`);
       const pag = res?.notificaciones;
       const deportivas: Notif[] = (pag.data as Notif[]).filter((n) => TIPOS_DEPORTIVO.includes(n.tipo));
       setItems((prev) => (p === 1 ? deportivas : [...prev, ...deportivas]));
@@ -90,9 +94,7 @@ function Contenido() {
 
   const leerTodas = async () => {
     try {
-      await Promise.all(
-        items.filter((n) => !n.leida).map((n) => apiFetch(`/notificaciones/${n.id}/leer`, { method: 'PATCH' })),
-      );
+      await apiFetch('/notificaciones/leer-todas?contexto=deportivo', { method: 'PATCH' });
       setItems((l) => l.map((x) => ({ ...x, leida: true })));
     } catch { /* ignorar */ }
   };

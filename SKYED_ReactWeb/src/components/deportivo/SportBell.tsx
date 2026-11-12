@@ -16,9 +16,11 @@ export const DESTINO_DEPORTIVO: Record<string, string> = {
   pago: '/deportivo/perfil?tab=inscripciones',
   inscripcion: '/deportivo/perfil?tab=inscripciones',
   kit: '/deportivo/perfil?tab=inscripciones',
-  acceso: '/deportivo/mi-entrada',
   evento: '/deportivo/perfil?tab=inscripciones',
-  resultado: '/deportivo/resultados',
+  recordatorio: '/deportivo/perfil?tab=inscripciones',
+  acceso: '/deportivo/perfil?tab=historial',
+  resultado: '/deportivo/perfil?tab=resultados',
+  pqr_deportivo: '/deportivo/perfil?tab=pqr',
 };
 
 export const ICONO_DEPORTIVO: Record<string, string> = {
@@ -27,7 +29,9 @@ export const ICONO_DEPORTIVO: Record<string, string> = {
   kit: 'ti-package',
   acceso: 'ti-qrcode',
   evento: 'ti-calendar-event',
+  recordatorio: 'ti-clock-hour-4',
   resultado: 'ti-trophy',
+  pqr_deportivo: 'ti-message-report',
 };
 
 export const haceTiempo = (iso: string) => {
@@ -48,7 +52,7 @@ export default function SportBell() {
 
   const cargar = useCallback(async () => {
     try {
-      const res: any = await apiFetch('/notificaciones?per_page=8');
+      const res: any = await apiFetch('/notificaciones?contexto=deportivo&per_page=8');
       const data: Notif[] = res?.notificaciones?.data ?? [];
       setItems(data);
       setNoLeidas(res?.no_leidas ?? data.filter((n) => !n.leida).length);
@@ -80,12 +84,12 @@ export default function SportBell() {
       } catch { /* ignorar */ }
       cargar();
     }
-    nav(DESTINO_DEPORTIVO[n.tipo] ?? '/deportivo/notificaciones');
+    nav(DESTINO_DEPORTIVO[n.tipo] ?? '/deportivo/perfil?tab=resumen');
   };
 
   const leerTodas = async () => {
     try {
-      await apiFetch('/notificaciones/leer-todas', { method: 'PATCH' });
+      await apiFetch('/notificaciones/leer-todas?contexto=deportivo', { method: 'PATCH' });
     } catch { /* ignorar */ }
     cargar();
   };

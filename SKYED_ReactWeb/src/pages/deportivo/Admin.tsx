@@ -40,6 +40,7 @@ import {
   X,
   LifeBuoy,
   BarChart3,
+  MessageSquareText,
 } from "lucide-react";
 import { ResumenEventoModal, Indicador, BarraProgreso, ListaValores } from "../../components/shared/ResumenEvento";
 
@@ -50,6 +51,8 @@ import AccessibilityWidget from "../../components/shared/AccessibilityWidget";
 import AdminAjustes from "../../components/shared/AdminAjustes";
 import CopiasSeguridad from "../../components/shared/CopiasSeguridad";
 import { apiFetch } from "../../services/api";
+import AdminPqrManager from "../../components/social/pqr/AdminPqrManager";
+import type { Pqr, EstadoPqr } from "../../services/socialService";
 import { prepararImagen } from "../../utils/prepararImagen";
 import { createPortal } from "react-dom";
 import { EstadoPagos, InscritosPorEvento, TendenciaMensual } from "../../components/deportivo/GraficosAdmin";
@@ -79,13 +82,14 @@ type Section =
   | "acceso"
   | "resultados"
   | "kits"
+  | "pqr"
   | "usuarios"
   | "asistentes"
   | "copias"
   | "ajustes"
   | "ayuda";
 
-const SECCIONES: Section[] = ["inicio", "eventos", "patrocinadores", "rutas", "estaciones", "inscripciones", "acceso", "resultados", "kits", "usuarios", "copias", "asistentes", "ajustes", "ayuda"];
+const SECCIONES: Section[] = ["inicio", "eventos", "patrocinadores", "rutas", "estaciones", "inscripciones", "acceso", "resultados", "kits", "pqr", "usuarios", "copias", "asistentes", "ajustes", "ayuda"];
 
 const seccionDelegable = (seccion: string) =>
   seccion === "patrocinadores" || seccion === "rutas" || seccion === "estaciones"
@@ -915,6 +919,9 @@ function AdminPage() {
   const [pagos, setPagos] = useState<Pago[]>([]);
   const [resultados, setResultados] = useState<Resultado[]>([]);
   const [users, setUsers] = useState<UserRow[]>([]);
+  const [pqrs, setPqrs] = useState<Pqr[]>([]);
+const [pqrResumen, setPqrResumen] = useState<Partial<Record<EstadoPqr, number>>>({});
+const [pqrTotal, setPqrTotal] = useState(0);
 
   const [filtroPago, setFiltroPago] = useState<"todos" | Pago["estado_p"]>("pendiente");
   const [filtroEvento, setFiltroEvento] = useState("");
@@ -959,6 +966,17 @@ function AdminPage() {
       setKits(k?.data ?? []);
       setPagos(p?.pagos?.data ?? []);
       setResultados(r?.resultados?.data ?? []);
+
+      if (controlPermisos.puedeVerSeccion("pqr")) {
+  try {
+    const q = await apiFetch("/pqr?contexto=deportivo&per_page=100");
+    setPqrs(q?.data ?? []);
+    setPqrResumen(q?.resumen ?? {});
+    setPqrTotal(q?.total ?? 0);
+  } catch {
+    setPqrs([]);
+  }
+}
       try {
         if (!controlPermisos.puedeVerSeccion("usuarios")) {
           setUsers([]);
@@ -1173,6 +1191,7 @@ function AdminPage() {
     acceso: { label: "Control de acceso", icon: QrCode },
     resultados: { label: "Resultados", icon: Trophy },
     kits: { label: "Kits", icon: Package },
+    pqr: { label: "PQRS", icon: MessageSquareText },
     usuarios: { label: "Usuarios", icon: Users },
     asistentes: { label: "Asistentes", icon: UserPlus },
     copias: { label: "Copias de seguridad", icon: DatabaseBackup },
@@ -1185,9 +1204,11 @@ function AdminPage() {
     { titulo: "GESTIÓN", secciones: ["acceso", "kits", "patrocinadores", "resultados"] },
     { titulo: "LOGÍSTICA", secciones: ["rutas", "estaciones"] },
     { titulo: "CUENTA", secciones: ["asistentes", "copias", "ajustes", "ayuda"] },
+    { titulo: "GESTIÓN", secciones: ["acceso", "kits", "patrocinadores", "resultados", "pqr"] },
   ];
   const conteosNavegacion: Partial<Record<Section, number>> = {
     eventos: eventos.length,
+    pqr: pqrs.filter((p) => p.estado_pqr !== "resuelto" && p.estado_pqr !== "cerrado").length,
     usuarios: usersVisibles.length,
     inscripciones: pagos.length,
     kits: kits.length,
@@ -1758,6 +1779,19 @@ function AdminPage() {
             ]}
           />
         )}
+
+        {section === "pqr" && (
+  <AdminPqrManager
+    pqrs={pqrs}
+    resumen={pqrResumen}
+    total={pqrTotal}
+    search={search}
+    permitirGestion={puedeEditar("pqr")}
+    onChanged={async () => { await loadAll(); }}
+    notify={notify}
+  />
+)}
+
 
         {section === "usuarios" && (
           <>

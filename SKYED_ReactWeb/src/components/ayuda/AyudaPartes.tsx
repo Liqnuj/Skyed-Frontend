@@ -6,6 +6,7 @@ import type { AyudaArticuloResumen, AyudaCategoria, EspacioAyuda } from '../../s
 import CanvasParticles from '../social/CanvasParticles';
 import { ModuloAyudaContext } from './ayudaContext';
 import { rutaAyuda } from './rutas';
+import { getSiteContext } from '../../utils/siteContext';
 
 /* ---------- Cabecera ----------
    Usa el MISMO encabezado que Eventos / Lugares / Nosotros de cada módulo:
@@ -301,11 +302,18 @@ export function AyudaSoporte({
   const { user } = useAuth();
   const idTitulo = useId();
 
+    const moduloAyuda = useContext(ModuloAyudaContext);
+  const basePqr =
+    moduloAyuda === 'deportivo' ? '/deportivo/pqr'
+    : moduloAyuda === 'social' ? '/social/pqr'
+    : getSiteContext() === 'deportivo' ? '/deportivo/pqr' : '/social/pqr';
+
+
   // Los administradores gestionan las PQRS, no las crean.
   if (user?.role === 'admin') return null;
 
   // El formulario de PQRS acepta hasta 100 caracteres en el asunto.
-  const rutaPqr = `/social/pqr?desde=ayuda${asunto ? `&asunto=${encodeURIComponent(asunto.slice(0, 100))}` : ''}`;
+  const rutaPqr = `${basePqr}?desde=ayuda${asunto ? `&asunto=${encodeURIComponent(asunto.slice(0, 100))}` : ''}`;
   const destino = user ? rutaPqr : `/login?redirect=${encodeURIComponent(rutaPqr)}`;
 
   return (
