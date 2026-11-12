@@ -1,0 +1,14 @@
+# Archivos que NO se envían a Docker al construir la imagen.
+# El node_modules de Windows trae binarios de Windows (esbuild, rollup...) que no
+# sirven en Linux: la imagen instala los suyos.
+node_modules
+dist
+.git
+.vite
+.env
+.env.*
+!.env.example
+*.log
+coverage
+.idea
+.vscode
