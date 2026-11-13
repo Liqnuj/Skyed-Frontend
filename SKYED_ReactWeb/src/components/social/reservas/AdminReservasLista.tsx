@@ -14,7 +14,6 @@ import {
   ESTADO_RESE_LABEL,
   ESTADO_VISUAL_LABEL,
   ETAPA_LABEL,
-  SIGUIENTES_ESTADOS,
   fechaCorta,
 } from '../../../utils/reservasAdmin';
 import '../../../styles/social/reservasAdmin.css';
@@ -105,30 +104,7 @@ export default function AdminReservasLista({ tipos, ambientes, onChanged, notify
   const hayFiltros = JSON.stringify(filtros) !== JSON.stringify(VACIO);
   const rangoInvalido = !!filtros.desde && !!filtros.hasta && filtros.hasta < filtros.desde;
 
-  const cambiarEstado = async (r: ReservaAdmin, estado: 'confirmada' | 'completada' | 'cancelada') => {
-    if (estado === 'cancelada' || estado === 'completada') {
-      const ok = await confirmar({
-        titulo: estado === 'cancelada' ? 'Cancelar reserva' : 'Marcar como completada',
-        mensaje: estado === 'cancelada'
-          ? `¿Cancelar la reserva #${r.id_rese}? El cliente será notificado.`
-          : `¿Marcar la reserva #${r.id_rese} como completada?`,
-        confirmar: estado === 'cancelada' ? 'Cancelar reserva' : 'Completar',
-      });
-      if (!ok) return;
-    }
-    setTrabajando(r.id_rese);
-    try {
-      await reservaService.cambiarEstadoAdmin(r.id_rese, estado);
-      notify(`Reserva #${r.id_rese}: ${ESTADO_RESE_LABEL[estado].toLowerCase()}`);
-      await cargar();
-      await onChanged();
-    } catch (e) {
-      // El backend explica qué falta (p. ej. datos necesarios para confirmar).
-      notify(e instanceof Error ? e.message : 'No se pudo cambiar el estado.');
-    } finally {
-      setTrabajando(null);
-    }
-  };
+
 
   const ocultar = async (r: ReservaAdmin) => {
     if (!(await confirmar({ titulo: 'Ocultar reserva', mensaje: '¿Ocultar esta reserva de tu panel? El cliente la sigue viendo.', confirmar: 'Ocultar' }))) return;
@@ -229,8 +205,7 @@ export default function AdminReservasLista({ tipos, ambientes, onChanged, notify
                 const fecha = g?.fecha_confirmada || g?.fecha_propuesta || r.fecha_evento_rese;
                 const tipoFecha = g?.fecha_confirmada ? 'Confirmada' : g?.fecha_propuesta ? 'Propuesta' : 'Solicitada';
                 const visual = (r as ReservaAdmin & { estado_visual?: keyof typeof ESTADO_VISUAL_LABEL }).estado_visual ?? 'nueva';
-                const siguientes = SIGUIENTES_ESTADOS[r.estado_rese] ?? [];
-                const ocupado = trabajando === r.id_rese;
+              const ocupado = trabajando === r.id_rese;
                 return (
                   <tr key={r.id_rese}>
                     <td>#{r.id_rese}</td>
@@ -257,18 +232,7 @@ export default function AdminReservasLista({ tipos, ambientes, onChanged, notify
                     <td>{g?.responsable ? nombreCompleto(g.responsable) : <span className="resx-sub">Sin asignar</span>}</td>
                     <td className="resx-acciones">
                       {onVer && <button type="button" className="table-action" onClick={() => onVer(r.id_rese)}>Ver</button>}
-                      {siguientes.length > 0 && (
-                        <select
-                          className="admin-select resx-mini"
-                          value=""
-                          disabled={ocupado}
-                          aria-label={`Cambiar estado de la reserva ${r.id_rese}`}
-                          onChange={(e) => e.target.value && void cambiarEstado(r, e.target.value as 'confirmada' | 'completada' | 'cancelada')}
-                        >
-                          <option value="">Cambiar…</option>
-                          {siguientes.map((s) => <option key={s} value={s}>{ESTADO_RESE_LABEL[s]}</option>)}
-                        </select>
-                      )}
+
                       {(r.estado_rese === 'cancelada' || r.estado_rese === 'completada') && !verOcultas && (
                         <button type="button" className="table-action" title="Ocultar de mi panel" disabled={ocupado} onClick={() => void ocultar(r)}><EyeOff size={15} /></button>
                       )}

@@ -413,19 +413,21 @@ export default function AdminReservaDetalle({ id, onBack, onChanged, notify, con
               {meta.etapas_permitidas.filter((et) => et !== g?.etapa_gestion).map((et) => <option key={et} value={et}>{meta.etapas[et] ?? ETAPA_LABEL[et]}</option>)}
             </select>
           </label>
-          <div className="det-botones">
-            {meta.estados_permitidos.map((es) => (
-              <button
-                key={es}
-                type="button"
-                className={es === 'cancelada' ? 'secondary-btn danger' : es === 'confirmada' ? 'primary-btn' : 'secondary-btn'}
-                disabled={ocupado}
-                onClick={() => setCambioEstado(cambioEstado === es ? null : es)}
-              >
-                {es === 'confirmada' ? 'Confirmar reserva' : es === 'completada' ? 'Marcar completada' : 'Cancelar reserva'}
-              </button>
-            ))}
-          </div>
+          <label className="det-campo inline">
+            <span>Estado de la reserva (lo ve el cliente)</span>
+            <select
+              className="admin-select"
+              value={cambioEstado ?? reserva.estado_rese}
+              disabled={ocupado}
+              onChange={(e) => setCambioEstado(e.target.value === reserva.estado_rese ? null : (e.target.value as 'confirmada' | 'completada' | 'cancelada'))}
+            >
+              <option value={reserva.estado_rese}>{ESTADO_RESE_LABEL[reserva.estado_rese]}</option>
+              {meta.estados_permitidos.filter((es) => es !== reserva.estado_rese).map((es) => (
+                <option key={es} value={es}>{ESTADO_RESE_LABEL[es]}</option>
+              ))}
+            </select>
+          </label>
+          
           {cambioEstado && (
             <div className="det-panel">
               <p>

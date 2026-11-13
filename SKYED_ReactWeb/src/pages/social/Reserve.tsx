@@ -63,6 +63,29 @@ export default function Reserve() {
 
   const [tiposEvento, setTiposEvento] = useState<TipoEvento[]>([]);
 
+  // Errores por campo (id del campo -> mensaje). Se muestran en rojo debajo de cada campo.
+  const [errores, setErrores] = useState<Record<string, string>>({});
+  const limpiar = (id: string) =>
+    setErrores((prev) => {
+      if (!prev[id]) return prev;
+      const copia = { ...prev };
+      delete copia[id];
+      return copia;
+    });
+  const grupo = (id: string, extra = '') =>
+    `form-group${extra ? ` ${extra}` : ''}${errores[id] ? ' rsv-invalid' : ''}`;
+  const mensaje = (id: string) =>
+    errores[id] ? (
+      <span className="rsv-error" role="alert">
+        {errores[id]}
+      </span>
+    ) : null;
+  const req = (
+    <span className="rsv-req" aria-hidden="true">
+      {' '}*
+    </span>
+  );
+
   const [toast, setToast] = useState<{ msg: string; icon: string; show: boolean }>({
     msg: '',
     icon: '✓',
@@ -129,7 +152,7 @@ export default function Reserve() {
 
   function showToast(msg: string, icon = '✓') {
     setToast({ msg, icon, show: true });
-    window.setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 4000);
+    window.setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 6000);
   }
 
   async function submitForm(e: FormEvent) {
@@ -145,38 +168,66 @@ export default function Reserve() {
     const guests = fguests.trim();
     const location = flocation.trim();
 
-    if (!n || !a || !email || !ftype || !guests || !location || !fbudget || !fdate) {
-      showToast('Por favor completa los campos requeridos', '⚠️');
-      return;
+    // Recorremos el formulario en el mismo orden en que se ve en pantalla.
+    const fallas: Array<{ id: string; etiqueta: string; motivo: string; obligatorio: boolean }> = [];
+    const falta = (id: string, etiqueta: string) =>
+      fallas.push({ id, etiqueta, motivo: 'Este campo es obligatorio', obligatorio: true });
+    const invalido = (id: string, etiqueta: string, motivo: string) =>
+      fallas.push({ id, etiqueta, motivo, obligatorio: false });
+
+    if (!n) falta('fname', 'Nombre');
+    else if (!/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]{1,20}$/.test(n)) invalido('fname', 'Nombre', 'Solo letras, máximo 20 caracteres');
+
+    if (!a) falta('lname', 'Apellido');
+    else if (!/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]{1,20}$/.test(a)) invalido('lname', 'Apellido', 'Solo letras, máximo 20 caracteres');
+
+    if (phone && !/^\d+$/.test(phone)) invalido('fphone', 'Teléfono', 'Solo puede contener números');
+
+    if (!email) falta('femail', 'Correo electrónico');
+    else if (!validateEmail(email)) invalido('femail', 'Correo electrónico', 'Ingresa un correo válido');
+
+    if (!ftype) falta('ftype', 'Tipo de evento');
+
+    const etiquetaFecha = fflexible ? 'Fecha desde' : 'Fecha estimada';
+    if (!fdate) falta('fdate', etiquetaFecha);
+    else if (fdate < hoy) invalido('fdate', etiquetaFecha, 'No puede ser anterior a hoy');
+
+    if (fflexible) {
+      if (!fdateTo) falta('fdateTo', 'Fecha hasta');
+      else if (fdate && fdateTo < fdate) invalido('fdateTo', 'Fecha hasta', 'No puede ser anterior a la fecha inicial');
     }
-    if (!/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]{1,20}$/.test(n) || !/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]{1,20}$/.test(a)) {
-      showToast('Nombre y apellido solo pueden tener letras y máximo 20 caracteres', '⚠️');
-      return;
-    }
-    if (phone && !/^\d+$/.test(phone)) {
-      showToast('El teléfono solo puede contener números', '⚠️');
-      return;
-    }
-    if (!/^\d+$/.test(guests) || Number(guests) < 0) {
-      showToast('El número de invitados solo puede ser numérico y positivo', '⚠️');
-      return;
-    }
-    if (!validateEmail(email)) {
-      showToast('Ingresa un correo electrónico válido', '⚠️');
-      return;
-    }
-    if (fdate < hoy) {
-      showToast('La fecha del evento no puede ser anterior a hoy', '⚠️');
-      return;
-    }
-    if (fflexible && fdateTo && fdateTo < fdate) {
-      showToast('La fecha final no puede ser anterior a la fecha estimada', '⚠️');
-      return;
-    }
+
+    if (!guests) falta('fguests', 'N° de invitados');
+    else if (!/^\d+$/.test(guests) || Number(guests) < 1) invalido('fguests', 'N° de invitados', 'Debe ser un número mayor a 0');
+
+    if (!location) falta('flocation', 'Ubicación del evento');
+    if (!fbudget) falta('fbudget', 'Presupuesto aprox.');
+
     if (fduration && (!/^\d+$/.test(fduration) || Number(fduration) < 1 || Number(fduration) > 72)) {
-      showToast('La duración debe estar entre 1 y 72 horas', '⚠️');
+      invalido('fduration', 'Duración', 'Debe estar entre 1 y 72 horas');
+    }
+
+    if (fallas.length > 0) {
+      const mapa: Record<string, string> = {};
+      fallas.forEach((f) => { mapa[f.id] = f.motivo; });
+      setErrores(mapa);
+
+      const faltantes = fallas.filter((f) => f.obligatorio).map((f) => f.etiqueta);
+      let texto: string;
+      if (faltantes.length === 1) texto = `Falta un campo obligatorio: ${faltantes[0]}`;
+      else if (faltantes.length > 1) texto = `Faltan campos obligatorios: ${faltantes.join(', ')}`;
+      else texto = `${fallas[0].etiqueta}: ${fallas[0].motivo}`;
+      showToast(texto, '⚠️');
+
+      // Llevamos al cliente al primer campo con problema.
+      const primero = document.getElementById(fallas[0].id);
+      if (primero) {
+        primero.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        window.setTimeout(() => (primero as HTMLElement).focus({ preventScroll: true }), 300);
+      }
       return;
     }
+    setErrores({});
 
   try {
         await apiFetch('/reservas', {
@@ -190,7 +241,7 @@ export default function Reserve() {
             ubicacion_rese: location,
             Observaciones_rese: fmessage,
             // Opcionales: solo se envían si el cliente los llenó.
-            ...(fflexible && fdateTo ? { fecha_hasta_rese: fdateTo } : {}),
+            ...(fflexible ? { fecha_hasta_rese: fdateTo } : {}),
             ...(ftime ? { hora_aprox_rese: ftime } : {}),
             ...(fduration ? { duracion_horas_rese: Number(fduration) } : {}),
             ...(fservicios.length ? { servicios_solicitados: fservicios.map((id) => ({ id_s: id })) } : {}),
@@ -294,7 +345,11 @@ export default function Reserve() {
 
             <div className="booking-form reveal" id="contactForm">
               <div className="form-title">Solicita tu cotización gratuita</div>
-              <form onSubmit={submitForm}>
+              <form onSubmit={submitForm} noValidate>
+                <p className="rsv-leyenda">
+                  Los campos con <span className="rsv-req">*</span> son obligatorios.
+                </p>
+
                 {/* 1 · DATOS DE CONTACTO */}
                 <div className="rsv-seccion primera">
                   <span className="rsv-num">1</span>
@@ -305,53 +360,57 @@ export default function Reserve() {
                 </div>
 
                 <div className="form-row">
-                  <div className="form-group">
-                    <label>Nombre</label>
+                  <div className={grupo('fname')}>
+                    <label htmlFor="fname">Nombre{req}</label>
                     <input
                       type="text"
                       id="fname"
                       placeholder="Ej: María"
                       maxLength={20}
                       value={fname}
-                      onChange={(e) => setFname(capitalizeName(e.target.value))}
+                      onChange={(e) => { setFname(capitalizeName(e.target.value)); limpiar('fname'); }}
                       onBlur={(e) => setFname(capitalizeName(e.target.value))}
                     />
+                    {mensaje('fname')}
                   </div>
-                  <div className="form-group">
-                    <label>Apellido</label>
+                  <div className={grupo('lname')}>
+                    <label htmlFor="lname">Apellido{req}</label>
                     <input
                       type="text"
                       id="lname"
                       placeholder="Ej: García"
                       maxLength={20}
                       value={lname}
-                      onChange={(e) => setLname(capitalizeName(e.target.value))}
+                      onChange={(e) => { setLname(capitalizeName(e.target.value)); limpiar('lname'); }}
                       onBlur={(e) => setLname(capitalizeName(e.target.value))}
                     />
+                    {mensaje('lname')}
                   </div>
                 </div>
 
                 <div className="form-row">
-                  <div className="form-group">
-                    <label>Teléfono / WhatsApp</label>
+                  <div className={grupo('fphone')}>
+                    <label htmlFor="fphone">Teléfono / WhatsApp</label>
                     <input
                       type="text"
                       id="fphone"
                       placeholder="3000000000"
                       inputMode="numeric"
                       value={fphone}
-                      onChange={(e) => setFphone(sanitizeNumeric(e.target.value))}
+                      onChange={(e) => { setFphone(sanitizeNumeric(e.target.value)); limpiar('fphone'); }}
                     />
+                    {mensaje('fphone')}
                   </div>
-                  <div className="form-group">
-                    <label>Correo electrónico</label>
+                  <div className={grupo('femail')}>
+                    <label htmlFor="femail">Correo electrónico{req}</label>
                     <input
                       type="email"
                       id="femail"
                       placeholder="tu@correo.com"
                       value={femail}
-                      onChange={(e) => setFemail(e.target.value)}
+                      onChange={(e) => { setFemail(e.target.value); limpiar('femail'); }}
                     />
+                    {mensaje('femail')}
                   </div>
                 </div>
 
@@ -365,9 +424,9 @@ export default function Reserve() {
                 </div>
 
                 <div className="form-row">
-                  <div className="form-group">
-                    <label>Tipo de evento</label>
-                    <select id="ftype" value={ftype} onChange={(e) => setFtype(e.target.value)}>
+                  <div className={grupo('ftype', fflexible ? 'span-two' : '')}>
+                    <label htmlFor="ftype">Tipo de evento{req}</label>
+                    <select id="ftype" value={ftype} onChange={(e) => { setFtype(e.target.value); limpiar('ftype'); }}>
                       <option value="">Seleccionar...</option>
                       {Array.isArray(tiposEvento) && tiposEvento.map((tipo) => (
                         <option key={tipo.id_tipo_eves} value={tipo.id_tipo_eves}>
@@ -375,33 +434,70 @@ export default function Reserve() {
                         </option>
                       ))}
                     </select>
+                    {mensaje('ftype')}
                   </div>
-                  <div className="form-group">
-                    <label>Fecha estimada</label>
-                    <input type="date" id="fdate" min={hoy} value={fdate} onChange={(e) => setFdate(e.target.value)} />
-                  </div>
+
+                  {/* Con fecha flexible este campo se oculta: se pide un rango más abajo. */}
+                  {!fflexible && (
+                    <div className={grupo('fdate')}>
+                      <label htmlFor="fdate">Fecha estimada{req}</label>
+                      <input
+                        type="date"
+                        id="fdate"
+                        min={hoy}
+                        value={fdate}
+                        onChange={(e) => { setFdate(e.target.value); limpiar('fdate'); }}
+                      />
+                      {mensaje('fdate')}
+                    </div>
+                  )}
                 </div>
 
                 <label className="rsv-switch">
                   <input
                     type="checkbox"
                     checked={fflexible}
-                    onChange={(e) => { setFflexible(e.target.checked); if (!e.target.checked) setFdateTo(''); }}
+                    onChange={(e) => {
+                      setFflexible(e.target.checked);
+                      limpiar('fdate');
+                      limpiar('fdateTo');
+                      if (!e.target.checked) setFdateTo('');
+                    }}
                   />
                   <span className="rsv-switch-track" aria-hidden="true" />
                   <span className="rsv-switch-texto">
                     <strong>Mi fecha es flexible</strong>
-                    <small>Aún no la tengo definida; puede ser dentro de un rango de días.</small>
+                    <small>No tengo una fecha exacta: dime entre qué días podría celebrarse.</small>
                   </span>
                 </label>
 
                 {fflexible && (
                   <div className="rsv-rango">
-                    <div className="form-group">
-                      <label>Podría ser hasta el (opcional)</label>
-                      <input type="date" id="fdateTo" min={fdate || hoy} value={fdateTo} onChange={(e) => setFdateTo(e.target.value)} />
-                      <span className="rsv-ayuda">Nuestro equipo te propondrá una fecha dentro de ese rango.</span>
+                    <div className="form-row">
+                      <div className={grupo('fdate')}>
+                        <label htmlFor="fdate">Desde{req}</label>
+                        <input
+                          type="date"
+                          id="fdate"
+                          min={hoy}
+                          value={fdate}
+                          onChange={(e) => { setFdate(e.target.value); limpiar('fdate'); }}
+                        />
+                        {mensaje('fdate')}
+                      </div>
+                      <div className={grupo('fdateTo')}>
+                        <label htmlFor="fdateTo">Hasta{req}</label>
+                        <input
+                          type="date"
+                          id="fdateTo"
+                          min={fdate || hoy}
+                          value={fdateTo}
+                          onChange={(e) => { setFdateTo(e.target.value); limpiar('fdateTo'); }}
+                        />
+                        {mensaje('fdateTo')}
+                      </div>
                     </div>
+                    <span className="rsv-ayuda">Nuestro equipo te propondrá una fecha dentro de ese rango.</span>
                   </div>
                 )}
 
@@ -415,43 +511,47 @@ export default function Reserve() {
                 </div>
 
                 <div className="form-row">
-                  <div className="form-group">
-                    <label>N° de invitados</label>
+                  <div className={grupo('fguests')}>
+                    <label htmlFor="fguests">N° de invitados{req}</label>
                     <input
                       type="text"
                       id="fguests"
                       placeholder="Ej: 150"
                       inputMode="numeric"
                       value={fguests}
-                      onChange={(e) => setFguests(sanitizeNumeric(e.target.value))}
+                      onChange={(e) => { setFguests(sanitizeNumeric(e.target.value)); limpiar('fguests'); }}
                     />
+                    {mensaje('fguests')}
                   </div>
-                  <div className="form-group">
-                    <label>Ubicación del evento</label>
+                  <div className={grupo('flocation')}>
+                    <label htmlFor="flocation">Ubicación del evento{req}</label>
                     <input
                       type="text"
                       id="flocation"
                       placeholder="Ciudad o Salón"
                       value={flocation}
                       onChange={(e) => setFlocation(capitalizar(e.target.value))}
+
                     />
+                    {mensaje('flocation')}
                   </div>
                 </div>
 
-                <div className="form-group">
-                  <label>Presupuesto aprox.</label>
+                <div className={grupo('fbudget')}>
+                  <label htmlFor="fbudget">Presupuesto aprox.{req}</label>
                   {/* Se ajustan los values a formato numérico para que cuadre con DECIMAL en BD */}
-                  <select id="fbudget" value={fbudget} onChange={(e) => setFbudget(e.target.value)}>
+                  <select id="fbudget" value={fbudget} onChange={(e) => { setFbudget(e.target.value); limpiar('fbudget'); }}>
                     <option value="">Seleccionar...</option>
                     <option value="5000000">Menos de $10M COP</option>
                     <option value="15000000">$10M – $20M COP</option>
                     <option value="30000000">$20M – $40M COP</option>
                     <option value="50000000">Más de $40M COP</option>
                   </select>
+                  {mensaje('fbudget')}
                 </div>
 
                 {/* OPCIONAL: ayuda a planificar, se puede dejar cerrado */}
-                <details className="rsv-opcional">
+                <details className="rsv-opcional" open={!!errores.fduration || undefined}>
                   <summary>
                     Más detalles que nos ayudan a planificar
                     <span className="rsv-tag">Opcional</span>
@@ -459,11 +559,11 @@ export default function Reserve() {
                   <div className="rsv-opcional-cuerpo">
                     <div className="form-row">
                       <div className="form-group">
-                        <label>Hora aproximada</label>
+                        <label htmlFor="ftime">Hora aproximada</label>
                         <input type="time" id="ftime" value={ftime} onChange={(e) => setFtime(e.target.value)} />
                       </div>
-                      <div className="form-group">
-                        <label>Duración en horas</label>
+                      <div className={grupo('fduration')}>
+                        <label htmlFor="fduration">Duración en horas</label>
                         <input
                           type="text"
                           id="fduration"
@@ -471,8 +571,9 @@ export default function Reserve() {
                           inputMode="numeric"
                           maxLength={2}
                           value={fduration}
-                          onChange={(e) => setFduration(e.target.value.replace(/\D/g, '').slice(0, 2))}
+                          onChange={(e) => { setFduration(e.target.value.replace(/\D/g, '').slice(0, 2)); limpiar('fduration'); }}
                         />
+                        {mensaje('fduration')}
                       </div>
                     </div>
 
