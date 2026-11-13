@@ -157,6 +157,43 @@ function fmtMoney(n: number | null | undefined) {
   return '$' + (Number(n) || 0).toLocaleString('es-CO');
 }
 
+/** Fecha del evento como día local (sin correrse por la zona horaria). */
+function fechaLocal(iso: string | null | undefined) {
+  if (!iso) return null;
+  const partes = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  const f = partes ? new Date(Number(partes[1]), Number(partes[2]) - 1, Number(partes[3])) : new Date(iso);
+  return Number.isNaN(f.getTime()) ? null : f;
+}
+
+/** Días que faltan para la fecha (0 = hoy). null si no hay fecha. */
+function diasParaEvento(iso: string | null | undefined) {
+  const f = fechaLocal(iso);
+  if (!f) return null;
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  return Math.round((f.getTime() - hoy.getTime()) / 86400000);
+}
+
+function textoCuentaRegresiva(dias: number | null) {
+  if (dias == null) return 'Fecha por confirmar';
+  if (dias <= 0) return '¡Es hoy!';
+  if (dias === 1) return 'Mañana';
+  return `Faltan ${dias} días`;
+}
+
+/** Bloque pequeño con el día y el mes, como el de un dorsal o un calendario. */
+function FechaBloque({ iso }: { iso: string | null | undefined }) {
+  const f = fechaLocal(iso);
+  if (!f) return null;
+  const mes = f.toLocaleDateString('es-CO', { month: 'short' }).replace('.', '');
+  return (
+    <span className="perfil-fecha" aria-hidden="true">
+      <strong>{f.getDate()}</strong>
+      <small>{mes}</small>
+    </span>
+  );
+}
+
 const EDAD_MINIMA = 10;
 const EDAD_MAXIMA = 100;
 
@@ -1007,11 +1044,27 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     }
   };
 
+  const siguiente = proximas[0];
+  const diasSiguiente = diasParaEvento(siguiente?.evento?.fecha);
+  const completados = pasadas.filter((i) => i.estado !== 'pendiente').length;
+  const totalActivas = inscripciones?.filter((i) => i.estado !== 'cancelada').length ?? 0;
+  const totalInvertido = inscripciones?.filter((i) => i.estado !== 'cancelada' && i.estado !== 'pendiente').reduce((s, i) => s + (Number(i.precio_pagado) || 0), 0);
+  const chipSiguiente = diasSiguiente == null
+    ? 'Próxima salida por confirmar'
+    : diasSiguiente <= 0 ? 'Hoy es tu próxima salida'
+      : diasSiguiente === 1 ? 'Tu próxima salida es mañana'
+        : `Próxima salida en ${diasSiguiente} días`;
+
   return (
-    <>
-      <div className="part-header part-header--hero">
+    <div className="perfil">
+      <div className="part-header part-header--hero perfil-hero">
+        {/* Perfil de altimetría de una ruta: solo decoración */}
+        <svg className="perfil-hero-ruta" viewBox="0 0 1200 120" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+          <path className="relleno" d="M0 120 L0 92 C60 88 90 70 140 74 C190 78 210 50 260 46 C310 42 330 66 380 64 C430 62 450 28 510 22 C570 16 590 52 640 58 C690 64 720 40 770 38 C820 36 850 70 900 72 C950 74 980 44 1030 40 C1080 36 1120 62 1200 58 L1200 120 Z" />
+          <path className="linea" d="M0 92 C60 88 90 70 140 74 C190 78 210 50 260 46 C310 42 330 66 380 64 C430 62 450 28 510 22 C570 16 590 52 640 58 C690 64 720 40 770 38 C820 36 850 70 900 72 C950 74 980 44 1030 40 C1080 36 1120 62 1200 58" />
+        </svg>
         <div className="part-header-inner">
-          <div className="part-avatar-wrap">
+          <div className="part-avatar-wrap perfil-avatar-anillo">
             {user?.foto_url ? (
               <img src={user.foto_url} alt="Foto de perfil" className="part-avatar" style={{ objectFit: 'cover' }} />
             ) : (
@@ -1036,6 +1089,16 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
             <div className="part-badge"><i className="ti ti-medal" aria-hidden="true" />Ciclista verificado</div>
             <h1>{user?.name || 'Ciclista'}</h1>
             <p className="part-handle">@{(user?.email || '').split('@')[0]}</p>
+            <ul className="perfil-hero-chips" aria-label="Tu actividad">
+              <li><i className="ti ti-bike" aria-hidden="true" /> Ruta</li>
+              {user?.ciudad && <li><i className="ti ti-map-pin" aria-hidden="true" /> {user.ciudad}</li>}
+              <li><i className="ti ti-flag-check" aria-hidden="true" /> {completados} {completados === 1 ? 'evento completado' : 'eventos completados'}</li>
+              {siguiente && (
+                <li className="perfil-hero-chip-vivo">
+                  <span className="perfil-punto" aria-hidden="true" /> {chipSiguiente}
+                </li>
+              )}
+            </ul>
           </div>
           <div className="part-actions">
             <button
@@ -1059,7 +1122,7 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
               className={`part-tab-btn${tab === t.id ? ' active' : ''}`}
               onClick={() => setTab(t.id)}
             >
-              {t.label}
+              <i className={`ti ${t.icono}`} aria-hidden="true" /> {t.label}
             </button>
           ))}
         </div>
@@ -1110,19 +1173,25 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
             </summary>
             
             <div className="part-info-content">
-              <div className="part-card">
-                <div className="part-card-head"><h3>Información</h3></div>
+              <div className="part-card perfil-ficha">
+                <div className="part-card-head">
+                  <span className="part-card-head-icon"><i className="ti ti-id-badge-2" aria-hidden="true" /></span>
+                  <h3>Información</h3>
+                </div>
                 <div className="part-card-body">
-                  <div className="part-info-row"><span className="part-info-label">Rol</span><span className="part-info-value">{user?.role === 'admin' ? 'Administrador' : 'Participante'}</span></div>
-                  <div className="part-info-row"><span className="part-info-label">Correo</span><span className="part-info-value">{user?.email || '—'}</span></div>
-                  <div className="part-info-row"><span className="part-info-label">Teléfono</span><span className="part-info-value">{user?.telefono || '—'}</span></div>
-                  <div className="part-info-row"><span className="part-info-label">Ciudad</span><span className="part-info-value">{user?.ciudad || '—'}</span></div>
-                  <div className="part-info-row"><span className="part-info-label">Documento</span><span className="part-info-value">{user?.documento ? `${tipoDocumentoLabel(user.tipo_documento)} ${user.documento}` : '—'}</span></div>
-                  <div className="part-info-row"><span className="part-info-label">Nacimiento</span><span className="part-info-value">{fmtFechaLarga(user?.fecha_nacimiento)}</span></div>
+                  <div className="part-info-row"><span className="part-info-label"><i className="ti ti-user-star" aria-hidden="true" />Rol</span><span className="part-info-value">{user?.role === 'admin' ? 'Administrador' : 'Participante'}</span></div>
+                  <div className="part-info-row"><span className="part-info-label"><i className="ti ti-mail" aria-hidden="true" />Correo</span><span className="part-info-value">{user?.email || '—'}</span></div>
+                  <div className="part-info-row"><span className="part-info-label"><i className="ti ti-phone" aria-hidden="true" />Teléfono</span><span className="part-info-value">{user?.telefono || '—'}</span></div>
+                  <div className="part-info-row"><span className="part-info-label"><i className="ti ti-map-pin" aria-hidden="true" />Ciudad</span><span className="part-info-value">{user?.ciudad || '—'}</span></div>
+                  <div className="part-info-row"><span className="part-info-label"><i className="ti ti-id" aria-hidden="true" />Documento</span><span className="part-info-value">{user?.documento ? `${tipoDocumentoLabel(user.tipo_documento)} ${user.documento}` : '—'}</span></div>
+                  <div className="part-info-row"><span className="part-info-label"><i className="ti ti-cake" aria-hidden="true" />Nacimiento</span><span className="part-info-value">{fmtFechaLarga(user?.fecha_nacimiento)}</span></div>
                 </div>
               </div>
-              <div className="part-card">
-                <div className="part-card-head"><h3>Disciplinas</h3></div>
+              <div className="part-card perfil-disciplinas">
+                <div className="part-card-head">
+                  <span className="part-card-head-icon"><i className="ti ti-route" aria-hidden="true" /></span>
+                  <h3>Disciplinas</h3>
+                </div>
                 <div className="part-card-body">
                   <div className="part-tags">
                     <span className="part-tag"><i className="ti ti-bike" aria-hidden="true" /> Ruta</span>
@@ -1137,21 +1206,84 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
           {tab === 'resumen' && (
             <>
               <div className="part-stats-strip">
-                <div className="part-strip-stat"><span className="part-num">{pasadas.filter((i) => i.estado !== 'pendiente').length}</span><span className="part-lbl">Eventos completados</span></div>
-                <div className="part-strip-stat accent"><span className="part-num">{proximas.length}</span><span className="part-lbl">Próximos eventos</span></div>
-                <div className="part-strip-stat"><span className="part-num">{inscripciones?.filter((i) => i.estado !== 'cancelada').length ?? 0}</span><span className="part-lbl">Inscripciones totales</span></div>
-                <div className="part-strip-stat accent"><span className="part-num">{fmtMoney(inscripciones?.filter((i) => i.estado !== 'cancelada' && i.estado !== 'pendiente').reduce((s, i) => s + (Number(i.precio_pagado) || 0), 0))}</span><span className="part-lbl">Total invertido</span></div>
+                <div className="part-strip-stat">
+                  <span className="perfil-stat-ico" aria-hidden="true"><i className="ti ti-flag-check" /></span>
+                  <span className="part-num">{completados}</span><span className="part-lbl">Eventos completados</span>
+                </div>
+                <div className="part-strip-stat accent">
+                  <span className="perfil-stat-ico" aria-hidden="true"><i className="ti ti-calendar-event" /></span>
+                  <span className="part-num">{proximas.length}</span><span className="part-lbl">Próximos eventos</span>
+                </div>
+                <div className="part-strip-stat">
+                  <span className="perfil-stat-ico" aria-hidden="true"><i className="ti ti-ticket" /></span>
+                  <span className="part-num">{totalActivas}</span><span className="part-lbl">Inscripciones totales</span>
+                </div>
+                <div className="part-strip-stat accent">
+                  <span className="perfil-stat-ico" aria-hidden="true"><i className="ti ti-wallet" /></span>
+                  <span className="part-num">{fmtMoney(totalInvertido)}</span><span className="part-lbl">Total invertido</span>
+                </div>
               </div>
 
-              <p className="part-section-label">
-                Próximas inscripciones
-                <button title="Ver todas mis inscripciones" onClick={() => setTab('inscripciones')}>Ver todo →</button>
-              </p>
               {loadError && <div className="part-empty-row">{loadError}</div>}
+
+              {!loadError && siguiente && (
+                <section className="perfil-siguiente" aria-label="Tu próxima salida">
+                  <div
+                    className="perfil-siguiente-foto"
+                    style={siguiente.evento?.imagen_url ? { backgroundImage: `url(${siguiente.evento.imagen_url})` } : undefined}
+                    aria-hidden="true"
+                  />
+                  <div className="perfil-siguiente-cuerpo">
+                    <span className="perfil-siguiente-etiqueta"><i className="ti ti-bike" aria-hidden="true" /> Tu próxima salida</span>
+                    <h2>{siguiente.evento?.nombre || 'Evento'}</h2>
+                    <ul className="perfil-siguiente-datos">
+                      <li><i className="ti ti-calendar" aria-hidden="true" /> {fmtFechaLarga(siguiente.evento?.fecha)}{siguiente.evento?.hora ? ` · ${fmtHoraCorta(siguiente.evento.hora)}` : ''}</li>
+                      {siguiente.evento?.ubicacion && <li><i className="ti ti-map-pin" aria-hidden="true" /> {siguiente.evento.ubicacion}</li>}
+                      {(siguiente.categoria?.nombre || siguiente.evento?.categoria) && (
+                        <li><i className="ti ti-route" aria-hidden="true" /> {siguiente.categoria?.nombre || siguiente.evento?.categoria}</li>
+                      )}
+                    </ul>
+                    <div className="perfil-siguiente-acciones">
+                      <button type="button" className="btn btn-primary" title="Ver los detalles de la inscripción" onClick={() => abrirDetalle(siguiente)}>
+                        Ver detalles <i className="ti ti-arrow-right" aria-hidden="true" />
+                      </button>
+                      {siguiente.qr?.codigo && (
+                        <button
+                          type="button"
+                          className="btn btn-outline"
+                          title={siguiente.qr?.codigo_kit ? 'Ver mis códigos QR' : 'Ver mi código QR de entrada'}
+                          onClick={() => { abrirDetalle(siguiente); setVerQr(true); }}
+                        >
+                          <i className="ti ti-qrcode" aria-hidden="true" /> {siguiente.qr?.codigo_kit ? 'Mis QR' : 'Mi QR'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className={`perfil-cuenta${diasSiguiente != null && diasSiguiente <= 1 ? ' ya' : ''}`}>
+                    {diasSiguiente != null && diasSiguiente > 1 ? (
+                      <>
+                        <small>Faltan</small>
+                        <strong>{diasSiguiente}</strong>
+                        <small>días</small>
+                      </>
+                    ) : (
+                      <strong className="perfil-cuenta-texto">{textoCuentaRegresiva(diasSiguiente)}</strong>
+                    )}
+                    <span className={`part-status-pill ${estadoPill(siguiente.estado).cls}`}>{estadoPill(siguiente.estado).txt}</span>
+                  </div>
+                </section>
+              )}
+
+              {(proximas.length !== 1 || loadError) && (
+                <p className="part-section-label">
+                  <span><i className="ti ti-calendar-event" aria-hidden="true" /> {siguiente ? 'También te esperan' : 'Próximas inscripciones'}</span>
+                  <button title="Ver todas mis inscripciones" onClick={() => setTab('inscripciones')}>Ver todo →</button>
+                </p>
+              )}
               {!loadError && proximas.length === 0 && (
                 <div className="part-empty-row">Sin eventos próximos. <Link title="Explorar los eventos disponibles" to="/deportivo/eventos">Explora eventos →</Link></div>
               )}
-              {proximas.slice(0, 3).map((i) => (
+              {proximas.slice(1, 4).map((i) => (
                 <EventRow key={i.id} insc={i} onVerDetalle={() => abrirDetalle(i)} onCancelar={qrYaUsado(i) ? undefined : () => pedirCancelacion(i)} />
               ))}
             </>
@@ -1159,7 +1291,7 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
 
           {tab === 'historial' && (
             <>
-              <p className="part-section-label">Mi historial</p>
+              <p className="part-section-label"><span><i className="ti ti-history" aria-hidden="true" /> Mi historial</span></p>
               {!historial && <div className="part-empty-row">Cargando historial…</div>}
               {historial && filasHist.length === 0 && (
                 <div className="part-empty-row">Sin historial todavía.</div>
@@ -1188,32 +1320,37 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
                   </button>
                 </div>
               )}
-              {pagHist.items.map((f) =>
-                f.h ? (
-                  <div className="part-event-row" key={f.key}>
-                    <div className="part-event-row-img">{(f.h.evento?.nombre || '?')[0].toUpperCase()}</div>
-                    <div className="part-event-row-info">
-                      <h4>{f.h.evento?.nombre || 'Evento'}</h4>
-                      <div className="part-event-meta">
-                        <span>{fmtFechaLarga(f.h.fecha_hp)}</span>
-                        {f.h.evento?.ubicacion && <span>{f.h.evento.ubicacion}</span>}
+              <div className="perfil-linea">
+                {pagHist.items.map((f) =>
+                  f.h ? (
+                    <div className="part-event-row" key={f.key}>
+                      <div className="part-event-row-img">
+                        {(f.h.evento?.nombre || '?')[0].toUpperCase()}
+                        <FechaBloque iso={f.h.fecha_hp} />
                       </div>
+                      <div className="part-event-row-info">
+                        <h4>{f.h.evento?.nombre || 'Evento'}</h4>
+                        <div className="part-event-meta">
+                          <span><i className="ti ti-calendar" aria-hidden="true" /> {fmtFechaLarga(f.h.fecha_hp)}</span>
+                          {f.h.evento?.ubicacion && <span><i className="ti ti-map-pin" aria-hidden="true" /> {f.h.evento.ubicacion}</span>}
+                        </div>
+                      </div>
+                      <span className={`part-status-pill ${f.h.estado_hp === 'abandono' ? 'warn' : f.h.estado_hp === 'inscrito' ? 'pending' : 'ok'}`}>
+                        {ESTADO_HP_LABEL[f.h.estado_hp] ?? f.h.estado_hp}
+                      </span>
                     </div>
-                    <span className={`part-status-pill ${f.h.estado_hp === 'abandono' ? 'warn' : f.h.estado_hp === 'inscrito' ? 'pending' : 'ok'}`}>
-                      {ESTADO_HP_LABEL[f.h.estado_hp] ?? f.h.estado_hp}
-                    </span>
-                  </div>
-                ) : (
-                  <EventRow key={f.key} insc={f.insc!} onVerDetalle={() => abrirDetalle(f.insc!)} />
-                ),
-              )}
+                  ) : (
+                    <EventRow key={f.key} insc={f.insc!} onVerDetalle={() => abrirDetalle(f.insc!)} />
+                  ),
+                )}
+              </div>
               <PaginadorPart actual={pagHist.actual} ultima={pagHist.ultima} total={pagHist.total} onCambiar={irAPagina('historial')} />
             </>
           )}
 
           {tab === 'resultados' && (
             <>
-              <p className="part-section-label">Mis resultados</p>
+              <p className="part-section-label"><span><i className="ti ti-trophy" aria-hidden="true" /> Mis resultados</span></p>
               {!inscripciones && !loadError && <div className="part-empty-row">Cargando resultados…</div>}
               {loadError && <div className="part-empty-row">{loadError}</div>}
               {inscripciones && filasRes.length === 0 && (
@@ -1223,7 +1360,7 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
               )}
               {filasRes.length > 0 && (
                 <>
-                  <div className="part-detail-info-grid" style={{ marginBottom: '1rem' }}>
+                  <div className="part-detail-info-grid perfil-podio" style={{ marginBottom: '1rem' }}>
                     <div className="part-detail-info-item">
                       <span className="part-detail-icon"><i className="ti ti-flag-check" aria-hidden="true" /></span>
                       <div>
@@ -1261,9 +1398,9 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
                     singular="resultado"
                     plural="resultados"
                   />
-                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: '.5rem', margin: '.25rem 0 1rem', cursor: 'pointer' }}>
+                  <label className="perfil-check">
                     <input type="checkbox" checked={soloPremio} onChange={(e) => setSoloPremio(e.target.checked)} />
-                    Solo los que tuvieron premio
+                    <i className="ti ti-award" aria-hidden="true" /> Solo los que tuvieron premio
                   </label>
                   {filasResFiltradas.length === 0 && (
                     <div className="part-empty-row">
@@ -1278,22 +1415,33 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
                     const pillCls = r.estado === 'oficial' ? 'ok' : r.estado === 'descalificado' ? 'warn' : 'pending';
                     const bg = i.evento?.imagen_url ? { backgroundImage: `url(${i.evento.imagen_url})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined;
                     return (
-                      <div className="part-event-row" key={i.id}>
-                        <div className="part-event-row-img" style={bg}>{!i.evento?.imagen_url && (i.evento?.nombre || '?')[0].toUpperCase()}</div>
+                      <div className="part-event-row perfil-resultado" key={i.id}>
+                        <div className="part-event-row-img" style={bg}>
+                          {!i.evento?.imagen_url && (i.evento?.nombre || '?')[0].toUpperCase()}
+                          {r.posicion_general != null && (
+                            <span className={`perfil-puesto${r.posicion_general <= 3 ? ` top top-${r.posicion_general}` : ''}`} aria-hidden="true">
+                              {r.posicion_general}.º
+                            </span>
+                          )}
+                        </div>
                         <div className="part-event-row-info">
                           <h4>{i.evento?.nombre || 'Evento'}</h4>
                           <div className="part-event-meta">
-                            <span>{fmtFechaLarga(i.evento?.fecha)}</span>
-                            {i.evento?.ubicacion && <span>{i.evento.ubicacion}</span>}
-                            {i.categoria?.nombre && <span>{i.categoria.nombre}</span>}
+                            <span><i className="ti ti-calendar" aria-hidden="true" /> {fmtFechaLarga(i.evento?.fecha)}</span>
+                            {i.evento?.ubicacion && <span><i className="ti ti-map-pin" aria-hidden="true" /> {i.evento.ubicacion}</span>}
+                            {i.categoria?.nombre && <span><i className="ti ti-route" aria-hidden="true" /> {i.categoria.nombre}</span>}
                           </div>
-                          <div className="part-event-meta">
-                            {r.tiempo_final && <span><i className="ti ti-clock" aria-hidden="true" /> {r.tiempo_final}</span>}
-                            {r.posicion_general != null && <span>{r.posicion_general}.º general</span>}
-                            {r.posicion_categoria != null && <span>{r.posicion_categoria}.º en {i.categoria?.nombre || 'categoría'}</span>}
+                          <div className="part-event-meta perfil-marcas">
+                            {r.tiempo_final && <span><i className="ti ti-stopwatch" aria-hidden="true" /> {r.tiempo_final}</span>}
+                            {r.posicion_general != null && <span><i className="ti ti-medal" aria-hidden="true" /> {r.posicion_general}.º general</span>}
+                            {r.posicion_categoria != null && <span><i className="ti ti-trophy" aria-hidden="true" /> {r.posicion_categoria}.º en {i.categoria?.nombre || 'categoría'}</span>}
                             {r.premios.length > 0 && <span><i className="ti ti-award" aria-hidden="true" /> {r.premios.map((p) => p.nombre).join(', ')}</span>}
                           </div>
-                          <button title="Ver los detalles de la inscripción" className="part-btn-link-detail" onClick={() => abrirDetalle(i)}>Ver detalles</button>
+                          <div className="perfil-acciones">
+                            <button title="Ver los detalles de la inscripción" className="part-btn-link-detail" onClick={() => abrirDetalle(i)}>
+                              Ver detalles <i className="ti ti-arrow-right" aria-hidden="true" />
+                            </button>
+                          </div>
                         </div>
                         <span className={`part-status-pill ${pillCls}`}>{estadoResultadoLabel(r.estado)}</span>
                       </div>
@@ -1333,7 +1481,7 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
                 </div>
               )}
               {(pagProximas.length > 0 || proximas.length === 0) && (
-                <p className="part-section-label">Eventos confirmados</p>
+                <p className="part-section-label"><span><i className="ti ti-calendar-event" aria-hidden="true" /> Eventos confirmados</span></p>
               )}
               {!loadError && proximas.length === 0 && (
                 <div className="part-empty-row">No tienes inscripciones activas.</div>
@@ -1343,14 +1491,19 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
               ))}
               {pagPasadas.length > 0 && (
                 <>
-                  <p className="part-section-label">Eventos pasados</p>
+                  <p className="part-section-label"><span><i className="ti ti-history" aria-hidden="true" /> Eventos pasados</span></p>
                   {pagPasadas.map((i) => (
                     <EventRow key={i.id} insc={i} onVerDetalle={() => abrirDetalle(i)} />
                   ))}
                 </>
               )}
               <PaginadorPart actual={pagInsc.actual} ultima={pagInsc.ultima} total={pagInsc.total} onCambiar={irAPagina('inscripciones')} />
-              <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+              <div className="perfil-cta">
+                <span className="perfil-cta-ico" aria-hidden="true"><i className="ti ti-bike" /></span>
+                <div>
+                  <strong>¿Listo para la próxima rodada?</strong>
+                  <p>Mira el calendario y reserva tu cupo antes de que se agoten.</p>
+                </div>
                 <Link title="Explorar más eventos" to="/deportivo/eventos" className="btn btn-primary">Explorar más eventos →</Link>
               </div>
             </>
@@ -1441,7 +1594,7 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         </div>,
         document.body,
       )}
-    </>
+    </div>
   );
 }
 
@@ -1455,25 +1608,31 @@ function EventRow({
   const pill = estadoPill(insc.estado);
   const bg = insc.evento?.imagen_url ? { backgroundImage: `url(${insc.evento.imagen_url})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined;
   return (
-    <div className="part-event-row">
-      <div className="part-event-row-img" style={bg}>{!insc.evento?.imagen_url && (insc.evento?.nombre || '?')[0].toUpperCase()}</div>
+    <div className={`part-event-row perfil-evento perfil-evento--${pill.cls}`}>
+      <div className="part-event-row-img" style={bg}>
+        {!insc.evento?.imagen_url && (insc.evento?.nombre || '?')[0].toUpperCase()}
+        <FechaBloque iso={insc.evento?.fecha} />
+      </div>
       <div className="part-event-row-info">
         <h4>{insc.evento?.nombre || 'Evento'}</h4>
         <div className="part-event-meta">
-          <span>{fmtFechaLarga(insc.evento?.fecha)}</span>
-          {insc.evento?.ubicacion && <span>{insc.evento.ubicacion}</span>}
-          {insc.evento?.categoria && <span>{insc.evento.categoria}</span>}
+          <span><i className="ti ti-calendar" aria-hidden="true" /> {fmtFechaLarga(insc.evento?.fecha)}</span>
+          {insc.evento?.ubicacion && <span><i className="ti ti-map-pin" aria-hidden="true" /> {insc.evento.ubicacion}</span>}
+          {insc.evento?.categoria && <span><i className="ti ti-route" aria-hidden="true" /> {insc.evento.categoria}</span>}
         </div>
-        <button title="Ver los detalles de la inscripción" className="part-btn-link-detail" onClick={onVerDetalle}>Ver detalles</button>
-        {onCancelar && (
-          <button title="Cancelar esta inscripción"
-            className="part-btn-link-detail"
-            style={{ marginLeft: '1rem', color: '#dc2626' }}
-            onClick={onCancelar}
-          >
-            Cancelar inscripción
+        <div className="perfil-acciones">
+          <button title="Ver los detalles de la inscripción" className="part-btn-link-detail" onClick={onVerDetalle}>
+            Ver detalles <i className="ti ti-arrow-right" aria-hidden="true" />
           </button>
-        )}
+          {onCancelar && (
+            <button title="Cancelar esta inscripción"
+              className="part-btn-link-detail perfil-cancelar"
+              onClick={onCancelar}
+            >
+              <i className="ti ti-circle-x" aria-hidden="true" /> Cancelar inscripción
+            </button>
+          )}
+        </div>
       </div>
       <span className={`part-status-pill ${pill.cls}`}>{pill.txt}</span>
     </div>
@@ -1783,7 +1942,10 @@ function DetalleInscripcion({
 
   return (
     <div className="part-card part-detail-card part-detail-anim">
-      <div className="part-detail-hero">
+      <div
+        className={`part-detail-hero${insc.evento?.imagen_url ? ' perfil-con-foto' : ''}`}
+        style={insc.evento?.imagen_url ? ({ '--perfil-foto': `url(${insc.evento.imagen_url})` } as React.CSSProperties) : undefined}
+      >
         <div className="part-detail-hero-blob a" aria-hidden="true" />
         <div className="part-detail-hero-blob b" aria-hidden="true" />
 
@@ -1883,7 +2045,7 @@ function DetalleInscripcion({
         </div>
         {res && (
           <>
-            <h3 style={{ margin: '1.5rem 0 .75rem', fontSize: '1rem' }}>Mi resultado</h3>
+            <h3 className="perfil-subtitulo"><i className="ti ti-trophy" aria-hidden="true" /> Mi resultado</h3>
             <div className="part-detail-info-grid">
               {res.tiempo_final && (
                 <div className="part-detail-info-item">
@@ -1934,7 +2096,7 @@ function DetalleInscripcion({
         )}
         {inv && (
           <>
-            <h3 style={{ margin: '1.5rem 0 .75rem', fontSize: '1rem' }}>Invitado</h3>
+            <h3 className="perfil-subtitulo"><i className="ti ti-user-plus" aria-hidden="true" /> Invitado</h3>
             <div className="part-detail-info-grid">
               <div className="part-detail-info-item">
                 <span className="part-detail-icon"><i className="ti ti-user-plus" aria-hidden="true" /></span>
@@ -1979,7 +2141,7 @@ function DetalleInscripcion({
         )}
         {filasPago.length > 0 && (
           <>
-            <h3 style={{ margin: '1.5rem 0 .75rem', fontSize: '1rem' }}>Detalle de lo que pagaste</h3>
+            <h3 className="perfil-subtitulo"><i className="ti ti-receipt" aria-hidden="true" /> Detalle de lo que pagaste</h3>
             <div className="part-detail-info-item" style={{ display: 'block' }}>
               {filasPago.map((f) => (
                 <div
