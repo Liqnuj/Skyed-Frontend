@@ -232,6 +232,31 @@
 .mod-social.dark-mode .booking-form .rsv-chip span { color: rgba(255, 255, 255, 0.85); }
 .mod-social.dark-mode .booking-form .rsv-chip input:checked + span { color: #fff; }
 
+/* ---------- obligatorios y errores ---------- */
+.mod-social .booking-form .rsv-leyenda {
+  margin: 0 0 0.25rem;
+  font-size: calc(0.8rem * var(--fs-scale, 1));
+  color: rgba(47, 45, 45, 0.6);
+}
+.mod-social.dark-mode .booking-form .rsv-leyenda { color: rgba(255, 255, 255, 0.6); }
+.mod-social .booking-form .rsv-req { color: #e5484d; font-weight: 700; }
+.mod-social.dark-mode .booking-form .rsv-req { color: #ff8a93; }
+.mod-social .booking-form .rsv-error {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: calc(0.78rem * var(--fs-scale, 1));
+  font-weight: 600;
+  color: #e5484d;
+}
+.mod-social.dark-mode .booking-form .rsv-error { color: #ff8a93; }
+.mod-social .booking-form .rsv-invalid input,
+.mod-social .booking-form .rsv-invalid select,
+.mod-social .booking-form .rsv-invalid textarea {
+  border-color: #e5484d !important;
+  box-shadow: 0 0 0 3px rgba(229, 72, 77, 0.15) !important;
+}
+.mod-social .booking-form .form-row > .form-group.span-two { grid-column: 1 / -1; }
+
 /* ---------- pie ---------- */
 .mod-social .booking-form .rsv-nota {
   margin: 0.9rem 0 0;
