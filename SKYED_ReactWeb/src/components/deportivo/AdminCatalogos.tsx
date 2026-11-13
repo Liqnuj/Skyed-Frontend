@@ -1,7 +1,7 @@
 import RutaMapaModal from "./RutaMapaModal";
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { ImagePlus, Loader2, Map as MapIcon, Pencil, Plus, Trash2, Upload, Users, X } from "lucide-react";
+import { ArrowRight, ImagePlus, Loader2, Map as MapIcon, MapPin, Pencil, Plus, Trash2, Upload, Users, X } from "lucide-react";
 import { apiFetch } from "../../services/api";
 import ExportMenu from "../shared/ExportMenu";
 import type { Avisar } from "../shared/Avisos";
@@ -503,6 +503,7 @@ export function RutaForm({
   item,
   eventos,
   eventoInicialId = "",
+  eventosConRuta = {},
   onClose,
   onSave,
   onCreada,
@@ -511,13 +512,19 @@ export function RutaForm({
   item?: RutaEvento;
   eventos: EventoOpcion[];
   eventoInicialId?: string;
+  /** id del evento → nombre de la ruta que ya tiene asignada. Un evento solo puede tener una ruta. */
+  eventosConRuta?: Record<number, string>;
   onClose: () => void;
   onSave: (datos: Record<string, unknown>) => Promise<boolean | RutaEvento>;
   onCreada?: (ruta: RutaEvento) => void;
   notify: Avisar;
 }) {
+  // Ocupado = ya tiene otra ruta. El evento de la ruta que se está editando no cuenta.
+  const eventoOcupado = (id: string | number | null | undefined) =>
+    id != null && id !== "" && Number(id) !== item?.id_e && eventosConRuta[Number(id)] !== undefined;
+
   const [form, setForm] = useState({
-    id_e: item?.id_e == null ? eventoInicialId : String(item.id_e),
+    id_e: item?.id_e == null ? (eventoOcupado(eventoInicialId) ? "" : eventoInicialId) : String(item.id_e),
     nombre_re: item?.nombre_re ?? "",
     estado_re: item?.estado_re ?? "activo",
     distancia_re: item?.distancia_re ?? "",
@@ -561,6 +568,11 @@ export function RutaForm({
       return;
     }
     if (!validarFormularioDeportivo(e, notify)) return;
+    if (eventoOcupado(form.id_e)) {
+      e.preventDefault();
+      notify(`Ese evento ya tiene la ruta "${eventosConRuta[Number(form.id_e)]}". Edítala o elimínala para asignar otra.`, "error");
+      return;
+    }
     if (guardando) return;
     setGuardando(true);
     const guardado = await onSave({
@@ -593,8 +605,18 @@ export function RutaForm({
           <Campo label="Evento asociado (opcional)">
             <select value={form.id_e} onChange={(e) => set("id_e", e.target.value)}>
               <option value="">Sin asignar</option>
-              {eventos.map((evento) => <option key={evento.id} value={evento.id}>{evento.nombre}</option>)}
+              {eventos.map((evento) => {
+                const ocupado = eventoOcupado(evento.id);
+                return (
+                  <option key={evento.id} value={evento.id} disabled={ocupado}>
+                    {evento.nombre}{ocupado ? ` — ya tiene ruta (${eventosConRuta[evento.id]})` : ""}
+                  </option>
+                );
+              })}
             </select>
+            {eventos.some((evento) => eventoOcupado(evento.id)) && (
+              <small className="field-hint">Cada evento tiene una sola ruta. Los que ya la tienen aparecen deshabilitados.</small>
+            )}
           </Campo>
           <Campo label="Estado">
             <select required value={form.estado_re} onChange={(e) => set("estado_re", e.target.value)}>
@@ -765,13 +787,17 @@ export default function AdminCatalogos({
   const [patrocinadores, setPatrocinadores] = useState<Patrocinador[]>([]);
   const [rutas, setRutas] = useState<RutaEvento[]>([]);
   const [estaciones, setEstaciones] = useState<Estacion[]>([]);
-  const [eventoId, setEventoId] = useState(seccion === "rutas" ? "__sin_asignar" : "");
+  // Arranca ya con un evento elegido (el primero) para no mostrar la pantalla vacía.
+  const [eventoId, setEventoId] = useState(() =>
+    seccion === "rutas" ? "__sin_asignar" : eventos[0] ? String(eventos[0].id) : "");
   const [modal, setModal] = useState<ModalState>(null);
   const [patrocinadorEventos, setPatrocinadorEventos] = useState<Patrocinador | null>(null);
   const [cargando, setCargando] = useState(true);
   const [errorCarga, setErrorCarga] = useState("");
   const [recarga, setRecarga] = useState(0);
   const [verGpx, setVerGpx] = useState<{ gpx: string; nombre: string } | null>(null);
+  // Qué ruta tiene asignada cada evento (un evento solo puede tener una).
+  const [rutaPorEvento, setRutaPorEvento] = useState<Record<string, RutaEvento>>({});
 
   useEffect(() => {
     if (!eventos.length) {
@@ -822,6 +848,34 @@ export default function AdminCatalogos({
     return () => { vigente = false; };
   }, [seccion, eventoId, recarga, notify]);
 
+  useEffect(() => {
+    if (seccion !== "rutas" || !eventos.length) {
+      setRutaPorEvento({});
+      return;
+    }
+    let vigente = true;
+    Promise.all(
+      eventos.map(async (evento) => {
+        try {
+          const respuesta: Paginated<RutaEvento> = await apiFetch(`/eventos/${evento.id}/rutas?per_page=1&page=1`);
+          const ruta = Array.isArray(respuesta.data) ? respuesta.data[0] : undefined;
+          return ruta ? ([evento.id, ruta] as const) : null;
+        } catch {
+          return null;
+        }
+      }),
+    ).then((pares) => {
+      if (!vigente) return;
+      setRutaPorEvento(Object.fromEntries(pares.filter((par): par is readonly [number, RutaEvento] => par !== null)));
+    });
+    return () => { vigente = false; };
+  }, [seccion, eventos, recarga]);
+
+  const eventosConRuta = useMemo(
+    () => Object.fromEntries(Object.entries(rutaPorEvento).map(([id, ruta]) => [id, ruta.nombre_re])) as Record<number, string>,
+    [rutaPorEvento],
+  );
+
   const q = normalizar(search.trim());
   const visiblesPatrocinadores = useMemo(
     () => patrocinadores.filter((p) => !q || normalizar(`${p.nombre_p} ${p.correo_p ?? ""} ${p.telefono_p ?? ""} ${p.aporte_p ?? ""} ${(p.eventos ?? []).map((e) => e.nombre_e).join(" ")}`).includes(q)),
@@ -869,6 +923,11 @@ export default function AdminCatalogos({
   const guardarRuta = (datos: Record<string, unknown>) => {
     const item = modal?.tipo === "ruta" ? modal.item : undefined;
     const eventoRuta = datos.id_e ? Number(datos.id_e) : null;
+    const rutaExistente = eventoRuta ? rutaPorEvento[eventoRuta] : undefined;
+    if (rutaExistente && rutaExistente.id_re !== item?.id_re) {
+      notify(`Ese evento ya tiene la ruta "${rutaExistente.nombre_re}". Edítala o elimínala para asignar otra.`, "error");
+      return Promise.resolve(false);
+    }
     const payload = { ...datos };
     if (item) {
       return completarAccion(
@@ -913,9 +972,15 @@ export default function AdminCatalogos({
     const asignacionesPatrocinador = tipo === "patrocinador" && item.eventos?.length
       ? " También se quitarán sus asignaciones a eventos."
       : "";
+    const nombreEventoRuta = tipo === "ruta" && item.id_e != null
+      ? item.evento?.nombre_e ?? eventos.find((evento) => evento.id === item.id_e)?.nombre
+      : undefined;
+    const avisoRuta = nombreEventoRuta
+      ? ` Está asignada a "${nombreEventoRuta}", que quedará sin ruta hasta que le asignes otra.`
+      : "";
     if (!(await confirmar({
       titulo: `Eliminar ${tipo}`,
-      mensaje: `¿Eliminar "${nombre}"? Esta acción no se puede deshacer.${asignacionesPatrocinador}`,
+      mensaje: `¿Eliminar "${nombre}"? Esta acción no se puede deshacer.${asignacionesPatrocinador}${avisoRuta}`,
       confirmar: "Eliminar",
       tipo: "peligro",
     }))) return;
@@ -923,7 +988,14 @@ export default function AdminCatalogos({
       ? item.id_p
       : tipo === "ruta" ? item.id_re : item.id_est;
     const base = tipo === "patrocinador" ? "patrocinadores" : tipo === "ruta" ? "rutas" : "estaciones";
-    await completarAccion(`/${base}/${id}`, "DELETE", undefined, `${humanizar(tipo)} eliminado.`);
+    const eliminado = await completarAccion(`/${base}/${id}`, "DELETE", undefined, `${humanizar(tipo)} eliminado.`);
+    if (eliminado && tipo === "ruta") {
+      // Se libera el evento al instante, sin esperar a que termine la recarga.
+      setRutas((actuales) => actuales.filter((ruta) => ruta.id_re !== item.id_re));
+      setRutaPorEvento((actual) => Object.fromEntries(
+        Object.entries(actual).filter(([, ruta]) => ruta.id_re !== item.id_re),
+      ));
+    }
   };
 
   const gestionarAsignaciones = async (eventoIdAsignado: number, detalle: string) => {
@@ -951,6 +1023,10 @@ export default function AdminCatalogos({
   const nombreSeccion = seccion === "patrocinadores" ? "Patrocinadores" : seccion === "rutas" ? "Rutas de eventos" : "Estaciones de eventos";
   const opcionesEventos: EventoOpcion[] = eventos.map((evento) => ({ id: evento.id, nombre: evento.nombre, distancia: evento.distancia }));
   const sinEventos = seccion === "estaciones" && !eventos.length;
+  const eventoNumero = eventoId && eventoId !== "__sin_asignar" ? Number(eventoId) : null;
+  const rutaDelEvento = seccion === "rutas" && eventoNumero != null
+    ? rutaPorEvento[eventoNumero] ?? (!cargando ? rutas.find((ruta) => ruta.id_e === eventoNumero) : undefined)
+    : undefined;
   const toolbar = seccion !== "patrocinadores" ? (
     <select className="admin-select" value={eventoId} onChange={(e) => setEventoId(e.target.value)} aria-label="Filtrar por evento">
       {seccion === "rutas" && <option value="__sin_asignar">Rutas sin asignar</option>}
@@ -965,7 +1041,28 @@ export default function AdminCatalogos({
       {sinEventos ? (
         <section className="admin-card"><p>Crea primero un evento deportivo para administrar sus estaciones.</p></section>
       ) : seccion === "estaciones" && !eventoId ? (
-        <section className="admin-card"><p>Selecciona un evento para consultar o crear sus estaciones.</p></section>
+        <section className="admin-card estacion-vacia">
+          <span className="estacion-vacia-icono" aria-hidden="true"><MapPin size={28} /></span>
+          <h2>Elige un evento</h2>
+          <p>Las estaciones (hidratación, apoyo, meta…) se administran por evento. Selecciona uno para ver o crear las suyas.</p>
+          <div className="estacion-vacia-lista">
+            {opcionesEventos.map((evento) => (
+              <button
+                key={evento.id}
+                type="button"
+                className="estacion-vacia-evento"
+                title={`Ver las estaciones de ${evento.nombre}`}
+                onClick={() => setEventoId(String(evento.id))}
+              >
+                <span className="estacion-vacia-evento-texto">
+                  <strong>{evento.nombre}</strong>
+                  {evento.distancia && <small>{evento.distancia}</small>}
+                </span>
+                <ArrowRight size={18} aria-hidden="true" />
+              </button>
+            ))}
+          </div>
+        </section>
       ) : seccion === "patrocinadores" ? (
         <TableSection
           title={nombreSeccion}
@@ -999,7 +1096,16 @@ export default function AdminCatalogos({
           title={nombreSeccion}
           exportar={<ExportMenu ruta="deportivo/rutas" archivo="skyed-deportivo-rutas" params={{ q: search, evento: eventoId || undefined }} onMensaje={notify} />}
           action={puedeEditar ? "Nueva ruta" : undefined}
-          onAction={() => setModal({ tipo: "ruta" })}
+          onAction={() => {
+            if (rutaDelEvento) {
+              notify(
+                `“${rutaDelEvento.nombre_re}” ya está asignada a este evento. Para crear otra, edítala o elimínala primero.`,
+                "error",
+              );
+              return;
+            }
+            setModal({ tipo: "ruta" });
+          }}
           toolbar={toolbar}
         >
           <thead><tr><th>Nombre</th><th>Distancia</th><th>Desnivel</th><th>GPX</th><th>Estado</th><th>Acciones</th></tr></thead>
@@ -1062,7 +1168,7 @@ export default function AdminCatalogos({
         <PatrocinadorForm item={modal.item} onClose={() => setModal(null)} onSave={guardarPatrocinador} notify={notify} />
       )}
       {modal?.tipo === "ruta" && (
-        <RutaForm item={modal.item} eventos={opcionesEventos} eventoInicialId={eventoId === "__sin_asignar" ? "" : eventoId} onClose={() => setModal(null)} onSave={guardarRuta} notify={notify} />
+        <RutaForm item={modal.item} eventos={opcionesEventos} eventoInicialId={eventoId === "__sin_asignar" ? "" : eventoId} eventosConRuta={eventosConRuta} onClose={() => setModal(null)} onSave={guardarRuta} notify={notify} />
       )}
       {modal?.tipo === "estacion" && (
         <EstacionForm item={modal.item} eventos={opcionesEventos} eventoInicialId={eventoId} onClose={() => setModal(null)} onSave={guardarEstacion} notify={notify} />

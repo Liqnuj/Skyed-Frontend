@@ -2284,6 +2284,9 @@ function EventoModal({ item, kits, eventos, onClose, onSave, notify, onKitCreado
     <RutaForm
       eventos={eventoActivo ? [{ id: eventoActivo.id, nombre: eventoActivo.nombre, distancia: eventoActivo.distancia }] : []}
       eventoInicialId={eventoActivo ? String(eventoActivo.id) : ""}
+      eventosConRuta={Object.fromEntries(
+        rutas.filter((r) => r.id_e != null && r.id_e === eventoActivo?.id).map((r) => [r.id_e as number, r.nombre_re]),
+      )}
       onClose={() => setCreandoRuta(false)}
       notify={notify}
       onSave={async (datos) => {

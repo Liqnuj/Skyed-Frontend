@@ -474,3 +474,47 @@
   .deportivo-admin .stack-legend li { grid-template-columns: 24px 1fr auto; }
   .deportivo-admin .stack-money { grid-column: 2 / -1; text-align: left; min-width: 0; }
 }
+
+/* ---------- Estaciones: pantalla "Elige un evento" ---------- */
+.deportivo-admin .admin-card.estacion-vacia {
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  gap: 10px; padding: 44px 24px 40px;
+  background:
+    radial-gradient(520px 220px at 50% 0%, rgba(44, 156, 175, .16), transparent 70%),
+    var(--admin-surface) !important;
+}
+.deportivo-admin .estacion-vacia-icono {
+  display: grid; place-items: center; width: 64px; height: 64px; border-radius: 20px;
+  color: #fff; background: linear-gradient(135deg, #2c9caf, #3bc0d4);
+  box-shadow: 0 10px 26px rgba(44, 156, 175, .35);
+  margin-bottom: 6px;
+}
+.deportivo-admin .estacion-vacia h2 { margin: 0; font-size: 1.45rem; color: var(--admin-text); }
+.deportivo-admin .estacion-vacia > p {
+  margin: 0 0 14px; max-width: 460px; line-height: 1.55;
+  color: var(--admin-muted); font-size: .95rem;
+}
+.deportivo-admin .estacion-vacia-lista {
+  display: grid; gap: 10px; width: min(460px, 100%);
+}
+.deportivo-admin .estacion-vacia-evento {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  width: 100%; padding: 14px 18px; text-align: left; cursor: pointer;
+  background: var(--admin-surface-2); color: var(--admin-text);
+  border: 1px solid var(--admin-line); border-radius: 14px;
+  transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease;
+}
+.deportivo-admin .estacion-vacia-evento:hover,
+.deportivo-admin .estacion-vacia-evento:focus-visible {
+  border-color: var(--admin-accent); transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(44, 156, 175, .22); outline: none;
+}
+.deportivo-admin .estacion-vacia-evento-texto { display: grid; gap: 2px; min-width: 0; }
+.deportivo-admin .estacion-vacia-evento strong {
+  font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.deportivo-admin .estacion-vacia-evento small { color: var(--admin-muted); font-size: .82rem; }
+.deportivo-admin .estacion-vacia-evento svg { color: var(--admin-accent); flex: none; }
+@media (max-width: 640px) {
+  .deportivo-admin .admin-card.estacion-vacia { padding: 32px 16px 28px; }
+}
