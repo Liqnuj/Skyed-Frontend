@@ -681,6 +681,20 @@ function fmtFechaLarga(iso: string | null | undefined) {
   return txt.charAt(0).toUpperCase() + txt.slice(1);
 }
 
+/** Día y mes de la fecha en un bloque pequeño tipo calendario (solo decorativo). */
+function FechaGlass({ iso }: { iso: string | null | undefined }) {
+  const f = soloFecha(iso);
+  if (!f) return <span className="pfg-fecha vacia" aria-hidden="true"><i className="ti ti-calendar-event" /></span>;
+  const [y, m, d] = f.split('-').map(Number);
+  const mes = new Date(y, m - 1, d).toLocaleDateString('es-CO', { month: 'short' }).replace('.', '');
+  return (
+    <span className="pfg-fecha" aria-hidden="true">
+      <small>{mes}</small>
+      <strong>{d}</strong>
+    </span>
+  );
+}
+
 /** Días que faltan para la fecha (negativo si ya pasó); null si no hay fecha válida. */
 function diasPara(iso: string | null | undefined): number | null {
   const f = soloFecha(iso);
@@ -1795,13 +1809,22 @@ function PerfilPanel() {
     [pqrs]
   );
 
+  const siguienteReserva = reservasProximas[0];
+  const diasSiguiente = siguienteReserva ? diasPara(siguienteReserva.fecha_evento_rese) : null;
+  const textoFaltan = diasSiguiente == null
+    ? 'Fecha por confirmar'
+    : diasSiguiente <= 0 ? '¡Es hoy!' : diasSiguiente === 1 ? 'Mañana' : `${diasSiguiente} días`;
+
   return (
-    <>
-      <div className="pf-header pf-header--anim">
+    <div className="pfg">
+      {/* Manchas de color de fondo: el vidrio las difumina (solo decoración) */}
+      <div className="pfg-ambiente" aria-hidden="true"><span /><span /><span /></div>
+
+      <div className="pf-header pf-header--anim pfg-hero">
         <div className="pf-hero-glow" aria-hidden="true" />
         <CanvasParticles id="pfParticles" />
         <div className="pf-header-inner">
-          <div className="pf-avatar-wrap">
+          <div className="pf-avatar-wrap pfg-avatar">
             {user?.foto_url ? (
               <img src={user.foto_url} alt="Foto de perfil" className="pf-avatar" style={{ objectFit: 'cover' }} />
             ) : (
@@ -1824,6 +1847,17 @@ function PerfilPanel() {
             </div>
             <h1>{user?.name || 'Tu perfil'}</h1>
             <p className="pf-handle">@{(user?.email || '').split('@')[0]}</p>
+            <ul className="pfg-chips" aria-label="Tu actividad">
+              <li><i className="ti ti-calendar-heart" aria-hidden="true" /> {reservasActivas} {reservasActivas === 1 ? 'reserva activa' : 'reservas activas'}</li>
+              <li><i className="ti ti-message-dots" aria-hidden="true" /> {pendientesPqr} PQR en curso</li>
+              {user?.ciudad && <li><i className="ti ti-map-pin" aria-hidden="true" /> {user.ciudad}</li>}
+              {siguienteReserva && (
+                <li className="pfg-chip-vivo">
+                  <span className="pfg-punto" aria-hidden="true" />
+                  {diasSiguiente != null && diasSiguiente > 1 ? `Tu evento es en ${diasSiguiente} días` : `Tu evento: ${textoFaltan.toLowerCase()}`}
+                </li>
+              )}
+            </ul>
           </div>
 
           <div className="pf-actions">
@@ -1840,18 +1874,22 @@ function PerfilPanel() {
         </div>
 
         <div className="pf-tabs" role="tablist">
-          <button title="Ver el resumen de tu cuenta" className={tab === 'resumen' ? 'active' : ''} onClick={() => setTab('resumen')}>Resumen</button>
+          <button title="Ver el resumen de tu cuenta" className={tab === 'resumen' ? 'active' : ''} onClick={() => setTab('resumen')}>
+            <i className="ti ti-layout-dashboard" aria-hidden="true" /> Resumen
+          </button>
           <button title="Ver mis PQR" className={tab === 'pqr' ? 'active' : ''} onClick={() => setTab('pqr')}>
-            Mis PQR{pendientesPqr > 0 && <span className="pf-tab-count">{pendientesPqr}</span>}
+            <i className="ti ti-message-report" aria-hidden="true" /> Mis PQR{pendientesPqr > 0 && <span className="pf-tab-count">{pendientesPqr}</span>}
           </button>
           <button title="Ver mis reservas" className={tab === 'reservas' ? 'active' : ''} onClick={() => setTab('reservas')}>
-            Mis reservas{reservasActivas > 0 && <span className="pf-tab-count">{reservasActivas}</span>}
+            <i className="ti ti-calendar-event" aria-hidden="true" /> Mis reservas{reservasActivas > 0 && <span className="pf-tab-count">{reservasActivas}</span>}
           </button>
-          <button title="Ver los ajustes de tu cuenta" className={tab === 'ajustes' ? 'active' : ''} onClick={() => setTab('ajustes')}>Ajustes</button>
+          <button title="Ver los ajustes de tu cuenta" className={tab === 'ajustes' ? 'active' : ''} onClick={() => setTab('ajustes')}>
+            <i className="ti ti-settings" aria-hidden="true" /> Ajustes
+          </button>
         </div>
       </div>
 
-      <div className="pf-body">
+      <div className={`pf-body${tab === 'ajustes' ? ' pfg-body--ancho' : ''}`}>
         <Toast msg={toast} onClose={() => setToast(null)} />
 
         {tab === 'resumen' && (
@@ -1861,38 +1899,72 @@ function PerfilPanel() {
             <div className="pfx-main">
               <div className="pfx-strip">
                 <div className="pfx-box accent">
+                  <span className="pfg-box-ico" aria-hidden="true"><i className="ti ti-calendar-heart" /></span>
                   <span className="pfx-num">{reservasActivas}</span>
                   <span className="pfx-lbl">Reservas activas</span>
                 </div>
                 <div className="pfx-box">
+                  <span className="pfg-box-ico" aria-hidden="true"><i className="ti ti-confetti" /></span>
                   <span className="pfx-num">{reservas?.length ?? 0}</span>
                   <span className="pfx-lbl">Reservas totales</span>
                 </div>
                 <div className="pfx-box">
+                  <span className="pfg-box-ico" aria-hidden="true"><i className="ti ti-message-dots" /></span>
                   <span className="pfx-num">{pendientesPqr}</span>
                   <span className="pfx-lbl">PQR en curso</span>
                 </div>
                 <div className="pfx-box">
+                  <span className="pfg-box-ico" aria-hidden="true"><i className="ti ti-send" /></span>
                   <span className="pfx-num">{pqrs?.length ?? 0}</span>
                   <span className="pfx-lbl">PQR enviadas</span>
                 </div>
               </div>
 
+              {siguienteReserva && (
+                <section className="pfg-proximo" aria-label="Tu próximo evento">
+                  <div className="pfg-proximo-cuerpo">
+                    <span className="pfg-proximo-etiqueta"><i className="ti ti-sparkles" aria-hidden="true" /> Tu próximo evento</span>
+                    <h2>{nombreReserva(siguienteReserva)}</h2>
+                    <ul className="pfg-proximo-datos">
+                      <li><i className="ti ti-calendar" aria-hidden="true" /> {fmtFechaLarga(siguienteReserva.fecha_evento_rese)}</li>
+                      <li><i className="ti ti-users" aria-hidden="true" /> {siguienteReserva.invitados_rese} invitados</li>
+                      {siguienteReserva.ubicacion_rese && <li><i className="ti ti-map-pin" aria-hidden="true" /> {siguienteReserva.ubicacion_rese}</li>}
+                      <li><i className="ti ti-cash" aria-hidden="true" /> {Number(siguienteReserva.total_rese) > 0 ? fmtMoney(siguienteReserva.total_rese) : 'Total por definir'}</li>
+                    </ul>
+                    <button type="button" className="pfx-btn pfx-btn-primary" title="Ver el detalle de esta reserva" onClick={() => setDetalleReserva(siguienteReserva)}>
+                      Ver detalle <i className="ti ti-arrow-right" aria-hidden="true" />
+                    </button>
+                  </div>
+                  <div className={`pfg-cuenta${diasSiguiente != null && diasSiguiente <= 1 ? ' ya' : ''}`}>
+                    {diasSiguiente != null && diasSiguiente > 1 ? (
+                      <>
+                        <small>Faltan</small>
+                        <strong>{diasSiguiente}</strong>
+                        <small>días</small>
+                      </>
+                    ) : (
+                      <strong className="pfg-cuenta-texto">{textoFaltan}</strong>
+                    )}
+                    <span className={`pf-pill ${reservaEstadoPill(siguienteReserva.estado_rese).cls}`}>{reservaEstadoPill(siguienteReserva.estado_rese).txt}</span>
+                  </div>
+                </section>
+              )}
+
               <div className="pfx-section-head">
-                <h3>Próximas reservas</h3>
+                <h3><i className="ti ti-calendar-event" aria-hidden="true" /> {siguienteReserva ? 'También en tu agenda' : 'Próximas reservas'}</h3>
                 <button title="Ver todas mis reservas" type="button" className="pfx-link" onClick={() => setTab('reservas')}>Ver todo →</button>
               </div>
-              {reservasProximas.length === 0 ? (
+              {reservasProximas.length <= 1 ? (
                 <div className="pfx-empty-line">
-                  Sin reservas próximas. <Link title="Reservar tu evento" to="/social/reservar">reserva tu evento →</Link>
+                  {reservasProximas.length === 0 ? 'Sin reservas próximas.' : 'No tienes más reservas próximas.'} <Link title="Reservar tu evento" to="/social/reservar">reserva tu evento →</Link>
                 </div>
               ) : (
                 <div className="pf-list" style={{ width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
-                  {reservasProximas.slice(0, 3).map((r) => {
+                  {reservasProximas.slice(1, 4).map((r) => {
                     const pill = reservaEstadoPill(r.estado_rese);
                     return (
                       <button title="Ver el detalle de esta reserva" key={r.id_rese} className="pf-list-item" style={{ width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }} onClick={() => setDetalleReserva(r)}>
-                        <span className="pf-item-icon" aria-hidden="true"><i className="ti ti-calendar-event" /></span>
+                        <FechaGlass iso={r.fecha_evento_rese} />
                         <div className="pf-list-item-main" style={{ minWidth: 0 }}>
                           <span className="pf-list-item-title">{nombreReserva(r)}</span>
                           <span className="pf-list-item-sub">{fmtFecha(r.fecha_evento_rese)} · {r.invitados_rese} invitados · {Number(r.total_rese) > 0 ? fmtMoney(r.total_rese) : 'Total por definir'}</span>
@@ -1907,7 +1979,7 @@ function PerfilPanel() {
               )}
 
               <div className="pfx-section-head">
-                <h3>PQR en curso</h3>
+                <h3><i className="ti ti-message-dots" aria-hidden="true" /> PQR en curso</h3>
                 <button title="Ver todas mis PQR" type="button" className="pfx-link" onClick={() => setTab('pqr')}>Ver todo →</button>
               </div>
               {pqrEnCurso.length === 0 ? (
@@ -2054,7 +2126,7 @@ function PerfilPanel() {
               const pill = reservaEstadoPill(r.estado_rese);
               return (
                 <button title="Ver el detalle de esta reserva" key={r.id_rese} className="pf-list-item" onClick={() => setDetalleReserva(r)}>
-                  <span className="pf-item-icon" aria-hidden="true"><i className="ti ti-calendar-event" /></span>
+                  <FechaGlass iso={r.fecha_evento_rese} />
                   <div className="pf-list-item-main">
                     <span className="pf-list-item-title">{nombreReserva(r)}</span>
                     <span className="pf-list-item-sub">{fmtFecha(r.fecha_evento_rese)} · {r.invitados_rese} invitados · {Number(r.total_rese) > 0 ? fmtMoney(r.total_rese) : 'Total por definir'}</span>
@@ -2088,12 +2160,34 @@ function PerfilPanel() {
                     onCambiar={handleFotoClick}
                   />
                 </div>
-                  <div className="pfx-me-info">
+                <div className="pfx-me-info">
                   <strong>{user?.name || 'Tu perfil'}</strong>
                   <span className="pfx-tag">
                     <i className={`ti ${esAdmin ? 'ti-shield-check' : 'ti-user-circle'}`} aria-hidden="true" />
                     {esAdmin ? 'Administrador' : 'Cliente'}
                   </span>
+                  <span className="pfg-me-correo"><i className="ti ti-mail" aria-hidden="true" /> {user?.email}</span>
+                </div>
+                <div className="pfg-completo">
+                  <div className="pfg-completo-top">
+                    <span>Perfil completo</span>
+                    <strong>{perfilPct}%</strong>
+                  </div>
+                  <div
+                    className="pfx-bar"
+                    role="progressbar"
+                    aria-valuenow={perfilPct}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label="Perfil completado"
+                  >
+                    <span style={{ width: `${perfilPct}%` }} />
+                  </div>
+                  <small>
+                    {faltantes.length === 0
+                      ? <><i className="ti ti-circle-check" aria-hidden="true" /> ¡Tu perfil está completo!</>
+                      : <>Te falta agregar: {faltantes.join(', ')}.</>}
+                  </small>
                 </div>
               </div>
               <AjustesForm user={user} updateProfile={updateProfile} />
@@ -2125,7 +2219,7 @@ function PerfilPanel() {
           onOcultar={() => alternarOcultaPqr(detallePqr, !pqrsOcultas?.some((x) => x.id_pqr === detallePqr.id_pqr))}
         />
       )}
-    </>
+    </div>
   );
 }
 
@@ -2185,56 +2279,90 @@ function AjustesForm({
   };
 
   return (
-    <div className="pfx-card">
-      <div className="pfx-card-head pfx-head-icon">
-        <span className="pfx-chip pfx-chip-sm"><i className="ti ti-id-badge-2" aria-hidden="true" /></span>
-        <h3>Datos personales</h3>
+    <>
+      {/* El aviso va fuera de la tarjeta: el vidrio (backdrop-filter) lo encerraría dentro de ella */}
+      <Toast msg={msg} onClose={() => setMsg(null)} />
+      <div className="pfx-card pfg-datos">
+        <div className="pfx-card-head pfx-head-icon">
+          <span className="pfx-chip pfx-chip-sm"><i className="ti ti-id-badge-2" aria-hidden="true" /></span>
+          <div>
+            <h3>Datos personales</h3>
+            <p className="pfg-card-sub">Mantenlos al día para que tus reservas salgan sin contratiempos.</p>
+          </div>
+        </div>
+        <form className="pfx-form" onSubmit={submit}>
+          <p className="pfg-grupo"><i className="ti ti-user" aria-hidden="true" /> Identidad</p>
+          <div className="pfg-form-grid">
+            <label className="pfx-field">
+              <span>Nombre</span>
+              <div className="pfg-campo">
+                <i className="ti ti-user" aria-hidden="true" />
+                <input value={nombre} onChange={(e) => setNombre(soloLetras(e.target.value))} required maxLength={50} />
+              </div>
+            </label>
+            <label className="pfx-field">
+              <span>Apellido</span>
+              <div className="pfg-campo">
+                <i className="ti ti-user" aria-hidden="true" />
+                <input value={apellido} onChange={(e) => setApellido(soloLetras(e.target.value))} required maxLength={50} />
+              </div>
+            </label>
+            <label className="pfx-field">
+              <span>Tipo de documento</span>
+              <div className="pfg-campo">
+                <i className="ti ti-id" aria-hidden="true" />
+                <select value={tipoDocumento} onChange={(e) => setTipoDocumento(e.target.value)}>
+                  <option value="">Seleccionar...</option>
+                  <option value="CC">Cédula de ciudadanía</option>
+                  <option value="TI">Tarjeta de identidad</option>
+                  <option value="CE">Cédula de extranjería</option>
+                  <option value="PA">Pasaporte</option>
+                </select>
+              </div>
+            </label>
+            <label className="pfx-field">
+              <span>Número de documento</span>
+              <div className="pfg-campo">
+                <i className="ti ti-hash" aria-hidden="true" />
+                <input value={documento} onChange={(e) => setDocumento(soloNumeros(e.target.value))} inputMode="numeric" placeholder="1234567890" />
+              </div>
+            </label>
+          </div>
+
+          <p className="pfg-grupo"><i className="ti ti-address-book" aria-hidden="true" /> Contacto</p>
+          <div className="pfg-form-grid pfg-form-grid--3">
+            <label className="pfx-field">
+              <span>Teléfono</span>
+              <div className="pfg-campo">
+                <i className="ti ti-phone" aria-hidden="true" />
+                <input value={telefono} onChange={(e) => setTelefono(soloNumeros(e.target.value))} inputMode="numeric" placeholder="3001234567" />
+              </div>
+            </label>
+            <label className="pfx-field">
+              <span>Ciudad</span>
+              <div className="pfg-campo">
+                <i className="ti ti-map-pin" aria-hidden="true" />
+                <input value={ciudad} onChange={(e) => setCiudad(e.target.value.slice(0, 80))} placeholder="Ej. Sogamoso, Boyacá" />
+              </div>
+            </label>
+            <label className="pfx-field">
+              <span>Fecha de nacimiento</span>
+              <div className="pfg-campo">
+                <i className="ti ti-cake" aria-hidden="true" />
+                <input type="date" value={fechaNacimiento} max={new Date().toLocaleDateString('en-CA')} onChange={(e) => setFechaNacimiento(e.target.value)} />
+              </div>
+            </label>
+          </div>
+
+          <div className="pfg-form-pie">
+            <span className="pfg-form-nota"><i className="ti ti-info-circle" aria-hidden="true" /> Revisa tus datos antes de guardar; se usan en tus reservas.</span>
+            <button title={saving ? 'Guardando…' : 'Guardar los cambios de tu perfil'} className="pfx-btn pfx-btn-primary" disabled={saving}>
+              <i className="ti ti-device-floppy" aria-hidden="true" /> {saving ? 'Guardando…' : 'Guardar cambios'}
+            </button>
+          </div>
+        </form>
       </div>
-      <form className="pfx-form" onSubmit={submit}>
-        <Toast msg={msg} onClose={() => setMsg(null)} />
-        <div className="pfx-form-row">
-          <label className="pfx-field">
-            <span>Nombre</span>
-            <input value={nombre} onChange={(e) => setNombre(soloLetras(e.target.value))} required maxLength={50} />
-          </label>
-          <label className="pfx-field">
-            <span>Apellido</span>
-            <input value={apellido} onChange={(e) => setApellido(soloLetras(e.target.value))} required maxLength={50} />
-          </label>
-        </div>
-        <div className="pfx-form-row">
-          <label className="pfx-field">
-            <span>Tipo de documento</span>
-            <select value={tipoDocumento} onChange={(e) => setTipoDocumento(e.target.value)}>
-              <option value="">Seleccionar...</option>
-              <option value="CC">Cédula de ciudadanía</option>
-              <option value="TI">Tarjeta de identidad</option>
-              <option value="CE">Cédula de extranjería</option>
-              <option value="PA">Pasaporte</option>
-            </select>
-          </label>
-          <label className="pfx-field">
-            <span>Número de documento</span>
-            <input value={documento} onChange={(e) => setDocumento(soloNumeros(e.target.value))} inputMode="numeric" placeholder="1234567890" />
-          </label>
-        </div>
-        <label className="pfx-field">
-          <span>Teléfono</span>
-          <input value={telefono} onChange={(e) => setTelefono(soloNumeros(e.target.value))} inputMode="numeric" placeholder="3001234567" />
-        </label>
-        <label className="pfx-field">
-          <span>Ciudad</span>
-          <input value={ciudad} onChange={(e) => setCiudad(e.target.value.slice(0, 80))} placeholder="Ej. Sogamoso, Boyacá" />
-        </label>
-        <label className="pfx-field">
-          <span>Fecha de nacimiento</span>
-          <input type="date" value={fechaNacimiento} max={new Date().toLocaleDateString('en-CA')} onChange={(e) => setFechaNacimiento(e.target.value)} />
-        </label>
-        <div className="pfx-form-actions">
-          <button title={saving ? 'Guardando…' : 'Guardar los cambios de tu perfil'} className="pfx-btn pfx-btn-primary" disabled={saving}>{saving ? 'Guardando…' : 'Guardar cambios'}</button>
-        </div>
-      </form>
-    </div>
+    </>
   );
 }
 
@@ -2329,19 +2457,23 @@ function CambiarContrasena() {
 
   return (
     <>
+      {/* Fuera de la tarjeta para que el vidrio no encierre el aviso flotante */}
+      <Toast msg={msg} onClose={() => setMsg(null)} />
       <div className="pfx-card">
         <div className="pfx-card-head pfx-head-icon">
           <span className="pfx-chip pfx-chip-sm"><i className="ti ti-lock" aria-hidden="true" /></span>
           <h3>Seguridad</h3>
         </div>
         <form className="pfx-form" onSubmit={verificarActual}>
-          <Toast msg={msg} onClose={() => setMsg(null)} />
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+          <p className="pfg-nota">
             Digita tu contraseña actual para poder actualizarla.
           </p>
           <label className="pfx-field">
             <span>Contraseña actual</span>
-            <input type={tipo} value={actual} onChange={(e) => setActual(e.target.value)} required autoComplete="current-password" />
+            <div className="pfg-campo">
+              <i className="ti ti-key" aria-hidden="true" />
+              <input type={tipo} value={actual} onChange={(e) => setActual(e.target.value)} required autoComplete="current-password" />
+            </div>
           </label>
           <label className="pf-check">
             <input type="checkbox" checked={ver} onChange={(e) => setVer(e.target.checked)} />
@@ -2442,6 +2574,8 @@ function CuentaCard({
 
   return (
     <>
+      {/* Fuera de la tarjeta y de la ventana para que el vidrio no encierre el aviso flotante */}
+      <Toast msg={error} onClose={() => setError(null)} />
       <div className="pfx-card pfx-card-danger">
         <div className="pfx-card-head pfx-head-icon">
           <span className="pfx-chip pfx-chip-sm"><i className="ti ti-alert-triangle" aria-hidden="true" /></span>
@@ -2452,6 +2586,7 @@ function CuentaCard({
             <span className="pfx-row-label">Rol</span>
             <span className="pfx-row-value">{rol}</span>
           </div>
+          <p className="pfg-nota">Si la eliminas, se cerrará tu sesión y un administrador tendría que reactivarla.</p>
           <div className="pfx-form-actions">
             <button title={eliminando ? 'Eliminando…' : 'Eliminar tu cuenta'} type="button" className="pfx-btn pfx-btn-danger" onClick={() => setConfirmar(true)} disabled={eliminando}>
               {eliminando ? 'Eliminando…' : 'Eliminar cuenta'}
@@ -2472,7 +2607,6 @@ function CuentaCard({
             <p className="pfx-danger-text">
               Vas a desactivar tu cuenta. Se cerrará tu sesión y no podrás iniciar sesión de nuevo hasta que un administrador la reactive.
             </p>
-            <Toast msg={error} onClose={() => setError(null)} />
             <div className="pfx-modal-actions">
               <button title="Cancelar y conservar tu cuenta" type="button" className="pfx-btn pfx-btn-outline" onClick={cerrar} disabled={eliminando}>Cancelar</button>
               <button title={eliminando ? 'Eliminando…' : 'Confirmar y eliminar tu cuenta'} type="button" className="pfx-btn pfx-btn-danger pfx-btn-solid" onClick={eliminar} disabled={eliminando}>

@@ -2668,6 +2668,13 @@
 .mod-deportivo .perfil .part-card.part-card-danger .part-card-head-icon {
   background: linear-gradient(135deg, #ef4444, #b91c1c);
   box-shadow: 0 8px 16px -8px rgba(185, 28, 28, .7);
+  color: #fff;
+}
+.mod-deportivo .perfil .perfil-cuenta-nota {
+  margin: .6rem 0 0;
+  font-size: calc(.8rem * var(--fs-scale, 1));
+  line-height: 1.5;
+  color: var(--p-tenue);
 }
 
 /* Ficha del ciclista */
@@ -3389,6 +3396,181 @@
 .mod-deportivo .perfil .part-toggle::after { width: 20px; height: 20px; box-shadow: 0 2px 6px rgba(0, 0, 0, .25); }
 .mod-deportivo .perfil .part-toggle.on { background: var(--p-grad); }
 .mod-deportivo .perfil .part-toggle.on::after { transform: translateX(20px); }
+
+/* Ajustes a todo lo ancho: la ficha lateral repite los mismos datos del formulario */
+.mod-deportivo .perfil .part-body.perfil-body--ancho { grid-template-columns: minmax(0, 1fr); }
+.mod-deportivo .perfil .part-body.perfil-body--ancho > .part-info-aside { display: none; }
+.mod-deportivo .perfil .perfil-body--ancho .part-settings-grid,
+.mod-deportivo .perfil .perfil-body--ancho .part-settings-main { gap: 1.1rem; }
+
+/* Tarjeta del perfil: compacta, con medidor de perfil completo */
+.mod-deportivo .perfil .part-profile-card { padding: 1.25rem 1.5rem; margin-bottom: 0; }
+.mod-deportivo .perfil .part-profile-card .part-profile-main { gap: 1.1rem; }
+.mod-deportivo .perfil .part-profile-info { gap: .35rem; }
+.mod-deportivo .perfil .perfil-correo {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  font-size: calc(.8rem * var(--fs-scale, 1));
+  color: rgba(255, 255, 255, .75);
+  overflow-wrap: anywhere;
+}
+.mod-deportivo .perfil .perfil-completo {
+  position: relative;
+  z-index: 1;
+  margin-left: auto;
+  width: min(320px, 100%);
+  padding: .85rem 1rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .08);
+  border: 1px solid rgba(255, 255, 255, .16);
+}
+.mod-deportivo .perfil .perfil-completo-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: calc(.8rem * var(--fs-scale, 1));
+  font-weight: 700;
+  color: rgba(255, 255, 255, .85);
+}
+.mod-deportivo .perfil .perfil-completo-top strong { font-size: calc(1.25rem * var(--fs-scale, 1)); color: #7fe3ee; }
+.mod-deportivo .perfil .perfil-completo-barra {
+  height: 8px;
+  margin: .45rem 0 .5rem;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, .14);
+}
+.mod-deportivo .perfil .perfil-completo-barra span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2c9caf, #7fe3ee);
+  transition: width .4s ease;
+}
+.mod-deportivo .perfil .perfil-completo small {
+  display: flex;
+  align-items: center;
+  gap: .3rem;
+  font-size: calc(.74rem * var(--fs-scale, 1));
+  color: rgba(255, 255, 255, .72);
+}
+.mod-deportivo .perfil .perfil-completo small i { color: #7fe3ee; }
+
+/* Datos personales en cuadrícula */
+.mod-deportivo .perfil .perfil-card-sub {
+  margin: .1rem 0 0;
+  font-size: calc(.78rem * var(--fs-scale, 1));
+  color: var(--p-tenue);
+}
+.mod-deportivo .perfil .perfil-datos .part-card-body { padding: 1.1rem 1.25rem 1.25rem; }
+.mod-deportivo .perfil .perfil-grupo {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  margin: 0 0 .6rem;
+  font-size: calc(.72rem * var(--fs-scale, 1));
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--p-acento);
+}
+.mod-deportivo .perfil .perfil-grupo::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--p-linea);
+}
+.mod-deportivo .perfil .perfil-form-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: .2rem 1rem;
+  margin-bottom: .6rem;
+}
+.mod-deportivo .perfil .perfil-form-grid .part-form-group { margin-bottom: .75rem; min-width: 0; }
+.mod-deportivo .perfil .perfil-form-grid .part-form-group label {
+  font-size: calc(.78rem * var(--fs-scale, 1));
+  font-weight: 700;
+  margin-bottom: .35rem;
+}
+.mod-deportivo .perfil .perfil-campo { position: relative; }
+.mod-deportivo .perfil .perfil-campo > i {
+  position: absolute;
+  left: .75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+  font-size: 1rem;
+  color: var(--p-acento);
+  pointer-events: none;
+}
+/* Con ícono a la izquierda (también cuando el campo está en rojo) */
+.mod-deportivo .perfil .part-form-group .perfil-campo > input,
+.mod-deportivo .perfil .part-form-group .perfil-campo > select {
+  height: 42px;
+  padding-left: 2.3rem;
+  text-overflow: ellipsis;
+}
+.mod-deportivo .perfil .part-form-group .perfil-campo > input[type="date"] { padding-right: .6rem; }
+/* Contraseña: deja espacio para el ojito */
+.mod-deportivo .perfil .part-form-group .part-pass-field > input { padding-right: 2.6rem; }
+
+.mod-deportivo .perfil .perfil-form-pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding-top: 1rem;
+  border-top: 1px dashed var(--p-linea);
+}
+.mod-deportivo .perfil .perfil-form-pie .part-form-alert { flex: 1 1 280px; margin: 0; }
+.mod-deportivo .perfil .perfil-form-nota {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  font-size: calc(.8rem * var(--fs-scale, 1));
+  color: var(--p-tenue);
+}
+.mod-deportivo .perfil .perfil-form-nota i { color: var(--p-acento); }
+.mod-deportivo .perfil .perfil-form-pie .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  margin: 0 0 0 auto;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #2c9caf, #1b7f91);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 10px 20px -12px rgba(44, 156, 175, .9);
+}
+
+/* Notificaciones, Seguridad y Cuenta en una sola fila */
+.mod-deportivo .perfil .part-settings-pair.perfil-ajustes-fila {
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, .8fr);
+  gap: 1.1rem;
+  margin-bottom: 0;
+}
+.mod-deportivo .perfil .perfil-ajustes-fila .part-toggle-row { gap: .8rem; padding: .65rem 0; }
+.mod-deportivo .perfil .perfil-ajustes-fila .part-card-body { padding: .9rem 1.15rem 1.1rem; }
+.mod-deportivo .perfil .perfil-ajustes-fila .part-card-body .btn { border-radius: 12px; }
+
+@media (max-width: 1060px) {
+  .mod-deportivo .perfil .part-settings-pair.perfil-ajustes-fila { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mod-deportivo .perfil .perfil-ajustes-fila > .part-card:first-child { grid-column: 1 / -1; }
+}
+@media (max-width: 900px) {
+  .mod-deportivo .perfil .perfil-form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .mod-deportivo .perfil .part-profile-card .part-profile-main { flex-wrap: wrap; }
+  .mod-deportivo .perfil .perfil-completo { margin-left: 0; width: 100%; }
+  .mod-deportivo .perfil .part-settings-pair.perfil-ajustes-fila { grid-template-columns: 1fr; }
+  .mod-deportivo .perfil .perfil-form-pie .btn { width: 100%; justify-content: center; }
+}
+@media (max-width: 480px) {
+  .mod-deportivo .perfil .perfil-form-grid { grid-template-columns: 1fr; }
+}
 
 /* ---------------- PQR (componente ParticipantePqr, solo dentro del perfil) ---------------- */
 .mod-deportivo .perfil .dpq {

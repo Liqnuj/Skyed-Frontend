@@ -2164,3 +2164,775 @@
 @media (max-width: 480px) {
   .mod-social .pf-pag-btn { min-width: 2.1rem; height: 2.1rem; padding: 0 .7rem; }
 }
+/* =====================================================================
+   PERFIL SOCIAL — "LIQUID GLASS" (.pfg) — pages/social/Perfil.tsx
+   Paneles de vidrio esmerilado (backdrop-filter) sobre manchas de color
+   que se mueven despacio, con brillo en los bordes. Todo va bajo .pfg
+   para no cambiar otras páginas de SkyedSocial.
+   Ojo: un elemento con backdrop-filter "encierra" a los position:fixed
+   que tenga dentro; por eso los avisos (Toast) van fuera de las tarjetas.
+   ===================================================================== */
+.mod-social .pfg {
+  --g-vidrio: rgba(255, 255, 255, .62);
+  --g-vidrio-2: rgba(255, 255, 255, .34);
+  --g-borde: rgba(255, 255, 255, .78);
+  --g-linea: rgba(26, 10, 46, .09);
+  --g-campo: rgba(255, 255, 255, .6);
+  --g-texto: #1a0a2e;
+  --g-tenue: #6a5a7e;
+  --g-acento: #9c02ae;
+  --g-acento-suave: rgba(156, 2, 174, .12);
+  --g-oro: #b8902f;
+  --g-grad: linear-gradient(135deg, #b40ec7, #6a1fb0);
+  --g-grad-oro: linear-gradient(135deg, #e8c97a, #c9a84c);
+  --g-sombra: 0 18px 40px -24px rgba(70, 12, 100, .55);
+  --g-sombra-alta: 0 26px 50px -24px rgba(70, 12, 100, .65);
+  --g-brillo: inset 0 1px 0 rgba(255, 255, 255, .9), inset 0 -1px 0 rgba(255, 255, 255, .25);
+  --g-blur: blur(20px) saturate(180%);
+  --g-radio: 22px;
+  position: relative;
+  overflow: clip;
+  color: var(--g-texto);
+}
+.mod-social.dark-mode .pfg {
+  --g-vidrio: rgba(255, 255, 255, .085);
+  --g-vidrio-2: rgba(255, 255, 255, .03);
+  --g-borde: rgba(255, 255, 255, .15);
+  --g-linea: rgba(255, 255, 255, .09);
+  --g-campo: rgba(255, 255, 255, .06);
+  --g-texto: #f7f0fb;
+  --g-tenue: #bfaed0;
+  --g-acento: #e07cf0;
+  --g-acento-suave: rgba(224, 124, 240, .14);
+  --g-oro: #e8c97a;
+  --g-sombra: 0 20px 44px -24px rgba(0, 0, 0, .85);
+  --g-sombra-alta: 0 28px 54px -24px rgba(0, 0, 0, .9);
+  --g-brillo: inset 0 1px 0 rgba(255, 255, 255, .16), inset 0 -1px 0 rgba(255, 255, 255, .04);
+  background: #12011b;
+}
+
+@keyframes pfgFlota1 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(60px, 40px) scale(1.12); } }
+@keyframes pfgFlota2 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-70px, -30px) scale(.92); } }
+@keyframes pfgFlota3 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(40px, -60px) scale(1.08); } }
+@keyframes pfgGiro { to { transform: rotate(360deg); } }
+@keyframes pfgSube { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes pfgLatido { 0%, 100% { box-shadow: 0 0 0 0 rgba(232, 201, 122, .6); } 70% { box-shadow: 0 0 0 8px rgba(232, 201, 122, 0); } }
+@keyframes pfgReflejo { from { transform: translateX(-140%) skewX(-18deg); } to { transform: translateX(320%) skewX(-18deg); } }
+
+/* ---------- Manchas de color de fondo (el vidrio las difumina) ---------- */
+.mod-social .pfg-ambiente {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.mod-social .pfg-ambiente span {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: .55;
+}
+.mod-social .pfg-ambiente span:nth-child(1) {
+  width: 520px; height: 520px; top: 260px; left: -140px;
+  background: radial-gradient(circle, #c026d3, transparent 70%);
+  animation: pfgFlota1 22s ease-in-out infinite;
+}
+.mod-social .pfg-ambiente span:nth-child(2) {
+  width: 460px; height: 460px; top: 420px; right: -120px;
+  background: radial-gradient(circle, #e8c97a, transparent 70%);
+  animation: pfgFlota2 26s ease-in-out infinite;
+}
+.mod-social .pfg-ambiente span:nth-child(3) {
+  width: 560px; height: 560px; bottom: -160px; left: 30%;
+  background: radial-gradient(circle, #8b2252, transparent 70%);
+  animation: pfgFlota3 30s ease-in-out infinite;
+}
+/* Modo claro: sin manchas de color ni círculos en las tarjetas; solo un fondo crema limpio */
+.mod-social:not(.dark-mode) .pfg-ambiente { display: none; }
+.mod-social:not(.dark-mode) .pfg .pfx-box::after { display: none; }
+.mod-social:not(.dark-mode) .pfg { background: linear-gradient(180deg, #faf8f5 0%, #f6f1f8 100%); }
+
+/* El contenido va por encima de las manchas */
+.mod-social .pfg > .pf-header,
+.mod-social .pfg > .pf-body { position: relative; }
+.mod-social.dark-mode .pfg .pf-body { background: transparent; box-shadow: none; clip-path: none; }
+
+/* ---------- Vidrio: superficies comunes ---------- */
+.mod-social .pfg .pfx-card,
+.mod-social .pfg .pfx-box,
+.mod-social .pfg .pfx-item,
+.mod-social .pfg .pf-list-item,
+.mod-social .pfg .pfx-me,
+.mod-social .pfg .pfx-empty-line,
+.mod-social .pfg .pfq-empty,
+.mod-social .pfg .pf-toolbar {
+  color: var(--g-texto);
+  background:
+    radial-gradient(120% 70% at 0% 0%, rgba(255, 255, 255, .28), transparent 55%),
+    linear-gradient(145deg, var(--g-vidrio), var(--g-vidrio-2));
+  border: 1px solid var(--g-borde);
+  border-radius: var(--g-radio);
+  box-shadow: var(--g-brillo), var(--g-sombra);
+  -webkit-backdrop-filter: var(--g-blur);
+  backdrop-filter: var(--g-blur);
+}
+.mod-social.dark-mode .pfg .pfx-card,
+.mod-social.dark-mode .pfg .pfx-box,
+.mod-social.dark-mode .pfg .pfx-item,
+.mod-social.dark-mode .pfg .pf-list-item,
+.mod-social.dark-mode .pfg .pfx-me,
+.mod-social.dark-mode .pfg .pfx-empty-line,
+.mod-social.dark-mode .pfg .pfq-empty,
+.mod-social.dark-mode .pfg .pf-toolbar {
+  background:
+    radial-gradient(120% 70% at 0% 0%, rgba(255, 255, 255, .09), transparent 55%),
+    linear-gradient(145deg, var(--g-vidrio), var(--g-vidrio-2));
+}
+
+/* ---------- Encabezado ---------- */
+.mod-social .pfg .pfg-hero.pf-header { padding-top: 6.5rem; border-bottom: 0; }
+/* La identidad flota en un panel de vidrio sobre las partículas */
+.mod-social .pfg .pfg-hero .pf-header-inner {
+  max-width: calc(1200px - 4rem);
+  margin: 0 auto 1.1rem;
+  padding: 1.4rem 1.75rem;
+  gap: 1.4rem;
+  border-radius: 28px;
+  background:
+    radial-gradient(120% 90% at 0% 0%, rgba(255, 255, 255, .14), transparent 55%),
+    linear-gradient(145deg, rgba(255, 255, 255, .09), rgba(255, 255, 255, .02));
+  border: 1px solid rgba(255, 255, 255, .16);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .2), 0 24px 50px -28px rgba(0, 0, 0, .8);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  backdrop-filter: blur(14px) saturate(160%);
+  animation: pfgSube .5s ease backwards;
+}
+@media (max-width: 1264px) {
+  .mod-social .pfg .pfg-hero .pf-header-inner { margin-left: 2rem; margin-right: 2rem; }
+}
+
+/* Avatar con anillo morado y dorado girando */
+.mod-social .pfg .pfg-avatar { padding: 5px; }
+.mod-social .pfg .pfg-avatar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, #e8c97a, #c026d3, #6a1fb0, #e8c97a 72%, transparent 72% 78%, #e8c97a 78%);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+  animation: pfgGiro 10s linear infinite;
+}
+.mod-social .pfg .pfg-hero .pf-avatar {
+  position: relative;
+  z-index: 1;
+  width: 96px;
+  height: 96px;
+  border: 3px solid #1a0a2e;
+  box-shadow: 0 14px 30px -12px rgba(0, 0, 0, .7);
+}
+.mod-social .pfg .pfg-hero .pf-avatar-edit { z-index: 2; right: 2px; bottom: 2px; }
+
+.mod-social .pfg .pfg-hero .pf-badge {
+  border: 1px solid rgba(232, 201, 122, .35);
+  background: rgba(232, 201, 122, .1);
+}
+.mod-social .pfg .pfg-hero .pf-meta h1 {
+  font-size: calc(clamp(1.7rem, 3vw, 2.3rem) * var(--fs-scale, 1));
+  letter-spacing: -.01em;
+}
+.mod-social .pfg .pfg-chips {
+  list-style: none;
+  margin: .8rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .45rem;
+}
+.mod-social .pfg .pfg-chips li {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .32rem .8rem;
+  border-radius: 999px;
+  font-size: calc(.8rem * var(--fs-scale, 1));
+  font-weight: 600;
+  color: rgba(255, 255, 255, .92);
+  background: rgba(255, 255, 255, .08);
+  border: 1px solid rgba(255, 255, 255, .16);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12);
+}
+.mod-social .pfg .pfg-chips li i { color: #e8c97a; }
+.mod-social .pfg .pfg-chips .pfg-chip-vivo { background: rgba(232, 201, 122, .14); border-color: rgba(232, 201, 122, .42); }
+.mod-social .pfg .pfg-punto {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e8c97a;
+  animation: pfgLatido 1.8s ease-out infinite;
+}
+
+/* Botones del encabezado en vidrio */
+.mod-social .pfg .pfg-hero .pf-actions .btn-sm-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .08);
+  border-color: rgba(255, 255, 255, .28);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .15);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+.mod-social .pfg .pfg-hero .pf-actions .btn-sm-outline:hover { background: rgba(255, 255, 255, .16); }
+.mod-social .pfg .pfg-hero .pf-actions .btn-sm-outline.pfx-primary {
+  background: var(--g-grad);
+  border-color: rgba(255, 255, 255, .25);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3), 0 12px 24px -12px rgba(192, 38, 211, .9);
+}
+
+/* Pestañas: barra de vidrio tipo "píldora" */
+.mod-social .pfg .pfg-hero .pf-tabs {
+  display: flex;
+  width: fit-content;
+  max-width: calc(100% - 4rem);
+  margin: 0 0 1.5rem max(2rem, calc(50% - 600px + 2rem));
+  padding: .35rem;
+  gap: .25rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .07);
+  border: 1px solid rgba(255, 255, 255, .14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .14), 0 16px 34px -22px rgba(0, 0, 0, .8);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  backdrop-filter: blur(14px) saturate(160%);
+}
+.mod-social .pfg .pfg-hero .pf-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  padding: .6rem 1.15rem;
+  border: 0;
+  border-radius: 999px;
+  color: rgba(255, 255, 255, .7);
+  transition: background .25s ease, color .25s ease, box-shadow .25s ease;
+}
+.mod-social .pfg .pfg-hero .pf-tabs button i { font-size: 1.05rem; }
+.mod-social .pfg .pfg-hero .pf-tabs button:hover { color: #fff; background: rgba(255, 255, 255, .07); }
+.mod-social .pfg .pfg-hero .pf-tabs button.active {
+  color: #fff;
+  background: linear-gradient(145deg, rgba(255, 255, 255, .24), rgba(255, 255, 255, .08));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), inset 0 -1px 0 rgba(255, 255, 255, .08), 0 8px 18px -10px rgba(0, 0, 0, .7);
+}
+.mod-social .pfg .pfg-hero .pf-tabs button.active i { color: #e8c97a; }
+.mod-social .pfg .pfg-hero .pf-tabs button:focus-visible { outline: 3px solid #e8c97a; outline-offset: 1px; }
+
+/* ---------- Cuerpo ---------- */
+.mod-social .pfg .pf-body { padding-top: 2rem; }
+.mod-social .pfg .pfx-main,
+.mod-social .pfg .pf-list { animation: pfgSube .45s ease backwards; }
+
+.mod-social .pfg .pfx-card-head { border-bottom-color: var(--g-linea); }
+.mod-social .pfg .pfx-card-head h3 { color: var(--g-texto); font-weight: 800; }
+.mod-social .pfg .pfx-chip {
+  color: #fff;
+  background: var(--g-grad);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 8px 16px -8px rgba(156, 2, 174, .8);
+}
+.mod-social .pfg .pfx-card-danger .pfx-chip {
+  color: #fff;
+  background: linear-gradient(135deg, #ef4444, #b91c1c);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 8px 16px -8px rgba(185, 28, 28, .8);
+}
+.mod-social .pfg .pfx-row { border-bottom-color: var(--g-linea); }
+.mod-social .pfg .pfx-row-label { color: var(--g-tenue); opacity: 1; }
+.mod-social .pfg .pfx-row-value { font-weight: 600; }
+.mod-social .pfg .pfx-link { color: var(--g-acento); }
+
+/* Cifras */
+.mod-social .pfg .pfx-strip { gap: .9rem; }
+.mod-social .pfg .pfx-box {
+  position: relative;
+  overflow: hidden;
+  align-items: flex-start;
+  text-align: left;
+  padding: 1.1rem 1.15rem 1.15rem;
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+.mod-social .pfg .pfx-box:hover { transform: translateY(-3px); box-shadow: var(--g-brillo), var(--g-sombra-alta); }
+.mod-social .pfg .pfx-box::after {
+  content: "";
+  position: absolute;
+  right: -30px;
+  top: -30px;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--g-acento-suave), transparent 70%);
+  pointer-events: none;
+}
+.mod-social .pfg .pfg-box-ico {
+  width: 42px;
+  height: 42px;
+  margin-bottom: .45rem;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  font-size: 1.25rem;
+  color: #fff;
+  background: var(--g-grad);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 10px 18px -10px rgba(156, 2, 174, .9);
+}
+.mod-social .pfg .pfx-box.accent .pfg-box-ico { background: var(--g-grad-oro); color: #3a2400; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5), 0 10px 18px -10px rgba(201, 168, 76, .9); }
+.mod-social .pfg .pfx-num { font-size: calc(1.9rem * var(--fs-scale, 1)); font-weight: 800; color: var(--g-texto); }
+.mod-social .pfg .pfx-box.accent .pfx-num { color: var(--g-acento); }
+.mod-social .pfg .pfx-lbl { font-size: calc(.8rem * var(--fs-scale, 1)); font-weight: 600; color: var(--g-tenue); opacity: 1; }
+
+/* Tu próximo evento */
+.mod-social .pfg .pfg-proximo {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1.25rem;
+  margin-top: 1.4rem;
+  padding: 1.6rem 1.75rem;
+  border-radius: 26px;
+  color: #fff;
+  background:
+    radial-gradient(60% 120% at 100% 0%, rgba(232, 201, 122, .35), transparent 60%),
+    radial-gradient(70% 120% at 0% 100%, rgba(192, 38, 211, .55), transparent 60%),
+    linear-gradient(135deg, rgba(74, 32, 128, .78), rgba(26, 10, 46, .82));
+  border: 1px solid rgba(255, 255, 255, .22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3), 0 28px 54px -28px rgba(70, 12, 100, .9);
+  -webkit-backdrop-filter: blur(18px) saturate(170%);
+  backdrop-filter: blur(18px) saturate(170%);
+  animation: pfgSube .5s ease backwards;
+}
+.mod-social .pfg .pfg-proximo::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 28%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .12), transparent);
+  animation: pfgReflejo 6s ease-in-out 1s infinite;
+  pointer-events: none;
+}
+.mod-social .pfg .pfg-proximo-etiqueta {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  font-size: calc(.74rem * var(--fs-scale, 1));
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: #e8c97a;
+}
+.mod-social .pfg .pfg-proximo h2 {
+  margin: .45rem 0 .65rem;
+  font-family: 'Playfair Display', serif;
+  font-size: calc(clamp(1.4rem, 2.6vw, 1.9rem) * var(--fs-scale, 1));
+  line-height: 1.15;
+  color: #fff;
+}
+.mod-social .pfg .pfg-proximo-datos {
+  list-style: none;
+  margin: 0 0 1.1rem;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem 1.1rem;
+  font-size: calc(.88rem * var(--fs-scale, 1));
+  color: rgba(255, 255, 255, .86);
+}
+.mod-social .pfg .pfg-proximo-datos li { display: inline-flex; align-items: center; gap: .35rem; }
+.mod-social .pfg .pfg-proximo-datos i { color: #e8c97a; }
+.mod-social .pfg .pfg-proximo .pfx-btn {
+  border-radius: 14px;
+  border-color: rgba(255, 255, 255, .3);
+  background: rgba(255, 255, 255, .16);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+.mod-social .pfg .pfg-proximo .pfx-btn:hover { background: rgba(255, 255, 255, .26); }
+.mod-social .pfg .pfg-cuenta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .15rem;
+  min-width: 130px;
+  padding: 1rem 1.1rem;
+  border-radius: 20px;
+  text-align: center;
+  background: linear-gradient(145deg, rgba(255, 255, 255, .2), rgba(255, 255, 255, .06));
+  border: 1px solid rgba(255, 255, 255, .28);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .4);
+}
+.mod-social .pfg .pfg-cuenta small {
+  font-size: calc(.7rem * var(--fs-scale, 1));
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, .78);
+}
+.mod-social .pfg .pfg-cuenta strong {
+  font-size: calc(2.8rem * var(--fs-scale, 1));
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.mod-social .pfg .pfg-cuenta .pfg-cuenta-texto { font-size: calc(1.3rem * var(--fs-scale, 1)); padding: .4rem 0; }
+.mod-social .pfg .pfg-cuenta.ya { border-color: rgba(232, 201, 122, .6); animation: pfgLatido 2s ease-out infinite; }
+.mod-social .pfg .pfg-cuenta .pf-pill { margin-top: .5rem; background: rgba(255, 255, 255, .92); color: #4a2080; }
+.mod-social .pfg .pfg-cuenta .pf-pill.ok { color: #15803d; }
+.mod-social .pfg .pfg-cuenta .pf-pill.pending { color: #7a5c12; }
+.mod-social .pfg .pfg-cuenta .pf-pill.warn { color: #b91c1c; }
+
+/* Títulos de sección */
+.mod-social .pfg .pfx-section-head h3 {
+  display: inline-flex;
+  align-items: center;
+  gap: .55rem;
+  font-weight: 800;
+  color: var(--g-texto);
+}
+.mod-social .pfg .pfx-section-head h3 > i {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  display: inline-grid;
+  place-items: center;
+  font-size: 1rem;
+  color: var(--g-acento);
+  background: var(--g-acento-suave);
+}
+.mod-social .pfg .pfx-section-head .pfx-link {
+  padding: .35rem .8rem;
+  border-radius: 999px;
+  transition: background .2s ease;
+}
+.mod-social .pfg .pfx-section-head .pfx-link:hover { background: var(--g-acento-suave); text-decoration: none; }
+
+/* ---------- Filas de lista (reservas y PQR) ---------- */
+.mod-social .pfg .pf-list-item {
+  position: relative;
+  overflow: hidden;
+  padding: .9rem 1.15rem .9rem .9rem;
+  transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+}
+.mod-social .pfg button.pf-list-item:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--g-acento) 45%, var(--g-borde));
+  box-shadow: var(--g-brillo), var(--g-sombra-alta);
+}
+.mod-social .pfg .pf-list-item-title { color: var(--g-texto); font-weight: 800; }
+.mod-social .pfg .pf-list-item-sub { color: var(--g-tenue); }
+.mod-social .pfg .pf-item-icon {
+  border-radius: 14px;
+  color: #fff;
+  background: var(--g-grad);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 8px 16px -8px rgba(156, 2, 174, .8);
+}
+.mod-social .pfg .pf-item-code {
+  border-radius: 999px;
+  background: var(--g-acento-suave);
+  color: var(--g-acento);
+  border: 0;
+}
+.mod-social .pfg .pf-item-chevron { color: var(--g-tenue); }
+
+/* Fecha tipo calendario */
+.mod-social .pfg .pfg-fecha {
+  flex-shrink: 0;
+  width: 54px;
+  height: 58px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border-radius: 14px;
+  text-align: center;
+  background: linear-gradient(160deg, rgba(255, 255, 255, .85), rgba(255, 255, 255, .55));
+  border: 1px solid rgba(255, 255, 255, .9);
+  box-shadow: inset 0 1px 0 #fff, 0 8px 16px -10px rgba(70, 12, 100, .6);
+}
+.mod-social.dark-mode .pfg .pfg-fecha {
+  background: linear-gradient(160deg, rgba(255, 255, 255, .16), rgba(255, 255, 255, .05));
+  border-color: rgba(255, 255, 255, .2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .2), 0 8px 16px -10px rgba(0, 0, 0, .7);
+}
+.mod-social .pfg .pfg-fecha small {
+  padding: .18rem 0 .14rem;
+  font-size: calc(.62rem * var(--fs-scale, 1));
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--g-grad);
+}
+.mod-social .pfg .pfg-fecha strong {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  font-size: calc(1.3rem * var(--fs-scale, 1));
+  font-weight: 900;
+  color: var(--g-texto);
+}
+.mod-social .pfg .pfg-fecha.vacia { display: grid; place-items: center; font-size: 1.3rem; color: var(--g-acento); }
+
+/* ---------- Buscador y filtros ---------- */
+.mod-social .pfg .pf-toolbar { padding: 1rem; }
+.mod-social .pfg .pf-search,
+.mod-social .pfg .pf-tool-select,
+.mod-social .pfg .pf-toolbar-dates input {
+  border-radius: 14px;
+  border-color: var(--g-borde);
+  background-color: var(--g-campo);
+  color: var(--g-texto);
+}
+.mod-social .pfg .pf-search i { color: var(--g-acento); }
+/* Mismo motivo que el selector de Ajustes: social.css fuerza el fondo de los select en modo oscuro */
+.mod-social .pfg .pf-toolbar .pf-tool-select { background-color: var(--g-campo) !important; }
+/* Las listas de PQR y reservas ocupan todo el ancho, como el Resumen */
+.mod-social .pfg .pf-body > .pf-list { width: 100%; max-width: none; }
+/* Dentro de .pfg el cuerpo es un bloque normal: el ancho con 100vw ya no hace falta (dejaba un margen desigual en celular) */
+.mod-social .pfg .pfx-layout { width: 100%; }
+.mod-social .pfg .pf-chip {
+  border-color: var(--g-borde);
+  background: var(--g-campo);
+  color: var(--g-texto);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25);
+}
+.mod-social .pfg .pf-chip.active {
+  color: #fff;
+  border-color: transparent;
+  background: var(--g-grad);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 8px 16px -10px rgba(156, 2, 174, .9);
+}
+.mod-social .pfg .pf-list-head h2 { color: var(--g-texto); }
+.mod-social .pfg .pf-list-head p { color: var(--g-tenue); }
+
+/* Paginación */
+.mod-social .pfg .pf-pag-btn {
+  border-color: var(--g-borde);
+  background: var(--g-campo);
+  color: var(--g-texto);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+.mod-social .pfg .pf-pag-btn[aria-current="page"] { background: var(--g-grad); color: #fff; border-color: transparent; }
+
+/* Estados vacíos */
+.mod-social .pfg .pfx-empty-line { padding: 1.4rem 1rem; color: var(--g-tenue); }
+.mod-social .pfg .pfx-empty-line a { color: var(--g-acento); }
+.mod-social .pfg .pfq-empty-icon { color: #fff; background: var(--g-grad); box-shadow: 0 12px 24px -12px rgba(156, 2, 174, .9); }
+.mod-social .pfg .pfq-empty-title { color: var(--g-texto); }
+.mod-social .pfg .pfq-empty-text { color: var(--g-tenue); }
+
+/* Botones */
+.mod-social .pfg .pfx-btn-primary {
+  border-color: transparent;
+  background: var(--g-grad);
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3), 0 10px 20px -12px rgba(156, 2, 174, .9);
+}
+.mod-social .pfg .pfx-btn-primary:hover { background: linear-gradient(135deg, #c724d8, #7a2cc2); }
+
+/* Ventanas (detalle de reserva / PQR / eliminar cuenta): fondo difuminado */
+.mod-social .pfg .pf-modal-backdrop {
+  background: rgba(14, 2, 26, .45);
+  -webkit-backdrop-filter: blur(8px) saturate(140%);
+  backdrop-filter: blur(8px) saturate(140%);
+}
+
+/* ---------- Ajustes ---------- */
+.mod-social .pfg .pfg-body--ancho .pfx-layout { grid-template-columns: minmax(0, 1fr); }
+.mod-social .pfg .pfg-body--ancho .pfx-side { display: none; }
+.mod-social .pfg .pfg-body--ancho .pfx-stack { gap: 1.1rem; }
+
+.mod-social .pfg .pfx-me {
+  position: relative;
+  flex-wrap: wrap;
+  gap: 1.1rem;
+  padding: 1.25rem 1.5rem;
+  color: #fff;
+  background:
+    radial-gradient(60% 140% at 100% 0%, rgba(232, 201, 122, .28), transparent 60%),
+    radial-gradient(60% 140% at 0% 100%, rgba(192, 38, 211, .45), transparent 60%),
+    linear-gradient(135deg, rgba(74, 32, 128, .78), rgba(26, 10, 46, .82));
+  border-color: rgba(255, 255, 255, .2);
+}
+.mod-social .pfg .pfx-me-info strong { color: #fff; font-family: 'Playfair Display', serif; font-size: calc(1.25rem * var(--fs-scale, 1)); }
+.mod-social .pfg .pfx-me .pfx-tag { background: rgba(232, 201, 122, .16); color: #e8c97a; }
+.mod-social .pfg .pfx-me-avatar { border: 3px solid rgba(255, 255, 255, .25); }
+.mod-social .pfg .pfx-me-cam { border-color: #2d1454; }
+.mod-social .pfg .pfg-me-correo {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  font-size: calc(.8rem * var(--fs-scale, 1));
+  color: rgba(255, 255, 255, .75);
+  overflow-wrap: anywhere;
+}
+.mod-social .pfg .pfg-completo {
+  margin-left: auto;
+  width: min(320px, 100%);
+  padding: .85rem 1rem;
+  border-radius: 16px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, .16), rgba(255, 255, 255, .05));
+  border: 1px solid rgba(255, 255, 255, .22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3);
+}
+.mod-social .pfg .pfg-completo-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: calc(.8rem * var(--fs-scale, 1));
+  font-weight: 700;
+  color: rgba(255, 255, 255, .85);
+}
+.mod-social .pfg .pfg-completo-top strong { font-size: calc(1.25rem * var(--fs-scale, 1)); color: #e8c97a; }
+.mod-social .pfg .pfg-completo .pfx-bar { margin: .45rem 0 .5rem; background: rgba(255, 255, 255, .16); }
+.mod-social .pfg .pfg-completo .pfx-bar > span { background: linear-gradient(90deg, #c026d3, #e8c97a); }
+.mod-social .pfg .pfg-completo small { display: flex; align-items: center; gap: .3rem; font-size: calc(.74rem * var(--fs-scale, 1)); color: rgba(255, 255, 255, .75); }
+.mod-social .pfg .pfg-completo small i { color: #e8c97a; }
+
+.mod-social .pfg .pfg-card-sub { margin: .1rem 0 0; font-size: calc(.78rem * var(--fs-scale, 1)); color: var(--g-tenue); }
+.mod-social .pfg .pfg-datos .pfx-form { gap: .2rem; padding: 1.1rem 1.25rem 1.25rem; }
+.mod-social .pfg .pfg-grupo {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  margin: .2rem 0 .6rem;
+  font-size: calc(.72rem * var(--fs-scale, 1));
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--g-acento);
+}
+.mod-social .pfg .pfg-grupo::after { content: ""; flex: 1; height: 1px; background: var(--g-linea); }
+.mod-social .pfg .pfg-form-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: .85rem 1rem;
+  margin-bottom: .9rem;
+}
+.mod-social .pfg .pfg-form-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.mod-social .pfg .pfx-field { min-width: 0; }
+.mod-social .pfg .pfx-field > span { font-size: calc(.78rem * var(--fs-scale, 1)); color: var(--g-texto); }
+.mod-social .pfg .pfg-campo { position: relative; }
+.mod-social .pfg .pfg-campo > i {
+  position: absolute;
+  left: .8rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+  font-size: 1rem;
+  color: var(--g-acento);
+  pointer-events: none;
+}
+.mod-social .pfg .pfx-field input,
+.mod-social .pfg .pfx-field select {
+  height: 44px;
+  border-radius: 14px;
+  border: 1px solid var(--g-borde);
+  background: var(--g-campo);
+  color: var(--g-texto);
+  box-shadow: inset 0 1px 2px rgba(26, 10, 46, .06);
+  text-overflow: ellipsis;
+  transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+}
+.mod-social .pfg .pfg-campo > input,
+.mod-social .pfg .pfg-campo > select { padding-left: 2.4rem; }
+/* social.css fuerza ".mod-social.dark-mode select { background: var(--plum) !important }";
+   aquí el selector va translúcido como los demás campos de vidrio (las opciones siguen oscuras). */
+.mod-social .pfg .pfx-field .pfg-campo > select { background: var(--g-campo) !important; }
+.mod-social .pfg .pfx-field input:focus,
+.mod-social .pfg .pfx-field select:focus {
+  outline: none;
+  border-color: var(--g-acento);
+  background: color-mix(in srgb, var(--g-campo) 70%, rgba(255, 255, 255, .3));
+  box-shadow: 0 0 0 4px var(--g-acento-suave);
+}
+.mod-social .pfg .pfx-field input::placeholder { color: var(--g-tenue); }
+/* Modo claro: los campos llevan un borde morado suave para que no se pierdan en el vidrio blanco */
+.mod-social:not(.dark-mode) .pfg .pfx-field input,
+.mod-social:not(.dark-mode) .pfg .pfx-field select,
+.mod-social:not(.dark-mode) .pfg .pf-search,
+.mod-social:not(.dark-mode) .pfg .pf-tool-select,
+.mod-social:not(.dark-mode) .pfg .pf-chip { border-color: rgba(106, 31, 176, .2); }
+.mod-social:not(.dark-mode) .pfg .pfx-field input:focus,
+.mod-social:not(.dark-mode) .pfg .pfx-field select:focus { border-color: var(--g-acento); }
+.mod-social .pfg .pfg-form-pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding-top: 1rem;
+  border-top: 1px dashed var(--g-linea);
+}
+.mod-social .pfg .pfg-form-nota {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  font-size: calc(.8rem * var(--fs-scale, 1));
+  color: var(--g-tenue);
+}
+.mod-social .pfg .pfg-form-nota i { color: var(--g-acento); }
+.mod-social .pfg .pfg-form-pie .pfx-btn { margin-left: auto; border-radius: 14px; }
+.mod-social .pfg .pfg-nota { margin: 0; font-size: calc(.84rem * var(--fs-scale, 1)); line-height: 1.5; color: var(--g-tenue); }
+.mod-social .pfg .pfx-pair { gap: 1.1rem; }
+.mod-social .pfg .pfx-pair .pfx-form .pfx-btn { border-radius: 14px; }
+.mod-social .pfg .pfx-btn-danger { border-color: rgba(220, 38, 38, .5); }
+.mod-social .pfg .pfx-btn-danger:hover { background: #dc2626; color: #fff; }
+
+/* ---------- Pantallas medianas y pequeñas ---------- */
+@media (max-width: 1000px) {
+  .mod-social .pfg .pfg-form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mod-social .pfg .pfg-form-grid--3 > :last-child { grid-column: 1 / -1; }
+}
+@media (max-width: 900px) {
+  .mod-social .pfg .pfx-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .mod-social .pfg .pfg-hero.pf-header { padding-top: 5.5rem; }
+  .mod-social .pfg .pfg-hero .pf-header-inner { margin: 0 1rem 1rem; padding: 1.2rem 1.1rem; }
+  .mod-social .pfg .pfg-hero .pf-avatar { width: 78px; height: 78px; }
+  /* En celular las pestañas no se ocultan: quedan en una cuadrícula 2 x 2 */
+  .mod-social .pfg .pfg-hero .pf-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: auto;
+    max-width: none;
+    margin: 0 1rem 1.1rem;
+    border-radius: 22px;
+  }
+  .mod-social .pfg .pfg-hero .pf-tabs button { justify-content: center; padding: .65rem .5rem; border-radius: 16px; }
+
+  .mod-social .pfg .pfg-proximo { grid-template-columns: 1fr; padding: 1.35rem 1.2rem; }
+  .mod-social .pfg .pfg-cuenta { flex-direction: row; justify-content: center; gap: .5rem; min-width: 0; padding: .7rem 1rem; }
+  .mod-social .pfg .pfg-cuenta strong { font-size: calc(1.9rem * var(--fs-scale, 1)); }
+  .mod-social .pfg .pfg-cuenta .pf-pill { margin: 0 0 0 auto; }
+  .mod-social .pfg .pfg-proximo .pfx-btn { width: 100%; }
+
+  .mod-social .pfg .pfg-completo { margin-left: 0; width: 100%; }
+  .mod-social .pfg .pfg-form-pie .pfx-btn { width: 100%; }
+}
+@media (max-width: 480px) {
+  .mod-social .pfg .pfg-form-grid,
+  .mod-social .pfg .pfg-form-grid--3 { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mod-social .pfg *,
+  .mod-social .pfg *::before,
+  .mod-social .pfg *::after { animation: none !important; transition: none !important; }
+}
+/* Navegadores sin vidrio: fondo un poco más sólido para que se lea bien */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .mod-social .pfg { --g-vidrio: rgba(255, 255, 255, .92); --g-vidrio-2: rgba(255, 255, 255, .85); }
+  .mod-social.dark-mode .pfg { --g-vidrio: rgba(45, 20, 84, .92); --g-vidrio-2: rgba(26, 10, 46, .9); }
+}

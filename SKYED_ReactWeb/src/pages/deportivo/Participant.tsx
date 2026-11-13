@@ -1161,7 +1161,7 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         </div>
       </div>
 
-      <div className="part-body">
+      <div className={`part-body${tab === 'ajustes' ? ' perfil-body--ancho' : ''}`}>
         <aside className="part-info-aside">
           <details
             className="part-info-details"
@@ -2450,6 +2450,14 @@ function AjustesTab() {
     }
   };
 
+  // Qué tan completo está el perfil (solo se muestra; se actualiza mientras escribe).
+  const camposPerfil: Array<[string, string]> = [
+    ['Nombre', nombre], ['Apellido', apellido], ['Tipo de documento', tipoDocumento], ['Número de documento', documento],
+    ['Teléfono', telefono], ['Ciudad', ciudad], ['Fecha de nacimiento', fechaNacimiento], ['Tipo de sangre', rh],
+  ];
+  const faltantes = camposPerfil.filter(([, v]) => String(v ?? '').trim() === '').map(([k]) => k);
+  const porcentajePerfil = Math.round(((camposPerfil.length - faltantes.length) / camposPerfil.length) * 100);
+
   return (
     <>
       <div className="part-settings-grid">
@@ -2482,80 +2490,135 @@ function AjustesTab() {
                 <i className="ti ti-medal" aria-hidden="true" />
                 {user?.role === 'admin' ? 'Administrador' : 'Participante'}
               </span>
+              <span className="perfil-correo"><i className="ti ti-mail" aria-hidden="true" /> {user?.email}</span>
+            </div>
+            <div className="perfil-completo" aria-label={`Perfil completo al ${porcentajePerfil}%`}>
+              <div className="perfil-completo-top">
+                <span>Perfil completo</span>
+                <strong>{porcentajePerfil}%</strong>
+              </div>
+              <div className="perfil-completo-barra" aria-hidden="true">
+                <span style={{ width: `${porcentajePerfil}%` }} />
+              </div>
+              <small>
+                {faltantes.length === 0
+                  ? <><i className="ti ti-circle-check" aria-hidden="true" /> ¡Todo listo para tu próxima carrera!</>
+                  : <>Te falta: {faltantes.join(', ')}</>}
+              </small>
             </div>
           </div>
         </div>
 
         <div className="part-settings-main">
-          <div className="part-card">
+          <div className="part-card perfil-datos">
             <div className="part-card-head">
               <span className="part-card-head-icon"><i className="ti ti-id-badge-2" aria-hidden="true" /></span>
-              <h3>Datos personales</h3>
+              <div>
+                <h3>Datos personales</h3>
+                <p className="perfil-card-sub">Mantenlos al día para inscribirte más rápido a cada evento.</p>
+              </div>
             </div>
             <div className="part-card-body">
               <form onSubmit={submitDatosPersonales} noValidate>
-                <div className="part-form-group">
-                  <label htmlFor="d-nombre">Nombre</label>
-                  <input id="d-nombre" type="text" value={nombre} onChange={(e) => setNombre(e.target.value)} required />
-                </div>
-                <div className="part-form-group">
-                  <label htmlFor="d-apellido">Apellido</label>
-                  <input id="d-apellido" type="text" value={apellido} onChange={(e) => setApellido(e.target.value)} required />
-                </div>
-                <div className="part-form-group">
-                  <label htmlFor="d-tipo-doc">Tipo de documento</label>
-                  <select id="d-tipo-doc" value={tipoDocumento} onChange={(e) => setTipoDocumento(e.target.value)}>
-                    <option value="">Seleccionar...</option>
-                    <option value="CC">Cédula de ciudadanía</option>
-                    <option value="TI">Tarjeta de identidad</option>
-                    <option value="CE">Cédula de extranjería</option>
-                    <option value="PA">Pasaporte</option>
-                  </select>
-                </div>
-                <div className="part-form-group">
-                  <label htmlFor="d-documento">Número de documento</label>
-                  <input id="d-documento" type="text" inputMode="numeric" value={documento} onChange={(e) => setDocumento(e.target.value.replace(/\D/g, ''))} />
-                </div>
-                <div className="part-form-group">
-                  <label htmlFor="d-rh">Tipo de sangre (RH)</label>
-                  <select id="d-rh" value={rh} onChange={(e) => setRh(e.target.value)}>
-                    <option value="">Seleccionar...</option>
-                    <option value="O+">O+</option>
-                    <option value="O-">O-</option>
-                    <option value="A+">A+</option>
-                    <option value="A-">A-</option>
-                    <option value="B+">B+</option>
-                    <option value="B-">B-</option>
-                    <option value="AB+">AB+</option>
-                    <option value="AB-">AB-</option>
-                  </select>
-                </div>
-                <div className="part-form-group">
-                  <label htmlFor="d-telefono">Teléfono</label>
-                  <input id="d-telefono" type="tel" value={telefono} onChange={(e) => setTelefono(e.target.value)} placeholder="Ej: 3001234567" />
-                </div>
-                <div className="part-form-group">
-                  <label htmlFor="d-fecha-nac">Fecha de nacimiento</label>
-                  <input id="d-fecha-nac" type="date" min={minFechaNacimiento()} max={maxFechaNacimiento()} value={fechaNacimiento} onChange={(e) => setFechaNacimiento(e.target.value)} />
-                </div>
-                <div className="part-form-group">
-                  <label htmlFor="d-ciudad">Ciudad</label>
-                  <input id="d-ciudad" type="text" value={ciudad} onChange={(e) => setCiudad(e.target.value)} placeholder="Ej: Sogamoso" />
-                </div>
-                {datosMsg && (
-                  <div className={`part-form-alert ${datosMsg.tipo}`} key={datosMsg.id}>
-                    <span className="part-alert-icon">{datosMsg.tipo === 'ok' ? '✅' : '⚠️'}</span>
-                    {datosMsg.texto}
-                    <div className="part-alert-timer" />
+                <p className="perfil-grupo"><i className="ti ti-user" aria-hidden="true" /> Identidad</p>
+                <div className="perfil-form-grid">
+                  <div className="part-form-group">
+                    <label htmlFor="d-nombre">Nombre</label>
+                    <div className="perfil-campo">
+                      <i className="ti ti-user" aria-hidden="true" />
+                      <input id="d-nombre" type="text" value={nombre} onChange={(e) => setNombre(e.target.value)} required />
+                    </div>
                   </div>
-                )}
-                <button title={guardandoDatos ? 'Guardando…' : 'Guardar los cambios de tu perfil'} type="submit" className="btn btn-primary" disabled={guardandoDatos}>
-                  {guardandoDatos ? 'Guardando…' : 'Guardar cambios'}
-                </button>
+                  <div className="part-form-group">
+                    <label htmlFor="d-apellido">Apellido</label>
+                    <div className="perfil-campo">
+                      <i className="ti ti-user" aria-hidden="true" />
+                      <input id="d-apellido" type="text" value={apellido} onChange={(e) => setApellido(e.target.value)} required />
+                    </div>
+                  </div>
+                  <div className="part-form-group">
+                    <label htmlFor="d-tipo-doc">Tipo de documento</label>
+                    <div className="perfil-campo">
+                      <i className="ti ti-id" aria-hidden="true" />
+                      <select id="d-tipo-doc" value={tipoDocumento} onChange={(e) => setTipoDocumento(e.target.value)}>
+                        <option value="">Seleccionar...</option>
+                        <option value="CC">Cédula de ciudadanía</option>
+                        <option value="TI">Tarjeta de identidad</option>
+                        <option value="CE">Cédula de extranjería</option>
+                        <option value="PA">Pasaporte</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="part-form-group">
+                    <label htmlFor="d-documento">Número de documento</label>
+                    <div className="perfil-campo">
+                      <i className="ti ti-hash" aria-hidden="true" />
+                      <input id="d-documento" type="text" inputMode="numeric" value={documento} onChange={(e) => setDocumento(e.target.value.replace(/\D/g, ''))} />
+                    </div>
+                  </div>
+                </div>
+
+                <p className="perfil-grupo"><i className="ti ti-heartbeat" aria-hidden="true" /> Contacto y salud</p>
+                <div className="perfil-form-grid">
+                  <div className="part-form-group">
+                    <label htmlFor="d-telefono">Teléfono</label>
+                    <div className="perfil-campo">
+                      <i className="ti ti-phone" aria-hidden="true" />
+                      <input id="d-telefono" type="tel" value={telefono} onChange={(e) => setTelefono(e.target.value)} placeholder="Ej: 3001234567" />
+                    </div>
+                  </div>
+                  <div className="part-form-group">
+                    <label htmlFor="d-ciudad">Ciudad</label>
+                    <div className="perfil-campo">
+                      <i className="ti ti-map-pin" aria-hidden="true" />
+                      <input id="d-ciudad" type="text" value={ciudad} onChange={(e) => setCiudad(e.target.value)} placeholder="Ej: Sogamoso" />
+                    </div>
+                  </div>
+                  <div className="part-form-group">
+                    <label htmlFor="d-fecha-nac">Fecha de nacimiento</label>
+                    <div className="perfil-campo">
+                      <i className="ti ti-cake" aria-hidden="true" />
+                      <input id="d-fecha-nac" type="date" min={minFechaNacimiento()} max={maxFechaNacimiento()} value={fechaNacimiento} onChange={(e) => setFechaNacimiento(e.target.value)} />
+                    </div>
+                  </div>
+                  <div className="part-form-group">
+                    <label htmlFor="d-rh">Tipo de sangre (RH)</label>
+                    <div className="perfil-campo">
+                      <i className="ti ti-droplet" aria-hidden="true" />
+                      <select id="d-rh" value={rh} onChange={(e) => setRh(e.target.value)}>
+                        <option value="">Seleccionar...</option>
+                        <option value="O+">O+</option>
+                        <option value="O-">O-</option>
+                        <option value="A+">A+</option>
+                        <option value="A-">A-</option>
+                        <option value="B+">B+</option>
+                        <option value="B-">B-</option>
+                        <option value="AB+">AB+</option>
+                        <option value="AB-">AB-</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="perfil-form-pie">
+                  {datosMsg ? (
+                    <div className={`part-form-alert ${datosMsg.tipo}`} key={datosMsg.id}>
+                      <span className="part-alert-icon">{datosMsg.tipo === 'ok' ? '✅' : '⚠️'}</span>
+                      {datosMsg.texto}
+                      <div className="part-alert-timer" />
+                    </div>
+                  ) : (
+                    <span className="perfil-form-nota"><i className="ti ti-info-circle" aria-hidden="true" /> Revisa tus datos antes de guardar; se usan en tus inscripciones.</span>
+                  )}
+                  <button title={guardandoDatos ? 'Guardando…' : 'Guardar los cambios de tu perfil'} type="submit" className="btn btn-primary" disabled={guardandoDatos}>
+                    <i className="ti ti-device-floppy" aria-hidden="true" /> {guardandoDatos ? 'Guardando…' : 'Guardar cambios'}
+                  </button>
+                </div>
               </form>
             </div>
           </div>
 
+          <div className="part-settings-pair perfil-ajustes-fila">
           <div className="part-card">
             <div className="part-card-head">
               <span className="part-card-head-icon"><i className="ti ti-bell" aria-hidden="true" /></span>
@@ -2578,7 +2641,6 @@ function AjustesTab() {
             </div>
           </div>
 
-          <div className="part-settings-pair">
             <div className="part-card">
               <div className="part-card-head">
                 <span className="part-card-head-icon"><i className="ti ti-lock" aria-hidden="true" /></span>
@@ -2634,6 +2696,7 @@ function AjustesTab() {
               </div>
               <div className="part-card-body">
                 <div className="part-stat-row"><span className="part-label">Rol</span><span>{user?.role === 'admin' ? 'Administrador' : 'Participante'}</span></div>
+                <p className="perfil-cuenta-nota">Si la eliminas, se cerrará tu sesión y un administrador tendría que reactivarla.</p>
                 <button title={eliminandoCuenta ? 'Eliminando…' : 'Eliminar tu cuenta'}
                   type="button"
                   className="btn btn-outline"
