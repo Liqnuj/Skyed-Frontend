@@ -272,3 +272,218 @@
   .mod-social .booking-form .rsv-opcional { padding: 0 0.9rem; }
   .mod-social .booking-form .form-row > .form-group { margin-bottom: 1rem; }
 }
+
+
+/* =====================================================================
+   FORMULARIO EN PASOS (wizard) + línea de tiempo "¿Qué pasa después?"
+   ===================================================================== */
+
+/* ---------- línea de tiempo de la columna izquierda ---------- */
+.mod-social .booking-proceso {
+  margin-top: 1.75rem;
+  padding: 1.25rem 1.4rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+}
+.mod-social .booking-proceso-titulo {
+  margin: 0 0 1rem;
+  font-size: calc(1rem * var(--fs-scale, 1));
+  font-weight: 700;
+  color: var(--plum);
+}
+.mod-social.dark-mode .booking-proceso-titulo { color: rgba(255, 255, 255, 0.92); }
+
+.mod-social .booking-proceso-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.mod-social .booking-proceso-lista li {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+}
+/* línea vertical que une los pasos */
+.mod-social .booking-proceso-lista li:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 13px;
+  top: 30px;
+  bottom: -1rem;
+  width: 2px;
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.mod-social .booking-proceso-lista li > span {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--accent);
+  color: #fff;
+  font-size: calc(0.8rem * var(--fs-scale, 1));
+  font-weight: 800;
+}
+.mod-social .booking-proceso-lista strong {
+  display: block;
+  font-size: calc(0.9rem * var(--fs-scale, 1));
+  color: var(--plum);
+}
+.mod-social .booking-proceso-lista small {
+  display: block;
+  font-size: calc(0.78rem * var(--fs-scale, 1));
+  color: rgba(47, 45, 45, 0.6);
+}
+.mod-social.dark-mode .booking-proceso-lista strong { color: rgba(255, 255, 255, 0.92); }
+.mod-social.dark-mode .booking-proceso-lista small { color: rgba(255, 255, 255, 0.55); }
+
+.mod-social .booking-info .booking-features { margin-top: 1.5rem; gap: 1rem; }
+
+/* ---------- barra de progreso ---------- */
+.mod-social .booking-form .rsv-pasos {
+  list-style: none;
+  display: flex;
+  margin: 0 0 1.5rem;
+  padding: 0;
+}
+.mod-social .booking-form .rsv-paso-item { position: relative; flex: 1; }
+/* conector entre círculos */
+.mod-social .booking-form .rsv-paso-item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 15px;
+  left: calc(50% + 19px);
+  right: calc(-50% + 19px);
+  height: 2px;
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  transition: background 0.3s;
+}
+.mod-social .booking-form .rsv-paso-item.hecho:not(:last-child)::after { background: var(--accent); }
+
+.mod-social .booking-form .rsv-paso-btn {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+.mod-social .booking-form .rsv-paso-btn:disabled { cursor: default; }
+.mod-social .booking-form .rsv-paso-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 8px; }
+
+.mod-social .booking-form .rsv-paso-num {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  background: transparent;
+  color: var(--accent);
+  font-size: calc(0.85rem * var(--fs-scale, 1));
+  font-weight: 800;
+  transition: background 0.25s, color 0.25s, box-shadow 0.25s;
+}
+.mod-social .booking-form .rsv-paso-item.hecho .rsv-paso-num { background: var(--accent); border-color: var(--accent); color: #fff; }
+.mod-social .booking-form .rsv-paso-item.activo .rsv-paso-num {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.mod-social .booking-form .rsv-paso-nombre {
+  font-size: calc(0.74rem * var(--fs-scale, 1));
+  font-weight: 600;
+  color: rgba(47, 45, 45, 0.6);
+}
+.mod-social .booking-form .rsv-paso-item.activo .rsv-paso-nombre { color: var(--accent); font-weight: 700; }
+.mod-social.dark-mode .booking-form .rsv-paso-nombre { color: rgba(255, 255, 255, 0.55); }
+.mod-social.dark-mode .booking-form .rsv-paso-item.activo .rsv-paso-nombre { color: #fff; }
+
+/* ---------- contenido de cada paso ---------- */
+.mod-social .booking-form .rsv-paso { min-height: 0; }
+.mod-social .booking-form .rsv-paso[hidden] { display: none !important; }
+.mod-social .booking-form .rsv-paso:not([hidden]) { animation: rsvPaso 0.28s ease both; }
+@keyframes rsvPaso {
+  from { opacity: 0; transform: translateX(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+.mod-social .booking-form .rsv-paso-cab {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0 0 1.25rem;
+}
+.mod-social .booking-form .rsv-paso-cab h4 {
+  margin: 0;
+  font-size: calc(1.1rem * var(--fs-scale, 1));
+  font-weight: 700;
+  color: var(--plum);
+}
+.mod-social .booking-form .rsv-paso-cab p {
+  margin: 0.15rem 0 0;
+  font-size: calc(0.8rem * var(--fs-scale, 1));
+  color: rgba(47, 45, 45, 0.6);
+}
+.mod-social.dark-mode .booking-form .rsv-paso-cab h4 { color: rgba(255, 255, 255, 0.92); }
+.mod-social.dark-mode .booking-form .rsv-paso-cab p { color: rgba(255, 255, 255, 0.55); }
+.mod-social .booking-form .rsv-contador {
+  flex: 0 0 auto;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+  font-size: calc(0.72rem * var(--fs-scale, 1));
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ---------- botones Atrás / Siguiente ---------- */
+.mod-social .booking-form .rsv-nav {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.mod-social .booking-form .rsv-nav .form-submit { flex: 1; margin-top: 0; }
+.mod-social .booking-form .rsv-btn-atras {
+  flex: 0 0 auto;
+  padding: 1rem 1.5rem;
+  border: 1.5px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: 50px;
+  background: transparent;
+  color: var(--plum);
+  font-family: 'Inter', sans-serif;
+  font-size: calc(0.95rem * var(--fs-scale, 1));
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.mod-social .booking-form .rsv-btn-atras:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.mod-social .booking-form .rsv-btn-atras:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.mod-social.dark-mode .booking-form .rsv-btn-atras { color: rgba(255, 255, 255, 0.9); }
+
+@media (max-width: 560px) {
+  .mod-social .booking-form .rsv-paso { min-height: 0; }
+  .mod-social .booking-form .rsv-paso-nombre { display: none; }
+  .mod-social .booking-form .rsv-paso-item.activo .rsv-paso-nombre { display: block; position: absolute; top: 36px; left: 50%; transform: translateX(-50%); white-space: nowrap; }
+  .mod-social .booking-form .rsv-pasos { margin-bottom: 2.25rem; }
+  .mod-social .booking-form .rsv-btn-atras { padding: 1rem 1.1rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mod-social .booking-form .rsv-paso:not([hidden]) { animation: none; }
+}
