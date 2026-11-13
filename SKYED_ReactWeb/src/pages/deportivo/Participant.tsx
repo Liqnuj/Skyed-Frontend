@@ -17,6 +17,7 @@ import '../../styles/shared/nosotrosMotion.css';
 import '../../styles/deportivo/headerHero.css';
 // import '../../styles/deportivo/filtros-participante.css';
 import { createPortal } from 'react-dom';
+  import PqrPerfilDeportivo from '../../components/deportivo/pqr/PqrPerfilDeportivo';
 
 
 type TabId = 'resumen' | 'historial' | 'inscripciones' | 'resultados' | 'pqr' | 'ajustes';
@@ -1520,7 +1521,8 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
             />
           )}
 
-          {tab === 'pqr' && <ParticipantePqr />}
+          {tab === 'pqr' && <PqrPerfilDeportivo />}
+          
           {tab === 'ajustes' && <AjustesTab />}
         </div>
       </div>

@@ -1,9 +1,9 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Protected from '../../components/Protected';
 import SportWrapper from '../../components/deportivo/SportWrapper';
-import MisPqrDeportivo from '../../components/deportivo/pqr/MisPqrDeportivo';
+
 import { TEMAS_PQR, TIPOS_META } from '../../components/deportivo/pqr/pqrMeta';
 import { PqrStepper } from '../../components/social/pqr/PqrTracker';
 import { pqrService } from '../../services/socialService';
@@ -36,8 +36,7 @@ function Contenido() {
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState('');
   const [creada, setCreada] = useState<Pqr | null>(null);
-  const [version, setVersion] = useState(0);
-  const misRef = useRef<HTMLElement>(null);
+  const navigate = useNavigate();
 
   const meta = TIPOS_META[tipo];
 
@@ -66,7 +65,7 @@ function Contenido() {
         contexto: 'deportivo',
       });
       setCreada(p);
-      setVersion((v) => v + 1);
+
       window.setTimeout(() => {
         document.getElementById('pqd-confirmacion')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 0);
@@ -86,7 +85,7 @@ function Contenido() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const verMias = () => misRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const verMias = () => navigate('/deportivo/perfil?tab=pqr');
 
   return (
     <>
@@ -250,7 +249,7 @@ function Contenido() {
                 </p>
                 <div className="pqd-done-actions">
                   <button type="button" className="btn btn-primary" onClick={verMias}>
-                    Ver mis solicitudes
+                    Ver mis PQR
                   </button>
                   <button type="button" className="btn btn-outline" onClick={otra}>
                     Radicar otra
@@ -261,16 +260,8 @@ function Contenido() {
           </section>
         </div>
 
-        {/* ===== Mis solicitudes ===== */}
-        <section className="pqd-mine-wrap" ref={misRef} id="mis-pqr">
-          <div className="pqd-mine-head">
-            <h2>Mis solicitudes</h2>
-            <Link to="/deportivo/perfil?tab=pqr" className="pqd-link">
-              Verlas en mi perfil <i className="ti ti-arrow-right" aria-hidden="true" />
-            </Link>
-          </div>
-          <MisPqrDeportivo version={version} />
-        </section>
+
+
       </div>
     </>
   );
