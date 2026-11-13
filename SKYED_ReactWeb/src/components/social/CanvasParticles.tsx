@@ -9,7 +9,12 @@ type Particle = {
   color: string;
 };
 
-export default function CanvasParticles({ id }: { id: string }) {
+/**
+ * Partículas doradas que suben. El lienzo toma el tamaño de su contenedor
+ * (también cuando el contenedor cambia de alto, p. ej. al cambiar de pestaña).
+ * `cantidad`: número de partículas (40 por defecto, como antes).
+ */
+export default function CanvasParticles({ id, cantidad = 40 }: { id: string; cantidad?: number }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -26,9 +31,12 @@ export default function CanvasParticles({ id }: { id: string }) {
     }
     resize();
     window.addEventListener('resize', resize);
+    // Si el contenedor crece o se encoge sin que cambie la ventana, el lienzo lo sigue.
+    const observador = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(resize) : null;
+    observador?.observe(hero);
 
     const particles: Particle[] = [];
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < cantidad; i++) {
       particles.push({
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
@@ -57,9 +65,10 @@ export default function CanvasParticles({ id }: { id: string }) {
 
     return () => {
       window.removeEventListener('resize', resize);
+      observador?.disconnect();
       cancelAnimationFrame(frameId);
     };
-  }, []);
+  }, [cantidad]);
 
   return <canvas ref={canvasRef} id={id} />;
 }
