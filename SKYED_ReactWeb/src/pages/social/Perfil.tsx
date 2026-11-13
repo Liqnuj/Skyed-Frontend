@@ -1817,12 +1817,13 @@ function PerfilPanel() {
 
   return (
     <div className="pfg">
-      {/* Manchas de color de fondo: el vidrio las difumina (solo decoración) */}
-      <div className="pfg-ambiente" aria-hidden="true"><span /><span /><span /></div>
+      {/* Fondo animado con partículas doradas en toda la página (solo decoración) */}
+      <div className="pfg-fondo" aria-hidden="true">
+        <CanvasParticles id="pfParticles" cantidad={110} />
+      </div>
 
       <div className="pf-header pf-header--anim pfg-hero">
         <div className="pf-hero-glow" aria-hidden="true" />
-        <CanvasParticles id="pfParticles" />
         <div className="pf-header-inner">
           <div className="pf-avatar-wrap pfg-avatar">
             {user?.foto_url ? (

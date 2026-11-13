@@ -2208,53 +2208,46 @@
   --g-sombra: 0 20px 44px -24px rgba(0, 0, 0, .85);
   --g-sombra-alta: 0 28px 54px -24px rgba(0, 0, 0, .9);
   --g-brillo: inset 0 1px 0 rgba(255, 255, 255, .16), inset 0 -1px 0 rgba(255, 255, 255, .04);
-  background: #12011b;
 }
 
-@keyframes pfgFlota1 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(60px, 40px) scale(1.12); } }
-@keyframes pfgFlota2 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-70px, -30px) scale(.92); } }
-@keyframes pfgFlota3 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(40px, -60px) scale(1.08); } }
 @keyframes pfgGiro { to { transform: rotate(360deg); } }
 @keyframes pfgSube { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 @keyframes pfgLatido { 0%, 100% { box-shadow: 0 0 0 0 rgba(232, 201, 122, .6); } 70% { box-shadow: 0 0 0 8px rgba(232, 201, 122, 0); } }
 @keyframes pfgReflejo { from { transform: translateX(-140%) skewX(-18deg); } to { transform: translateX(320%) skewX(-18deg); } }
 
-/* ---------- Manchas de color de fondo (el vidrio las difumina) ---------- */
-.mod-social .pfg-ambiente {
+/* ---------- Fondo de toda la página: degradado que se mueve + partículas ----------
+   Es el mismo fondo del encabezado, extendido a todo el perfil (sin división). */
+.mod-social .pfg {
+  background: linear-gradient(150deg, #0d0519 0%, #1a0a2e 30%, #2d1454 55%, #1a0a2e 80%, #0d0519 100%);
+  background-size: 220% 220%;
+  animation: pf-hero-shift 18s ease-in-out infinite;
+}
+/* Modo claro: el mismo movimiento con tonos crema y lila muy suaves */
+.mod-social:not(.dark-mode) .pfg {
+  background: linear-gradient(150deg, #faf7fb 0%, #f2e8f7 30%, #fbf3e4 55%, #f4ebf8 80%, #faf7fb 100%);
+  background-size: 220% 220%;
+}
+.mod-social:not(.dark-mode) .pfg .pfx-box::after { display: none; }
+.mod-social .pfg-fondo {
   position: absolute;
   inset: 0;
+  z-index: 0; /* capa propia: el lienzo (z-index 1 en headerAnimado.css) queda detrás del contenido */
   overflow: hidden;
   pointer-events: none;
 }
-.mod-social .pfg-ambiente span {
+/* El lienzo cubre todo el perfil (CanvasParticles lo dimensiona con .pfg-fondo) */
+.mod-social .pfg-fondo #pfParticles {
   position: absolute;
-  border-radius: 50%;
-  filter: blur(70px);
-  opacity: .55;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
-.mod-social .pfg-ambiente span:nth-child(1) {
-  width: 520px; height: 520px; top: 260px; left: -140px;
-  background: radial-gradient(circle, #c026d3, transparent 70%);
-  animation: pfgFlota1 22s ease-in-out infinite;
-}
-.mod-social .pfg-ambiente span:nth-child(2) {
-  width: 460px; height: 460px; top: 420px; right: -120px;
-  background: radial-gradient(circle, #e8c97a, transparent 70%);
-  animation: pfgFlota2 26s ease-in-out infinite;
-}
-.mod-social .pfg-ambiente span:nth-child(3) {
-  width: 560px; height: 560px; bottom: -160px; left: 30%;
-  background: radial-gradient(circle, #8b2252, transparent 70%);
-  animation: pfgFlota3 30s ease-in-out infinite;
-}
-/* Modo claro: sin manchas de color ni círculos en las tarjetas; solo un fondo crema limpio */
-.mod-social:not(.dark-mode) .pfg-ambiente { display: none; }
-.mod-social:not(.dark-mode) .pfg .pfx-box::after { display: none; }
-.mod-social:not(.dark-mode) .pfg { background: linear-gradient(180deg, #faf8f5 0%, #f6f1f8 100%); }
 
-/* El contenido va por encima de las manchas */
+/* El contenido va por encima del fondo; encabezado y cuerpo ya no tienen fondo propio */
 .mod-social .pfg > .pf-header,
 .mod-social .pfg > .pf-body { position: relative; }
+.mod-social .pfg .pfg-hero.pf-header.pf-header--anim { background: transparent; animation: none; border-bottom: 0; }
+.mod-social .pfg .pf-body,
 .mod-social.dark-mode .pfg .pf-body { background: transparent; box-shadow: none; clip-path: none; }
 
 /* ---------- Vidrio: superficies comunes ---------- */
@@ -2291,24 +2284,11 @@
 
 /* ---------- Encabezado ---------- */
 .mod-social .pfg .pfg-hero.pf-header { padding-top: 6.5rem; border-bottom: 0; }
-/* La identidad flota en un panel de vidrio sobre las partículas */
+/* La identidad va directo sobre el fondo con partículas (sin recuadro) */
 .mod-social .pfg .pfg-hero .pf-header-inner {
-  max-width: calc(1200px - 4rem);
-  margin: 0 auto 1.1rem;
-  padding: 1.4rem 1.75rem;
   gap: 1.4rem;
-  border-radius: 28px;
-  background:
-    radial-gradient(120% 90% at 0% 0%, rgba(255, 255, 255, .14), transparent 55%),
-    linear-gradient(145deg, rgba(255, 255, 255, .09), rgba(255, 255, 255, .02));
-  border: 1px solid rgba(255, 255, 255, .16);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .2), 0 24px 50px -28px rgba(0, 0, 0, .8);
-  -webkit-backdrop-filter: blur(14px) saturate(160%);
-  backdrop-filter: blur(14px) saturate(160%);
+  padding-bottom: 1.6rem;
   animation: pfgSube .5s ease backwards;
-}
-@media (max-width: 1264px) {
-  .mod-social .pfg .pfg-hero .pf-header-inner { margin-left: 2rem; margin-right: 2rem; }
 }
 
 /* Avatar con anillo morado y dorado girando */
@@ -2425,6 +2405,49 @@
 }
 .mod-social .pfg .pfg-hero .pf-tabs button.active i { color: #e8c97a; }
 .mod-social .pfg .pfg-hero .pf-tabs button:focus-visible { outline: 3px solid #e8c97a; outline-offset: 1px; }
+
+/* Modo claro: el fondo del encabezado ahora es claro, así que textos y controles van oscuros */
+.mod-social:not(.dark-mode) .pfg .pfg-hero .pf-meta h1 { color: #1a0a2e; }
+.mod-social:not(.dark-mode) .pfg .pfg-hero .pf-handle { color: #6a5a7e; }
+.mod-social:not(.dark-mode) .pfg .pfg-hero .pf-badge { color: #7a5c12; background: rgba(201, 168, 76, .14); border-color: rgba(201, 168, 76, .45); }
+.mod-social:not(.dark-mode) .pfg .pfg-hero .pf-avatar { border-color: #fff; }
+.mod-social:not(.dark-mode) .pfg .pfg-hero .pf-hero-glow { display: none; }
+.mod-social:not(.dark-mode) .pfg .pfg-chips li {
+  color: #1a0a2e;
+  background: rgba(255, 255, 255, .62);
+  border-color: rgba(106, 31, 176, .18);
+  box-shadow: inset 0 1px 0 #fff;
+}
+.mod-social:not(.dark-mode) .pfg .pfg-chips li i { color: #9c02ae; }
+.mod-social:not(.dark-mode) .pfg .pfg-chips .pfg-chip-vivo { background: rgba(201, 168, 76, .16); border-color: rgba(201, 168, 76, .5); }
+.mod-social:not(.dark-mode) .pfg .pfg-punto { background: #c9a84c; }
+.mod-social:not(.dark-mode) .pfg .pfg-hero .pf-actions .btn-sm-outline {
+  color: #1a0a2e;
+  background: rgba(255, 255, 255, .62);
+  border-color: rgba(106, 31, 176, .25);
+  box-shadow: inset 0 1px 0 #fff;
+}
+.mod-social:not(.dark-mode) .pfg .pfg-hero .pf-actions .btn-sm-outline:hover { background: rgba(255, 255, 255, .9); color: #1a0a2e; }
+.mod-social:not(.dark-mode) .pfg .pfg-hero .pf-actions .btn-sm-outline.pfx-primary,
+.mod-social:not(.dark-mode) .pfg .pfg-hero .pf-actions .btn-sm-outline.pfx-primary:hover {
+  color: #fff;
+  border-color: transparent;
+  background: var(--g-grad);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3), 0 12px 24px -12px rgba(192, 38, 211, .7);
+}
+.mod-social:not(.dark-mode) .pfg .pfg-hero .pf-tabs {
+  background: rgba(255, 255, 255, .58);
+  border-color: rgba(255, 255, 255, .9);
+  box-shadow: inset 0 1px 0 #fff, 0 16px 34px -22px rgba(70, 12, 100, .45);
+}
+.mod-social:not(.dark-mode) .pfg .pfg-hero .pf-tabs button { color: #6a5a7e; }
+.mod-social:not(.dark-mode) .pfg .pfg-hero .pf-tabs button:hover { color: #1a0a2e; background: rgba(106, 31, 176, .06); }
+.mod-social:not(.dark-mode) .pfg .pfg-hero .pf-tabs button.active {
+  color: #1a0a2e;
+  background: linear-gradient(145deg, #fff, rgba(255, 255, 255, .75));
+  box-shadow: inset 0 1px 0 #fff, 0 8px 18px -10px rgba(70, 12, 100, .45);
+}
+.mod-social:not(.dark-mode) .pfg .pfg-hero .pf-tabs button.active i { color: #9c02ae; }
 
 /* ---------- Cuerpo ---------- */
 .mod-social .pfg .pf-body { padding-top: 2rem; }
@@ -2899,7 +2922,7 @@
 }
 @media (max-width: 640px) {
   .mod-social .pfg .pfg-hero.pf-header { padding-top: 5.5rem; }
-  .mod-social .pfg .pfg-hero .pf-header-inner { margin: 0 1rem 1rem; padding: 1.2rem 1.1rem; }
+  .mod-social .pfg .pfg-hero .pf-header-inner { padding-bottom: 1.2rem; }
   .mod-social .pfg .pfg-hero .pf-avatar { width: 78px; height: 78px; }
   /* En celular las pestañas no se ocultan: quedan en una cuadrícula 2 x 2 */
   .mod-social .pfg .pfg-hero .pf-tabs {
