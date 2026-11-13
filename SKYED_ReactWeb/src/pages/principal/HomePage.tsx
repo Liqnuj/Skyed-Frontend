@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import PrincipalWrapper from '../../components/principal/PrincipalWrapper';
 import PrincipalNav from '../../components/principal/PrincipalNav';
 import PrincipalFooter from '../../components/principal/PrincipalFooter';
+import { useEnlaceEntrada } from '../../components/principal/EntradaModulo';
 
 const TICKER_ITEMS: [string, string, string][] = [
   ['g', 'ti-confetti', 'Bodas'],
@@ -23,6 +24,9 @@ export default function HomePage() {
   const [esperandoVerificacion, setEsperandoVerificacion] = useState(false);
   const esAdmin = user?.roles.some((rol) => rol === 'adminDeportivo' || rol === 'adminSocial') ?? false;
   const destino = !user ? '/login' : esAdmin ? '/admin' : '/perfil';
+  // Entrar a cada módulo sin recargar la página y con su animación de entrada.
+  const enlaceSocial = useEnlaceEntrada('social');
+  const enlaceDeportivo = useEnlaceEntrada('deportivo');
 
   if (esperandoVerificacion && !verificando) {
     return <Navigate to={destino} replace />;
@@ -89,7 +93,7 @@ export default function HomePage() {
               <li><span className="feat-dot" />Cotización personalizada en línea</li>
               <li><span className="feat-dot" />Coordinación total del evento</li>
             </ul>
-            <a href="/social" className="big-btn" title="Entrar a SKYED Social: bodas, quinceañeras y eventos corporativos">
+            <a {...enlaceSocial} className="big-btn" title="Entrar a SKYED Social: bodas, quinceañeras y eventos corporativos">
               <span>Ingresar a SKYEDSocial</span>
               <div className="big-btn-arrow"><i className="ti ti-arrow-right" /></div>
             </a>
@@ -117,7 +121,7 @@ export default function HomePage() {
               <li><span className="feat-dot" />Rankings y resultados en tiempo real</li>
               <li><span className="feat-dot" />Kits y dorsales personalizados</li>
             </ul>
-            <a href="/deportivo" className="big-btn" title="Entrar a SKYED Deportivo: inscríbete a eventos de ciclismo">
+            <a {...enlaceDeportivo} className="big-btn" title="Entrar a SKYED Deportivo: inscríbete a eventos de ciclismo">
               <span>Ingresar a SKYEDDeportivo</span>
               <div className="big-btn-arrow"><i className="ti ti-arrow-right" /></div>
             </a>

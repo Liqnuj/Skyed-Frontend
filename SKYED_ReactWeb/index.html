@@ -8,9 +8,60 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
     <link rel="icon" href="/assets/principal/icon1.png" />
     <title>SKYED</title>
+    <!-- Pantalla de carga inicial: se ve mientras llega el JavaScript (en vez de una
+         pantalla en blanco) y React la reemplaza al montar la app. El color depende
+         del módulo de la dirección (/social, /deportivo o la principal). -->
+    <style>
+      #carga-inicial {
+        position: fixed; inset: 0; display: grid; place-items: center;
+        background: linear-gradient(150deg, #050f1f, #0b1730 45%, #2a1458);
+        color: #fff; font-family: 'Segoe UI', Roboto, Arial, sans-serif; text-align: center;
+      }
+      html[data-modulo="social"] #carga-inicial { background: linear-gradient(150deg, #0d0519, #1a0a2e 45%, #2d1454); }
+      html[data-modulo="deportivo"] #carga-inicial { background: linear-gradient(150deg, #050f1f, #091d36 45%, #0749a7); }
+      #carga-inicial .ci-aro {
+        width: 92px; height: 92px; margin: 0 auto 1.2rem; border-radius: 50%;
+        display: grid; place-items: center; position: relative;
+        background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .2);
+      }
+      #carga-inicial .ci-aro::before {
+        content: ""; position: absolute; inset: -6px; border-radius: 50%;
+        border: 3px solid transparent; border-top-color: #9b7bff; border-right-color: #3bc0d4;
+        animation: ci-giro 1s linear infinite;
+      }
+      html[data-modulo="social"] #carga-inicial .ci-aro::before { border-top-color: #e8c97a; border-right-color: #c026d3; }
+      html[data-modulo="deportivo"] #carga-inicial .ci-aro::before { border-top-color: #7fe3ee; border-right-color: #2c9caf; }
+      #carga-inicial img { width: 58%; height: 58%; object-fit: contain; }
+      #carga-inicial p { margin: 0; font-size: 1rem; color: rgba(255, 255, 255, .8); }
+      @keyframes ci-giro { to { transform: rotate(360deg); } }
+      @media (prefers-reduced-motion: reduce) { #carga-inicial .ci-aro::before { animation-duration: 3s; } }
+    </style>
+    <script>
+      (function () {
+        var r = location.pathname;
+        document.documentElement.setAttribute('data-modulo',
+          r.indexOf('/social') === 0 ? 'social' : r.indexOf('/deportivo') === 0 ? 'deportivo' : 'principal');
+      })();
+    </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div id="carga-inicial" role="status" aria-live="polite">
+        <div>
+          <div class="ci-aro"><img id="ci-logo" src="/assets/principal/icon1.png" alt="" /></div>
+          <p id="ci-texto">Cargando SKYED…</p>
+        </div>
+      </div>
+      <script>
+        (function () {
+          var m = document.documentElement.getAttribute('data-modulo');
+          var logo = { social: '/assets/social/logo_social.png', deportivo: '/assets/deportivo/logo_deportivo.png' }[m];
+          var texto = { social: 'Cargando SKYED Social…', deportivo: 'Cargando SKYED Deportivo…' }[m];
+          if (logo) document.getElementById('ci-logo').src = logo;
+          if (texto) document.getElementById('ci-texto').textContent = texto;
+        })();
+      </script>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
