@@ -47,6 +47,7 @@ import AyudaInicioPage from './pages/ayuda/AyudaInicioPage';
 import AyudaCategoriaPage from './pages/ayuda/AyudaCategoriaPage';
 import AyudaArticuloPage from './pages/ayuda/AyudaArticuloPage';
 import PqrDeportivo from './pages/deportivo/Pqr';
+import { EntradaModuloProvider } from './components/principal/EntradaModulo';
 
 
 function App(){
@@ -56,6 +57,8 @@ function App(){
         <PermisosProvider>
         <BrowserRouter>
           <ScrollToTop/>
+          {/* Animación al entrar a Social o Deportivo desde la principal */}
+          <EntradaModuloProvider>
           <Routes>
             <Route path="/" element={<HomePage/>}/>
             <Route path="/login" element={<LoginPage/>}/>
@@ -122,6 +125,7 @@ function App(){
 
             <Route path="*" element={<HomePage/>}/>
           </Routes>
+          </EntradaModuloProvider>
           <SkaiWidget/>
         </BrowserRouter>
         </PermisosProvider>
