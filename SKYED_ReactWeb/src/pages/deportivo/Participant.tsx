@@ -1325,8 +1325,11 @@ const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
                 {pagHist.items.map((f) =>
                   f.h ? (
                     <div className="part-event-row" key={f.key}>
-                      <div className="part-event-row-img">
-                        {(f.h.evento?.nombre || '?')[0].toUpperCase()}
+                      <div
+                        className="part-event-row-img"
+                        style={f.h.evento?.imagen_url ? { backgroundImage: `url(${f.h.evento.imagen_url})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
+                      >
+                        {!f.h.evento?.imagen_url && (f.h.evento?.nombre || '?')[0].toUpperCase()}
                         <FechaBloque iso={f.h.fecha_hp} />
                       </div>
                       <div className="part-event-row-info">
