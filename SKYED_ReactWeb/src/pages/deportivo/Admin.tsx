@@ -125,6 +125,7 @@ type Evento = {
   estado: "activo" | "inactivo" | "inhabilitado";
   kit?: { id: number; nombre: string } | null;
   categorias?: Categoria[];
+  esDemo?: boolean;
 };
 
 // GET /kits devuelve el modelo tal cual (columnas con sufijo _k).
@@ -217,6 +218,52 @@ const CATEGORIAS_EVENTO: Array<{ value: string; label: string }> = [
   { value: "pista", label: "Pista" },
   { value: "bmx", label: "BMX" },
 ];
+
+const generarEventosDemoPorAdmin = (adminId?: number | string) => {
+  const seed = Number(adminId ?? 1) || 1;
+  const ciudades = [
+    "Tunja, Boyacá",
+    "Sogamoso, Boyacá",
+    "Bogotá, Colombia",
+    "Cali, Valle",
+    "Medellín, Antioquia",
+    "Armenia, Quindío",
+    "Manizales, Caldas",
+    "Paipa, Boyacá",
+    "Villa de Leyva, Boyacá",
+    "Pereira, Risaralda",
+  ];
+
+  const categorias = ["ruta", "mtb", "gravel", "pista", "bmx"] as const;
+  const fechas = [
+    "2026-11-21", "2026-11-28", "2026-12-05", "2026-12-12", "2026-12-19",
+    "2026-12-26", "2027-01-02", "2027-01-09", "2027-01-16", "2027-01-23",
+  ];
+
+  return Array.from({ length: 10 }, (_, index) => {
+    const categoria = categorias[index % categorias.length];
+    const ciudad = ciudades[(index + seed) % ciudades.length];
+
+    return {
+      id: -(index + 1),
+      nombre: `Evento de prueba ${index + 1} - ${categoria.toUpperCase()}`,
+      categoria,
+      precio: 45000 + ((seed + index) * 8500),
+      distancia: `${35 + index * 6} km`,
+      desnivel: `${250 + index * 140} m`,
+      fecha: fechas[index],
+      hora: `${String(6 + (index % 4)).padStart(2, "0")}:30`,
+      ubicacion: ciudad,
+      descripcion: `Evento de prueba local para validar la paginación (${categoria}).`,
+      requisitos: "Uso de casco, revisión básica de la bicicleta y asistencia puntual.",
+      imagen_url: `/assets/deportivo/event${(index % 6) + 1}.jpg`,
+      cupos_disponibles: 60 + index * 15,
+      estado: "activo" as const,
+      categorias: [{ id: index + 1, nombre: "General", descripcion: "Participación abierta." }],
+      esDemo: true,
+    } satisfies Evento;
+  });
+};
 
 const money = (value: number | string | null | undefined) =>
   new Intl.NumberFormat("es-CO", {
@@ -606,7 +653,7 @@ function Paginador({ actual, ultima, total, onCambiar }: {
 
   return (
     <div role="navigation" aria-label="Paginación" className="adp-barra">
-      <button type="button" className="secondary-btn" disabled={actual <= 1} onClick={() => onCambiar(actual - 1)}>Anterior</button>
+      <button type="button" className="secondary-btn" disabled={actual <= 1} style={actual <= 1 ? { visibility: "hidden" } : undefined} onClick={() => onCambiar(actual - 1)}>Anterior</button>
       {numeros.map((n, i) => n === "…"
         ? <span key={`p${i}`} className="adp-puntos" aria-hidden="true">…</span>
         : (
@@ -619,7 +666,7 @@ function Paginador({ actual, ultima, total, onCambiar }: {
             onClick={() => onCambiar(n)}
           >{n}</button>
         ))}
-      <button type="button" className="secondary-btn" disabled={actual >= ultima} onClick={() => onCambiar(actual + 1)}>Siguiente</button>
+      <button type="button" className="secondary-btn" disabled={actual >= ultima} style={actual >= ultima ? { visibility: "hidden" } : undefined} onClick={() => onCambiar(actual + 1)}>Siguiente</button>
       <span className="adp-resumen">Mostrando {desde}–{hasta} de {total}</span>
     </div>
   );
@@ -956,7 +1003,8 @@ const [pqrTotal, setPqrTotal] = useState(0);
         controlPermisos.puedeVerSeccion("inscripciones") ? apiFetch("/pagos?per_page=500") : Promise.resolve(null),
         controlPermisos.puedeVerSeccion("resultados") ? apiFetch("/resultados?per_page=500") : Promise.resolve(null),
       ]);
-      setEventos(e?.data ?? []);
+      const eventosDesdeApi = Array.isArray(e?.data) ? e.data : [];
+      setEventos(eventosDesdeApi);
       // Si falla (p. ej. un asistente sin permiso), la tabla sigue funcionando sin las cifras.
       if (controlPermisos.puedeVerSeccion("eventos")) {
         apiFetch("/estadisticas/eventos-deportivos")
@@ -1058,7 +1106,10 @@ const [pqrTotal, setPqrTotal] = useState(0);
 
   const STOCK_BAJO = 10; // kits con este stock o menos se consideran "stock bajo"
 
-  const visibleEventos = eventos
+  const eventosParaTabla = import.meta.env.DEV
+    ? [...eventos, ...generarEventosDemoPorAdmin(user?.id)]
+    : eventos;
+  const visibleEventos = eventosParaTabla
     .filter((e) => !filtroCategoriaEvento || e.categoria === filtroCategoriaEvento)
     .filter((e) => !filtroEstadoEvento || e.estado === filtroEstadoEvento)
     .filter((e) => {
@@ -1508,6 +1559,7 @@ const [pqrTotal, setPqrTotal] = useState(0);
                   </td>
                   <td>
                     <strong>{e.nombre}</strong>
+                    {e.esDemo && <small style={{ display: "block", opacity: .7 }}>Prueba de paginación</small>}
                     {e.categorias && !e.categorias.length && (
                       <small className="field-hint field-hint-warn" style={{ display: "block" }}>Sin categorías: nadie puede inscribirse</small>
                     )}
@@ -1518,19 +1570,19 @@ const [pqrTotal, setPqrTotal] = useState(0);
                   <CeldaCupos disponibles={e.cupos_disponibles} ocupados={cifrasEventos[e.id]?.cupos_ocupados ?? 0} />
                   <CeldasCifrasEvento cifras={cifrasEventos[e.id]} />
                   <td>
-                    {puedeEditar("eventos") ? <select className="admin-select" value={e.estado} onChange={ev => cambiarEstadoEvento(e, ev.target.value as Evento["estado"])} aria-label="Estado del evento">
+                    {!e.esDemo && puedeEditar("eventos") ? <select className="admin-select" value={e.estado} onChange={ev => cambiarEstadoEvento(e, ev.target.value as Evento["estado"])} aria-label="Estado del evento">
                       <option value="activo">Activo</option>
                       <option value="inactivo">Inactivo</option>
                       <option value="inhabilitado">Inhabilitado</option>
                     </select> : <Badge value={e.estado} />}
                   </td>
                   <td><div className="row-actions">
-                    <button className="table-action" title="Ver el resumen: inscritos, dinero, asistencia y kits" onClick={() => setResumenEvento(e)}><BarChart3 size={15} /></button>
-                    {puedeEditar("eventos") && <>
+                    {!e.esDemo && <button className="table-action" title="Ver el resumen: inscritos, dinero, asistencia y kits" onClick={() => setResumenEvento(e)}><BarChart3 size={15} /></button>}
+                    {!e.esDemo && puedeEditar("eventos") && <>
                       <button className="table-action" title="Editar" onClick={() => { setEditing(e); setModal("evento"); }}><Pencil size={15} /></button>
                     </>}
-                    {(puedeEditar("eventos") || puedeEliminar("eventos")) && <button className="table-action" title="Categorías" onClick={() => { setEditing(e); setModal("categorias"); }}><Tags size={15} /></button>}
-                    {puedeEliminar("eventos") && <button className="table-action danger" title="Eliminar" onClick={() => eliminarEvento(e)}><Trash2 size={15} /></button>}
+                    {!e.esDemo && (puedeEditar("eventos") || puedeEliminar("eventos")) && <button className="table-action" title="Categorías" onClick={() => { setEditing(e); setModal("categorias"); }}><Tags size={15} /></button>}
+                    {!e.esDemo && puedeEliminar("eventos") && <button className="table-action danger" title="Eliminar" onClick={() => eliminarEvento(e)}><Trash2 size={15} /></button>}
                   </div></td>
                 </tr>
               ))}
@@ -2683,9 +2735,9 @@ function EntregasKit({ eventos, search, notify }: { eventos: Evento[]; search: s
 
       {ultima > 1 && (
         <div style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "center", marginTop: 14 }}>
-          <button type="button" className="secondary-btn" disabled={pagina <= 1 || cargando} onClick={() => setPagina(p => Math.max(1, p - 1))}>Anterior</button>
+          <button type="button" className="secondary-btn" disabled={pagina <= 1 || cargando} style={pagina <= 1 ? { visibility: "hidden" } : undefined} onClick={() => setPagina(p => Math.max(1, p - 1))}>Anterior</button>
           <span className="filter-count">Página {pagina} de {ultima}</span>
-          <button type="button" className="secondary-btn" disabled={pagina >= ultima || cargando} onClick={() => setPagina(p => Math.min(ultima, p + 1))}>Siguiente</button>
+          <button type="button" className="secondary-btn" disabled={pagina >= ultima || cargando} style={pagina >= ultima ? { visibility: "hidden" } : undefined} onClick={() => setPagina(p => Math.min(ultima, p + 1))}>Siguiente</button>
         </div>
       )}
     </>

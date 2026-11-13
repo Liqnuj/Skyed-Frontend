@@ -9,7 +9,6 @@ import Toast from '../../components/social/Toast';
 import CanvasParticles from '../../components/social/CanvasParticles';
 import type { ToastMsg } from '../../components/social/Toast';
 import { useAuth } from '../../context/AuthContext';
-import { useMenuDesplegable } from '../../hooks/useMenuDesplegable';
 import { apiFetch } from '../../services/api';
 import { pqrService, reservaService, testimonioService, tipoEventoService } from '../../services/socialService';
 import type { MiTestimonio, Pqr, PqrSeguimiento, Reserva, TipoEvento, TipoPqr } from '../../services/socialService';
@@ -23,14 +22,6 @@ import '../../styles/social/headerAnimado.css';
 
 type TabId = 'resumen' | 'pqr' | 'reservas' | 'ajustes';
 const TABS: TabId[] = ['resumen', 'pqr', 'reservas', 'ajustes'];
-
-// Secciones del perfil: las usan la barra de pestañas (escritorio) y el menú vertical (móvil).
-const PERFIL_TABS: Array<{ id: TabId; label: string; title: string; icono: string }> = [
-  { id: 'resumen', label: 'Resumen', title: 'Ver el resumen de tu cuenta', icono: 'ti-layout-dashboard' },
-  { id: 'pqr', label: 'Mis PQR', title: 'Ver mis PQR', icono: 'ti-message-report' },
-  { id: 'reservas', label: 'Mis reservas', title: 'Ver mis reservas', icono: 'ti-calendar-event' },
-  { id: 'ajustes', label: 'Ajustes', title: 'Ver los ajustes de tu cuenta', icono: 'ti-settings' },
-];
 
 function tipoDocumentoLabel(tipo: string | null | undefined) {
   const map: Record<string, string> = {
@@ -1221,6 +1212,70 @@ function ReservaDetalle({ reserva, onClose, onRenombrar, onOcultar, oculta, onCa
   );
 }
 
+const POR_PAGINA_PERFIL = 10;
+
+function paginarPerfil<T>(lista: T[] | null, pagina: number) {
+  const total = lista?.length ?? 0;
+  const ultima = Math.max(1, Math.ceil(total / POR_PAGINA_PERFIL));
+  const actual = Math.min(Math.max(1, pagina), ultima);
+  return {
+    filas: lista ? lista.slice((actual - 1) * POR_PAGINA_PERFIL, actual * POR_PAGINA_PERFIL) : null,
+    actual,
+    ultima,
+    total,
+  };
+}
+
+/** Anterior, números de página y Siguiente. No se muestra si todo cabe en una página. */
+function PaginadorPerfil({ actual, ultima, total, onCambiar }: {
+  actual: number;
+  ultima: number;
+  total: number;
+  onCambiar: (pagina: number) => void;
+}) {
+  if (ultima <= 1) return null;
+  const desde = (actual - 1) * POR_PAGINA_PERFIL + 1;
+  const hasta = Math.min(actual * POR_PAGINA_PERFIL, total);
+
+  const numeros: Array<number | '…'> = [];
+  for (let n = 1; n <= ultima; n++) {
+    if (n === 1 || n === ultima || Math.abs(n - actual) <= 1) numeros.push(n);
+    else if (numeros[numeros.length - 1] !== '…') numeros.push('…');
+  }
+
+  return (
+    <div role="navigation" aria-label="Paginación" className="pf-pag">
+      <button
+        type="button"
+        className="pf-pag-btn"
+        disabled={actual <= 1}
+        style={actual <= 1 ? { visibility: 'hidden' } : undefined}
+        onClick={() => onCambiar(actual - 1)}
+      >Anterior</button>
+      {numeros.map((n, i) => n === '…'
+        ? <span key={`p${i}`} className="pf-pag-puntos" aria-hidden="true">…</span>
+        : (
+          <button
+            key={n}
+            type="button"
+            className={n === actual ? 'pf-pag-btn active' : 'pf-pag-btn'}
+            aria-current={n === actual ? 'page' : undefined}
+            aria-label={`Ir a la página ${n}`}
+            onClick={() => onCambiar(n)}
+          >{n}</button>
+        ))}
+      <button
+        type="button"
+        className="pf-pag-btn"
+        disabled={actual >= ultima}
+        style={actual >= ultima ? { visibility: 'hidden' } : undefined}
+        onClick={() => onCambiar(actual + 1)}
+      >Siguiente</button>
+      <span className="pf-pag-info">Mostrando {desde}–{hasta} de {total}</span>
+    </div>
+  );
+}
+
 export default function Perfil() {
   return (
     <Protected>
@@ -1349,10 +1404,6 @@ function PerfilPanel() {
   const setTab = (nueva: TabId) =>
     setSearchParams(nueva === 'resumen' ? {} : { tab: nueva }, { replace: true });
 
-  // Menú vertical de secciones (móvil): se cierra con clic afuera, con Escape o al cambiar de sección.
-  const { abierto: menuTabs, setAbierto: setMenuTabs, contenedorRef: menuTabsRef, botonRef: menuTabsBtnRef } = useMenuDesplegable();
-  const tabActual = PERFIL_TABS.find((t) => t.id === tab) ?? PERFIL_TABS[0];
-
   const esAdmin = user?.roles.includes('adminSocial') ?? false;
 
   const [pqrs, setPqrs] = useState<Pqr[] | null>(null);
@@ -1364,6 +1415,10 @@ function PerfilPanel() {
   const [toast, setToast] = useState<ToastMsg | null>(null);
   const [filtrosPqr, setFiltrosPqr] = useState<Filtros>(FILTROS_INICIALES);
   const [filtrosReservas, setFiltrosReservas] = useState<Filtros>(FILTROS_INICIALES);
+  const [paginaPqr, setPaginaPqr] = useState(1);
+  const [paginaReservas, setPaginaReservas] = useState(1);
+  useEffect(() => { setPaginaPqr(1); }, [filtrosPqr]);
+  useEffect(() => { setPaginaReservas(1); }, [filtrosReservas]);
   const [detalleReserva, setDetalleReserva] = useState<Reserva | null>(null);
   // Lo que el usuario ocultó: se ve en el chip "Ocultas" y se puede volver a mostrar.
   const [pqrsOcultas, setPqrsOcultas] = useState<Pqr[] | null>(null);
@@ -1411,6 +1466,8 @@ function PerfilPanel() {
     () => ({ ...contarPor(reservas, (r) => r.estado_rese), ocultas: reservasOcultas?.length ?? 0 }),
     [reservas, reservasOcultas],
   );
+  const pagPqr = paginarPerfil(pqrsFiltradas, paginaPqr);
+  const pagReservas = paginarPerfil(reservasFiltradas, paginaReservas);
   const hayReservas = (reservas?.length ?? 0) + (reservasOcultas?.length ?? 0) > 0;
 
   const renombrarReserva = async (reserva: Reserva, nombre: string): Promise<boolean> => {
@@ -1792,43 +1849,6 @@ function PerfilPanel() {
           </button>
           <button title="Ver los ajustes de tu cuenta" className={tab === 'ajustes' ? 'active' : ''} onClick={() => setTab('ajustes')}>Ajustes</button>
         </div>
-
-        {/* Móvil: las secciones se despliegan como lista vertical (sin scroll horizontal). */}
-        <div className="pf-tabs-movil" ref={menuTabsRef}>
-          <button
-            ref={menuTabsBtnRef}
-            type="button"
-            className="pf-tabs-movil-btn"
-            aria-expanded={menuTabs}
-            aria-controls="pf-tabs-lista"
-            title={menuTabs ? 'Cerrar el menú de secciones' : 'Abrir el menú de secciones'}
-            onClick={() => setMenuTabs((v) => !v)}
-          >
-            <i className={`ti ${tabActual.icono}`} aria-hidden="true" />
-            <span>{tabActual.label}</span>
-            <i className={`ti ${menuTabs ? 'ti-x' : 'ti-menu-2'} pf-tabs-movil-ico`} aria-hidden="true" />
-          </button>
-          {menuTabs && (
-            <div id="pf-tabs-lista" className="pf-tabs-movil-lista" role="group" aria-label="Secciones del perfil">
-              {PERFIL_TABS.map((t) => {
-                const cuenta = t.id === 'pqr' ? pendientesPqr : t.id === 'reservas' ? reservasActivas : 0;
-                return (
-                  <button
-                    type="button"
-                    key={t.id}
-                    title={t.title}
-                    aria-current={tab === t.id ? 'page' : undefined}
-                    className={tab === t.id ? 'active' : ''}
-                    onClick={() => { setTab(t.id); setMenuTabs(false); }}
-                  >
-                    <i className={`ti ${t.icono}`} aria-hidden="true" /> {t.label}
-                    {cuenta > 0 && <span className="pf-tab-count">{cuenta}</span>}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
       </div>
 
       <div className="pf-body">
@@ -1955,7 +1975,7 @@ function PerfilPanel() {
                 </button>
               </div>
             )}
-            {pqrsFiltradas?.map((p) => {
+            {pagPqr.filas?.map((p) => {
               const actual = indiceFaseVisible(p.estado_pqr);
               return (
                 <button title="Ver el detalle de esta PQR" key={p.id_pqr} className="pf-list-item" onClick={() => abrirPqr(p)}>
@@ -1978,6 +1998,7 @@ function PerfilPanel() {
                 </button>
               );
             })}
+            <PaginadorPerfil actual={pagPqr.actual} ultima={pagPqr.ultima} total={pagPqr.total} onCambiar={setPaginaPqr} />
           </div>
         )}
 
@@ -2029,7 +2050,7 @@ function PerfilPanel() {
                 </button>
               </div>
             )}
-            {reservasFiltradas?.map((r) => {
+            {pagReservas.filas?.map((r) => {
               const pill = reservaEstadoPill(r.estado_rese);
               return (
                 <button title="Ver el detalle de esta reserva" key={r.id_rese} className="pf-list-item" onClick={() => setDetalleReserva(r)}>
@@ -2044,6 +2065,7 @@ function PerfilPanel() {
                 </button>
               );
             })}
+            <PaginadorPerfil actual={pagReservas.actual} ultima={pagReservas.ultima} total={pagReservas.total} onCambiar={setPaginaReservas} />
           </div>
         )}
 
