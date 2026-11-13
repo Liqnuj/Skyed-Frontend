@@ -8,6 +8,7 @@ import type { Avisar } from "../shared/Avisos";
 import type { OpcionesConfirmacion } from "../shared/ConfirmDialog";
 import { prepararImagen } from "../../utils/prepararImagen";
 import { limpiarCampoValidacion, validarFormularioDeportivo } from "../../utils/validarFormularioDeportivo";
+import { DRAFT_PREFIX, capitalizeFirst, clearDraft, clearDrafts, usePersistentState } from "../../utils/borradorFormulario";
 
 const MAX_GPX_MB = 5;
 
@@ -214,7 +215,8 @@ function PatrocinadorForm({
   onSave: (datos: Record<string, unknown>) => Promise<boolean>;
   notify: Avisar;
 }) {
-  const [form, setForm] = useState({
+  const llaveBorrador = `${DRAFT_PREFIX}patrocinador:${item?.id_p ?? "nuevo"}`;
+  const [form, setForm] = usePersistentState(llaveBorrador, {
     nombre_p: item?.nombre_p ?? "",
     logo_p: item?.logo_p ?? "",
     telefono_p: item?.telefono_p ?? "",
@@ -229,6 +231,7 @@ function PatrocinadorForm({
   const [errorLogo, setErrorLogo] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const set = (key: keyof typeof form, value: string) => setForm((f) => ({ ...f, [key]: value }));
+  const cerrar = () => { clearDraft(llaveBorrador); onClose(); };
 
   const subirLogo = async (archivo?: File) => {
     if (!archivo || subiendoLogo) return;
@@ -286,19 +289,19 @@ function PatrocinadorForm({
       estado_p: form.estado_p,
     });
     setGuardando(false);
-    if (guardado) onClose();
+    if (guardado) cerrar();
   };
 
   return (
     <Dialogo
       title={item ? "Editar patrocinador" : "Nuevo patrocinador"}
       subtitle="Los datos se guardan en el catálogo de patrocinadores."
-      onClose={onClose}
+      onClose={cerrar}
     >
       <form className="modal-form" onSubmit={submit} noValidate>
         <div className="form-grid">
           <Campo label="Nombre">
-            <input required maxLength={100} value={form.nombre_p} onChange={(e) => set("nombre_p", e.target.value)} />
+            <input required maxLength={100} value={form.nombre_p} onChange={(e) => set("nombre_p", capitalizeFirst(e.target.value))} />
           </Campo>
           <Campo label="Estado">
             <select required value={form.estado_p} onChange={(e) => set("estado_p", e.target.value)}>
@@ -380,12 +383,12 @@ function PatrocinadorForm({
             <input maxLength={120} value={form.pagina_web_p} onChange={(e) => set("pagina_web_p", e.target.value)} placeholder="https://…" />
           </Campo>
           <Campo label="Aporte o patrocinio" ancho>
-            <input required maxLength={100} value={form.aporte_p} onChange={(e) => set("aporte_p", e.target.value)} />
+            <input required maxLength={100} value={form.aporte_p} onChange={(e) => set("aporte_p", capitalizeFirst(e.target.value))} />
           </Campo>
         </div>
         <AccionesFormulario
           guardando={guardando || subiendoLogo}
-          onCancel={onClose}
+          onCancel={cerrar}
           textoGuardar={item ? "Guardar cambios" : "Crear patrocinador"}
           textoProcesando={subiendoLogo ? "Subiendo logo…" : "Guardando…"}
         />
@@ -415,12 +418,18 @@ function AsignarPatrocinadorModal({
   confirmar: (opciones: OpcionesConfirmacion) => Promise<boolean>;
   notify: Avisar;
 }) {
-  const [eventoId, setEventoId] = useState("");
-  const [detalle, setDetalle] = useState("");
+  const prefijoBorrador = `${DRAFT_PREFIX}asignar-patrocinador:${patrocinador.id_p}:`;
+  const [eventoId, setEventoId] = usePersistentState(`${prefijoBorrador}evento`, "");
+  const [detalle, setDetalle] = usePersistentState(`${prefijoBorrador}detalle`, "");
+  const cerrar = () => { clearDrafts(prefijoBorrador); onClose(); };
+  // Al recargar con un borrador, el evento ya viene elegido: no se pisa lo que el usuario había escrito.
+  const eventoPrevio = useRef(eventoId);
   const [guardando, setGuardando] = useState(false);
   const asignaciones = patrocinador.eventos ?? [];
 
   useEffect(() => {
+    if (eventoPrevio.current === eventoId) return;
+    eventoPrevio.current = eventoId;
     if (eventoId) {
       const actual = asignaciones.find((e) => String(e.id_e) === eventoId);
       setDetalle(actual?.pivot?.detalle ?? "");
@@ -434,7 +443,7 @@ function AsignarPatrocinadorModal({
     setGuardando(true);
     const guardado = await onSave(id, detalle.trim());
     setGuardando(false);
-    if (guardado) onClose();
+    if (guardado) cerrar();
   };
 
   const quitar = async (evento: { id_e: number; nombre_e: string }) => {
@@ -447,14 +456,14 @@ function AsignarPatrocinadorModal({
     setGuardando(true);
     const quitado = await onQuitar(evento.id_e);
     setGuardando(false);
-    if (quitado) onClose();
+    if (quitado) cerrar();
   };
 
   return (
     <Dialogo
       title={`Eventos de ${patrocinador.nombre_p}`}
       subtitle="Asigna este patrocinador a uno o más eventos y guarda el detalle de cada aporte."
-      onClose={onClose}
+      onClose={cerrar}
     >
       <div className="modal-form">
         <form onSubmit={submit} noValidate>
@@ -468,11 +477,11 @@ function AsignarPatrocinadorModal({
               </select>
             </Campo>
             <Campo label="Detalle del aporte">
-              <input required maxLength={255} value={detalle} disabled={!puedeEditar} onChange={(e) => setDetalle(e.target.value)} />
+              <input required maxLength={255} value={detalle} disabled={!puedeEditar} onChange={(e) => setDetalle(capitalizeFirst(e.target.value))} />
             </Campo>
           </div>
           <div className="modal-actions">
-            <button type="button" className="secondary-btn" onClick={onClose}>Cerrar</button>
+            <button type="button" className="secondary-btn" onClick={cerrar}>Cerrar</button>
             {puedeEditar && <button type="submit" className="primary-btn" disabled={!eventos.length || guardando}>
               {guardando ? "Guardando…" : "Guardar asignación"}
             </button>}
@@ -504,6 +513,7 @@ export function RutaForm({
   eventos,
   eventoInicialId = "",
   eventosConRuta = {},
+  claveBorrador,
   onClose,
   onSave,
   onCreada,
@@ -514,6 +524,8 @@ export function RutaForm({
   eventoInicialId?: string;
   /** id del evento → nombre de la ruta que ya tiene asignada. Un evento solo puede tener una ruta. */
   eventosConRuta?: Record<number, string>;
+  /** Distingue el borrador cuando la ruta se crea desde el formulario de un evento. */
+  claveBorrador?: string;
   onClose: () => void;
   onSave: (datos: Record<string, unknown>) => Promise<boolean | RutaEvento>;
   onCreada?: (ruta: RutaEvento) => void;
@@ -523,7 +535,8 @@ export function RutaForm({
   const eventoOcupado = (id: string | number | null | undefined) =>
     id != null && id !== "" && Number(id) !== item?.id_e && eventosConRuta[Number(id)] !== undefined;
 
-  const [form, setForm] = useState({
+  const llaveBorrador = `${DRAFT_PREFIX}ruta:${item?.id_re ?? claveBorrador ?? "nuevo"}`;
+  const [form, setForm] = usePersistentState(llaveBorrador, {
     id_e: item?.id_e == null ? (eventoOcupado(eventoInicialId) ? "" : eventoInicialId) : String(item.id_e),
     nombre_re: item?.nombre_re ?? "",
     estado_re: item?.estado_re ?? "activo",
@@ -536,6 +549,7 @@ export function RutaForm({
   const [subiendoGpx, setSubiendoGpx] = useState(false);
   const gpxInputRef = useRef<HTMLInputElement>(null);
   const set = (key: keyof typeof form, value: string) => setForm((f) => ({ ...f, [key]: value }));
+  const cerrar = () => { clearDraft(llaveBorrador); onClose(); };
 
   const subirGpx = async (archivo?: File) => {
     if (!archivo || subiendoGpx) return;
@@ -587,7 +601,7 @@ export function RutaForm({
     setGuardando(false);
     if (guardado) {
       if (typeof guardado === "object") onCreada?.(guardado);
-      onClose();
+      cerrar();
     }
   };
 
@@ -595,12 +609,12 @@ export function RutaForm({
     <Dialogo
       title={item ? "Editar ruta" : "Nueva ruta"}
       subtitle="Puedes guardar la ruta sin asignarla o vincularla a un evento."
-      onClose={onClose}
+      onClose={cerrar}
     >
       <form className="modal-form" onSubmit={submit} noValidate>
         <div className="form-grid">
           <Campo label="Nombre">
-            <input required maxLength={100} value={form.nombre_re} onChange={(e) => set("nombre_re", e.target.value)} />
+            <input required maxLength={100} value={form.nombre_re} onChange={(e) => set("nombre_re", capitalizeFirst(e.target.value))} />
           </Campo>
           <Campo label="Evento asociado (opcional)">
             <select value={form.id_e} onChange={(e) => set("id_e", e.target.value)}>
@@ -626,10 +640,10 @@ export function RutaForm({
             </select>
           </Campo>
           <Campo label="Distancia">
-            <input required maxLength={45} value={form.distancia_re} onChange={(e) => set("distancia_re", e.target.value)} placeholder="Ej. 25 km" />
+            <input required maxLength={45} value={form.distancia_re} onChange={(e) => set("distancia_re", capitalizeFirst(e.target.value))} placeholder="Ej. 25 km" />
           </Campo>
           <Campo label="Desnivel">
-            <input required maxLength={45} value={form.desnivel_re} onChange={(e) => set("desnivel_re", e.target.value)} placeholder="Ej. 850 m" />
+            <input required maxLength={45} value={form.desnivel_re} onChange={(e) => set("desnivel_re", capitalizeFirst(e.target.value))} placeholder="Ej. 850 m" />
           </Campo>
           <Campo label="Archivo GPX (sube un archivo o pega una URL)">
             <div style={{ display: "flex", gap: 8 }}>
@@ -661,10 +675,10 @@ export function RutaForm({
             </div>
           </Campo>
           <Campo label="Descripción" ancho>
-            <textarea required maxLength={255} rows={3} value={form.descripcion_re} onChange={(e) => set("descripcion_re", e.target.value)} />
+            <textarea required maxLength={255} rows={3} value={form.descripcion_re} onChange={(e) => set("descripcion_re", capitalizeFirst(e.target.value))} />
           </Campo>
         </div>
-        <AccionesFormulario guardando={guardando} onCancel={onClose} textoGuardar={item ? "Guardar cambios" : "Crear ruta"} />
+        <AccionesFormulario guardando={guardando} onCancel={cerrar} textoGuardar={item ? "Guardar cambios" : "Crear ruta"} />
       </form>
     </Dialogo>
   );
@@ -674,6 +688,7 @@ export function EstacionForm({
   item,
   eventos,
   eventoInicialId = "",
+  claveBorrador,
   onClose,
   onSave,
   notify,
@@ -681,11 +696,14 @@ export function EstacionForm({
   item?: Estacion;
   eventos: EventoOpcion[];
   eventoInicialId?: string;
+  /** Distingue el borrador cuando la estación se crea desde el formulario de un evento. */
+  claveBorrador?: string;
   onClose: () => void;
   onSave: (datos: Record<string, unknown>) => Promise<boolean>;
   notify: Avisar;
 }) {
-  const [form, setForm] = useState({
+  const llaveBorrador = `${DRAFT_PREFIX}estacion:${item?.id_est ?? claveBorrador ?? "nuevo"}`;
+  const [form, setForm] = usePersistentState(llaveBorrador, {
     id_e: String(item?.id_e ?? eventoInicialId),
     nombre_est: item?.nombre_est ?? "",
     tipo_est: item?.tipo_est ?? "general",
@@ -697,6 +715,7 @@ export function EstacionForm({
   });
   const [guardando, setGuardando] = useState(false);
   const set = (key: keyof typeof form, value: string) => setForm((f) => ({ ...f, [key]: value }));
+  const cerrar = () => { clearDraft(llaveBorrador); onClose(); };
   const eventoSeleccionado = eventos.find((evento) => String(evento.id) === form.id_e);
   const distanciaMaxima = eventoSeleccionado?.distancia?.match(/[\d.,]+/)?.[0]?.replace(",", ".");
 
@@ -716,14 +735,14 @@ export function EstacionForm({
       estado_est: form.estado_est,
     });
     setGuardando(false);
-    if (guardado) onClose();
+    if (guardado) cerrar();
   };
 
   return (
     <Dialogo
       title={item ? "Editar estación" : "Nueva estación"}
       subtitle="La estación quedará asociada al evento seleccionado."
-      onClose={onClose}
+      onClose={cerrar}
     >
       <form className="modal-form" onSubmit={submit} noValidate>
         <div className="form-grid">
@@ -734,7 +753,7 @@ export function EstacionForm({
             </select>
           </Campo>
           <Campo label="Nombre">
-            <input required maxLength={100} value={form.nombre_est} onChange={(e) => set("nombre_est", e.target.value)} />
+            <input required maxLength={100} value={form.nombre_est} onChange={(e) => set("nombre_est", capitalizeFirst(e.target.value))} />
           </Campo>
           <Campo label="Tipo">
             <select required value={form.tipo_est} onChange={(e) => set("tipo_est", e.target.value)}>
@@ -758,10 +777,10 @@ export function EstacionForm({
             </select>
           </Campo>
           <Campo label="Descripción" ancho>
-            <textarea required maxLength={255} rows={3} value={form.descripcion_pest} onChange={(e) => set("descripcion_pest", e.target.value)} />
+            <textarea required maxLength={255} rows={3} value={form.descripcion_pest} onChange={(e) => set("descripcion_pest", capitalizeFirst(e.target.value))} />
           </Campo>
         </div>
-        <AccionesFormulario guardando={guardando} onCancel={onClose} textoGuardar={item ? "Guardar cambios" : "Crear estación"} />
+        <AccionesFormulario guardando={guardando} onCancel={cerrar} textoGuardar={item ? "Guardar cambios" : "Crear estación"} />
       </form>
     </Dialogo>
   );
@@ -790,8 +809,9 @@ export default function AdminCatalogos({
   // Arranca ya con un evento elegido (el primero) para no mostrar la pantalla vacía.
   const [eventoId, setEventoId] = useState(() =>
     seccion === "rutas" ? "__sin_asignar" : eventos[0] ? String(eventos[0].id) : "");
-  const [modal, setModal] = useState<ModalState>(null);
-  const [patrocinadorEventos, setPatrocinadorEventos] = useState<Patrocinador | null>(null);
+  // Los modales abiertos sobreviven a una recarga (junto con lo escrito en sus formularios).
+  const [modal, setModal] = usePersistentState<ModalState>(`admin_catalogo_modal:${seccion}`, null);
+  const [patrocinadorEventos, setPatrocinadorEventos] = usePersistentState<Patrocinador | null>(`admin_catalogo_asignar:${seccion}`, null);
   const [cargando, setCargando] = useState(true);
   const [errorCarga, setErrorCarga] = useState("");
   const [recarga, setRecarga] = useState(0);

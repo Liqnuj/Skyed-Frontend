@@ -67,6 +67,7 @@ import { usePermisos } from "../../context/PermisosContext";
 import { primeraSeccionPermitida } from "../../types/permisos";
 import AyudaAdmin from "../../pages/admin/AyudaAdmin";
 import { limpiarCampoValidacion, validarFormularioDeportivo } from "../../utils/validarFormularioDeportivo";
+import { DRAFT_PREFIX, capitalizeFirst, clearDrafts, usePersistentState } from "../../utils/borradorFormulario";
 
 type Confirmar = ReturnType<typeof useConfirmacion>["confirmar"];
 // Base del panel: mismo diseño del panel social con la paleta deportiva
@@ -125,7 +126,6 @@ type Evento = {
   estado: "activo" | "inactivo" | "inhabilitado";
   kit?: { id: number; nombre: string } | null;
   categorias?: Categoria[];
-  esDemo?: boolean;
 };
 
 // GET /kits devuelve el modelo tal cual (columnas con sufijo _k).
@@ -219,52 +219,6 @@ const CATEGORIAS_EVENTO: Array<{ value: string; label: string }> = [
   { value: "bmx", label: "BMX" },
 ];
 
-const generarEventosDemoPorAdmin = (adminId?: number | string) => {
-  const seed = Number(adminId ?? 1) || 1;
-  const ciudades = [
-    "Tunja, Boyacá",
-    "Sogamoso, Boyacá",
-    "Bogotá, Colombia",
-    "Cali, Valle",
-    "Medellín, Antioquia",
-    "Armenia, Quindío",
-    "Manizales, Caldas",
-    "Paipa, Boyacá",
-    "Villa de Leyva, Boyacá",
-    "Pereira, Risaralda",
-  ];
-
-  const categorias = ["ruta", "mtb", "gravel", "pista", "bmx"] as const;
-  const fechas = [
-    "2026-11-21", "2026-11-28", "2026-12-05", "2026-12-12", "2026-12-19",
-    "2026-12-26", "2027-01-02", "2027-01-09", "2027-01-16", "2027-01-23",
-  ];
-
-  return Array.from({ length: 10 }, (_, index) => {
-    const categoria = categorias[index % categorias.length];
-    const ciudad = ciudades[(index + seed) % ciudades.length];
-
-    return {
-      id: -(index + 1),
-      nombre: `Evento de prueba ${index + 1} - ${categoria.toUpperCase()}`,
-      categoria,
-      precio: 45000 + ((seed + index) * 8500),
-      distancia: `${35 + index * 6} km`,
-      desnivel: `${250 + index * 140} m`,
-      fecha: fechas[index],
-      hora: `${String(6 + (index % 4)).padStart(2, "0")}:30`,
-      ubicacion: ciudad,
-      descripcion: `Evento de prueba local para validar la paginación (${categoria}).`,
-      requisitos: "Uso de casco, revisión básica de la bicicleta y asistencia puntual.",
-      imagen_url: `/assets/deportivo/event${(index % 6) + 1}.jpg`,
-      cupos_disponibles: 60 + index * 15,
-      estado: "activo" as const,
-      categorias: [{ id: index + 1, nombre: "General", descripcion: "Participación abierta." }],
-      esDemo: true,
-    } satisfies Evento;
-  });
-};
-
 const money = (value: number | string | null | undefined) =>
   new Intl.NumberFormat("es-CO", {
     style: "currency",
@@ -326,50 +280,14 @@ const sanitizeInteger = (value: string, maxLength = 7) =>
 const sanitizePlace = (value: string, maxLength: number) =>
   sanitizeText(value.replace(/[^\p{L}\s.,\-()]/gu, ""), maxLength);
 
-/** Primera letra en mayúscula (solo para campos de texto libre). */
-const capitalizeFirst = (value: string) =>
-  value.length ? value.charAt(0).toUpperCase() + value.slice(1) : value;
 
 /* ================================================================
    PERSISTENCIA (recargar la página no debe borrar lo que se escribe)
 ================================================================ */
 
-const DRAFT_PREFIX = "admin_draft:";
 /** Borrador del kit que se crea desde el formulario de un evento. */
 const KIT_DESDE_EVENTO = "desde-evento";
 
-/** Igual que useState, pero guarda el valor en sessionStorage bajo `key`. */
-function usePersistentState<T>(key: string, initial: T) {
-  const [value, setValue] = useState<T>(() => {
-    try {
-      const saved = sessionStorage.getItem(key);
-      return saved !== null ? (JSON.parse(saved) as T) : initial;
-    } catch {
-      return initial;
-    }
-  });
-
-  useEffect(() => {
-    try {
-      sessionStorage.setItem(key, JSON.stringify(value));
-    } catch {
-      // Sin almacenamiento disponible: el formulario sigue funcionando, solo no se recupera.
-    }
-  }, [key, value]);
-
-  return [value, setValue] as const;
-}
-
-/** Borra todos los borradores de formularios (al guardar o cancelar). */
-const clearDrafts = () => {
-  try {
-    Object.keys(sessionStorage)
-      .filter(k => k.startsWith(DRAFT_PREFIX))
-      .forEach(k => sessionStorage.removeItem(k));
-  } catch {
-    // nada que limpiar
-  }
-};
 
 const SECTION_KEY = "admin_section";
 const SECTIONS_VALIDAS: string[] = SECCIONES;
@@ -1106,10 +1024,7 @@ const [pqrTotal, setPqrTotal] = useState(0);
 
   const STOCK_BAJO = 10; // kits con este stock o menos se consideran "stock bajo"
 
-  const eventosParaTabla = import.meta.env.DEV
-    ? [...eventos, ...generarEventosDemoPorAdmin(user?.id)]
-    : eventos;
-  const visibleEventos = eventosParaTabla
+  const visibleEventos = eventos
     .filter((e) => !filtroCategoriaEvento || e.categoria === filtroCategoriaEvento)
     .filter((e) => !filtroEstadoEvento || e.estado === filtroEstadoEvento)
     .filter((e) => {
@@ -1559,7 +1474,6 @@ const [pqrTotal, setPqrTotal] = useState(0);
                   </td>
                   <td>
                     <strong>{e.nombre}</strong>
-                    {e.esDemo && <small style={{ display: "block", opacity: .7 }}>Prueba de paginación</small>}
                     {e.categorias && !e.categorias.length && (
                       <small className="field-hint field-hint-warn" style={{ display: "block" }}>Sin categorías: nadie puede inscribirse</small>
                     )}
@@ -1570,19 +1484,19 @@ const [pqrTotal, setPqrTotal] = useState(0);
                   <CeldaCupos disponibles={e.cupos_disponibles} ocupados={cifrasEventos[e.id]?.cupos_ocupados ?? 0} />
                   <CeldasCifrasEvento cifras={cifrasEventos[e.id]} />
                   <td>
-                    {!e.esDemo && puedeEditar("eventos") ? <select className="admin-select" value={e.estado} onChange={ev => cambiarEstadoEvento(e, ev.target.value as Evento["estado"])} aria-label="Estado del evento">
+                    {puedeEditar("eventos") ? <select className="admin-select" value={e.estado} onChange={ev => cambiarEstadoEvento(e, ev.target.value as Evento["estado"])} aria-label="Estado del evento">
                       <option value="activo">Activo</option>
                       <option value="inactivo">Inactivo</option>
                       <option value="inhabilitado">Inhabilitado</option>
                     </select> : <Badge value={e.estado} />}
                   </td>
                   <td><div className="row-actions">
-                    {!e.esDemo && <button className="table-action" title="Ver el resumen: inscritos, dinero, asistencia y kits" onClick={() => setResumenEvento(e)}><BarChart3 size={15} /></button>}
-                    {!e.esDemo && puedeEditar("eventos") && <>
+                    <button className="table-action" title="Ver el resumen: inscritos, dinero, asistencia y kits" onClick={() => setResumenEvento(e)}><BarChart3 size={15} /></button>
+                    {puedeEditar("eventos") && <>
                       <button className="table-action" title="Editar" onClick={() => { setEditing(e); setModal("evento"); }}><Pencil size={15} /></button>
                     </>}
-                    {!e.esDemo && (puedeEditar("eventos") || puedeEliminar("eventos")) && <button className="table-action" title="Categorías" onClick={() => { setEditing(e); setModal("categorias"); }}><Tags size={15} /></button>}
-                    {!e.esDemo && puedeEliminar("eventos") && <button className="table-action danger" title="Eliminar" onClick={() => eliminarEvento(e)}><Trash2 size={15} /></button>}
+                    {(puedeEditar("eventos") || puedeEliminar("eventos")) && <button className="table-action" title="Categorías" onClick={() => { setEditing(e); setModal("categorias"); }}><Tags size={15} /></button>}
+                    {puedeEliminar("eventos") && <button className="table-action danger" title="Eliminar" onClick={() => eliminarEvento(e)}><Trash2 size={15} /></button>}
                   </div></td>
                 </tr>
               ))}
@@ -2197,11 +2111,11 @@ function EventoModal({ item, kits, eventos, onClose, onSave, notify, onKitCreado
         </Field>
 
         <Field label="Distancia (opcional)">
-          <input maxLength={30} value={form.distancia_e} onChange={e => set("distancia_e", sanitizeText(e.target.value, 30))} placeholder="Ej. 92 km" />
+          <input maxLength={30} value={form.distancia_e} onChange={e => set("distancia_e", capitalizeFirst(sanitizeText(e.target.value, 30)))} placeholder="Ej. 92 km" />
         </Field>
 
         <Field label="Desnivel (opcional)">
-          <input maxLength={30} value={form.desnivel_e} onChange={e => set("desnivel_e", sanitizeText(e.target.value, 30))} placeholder="Ej. 1.450 m" />
+          <input maxLength={30} value={form.desnivel_e} onChange={e => set("desnivel_e", capitalizeFirst(sanitizeText(e.target.value, 30)))} placeholder="Ej. 1.450 m" />
         </Field>
 
         <Field label="Lugar de salida">
@@ -2284,6 +2198,7 @@ function EventoModal({ item, kits, eventos, onClose, onSave, notify, onKitCreado
     <RutaForm
       eventos={eventoActivo ? [{ id: eventoActivo.id, nombre: eventoActivo.nombre, distancia: eventoActivo.distancia }] : []}
       eventoInicialId={eventoActivo ? String(eventoActivo.id) : ""}
+      claveBorrador="desde-evento"
       eventosConRuta={Object.fromEntries(
         rutas.filter((r) => r.id_e != null && r.id_e === eventoActivo?.id).map((r) => [r.id_e as number, r.nombre_re]),
       )}
@@ -2314,6 +2229,7 @@ function EventoModal({ item, kits, eventos, onClose, onSave, notify, onKitCreado
     <EstacionForm
       eventos={opcionesEventos}
       eventoInicialId={String(eventoActivo.id)}
+      claveBorrador="desde-evento"
       onClose={() => setCreandoEstacion(false)}
       notify={notify}
       onSave={async (datos) => {
