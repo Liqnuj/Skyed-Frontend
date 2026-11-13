@@ -30,6 +30,7 @@ import {
   soloLetras,
 } from "../../utils/validaciones";
 import { capitalizar } from "../../utils/texto";
+import { DRAFT_PREFIX, clearDraft, clearDrafts, usePersistentState } from "../../utils/borradorFormulario";
 import type { useConfirmacion } from "../shared/ConfirmDialog";
 import "../../styles/deportivo/AdminUsuarios.css";
 import type { Avisar } from "../shared/Avisos";
@@ -126,6 +127,31 @@ const TIPOS_DOCUMENTO = [
   { value: "cedula_extranjeria", label: "Cédula de extranjería" },
   { value: "pasaporte", label: "Pasaporte" },
 ];
+
+/** El número cambia de nombre, ejemplo y formato según el tipo: el pasaporte lleva letras y números. */
+type ReglaDocumento = { etiqueta: string; placeholder: string; alfanumerico: boolean };
+const REGLA_DOCUMENTO_GENERICA: ReglaDocumento = { etiqueta: "Número de documento", placeholder: "Ej. 1052345678", alfanumerico: false };
+const REGLAS_DOCUMENTO: Record<string, ReglaDocumento> = {
+  cedula_ciudadania: { etiqueta: "Número de cédula de ciudadanía", placeholder: "Ej. 1052345678", alfanumerico: false },
+  tarjeta_identidad: { etiqueta: "Número de tarjeta de identidad", placeholder: "Ej. 1052345678", alfanumerico: false },
+  cedula_extranjeria: { etiqueta: "Número de cédula de extranjería", placeholder: "Ej. 1234567", alfanumerico: false },
+  pasaporte: { etiqueta: "Número de pasaporte", placeholder: "Ej. AB123456", alfanumerico: true },
+};
+const reglaDocumento = (tipo: string): ReglaDocumento => REGLAS_DOCUMENTO[tipo] ?? REGLA_DOCUMENTO_GENERICA;
+/** Deja solo lo que admite el tipo: dígitos, o letras y números (en mayúscula) para el pasaporte. */
+const limpiarDocumento = (tipo: string, valor: string) =>
+  reglaDocumento(tipo).alfanumerico ? valor.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12) : soloDigitos(valor, 12);
+/** Mensaje de error del número de documento según el tipo. */
+function errorDocumento(tipo: string, doc: string): string | null {
+  const regla = reglaDocumento(tipo);
+  const nombre = regla.etiqueta.toLowerCase();
+  if (!doc) return `Escribe el ${nombre}.`;
+  if (doc.length < 5 || doc.length > 12) {
+    return `El ${nombre} debe tener entre 5 y 12 ${regla.alfanumerico ? "caracteres (letras y números)" : "dígitos"}.`;
+  }
+  if (!regla.alfanumerico && /^0+$/.test(doc)) return `El ${nombre} no es válido.`;
+  return null;
+}
 
 const quitarTildes = (v: string) => v.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
@@ -268,10 +294,12 @@ export function RolesModal({ users, inicialId, yoId, modulo = "deportivo", esSup
   notify: Avisar;
   confirmar: Confirmar;
 }) {
-  const [selId, setSelId] = useState<number | null>(inicialId);
-  const [busqueda, setBusqueda] = useState("");
-  const [rol, setRol] = useState(modulo === "social" ? "cliente" : "participante");
-  const [contexto, setContexto] = useState<Contexto>(modulo);
+  const prefijoBorrador = `${DRAFT_PREFIX}roles:${modulo}:`;
+  const [selId, setSelId] = usePersistentState<number | null>(`${prefijoBorrador}usuario`, inicialId);
+  const [busqueda, setBusqueda] = usePersistentState(`${prefijoBorrador}busqueda`, "");
+  const [rol, setRol] = usePersistentState(`${prefijoBorrador}rol`, modulo === "social" ? "cliente" : "participante");
+  const [contexto, setContexto] = usePersistentState<Contexto>(`${prefijoBorrador}contexto`, modulo);
+  const cerrar = () => { clearDrafts(prefijoBorrador); onClose(); };
   const [ocupado, setOcupado] = useState(false);
 
   const visibles = useMemo(
@@ -337,7 +365,7 @@ export function RolesModal({ users, inicialId, yoId, modulo = "deportivo", esSup
       titulo="Gestionar roles"
       subtitulo="Elige un usuario para ver sus roles, asignarle uno nuevo o quitarle uno."
       ancho
-      onClose={onClose}
+      onClose={cerrar}
     >
       <div className="usr-roles">
         {/* ---------- Lista de usuarios ---------- */}
@@ -569,7 +597,9 @@ export function UsuarioModal({ modulo = "deportivo", esSuperAdmin = false, exist
   );
   const rolPorDefecto = esSocial ? "Cliente" : "Participante";
 
-  const [form, setForm] = useState({
+  const prefijoBorrador = `${DRAFT_PREFIX}usuario-nuevo:${modulo}:`;
+  // La contraseña NO entra en el borrador: sessionStorage es legible por cualquier script de la página.
+  const [datos, setDatos] = usePersistentState(`${prefijoBorrador}datos`, {
     tipo: "",
     documento: "",
     nombre: "",
@@ -577,20 +607,23 @@ export function UsuarioModal({ modulo = "deportivo", esSuperAdmin = false, exist
     correo: "",
     telefono: "",
     fecha: "",
-    clave: "",
   });
+  const [clave, setClave] = useState("");
+  const form = useMemo(() => ({ ...datos, clave }), [datos, clave]);
   const [tocados, setTocados] = useState<Partial<Record<CampoUsuario, boolean>>>({});
   const [errorApi, setErrorApi] = useState<string | null>(null);
-  const [rol, setRol] = useState(""); // "" = el rol por defecto que asigna el registro
-  const [contexto, setContexto] = useState<Contexto>(contextoBase);
+  const [rol, setRol] = usePersistentState(`${prefijoBorrador}rol`, ""); // "" = el rol por defecto que asigna el registro
+  const [contexto, setContexto] = usePersistentState<Contexto>(`${prefijoBorrador}contexto`, contextoBase);
   const [verClave, setVerClave] = useState(false);
   const [copiada, setCopiada] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
+  const cerrar = () => { clearDrafts(prefijoBorrador); onClose(); };
 
   const set = (campo: CampoUsuario, valor: string) => {
     setErrorApi(null);
-    setForm((f) => ({ ...f, [campo]: valor }));
+    if (campo === "clave") setClave(valor);
+    else setDatos((d) => ({ ...d, [campo]: valor }));
   };
   const tocar = (campo: CampoUsuario) => setTocados((t) => (t[campo] ? t : { ...t, [campo]: true }));
 
@@ -614,13 +647,7 @@ export function UsuarioModal({ modulo = "deportivo", esSuperAdmin = false, exist
     const correo = form.correo.trim();
     return {
       tipo: form.tipo ? null : "Selecciona el tipo de documento.",
-      documento: !doc
-        ? "Escribe el número de documento."
-        : doc.length < 5 || doc.length > 12
-          ? "El número de documento debe tener entre 5 y 12 dígitos."
-          : /^0+$/.test(doc)
-            ? "El número de documento no es válido."
-            : null,
+      documento: errorDocumento(form.tipo, doc),
       nombre: errorNombrePersona(form.nombre, "nombre"),
       apellido: errorNombrePersona(form.apellido, "apellido"),
       correo: errorCorreo(correo) ?? (correosUsados.has(normalizarCorreo(correo)) ? "Ya existe un usuario con este correo." : null),
@@ -669,7 +696,7 @@ export function UsuarioModal({ modulo = "deportivo", esSuperAdmin = false, exist
     if (primerError) {
       // Se marcan todos los campos para que se vea qué falta, y se lleva el foco al primero.
       setTocados(Object.fromEntries(ORDEN_CAMPOS.map((c) => [c, true])));
-      const faltantes = ORDEN_CAMPOS.filter((campo) => errores[campo]).map((campo) => ETIQUETAS_CAMPOS_USUARIO[campo]);
+      const faltantes = ORDEN_CAMPOS.filter((campo) => errores[campo]).map((campo) => (campo === "documento" ? reglaDocumento(form.tipo).etiqueta : ETIQUETAS_CAMPOS_USUARIO[campo]));
       notify(`Completa o corrige estos campos: ${faltantes.join(", ")}.`, "error");
       const el = formRef.current?.querySelector<HTMLElement>(`[data-campo="${primerError}"]`);
       el?.focus();
@@ -681,7 +708,7 @@ export function UsuarioModal({ modulo = "deportivo", esSuperAdmin = false, exist
     try {
       const res = await userService.crear({
         tipo_documento_u: form.tipo,
-        documento_u: parseInt(form.documento, 10),
+        documento_u: reglaDocumento(form.tipo).alfanumerico ? form.documento : parseInt(form.documento, 10),
         nombre_u: form.nombre.trim().replace(/\s{2,}/g, " "),
         apellido_u: form.apellido.trim().replace(/\s{2,}/g, " "),
         telefono_u: form.telefono,
@@ -703,6 +730,7 @@ export function UsuarioModal({ modulo = "deportivo", esSuperAdmin = false, exist
         }
       }
       notify(`Usuario ${form.nombre.trim()} creado.${aviso}`);
+      clearDrafts(prefijoBorrador);
       await onCreado();
     } catch (err) {
       // El backend también valida (correo o documento repetidos, etc.): se deja el motivo dentro del formulario.
@@ -720,7 +748,7 @@ export function UsuarioModal({ modulo = "deportivo", esSuperAdmin = false, exist
     <ModalBase
       titulo="Nuevo usuario"
       subtitulo="Crea una cuenta con los mismos datos que pide el registro público."
-      onClose={onClose}
+      onClose={cerrar}
       cerrarFuera={false}
     >
       <form ref={formRef} className="modal-form" onSubmit={enviar} autoComplete="off" noValidate>
@@ -731,7 +759,7 @@ export function UsuarioModal({ modulo = "deportivo", esSuperAdmin = false, exist
               required
               data-campo="tipo"
               value={form.tipo}
-              onChange={(e) => { set("tipo", e.target.value); tocar("tipo"); }}
+              onChange={(e) => { set("tipo", e.target.value); set("documento", limpiarDocumento(e.target.value, form.documento)); tocar("tipo"); }}
               onBlur={() => tocar("tipo")}
               {...ariaCampo("tipo")}
             >
@@ -741,16 +769,17 @@ export function UsuarioModal({ modulo = "deportivo", esSuperAdmin = false, exist
             <ErrorCampo id="usr-err-tipo" texto={visible("tipo")} />
           </label>
           <label className={`admin-field ${claseCampo("documento")}`}>
-            <span>Número de documento</span>
+            <span>{reglaDocumento(form.tipo).etiqueta}</span>
             <input
               required
               data-campo="documento"
-              inputMode="numeric"
+              inputMode={reglaDocumento(form.tipo).alfanumerico ? "text" : "numeric"}
+              autoCapitalize="characters"
               maxLength={12}
               value={form.documento}
-              onChange={(e) => set("documento", soloDigitos(e.target.value, 12))}
+              onChange={(e) => set("documento", limpiarDocumento(form.tipo, e.target.value))}
               onBlur={() => tocar("documento")}
-              placeholder="Ej. 1052345678"
+              placeholder={reglaDocumento(form.tipo).placeholder}
               {...ariaCampo("documento")}
             />
             <ErrorCampo id="usr-err-documento" texto={visible("documento")} />
@@ -916,7 +945,7 @@ export function UsuarioModal({ modulo = "deportivo", esSuperAdmin = false, exist
         {errorApi && <p className="usr-aviso alerta usr-error-api" role="alert">{errorApi}</p>}
 
         <div className="modal-actions">
-          <button type="button" className="secondary-btn" title="Cerrar sin crear el usuario" onClick={onClose}>Cancelar</button>
+          <button type="button" className="secondary-btn" title="Cerrar sin crear el usuario" onClick={cerrar}>Cancelar</button>
           <button type="submit" className="primary-btn" title="Crear la cuenta del usuario" disabled={guardando}>
             {guardando ? <Loader2 size={16} className="usr-girar" /> : <UserPlus size={16} />}
             {guardando ? "Creando..." : "Crear usuario"}
@@ -974,13 +1003,15 @@ export function EditarUsuarioModal({ usuarioId, yoId, existentes = [], onClose, 
   notify: Avisar;
 }) {
   const [original, setOriginal] = useState<FormEdicion | null>(null);
-  const [form, setForm] = useState<FormEdicion | null>(null);
+  const llaveBorrador = `${DRAFT_PREFIX}usuario-editar:${usuarioId}`;
+  const [form, setForm] = usePersistentState<FormEdicion | null>(llaveBorrador, null);
   const [errorCarga, setErrorCarga] = useState<string | null>(null);
   const [tocados, setTocados] = useState<Partial<Record<CampoEdicion, boolean>>>({});
   const [errorApi, setErrorApi] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const esYo = usuarioId === yoId;
+  const cerrar = () => { clearDraft(llaveBorrador); onClose(); };
 
   // La lista del panel no trae todos los datos (documento, teléfono, fecha...): se piden aquí.
   useEffect(() => {
@@ -1000,7 +1031,8 @@ export function EditarUsuarioModal({ usuarioId, yoId, existentes = [], onClose, 
           estado: u.estado_u ?? "activo",
         };
         setOriginal(datos);
-        setForm(datos);
+        // Si quedó un borrador (recarga), se conserva lo que se había editado.
+        setForm((actual) => actual ?? datos);
       })
       .catch((err) => { if (activo) setErrorCarga(err instanceof Error ? err.message : "No se pudieron cargar los datos del usuario."); });
     return () => { activo = false; };
@@ -1026,11 +1058,7 @@ export function EditarUsuarioModal({ usuarioId, yoId, existentes = [], onClose, 
     const correo = form.correo.trim();
     return {
       tipo: form.tipo ? null : "Selecciona el tipo de documento.",
-      documento: !doc
-        ? "Escribe el número de documento."
-        : doc.length < 5 || doc.length > 12
-          ? "El número de documento debe tener entre 5 y 12 dígitos."
-          : /^0+$/.test(doc) ? "El número de documento no es válido." : null,
+      documento: errorDocumento(form.tipo, doc),
       nombre: errorNombrePersona(form.nombre, "nombre"),
       apellido: errorNombrePersona(form.apellido, "apellido"),
       correo: errorCorreo(correo) ?? (correosDeOtros.has(normalizarCorreo(correo)) ? "Ya existe otro usuario con este correo." : null),
@@ -1058,7 +1086,7 @@ export function EditarUsuarioModal({ usuarioId, yoId, existentes = [], onClose, 
     if (!form || !original) return {};
     const datos: Record<string, unknown> = {};
     if (form.tipo !== original.tipo) datos.tipo_documento_u = form.tipo;
-    if (form.documento !== original.documento) datos.documento_u = parseInt(form.documento, 10);
+    if (form.documento !== original.documento) datos.documento_u = reglaDocumento(form.tipo).alfanumerico ? form.documento : parseInt(form.documento, 10);
     if (form.nombre.trim() !== original.nombre) datos.nombre_u = form.nombre.trim().replace(/\s{2,}/g, " ");
     if (form.apellido.trim() !== original.apellido) datos.apellido_u = form.apellido.trim().replace(/\s{2,}/g, " ");
     if (normalizarCorreo(form.correo) !== normalizarCorreo(original.correo)) datos.correo_u = normalizarCorreo(form.correo);
@@ -1077,7 +1105,7 @@ export function EditarUsuarioModal({ usuarioId, yoId, existentes = [], onClose, 
     const primerError = ORDEN_EDICION.find((c) => errores[c]);
     if (primerError) {
       setTocados(Object.fromEntries(ORDEN_EDICION.map((c) => [c, true])));
-      const faltantes = ORDEN_EDICION.filter((campo) => errores[campo]).map((campo) => ETIQUETAS_CAMPOS_USUARIO[campo]);
+      const faltantes = ORDEN_EDICION.filter((campo) => errores[campo]).map((campo) => (campo === "documento" ? reglaDocumento(form.tipo).etiqueta : ETIQUETAS_CAMPOS_USUARIO[campo]));
       notify(`Completa o corrige estos campos: ${faltantes.join(", ")}.`, "error");
       formRef.current?.querySelector<HTMLElement>(`[data-campo="${primerError}"]`)?.focus();
       return;
@@ -1094,6 +1122,7 @@ export function EditarUsuarioModal({ usuarioId, yoId, existentes = [], onClose, 
       notify(cambios.estado_u === "inactivo"
         ? `Datos de ${form.nombre.trim()} guardados. La cuenta quedó inactiva y se cerraron sus sesiones.`
         : `Datos de ${form.nombre.trim()} guardados.`);
+      clearDraft(llaveBorrador);
       await onGuardado();
     } catch (err) {
       const mensaje = err instanceof Error ? err.message : "No se pudieron guardar los cambios.";
@@ -1108,7 +1137,7 @@ export function EditarUsuarioModal({ usuarioId, yoId, existentes = [], onClose, 
     <ModalBase
       titulo="Editar usuario"
       subtitulo="Corrige los datos de la cuenta. La contraseña no se cambia aquí: la persona usa «¿Olvidaste tu contraseña?»."
-      onClose={onClose}
+      onClose={cerrar}
       cerrarFuera={false}
     >
       {!form ? (
@@ -1120,7 +1149,7 @@ export function EditarUsuarioModal({ usuarioId, yoId, existentes = [], onClose, 
           <div className="form-grid">
             <label className={`admin-field ${claseCampo("tipo")}`}>
               <span>Tipo de documento</span>
-              <select data-campo="tipo" value={form.tipo} onChange={(e) => { set("tipo", e.target.value); tocar("tipo"); }} onBlur={() => tocar("tipo")} {...ariaCampo("tipo")}>
+              <select data-campo="tipo" value={form.tipo} onChange={(e) => { set("tipo", e.target.value); set("documento", limpiarDocumento(e.target.value, form.documento)); tocar("tipo"); }} onBlur={() => tocar("tipo")} {...ariaCampo("tipo")}>
                 <option value="">Selecciona</option>
                 {TIPOS_DOCUMENTO.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                 {form.tipo && !TIPOS_DOCUMENTO.some((t) => t.value === form.tipo) && <option value={form.tipo}>{form.tipo}</option>}
@@ -1128,8 +1157,8 @@ export function EditarUsuarioModal({ usuarioId, yoId, existentes = [], onClose, 
               <ErrorCampo id="usr-ed-err-tipo" texto={visible("tipo")} />
             </label>
             <label className={`admin-field ${claseCampo("documento")}`}>
-              <span>Número de documento</span>
-              <input data-campo="documento" inputMode="numeric" maxLength={12} value={form.documento} onChange={(e) => set("documento", soloDigitos(e.target.value, 12))} onBlur={() => tocar("documento")} {...ariaCampo("documento")} />
+              <span>{reglaDocumento(form.tipo).etiqueta}</span>
+              <input data-campo="documento" inputMode={reglaDocumento(form.tipo).alfanumerico ? "text" : "numeric"} autoCapitalize="characters" maxLength={12} placeholder={reglaDocumento(form.tipo).placeholder} value={form.documento} onChange={(e) => set("documento", limpiarDocumento(form.tipo, e.target.value))} onBlur={() => tocar("documento")} {...ariaCampo("documento")} />
               <ErrorCampo id="usr-ed-err-documento" texto={visible("documento")} />
             </label>
             <label className={`admin-field ${claseCampo("nombre")}`}>
@@ -1179,7 +1208,7 @@ export function EditarUsuarioModal({ usuarioId, yoId, existentes = [], onClose, 
           {errorApi && <p className="usr-aviso alerta usr-error-api" role="alert">{errorApi}</p>}
 
           <div className="modal-actions">
-            <button type="button" className="secondary-btn" title="Cerrar sin guardar" onClick={onClose}>Cancelar</button>
+            <button type="button" className="secondary-btn" title="Cerrar sin guardar" onClick={cerrar}>Cancelar</button>
             <button type="submit" className="primary-btn" title="Guardar los cambios del usuario" disabled={guardando || !hayCambios}>
               {guardando ? <Loader2 size={16} className="usr-girar" /> : <Save size={16} />}
               {guardando ? "Guardando..." : "Guardar cambios"}
