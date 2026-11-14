@@ -4,7 +4,7 @@ import { createPortal } from "react-dom";
 import { Download, Loader2, X } from "lucide-react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { apiConfig, getToken } from "../../services/api";
+import { apiConfig, fetchSeguro, getToken } from "../../services/api";
 
 /**
  * Lee el GPX guardado en la ruta. Acepta:
@@ -18,11 +18,11 @@ export async function leerGpx(valor: string): Promise<string> {
   let res: Response;
   if (enStorage) {
     const token = getToken();
-    res = await fetch(`${apiConfig.baseURL}/deportivo/gpx?path=${encodeURIComponent(enStorage[1])}`, {
+    res = await fetchSeguro(`${apiConfig.baseURL}/deportivo/gpx?path=${encodeURIComponent(enStorage[1])}`, {
       headers: { Accept: "application/gpx+xml, application/xml, */*", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     });
   } else if (/^https?:\/\//i.test(valor)) {
-    res = await fetch(valor);
+    res = await fetchSeguro(valor);
   } else {
     throw new Error("No se reconoce la ubicación del archivo GPX.");
   }

@@ -17,6 +17,10 @@ export default function RecoverPage() {
   const [docType, setDocType] = useState('');
   const [docNumber, setDocNumber] = useState('');
   const [maskedEmail, setMaskedEmail] = useState(''); // Para mostrar en el Paso 2 sin revelar el correo completo
+  /** Con quién se identifica la persona en los pasos 2 y 3: su correo o su documento. */
+  const identidad = () => (recoveryMethod === 'document'
+    ? { tipo_documento_u: docType, documento_u: docNumber }
+    : { correo_u: email });
   
   
   // Estados para las contraseñas
@@ -84,9 +88,9 @@ export default function RecoverPage() {
           body: JSON.stringify({ tipo_documento_u: docType, documento_u: docNumber }),
         });
         
-        // Guardamos el correo real oculto para que los Pasos 2 y 3 sigan funcionando, 
-        // y el correo enmascarado para mostrarlo en pantalla.
-        setEmail(response.email_real); 
+        // Solo llega el correo enmascarado (por privacidad el servidor ya no envía el real):
+        // los Pasos 2 y 3 identifican a la persona con su documento.
+        setEmail('');
         setMaskedEmail(response.email_enmascarado);
       }
       
@@ -145,7 +149,7 @@ export default function RecoverPage() {
     try {
       await apiFetch('/verificar-codigo', {
         method: 'POST',
-        body: JSON.stringify({ correo_u: email, token: fullCode }),
+        body: JSON.stringify({ ...identidad(), token: fullCode }),
       });
       setStep(3);
     } catch (err) {
@@ -179,7 +183,7 @@ export default function RecoverPage() {
       await apiFetch('/reset-password', {
         method: 'POST',
         body: JSON.stringify({
-          correo_u: email,
+          ...identidad(),
           token: code.join(''),
           contrasena_u: password,
           contrasena_u_confirmation: confirmPassword
@@ -315,7 +319,7 @@ export default function RecoverPage() {
                       type="email"
                       id="email"
                       className="form-input"
-                      placeholder="tucorreo@ejemplo.com"
+                      placeholder="nombre@correo.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                     />

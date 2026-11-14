@@ -33,6 +33,11 @@ export const eventoDeportivoService = {
     return apiFetch(`/eventos?page=${page}`);
   },
 
+  /** Páginas públicas: solo eventos activos de hoy en adelante, del más cercano al más lejano. */
+  async disponibles(): Promise<PaginatedResource<EventoDeportivo>> {
+    return apiFetch("/eventos?disponibles=1&per_page=100");
+  },
+
   async obtener(id: number): Promise<{ evento: EventoDeportivo }> {
     return apiFetch(`/eventos/${id}`);
   },

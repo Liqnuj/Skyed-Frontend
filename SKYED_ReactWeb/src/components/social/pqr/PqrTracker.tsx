@@ -123,8 +123,8 @@ function iconoEvento(ev: PqrSeguimiento) {
 const esPasoDeEstado = (ev: PqrSeguimiento) =>
   ev.tipo_evento === 'radicacion' ||
   ev.tipo_evento === 'migracion' ||
-  (ev.tipo_evento !== 'respuesta_cliente' &&
-    ev.tipo_evento !== 'nota_interna' &&
+  // Un mensaje del usuario cuenta como paso solo si reabrió la solicitud.
+  (ev.tipo_evento !== 'nota_interna' &&
     !!ev.estado_anterior &&
     ev.estado_anterior !== ev.estado_nuevo);
 

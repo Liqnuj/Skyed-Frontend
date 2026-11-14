@@ -45,11 +45,100 @@ function leerJson(texto: string): any {
   }
 }
 
+/** Mensaje cuando no hay conexión con el servidor (antes salía "Failed to fetch", en inglés). */
+export const MENSAJE_SIN_CONEXION =
+  'No pudimos conectarnos con el servidor. Revisa tu conexión a internet e inténtalo de nuevo.';
+
+/** Mensaje para errores internos del servidor (500): el detalle técnico va a la consola, no a la pantalla. */
+export const MENSAJE_ERROR_SERVIDOR =
+  'Ocurrió un problema en el servidor. Inténtalo de nuevo en unos minutos.';
+
+/**
+ * fetch que, si no hay conexión (servidor apagado, sin internet, CORS), lanza
+ * un Error con un mensaje claro en español en lugar del "Failed to fetch"
+ * del navegador. Una cancelación (AbortController) se deja pasar tal cual.
+ */
+export async function fetchSeguro(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  try {
+    return await fetch(input, init);
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') throw err;
+    throw new Error(MENSAJE_SIN_CONEXION);
+  }
+}
+
+/** ¿El mensaje es un error técnico (SQL, PHP, excepción) que no debe ver el usuario? */
+function esMensajeTecnico(mensaje: unknown): boolean {
+  return typeof mensaje !== 'string' || mensaje.trim() === ''
+    || /SQLSTATE|Exception|Stack trace|Call to |Undefined (variable|array|index|property|method)|Server Error|syntax error|Class "|\.php\b|Attempt to read/i.test(mensaje);
+}
+
+/* ---------------------------------------------------------------------------
+ * Pantalla de carga y anti-duplicados para las acciones (crear, guardar, borrar).
+ *
+ * - Mientras hay una petición que cambia datos (POST/PUT/PATCH/DELETE), la app
+ *   muestra una ventana "Guardando…" que bloquea los clics (componente
+ *   CargaGlobal, escucha el evento CARGA_CAMBIO).
+ * - Si llega la MISMA petición mientras la primera sigue en curso (doble clic,
+ *   Enter repetido, internet lento), se devuelve la que ya va: nunca se crea
+ *   dos veces lo mismo.
+ * - Las acciones de fondo (marcar notificaciones, login/logout, que ya tiene su
+ *   propia animación) no muestran la ventana.
+ * ------------------------------------------------------------------------- */
+export const CARGA_CAMBIO = 'skyed:carga-cambio';
+export type AccionCarga = 'guardar' | 'actualizar' | 'eliminar';
+
+const RUTAS_SIN_VENTANA = [/^\/notificaciones/, /^\/login\b/, /^\/logout\b/, /^\/asistente\b/, /^\/verificar-contrasena\b/];
+const enCurso = new Map<string, Promise<any>>();
+const accionesActivas = new Map<number, AccionCarga>();
+let siguienteId = 1;
+
+function avisarCarga() {
+  const acciones = [...accionesActivas.values()];
+  window.dispatchEvent(new CustomEvent(CARGA_CAMBIO, {
+    detail: { activas: acciones.length, accion: acciones[acciones.length - 1] ?? null },
+  }));
+}
+
+function accionDe(metodo: string): AccionCarga {
+  if (metodo === 'DELETE') return 'eliminar';
+  if (metodo === 'PUT' || metodo === 'PATCH') return 'actualizar';
+  return 'guardar';
+}
+
 export async function apiFetch(path: string, options: RequestInit = {}) {
+  const metodo = (options.method ?? 'GET').toUpperCase();
+  if (metodo === 'GET' || metodo === 'HEAD') return peticion(path, options);
+
+  // Clave de la petición: método + ruta + cuerpo (un FormData no se puede comparar: basta método + ruta).
+  const cuerpo = typeof options.body === 'string' ? options.body : options.body instanceof FormData ? '[archivo]' : '';
+  const clave = `${metodo} ${path} ${cuerpo}`;
+  const repetida = enCurso.get(clave);
+  if (repetida) return repetida;
+
+  const conVentana = !RUTAS_SIN_VENTANA.some((r) => r.test(path));
+  const id = siguienteId++;
+  if (conVentana) {
+    accionesActivas.set(id, accionDe(metodo));
+    avisarCarga();
+  }
+
+  const promesa = peticion(path, options).finally(() => {
+    enCurso.delete(clave);
+    if (conVentana) {
+      accionesActivas.delete(id);
+      avisarCarga();
+    }
+  });
+  enCurso.set(clave, promesa);
+  return promesa;
+}
+
+async function peticion(path: string, options: RequestInit = {}) {
   const token = getToken();
   const isFormData = options.body instanceof FormData;
 
-  const res = await fetch(`${apiConfig.baseURL}${path}`, {
+  const res = await fetchSeguro(`${apiConfig.baseURL}${path}`, {
     ...options,
     headers: {
       ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
@@ -78,9 +167,14 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
     }
     if (res.status === 422 && data.errors) {
       const detalle = Object.values(data.errors).flat().join(' ');
-      throw new Error(detalle || data.message || 'Error en la petición');
+      throw new Error(detalle || data.message || 'Revisa los datos e inténtalo de nuevo.');
     }
-    throw new Error(data.message ?? 'Error en la petición');
+    // Errores internos: el detalle técnico (que puede venir en inglés) solo va a la consola.
+    if (res.status >= 500 && esMensajeTecnico(data.message)) {
+      console.error(`Error ${res.status} en ${path}:`, data);
+      throw new Error(MENSAJE_ERROR_SERVIDOR);
+    }
+    throw new Error(esMensajeTecnico(data.message) ? 'No se pudo completar la solicitud. Inténtalo de nuevo.' : data.message);
   }
   return data;
 }
@@ -103,7 +197,7 @@ export async function apiDownload(path: string, params: ParamsDescarga = {}): Pr
   });
   const qs = query.toString();
 
-  const res = await fetch(`${apiConfig.baseURL}${path}${qs ? `?${qs}` : ''}`, {
+  const res = await fetchSeguro(`${apiConfig.baseURL}${path}${qs ? `?${qs}` : ''}`, {
     headers: {
       Accept: 'application/json, application/pdf, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -124,7 +218,7 @@ export async function apiDownload(path: string, params: ParamsDescarga = {}): Pr
     if (res.status === 422 && data.errors) {
       throw new Error(Object.values(data.errors).flat().join(' ') || data.message || 'Filtros no válidos.');
     }
-    throw new Error(data.message ?? 'No se pudo generar el reporte.');
+    throw new Error(esMensajeTecnico(data.message) ? 'No se pudo generar el reporte. Inténtalo de nuevo.' : data.message);
   }
 
   return res.blob();

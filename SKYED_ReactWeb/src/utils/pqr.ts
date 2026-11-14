@@ -113,8 +113,11 @@ export function tituloEvento(ev: PqrSeguimiento): string {
       return 'Respuesta del equipo';
     case 'comentario':
       return 'Mensaje del equipo';
-          case 'respuesta_cliente':
-      return 'Mensaje del usuario';
+    case 'respuesta_cliente':
+      // Si al escribir la reabrió (estaba «Resuelta»), se dice así en el historial.
+      return ev.estado_anterior && ev.estado_anterior !== ev.estado_nuevo ? 'El usuario la reabrió' : 'Mensaje del usuario';
+    case 'cerrada_cliente':
+      return 'El usuario la cerró: quedó resuelta';
     case 'nota_interna':
       return 'Nota interna';
     default:

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { DatabaseBackup, Download, Info, Loader2, RotateCcw, Trash2 } from "lucide-react";
-import { apiConfig, apiFetch, getToken, SESION_INVALIDA } from "../../services/api";
+import { apiConfig, apiFetch, fetchSeguro, getToken, SESION_INVALIDA } from "../../services/api";
 import type { OpcionesConfirmacion } from "./ConfirmDialog";
 import { CargandoPanel } from "./AdminMotion";
 import "../../styles/shared/copiasSeguridad.css";
@@ -65,7 +65,7 @@ const conteo = (n: number) => n.toLocaleString("es-CO");
 /** La descarga necesita el token, por eso no puede ser un enlace normal. */
 async function descargarArchivo(copia: Copia) {
   const token = getToken();
-  const res = await fetch(`${apiConfig.baseURL}/copias-seguridad/${copia.id}/descargar`, {
+  const res = await fetchSeguro(`${apiConfig.baseURL}/copias-seguridad/${copia.id}/descargar`, {
     headers: { Accept: "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
   });
 
@@ -328,7 +328,10 @@ export default function CopiasSeguridad({ modulo, notify, confirmar }: Props) {
                     {origen && <small className="cs-origen">{origen}</small>}
                   </span>
                   <span role="cell" className="cs-contenido">
-                    {copia.conjuntos.join(", ")}
+                    {/* Una copia de todo (como la automática) se resume en vez de listar cada conjunto */}
+                    {todos.length > 0 && copia.conjuntos.length >= todos.length
+                      ? <strong>Todos los datos (copia general)</strong>
+                      : copia.conjuntos.join(", ")}
                     <small>{conteo(copia.registros)} registros</small>
                   </span>
                   <span role="cell" className="cs-dato" data-etiqueta="Creada por">{copia.autor}</span>

@@ -575,6 +575,7 @@ export type TipoEventoPqr =
   | 'nota_interna'
   | 'migracion'
   | 'respuesta_cliente'
+  | 'cerrada_cliente'
   | 'solicitud_informacion';
 
 /** Un paso del seguimiento. `nota_interna` solo llega a administradores. */
@@ -666,7 +667,11 @@ async misPqr(page = 1, contexto: 'social' | 'deportivo' = 'social'): Promise<Pag
     return data.seguimiento;
   },
 
-
+  /** El dueño da por resuelta su PQR y la cierra (después ya no recibe mensajes). */
+  async conforme(id: number): Promise<Pqr> {
+    const data = await apiFetch(`/pqr/${id}/conforme`, { method: 'POST' });
+    return data.pqr;
+  },
 
   /**
    * Solo adminSocial: el administrador abrió el detalle. Si la PQR estaba

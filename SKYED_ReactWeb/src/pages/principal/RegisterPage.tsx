@@ -323,7 +323,7 @@ export default function RegisterPage() {
                   type="email"
                   id="email"
                   className="form-input"
-                  placeholder="tucorreo@ejemplo.com"
+                  placeholder="nombre@correo.com"
                   autoComplete="email"
                   maxLength={80}
                   required

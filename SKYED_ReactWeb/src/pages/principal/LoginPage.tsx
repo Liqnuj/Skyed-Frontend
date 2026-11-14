@@ -127,7 +127,7 @@ export default function LoginPage() {
                 <label className="form-label" htmlFor="identificacion">Correo electrónico o Documento<span className="req">*</span></label>
                 <div className="input-wrap">
                   <input
-                    type="text" id="identificacion" className="form-input" placeholder="tucorreo@ejemplo.com o 10000000"
+                    type="text" id="identificacion" className="form-input" placeholder="nombre@correo.com o tu número de documento"
                     maxLength={80} required
                     value={identificacion} onChange={(e) => setIdentificacion(e.target.value)}
                   />

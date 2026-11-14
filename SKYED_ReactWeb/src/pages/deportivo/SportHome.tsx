@@ -88,7 +88,7 @@ export default function SportHome() {
 
   useEffect(() => {
     eventoDeportivoService
-      .listar()
+      .disponibles()
       .then((res) => setEventos(res.data.slice(0, 3)))
       .catch(() => setEventos([]));
   }, []);

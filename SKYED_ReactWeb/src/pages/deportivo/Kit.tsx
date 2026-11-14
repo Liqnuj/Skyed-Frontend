@@ -103,7 +103,7 @@ export default function Kit() {
 
   // Lista de eventos para el selector.
   useEffect(() => {
-    apiFetch('/eventos')
+    apiFetch('/eventos?per_page=200')
       .then((data) => {
         const lista: any[] = Array.isArray(data) ? data : data?.eventos ?? data?.data ?? [];
         const opts = lista.map((e) => ({

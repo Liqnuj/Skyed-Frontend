@@ -32,6 +32,18 @@
   color: #b91c1c !important;
 }
 
+/* Evento que ya se realizó */
+.deportivo-admin .admin-badge.finalizado {
+  background: #e0e7ff !important;
+  color: #3730a3 !important;
+}
+
+/* Acción de la tabla que todavía no aplica (p. ej. finalizar un evento antes de su fecha) */
+.deportivo-admin .table-action:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
 /* ---------- Filtros sobre las tablas ---------- */
 .deportivo-admin .filter-row {
   display: flex;

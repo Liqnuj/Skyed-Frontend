@@ -185,13 +185,31 @@ function DetallePqr({ pqr, onClose, onCambio }: { pqr: Pqr; onClose: () => void;
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState('');
   const chat = useMemo(() => conversacion(pqr), [pqr]);
-  const final = esFinal(pqr.estado_pqr);
+  // Solo una PQR cerrada deja de recibir mensajes: el usuario puede escribir hasta que él la cierre.
+  const final = pqr.estado_pqr === 'cerrado';
 
   useEffect(() => {
     const k = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', k);
     return () => window.removeEventListener('keydown', k);
   }, [onClose]);
+
+  const [confirmandoCierre, setConfirmandoCierre] = useState(false);
+  const [cerrando, setCerrando] = useState(false);
+  // El usuario decide cuándo su caso quedó resuelto: cierra la PQR.
+  const cerrarComoResuelta = async () => {
+    setCerrando(true);
+    setError('');
+    try {
+      await pqrService.conforme(pqr.id_pqr);
+      setConfirmandoCierre(false);
+      onCambio(await pqrService.obtener(pqr.id_pqr));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo cerrar la solicitud.');
+    } finally {
+      setCerrando(false);
+    }
+  };
 
   const responder = async (e: FormEvent) => {
     e.preventDefault();
@@ -246,7 +264,7 @@ function DetallePqr({ pqr, onClose, onCambio }: { pqr: Pqr; onClose: () => void;
         </div>
 
         {final ? (
-          <footer className="dpq-closed">Esta solicitud ya fue resuelta. Si necesitas algo más, radica una nueva PQR.</footer>
+          <footer className="dpq-closed">Esta solicitud ya está cerrada. Si necesitas algo más, radica una nueva PQR.</footer>
         ) : (
           <form className="dpq-reply" onSubmit={responder}>
             <textarea value={texto} maxLength={1000} rows={2} onChange={(e) => setTexto(e.target.value)} placeholder="Escribe un mensaje al equipo…" />
@@ -254,6 +272,26 @@ function DetallePqr({ pqr, onClose, onCambio }: { pqr: Pqr; onClose: () => void;
               {enviando ? '…' : 'Enviar'}
             </button>
             {error && <p className="dpq-error">{error}</p>}
+            <div className="dpq-conforme">
+              {!confirmandoCierre ? (
+                <>
+                  <span>{pqr.estado_pqr === 'resuelto' ? '¿Quedó solucionado tu caso?' : '¿Ya se solucionó tu caso?'}</span>
+                  <button type="button" className="dpq-conforme-btn" onClick={() => setConfirmandoCierre(true)} disabled={cerrando}>
+                    <i className="ti ti-circle-check" aria-hidden="true" /> Mi solicitud quedó resuelta
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span>Se cerrará y ya no podrás escribir en ella. ¿Confirmas?</span>
+                  <span className="dpq-conforme-acciones">
+                    <button type="button" className="dpq-conforme-no" onClick={() => setConfirmandoCierre(false)} disabled={cerrando}>Cancelar</button>
+                    <button type="button" className="dpq-conforme-btn" onClick={cerrarComoResuelta} disabled={cerrando}>
+                      {cerrando ? 'Cerrando…' : 'Sí, quedó resuelta'}
+                    </button>
+                  </span>
+                </>
+              )}
+            </div>
           </form>
         )}
       </div>

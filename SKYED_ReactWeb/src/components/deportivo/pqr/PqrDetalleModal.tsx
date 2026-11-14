@@ -41,7 +41,7 @@ const TEXTO_ESTADO: Record<EstadoPqr, string> = {
   abierto: 'Recibimos tu solicitud. Pronto una persona del equipo la revisará.',
   en_revision: 'Una persona del equipo está revisando tu solicitud.',
   en_proceso: 'Estamos gestionando tu solicitud. Te avisaremos cuando haya respuesta.',
-  resuelto: 'Tu solicitud fue resuelta. Revisa la respuesta oficial en la conversación.',
+  resuelto: 'El equipo marcó tu solicitud como resuelta. Si quedó solucionada, ciérrala abajo; si no, escríbenos y la retomamos.',
   cerrado: 'Esta solicitud fue cerrada.',
 };
 
@@ -62,7 +62,8 @@ export default function PqrDetalleModal({ pqr, onClose, onCambio }: Props) {
 
   const meta = TIPOS_META[pqr.tipo_pqr];
   const chat = useMemo(() => conversacion(pqr), [pqr]);
-  const final = esFinal(pqr.estado_pqr);
+  // Solo una PQR cerrada deja de recibir mensajes: el usuario puede escribir hasta que él la cierre.
+  const final = pqr.estado_pqr === 'cerrado';
 
   useEffect(() => {
     const tecla = (e: KeyboardEvent) => {
@@ -83,6 +84,23 @@ export default function PqrDetalleModal({ pqr, onClose, onCambio }: Props) {
     bajarRef.current = false;
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [chat.length]);
+
+  const [confirmandoCierre, setConfirmandoCierre] = useState(false);
+  const [cerrando, setCerrando] = useState(false);
+  // El usuario decide cuándo su caso quedó resuelto: cierra la PQR.
+  const cerrarComoResuelta = async () => {
+    setCerrando(true);
+    setError('');
+    try {
+      await pqrService.conforme(pqr.id_pqr);
+      setConfirmandoCierre(false);
+      onCambio(await pqrService.obtener(pqr.id_pqr));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo cerrar la solicitud.');
+    } finally {
+      setCerrando(false);
+    }
+  };
 
   const responder = async (e: FormEvent) => {
     e.preventDefault();
@@ -177,7 +195,7 @@ export default function PqrDetalleModal({ pqr, onClose, onCambio }: Props) {
         {final ? (
           <footer className="pqd-closed">
             <i className="ti ti-circle-check" aria-hidden="true" />
-            <span>Esta solicitud ya fue resuelta. Si necesitas algo más, radica una nueva.</span>
+            <span>Esta solicitud ya está cerrada. Si necesitas algo más, radica una nueva.</span>
           </footer>
         ) : (
           <form className="pqd-composer" onSubmit={responder}>
@@ -195,6 +213,26 @@ export default function PqrDetalleModal({ pqr, onClose, onCambio }: Props) {
               </button>
             </div>
             {error && <p className="pqd-alert">{error}</p>}
+            <div className="pqd-conforme">
+              {!confirmandoCierre ? (
+                <>
+                  <span>{pqr.estado_pqr === 'resuelto' ? '¿Quedó solucionado tu caso?' : '¿Ya se solucionó tu caso?'}</span>
+                  <button type="button" className="pqd-conforme-btn" onClick={() => setConfirmandoCierre(true)} disabled={cerrando}>
+                    <i className="ti ti-circle-check" aria-hidden="true" /> Mi solicitud quedó resuelta
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span>Se cerrará y ya no podrás escribir en ella. ¿Confirmas?</span>
+                  <span className="pqd-conforme-acciones">
+                    <button type="button" className="pqd-conforme-no" onClick={() => setConfirmandoCierre(false)} disabled={cerrando}>Cancelar</button>
+                    <button type="button" className="pqd-conforme-btn" onClick={cerrarComoResuelta} disabled={cerrando}>
+                      {cerrando ? 'Cerrando…' : 'Sí, quedó resuelta'}
+                    </button>
+                  </span>
+                </>
+              )}
+            </div>
           </form>
         )}
       </div>

@@ -373,11 +373,13 @@ interface MensajePqr {
 }
 
 const MENSAJE_GENERICO = 'Se ha publicado una respuesta a tu solicitud.';
-const ESTADOS_CON_RESPUESTA = ['abierto', 'en_revision', 'en_proceso'];
+// El usuario puede escribir hasta que ÉL la cierre: también cuando el equipo ya la marcó «Resuelta».
+const ESTADOS_CON_RESPUESTA = ['abierto', 'en_revision', 'en_proceso', 'resuelto'];
 
 function agregarSeguimiento(p: Pqr, seg: PqrSeguimientoItem): Pqr {
   const actual = (p as PqrConSeguimientos).seguimientos ?? [];
-  return { ...p, seguimientos: [...actual, seg] } as Pqr;
+  // Si el mensaje reabrió la solicitud (estaba «Resuelta»), también cambia su estado.
+  return { ...p, estado_pqr: seg.estado_nuevo ?? p.estado_pqr, seguimientos: [...actual, seg] } as Pqr;
 }
 
 function fmtFechaHora(iso: string | null | undefined) {
@@ -511,6 +513,8 @@ interface PqrDetalleProps {
   onEnviar: (mensaje: string) => Promise<boolean>;
   /** Oculta la PQR de la lista del usuario (el equipo conserva el registro). */
   onOcultar: () => Promise<void>;
+  /** El usuario da por resuelta la solicitud y la cierra. Devuelve true si se cerró. */
+  onConforme: () => Promise<boolean>;
   /** true si la PQR está en "Ocultas": el botón pasa a "Mostrar en mi lista". */
   oculta: boolean;
 }
@@ -520,13 +524,15 @@ const TEXTO_ESTADO: Record<Pqr['estado_pqr'], string> = {
   abierto: 'Recibimos tu solicitud. En breve alguien del equipo la revisará.',
   en_revision: 'Un integrante del equipo ya está revisando tu solicitud.',
   en_proceso: 'Ya estamos gestionando tu solicitud. Pronto tendrás una respuesta.',
-  resuelto: 'Tu solicitud fue resuelta. Abajo encuentras la respuesta del equipo.',
+  resuelto: 'El equipo marcó tu solicitud como resuelta. Si quedó solucionada, ciérrala abajo; si no, escríbenos y la retomamos.',
   cerrado: 'Este caso fue cerrado.',
 };
 
-function PqrDetalle({ pqr, onClose, onEnviar }: PqrDetalleProps) {
+function PqrDetalle({ pqr, onClose, onEnviar, onConforme }: PqrDetalleProps) {
   const [texto, setTexto] = useState('');
   const [enviando, setEnviando] = useState(false);
+  const [preguntaCerrar, setPreguntaCerrar] = useState(false);
+  const [cerrando, setCerrando] = useState(false);
   const cuerpoRef = useRef<HTMLDivElement>(null);
   const bajarRef = useRef(false);
 
@@ -657,15 +663,36 @@ function PqrDetalle({ pqr, onClose, onEnviar }: PqrDetalleProps) {
               <span>Ctrl + Enter para enviar</span>
               <span>{texto.length}/2000</span>
             </div>
+            <div className="pfd-conforme">
+              <span>{pqr.estado_pqr === 'resuelto' ? '¿Quedó solucionado tu caso?' : '¿Ya se solucionó tu caso?'}</span>
+              <button type="button" className="pfd-conforme-btn" title="Cerrar la solicitud porque ya quedó resuelta" onClick={() => setPreguntaCerrar(true)} disabled={cerrando}>
+                <i className="ti ti-circle-check" aria-hidden="true" /> Mi solicitud quedó resuelta
+              </button>
+            </div>
           </form>
         ) : (
           <div className="pfd-closed">
             <i className="ti ti-circle-check" aria-hidden="true" />
-            <span>Esta solicitud ya fue {pqr.estado_pqr === 'cerrado' ? 'cerrada' : 'resuelta'}.</span>
+            <span>Esta solicitud ya está cerrada.</span>
             <Link title="Radicar una nueva PQR" to="/social/pqr">Radicar una nueva PQR →</Link>
           </div>
         )}
       </div>
+      {preguntaCerrar && (
+        <PfConfirmar
+          titulo="¿Tu solicitud quedó resuelta?"
+          texto="La solicitud quedará cerrada y ya no podrás escribir en ella. Si después necesitas algo más, puedes radicar una nueva PQR."
+          confirmar="Sí, quedó resuelta"
+          icono="ti-circle-check"
+          onCancelar={() => setPreguntaCerrar(false)}
+          onConfirmar={async () => {
+            setPreguntaCerrar(false);
+            setCerrando(true);
+            await onConforme();
+            setCerrando(false);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -1586,6 +1613,19 @@ function PerfilPanel() {
     }
   };
 
+  const cerrarPqrComoResuelta = async (pqr: Pqr): Promise<boolean> => {
+    try {
+      const cerrada = await pqrService.conforme(pqr.id_pqr);
+      setPqrs((prev) => prev && prev.map((p) => (p.id_pqr === pqr.id_pqr ? { ...p, ...cerrada } : p)));
+      setDetallePqr((prev) => (prev && prev.id_pqr === pqr.id_pqr ? { ...prev, ...cerrada } : prev));
+      setToast({ tipo: 'ok', texto: '¡Gracias! Tu solicitud quedó cerrada como resuelta.', id: Date.now() });
+      return true;
+    } catch (err) {
+      setToast({ tipo: 'error', texto: err instanceof Error ? err.message : 'No se pudo cerrar la solicitud. Intenta de nuevo.', id: Date.now() });
+      return false;
+    }
+  };
+
   const enviarRespuestaPqr = async (pqr: Pqr, mensaje: string): Promise<boolean> => {
     try {
       const seg = await pqrService.responder(pqr.id_pqr, mensaje);
@@ -2216,6 +2256,7 @@ function PerfilPanel() {
           pqr={detallePqr}
           onClose={cerrarPqr}
           onEnviar={(mensaje) => enviarRespuestaPqr(detallePqr, mensaje)}
+          onConforme={() => cerrarPqrComoResuelta(detallePqr)}
           oculta={!!pqrsOcultas?.some((x) => x.id_pqr === detallePqr.id_pqr)}
           onOcultar={() => alternarOcultaPqr(detallePqr, !pqrsOcultas?.some((x) => x.id_pqr === detallePqr.id_pqr))}
         />

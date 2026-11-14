@@ -46,7 +46,7 @@ export default function SportEvents() {
 
   useEffect(() => {
     eventoDeportivoService
-      .listar()
+      .disponibles()
       .then((res) => setEventos(res.data))
       .catch(() => setError('No se pudieron cargar los eventos.'))
       .finally(() => setLoading(false));

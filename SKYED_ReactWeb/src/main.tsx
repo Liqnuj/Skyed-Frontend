@@ -48,6 +48,7 @@ import AyudaCategoriaPage from './pages/ayuda/AyudaCategoriaPage';
 import AyudaArticuloPage from './pages/ayuda/AyudaArticuloPage';
 import PqrDeportivo from './pages/deportivo/Pqr';
 import { EntradaModuloProvider } from './components/principal/EntradaModulo';
+import CargaGlobal from './components/shared/CargaGlobal';
 
 
 function App(){
@@ -127,6 +128,8 @@ function App(){
           </Routes>
           </EntradaModuloProvider>
           <SkaiWidget/>
+          {/* Ventana "Guardando…" mientras se crea, guarda o elimina algo (evita clics repetidos) */}
+          <CargaGlobal/>
         </BrowserRouter>
         </PermisosProvider>
       </AuthProvider>
