@@ -1,0 +1,45 @@
+/* Resultados por evento (components/deportivo/ResultadosPorEvento.tsx). Usa las
+   variables del panel (--admin-*) para el modo claro y oscuro. */
+/* Más ancho que los demás modales: es una tabla (Admin.css los fija a 680px con !important). */
+.deportivo-admin .admin-modal.rpe-modal { width: min(1000px, 96vw) !important; }
+.deportivo-admin .rpe-cuerpo { display: flex; flex-direction: column; gap: 14px; padding: 18px 22px 6px; }
+.deportivo-admin .rpe-acciones { padding: 0 22px 20px; }
+.deportivo-admin .rpe-evento { max-width: 420px; }
+.deportivo-admin .rpe-nota { margin: 0; font-size: 13px; opacity: .75; }
+
+.deportivo-admin .rpe-grupo { border: 1px solid var(--admin-border, #dbe3ec); border-radius: 14px; overflow: hidden; }
+.deportivo-admin .rpe-grupo-head {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px;
+  padding: 10px 14px; background: var(--admin-soft, rgba(44, 156, 175, .06));
+  border-bottom: 1px solid var(--admin-border, #dbe3ec);
+}
+.deportivo-admin .rpe-grupo-head h3 { display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 15px; }
+.deportivo-admin .rpe-podio { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+.deportivo-admin .rpe-medalla { padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: #f1f5f9; color: #0f172a; }
+.deportivo-admin .rpe-medalla.p1 { background: #fef3c7; color: #92400e; }
+.deportivo-admin .rpe-medalla.p2 { background: #e2e8f0; color: #334155; }
+.deportivo-admin .rpe-medalla.p3 { background: #fde2cf; color: #9a3412; }
+
+.deportivo-admin .rpe-tabla td { vertical-align: middle; }
+.deportivo-admin .rpe-puesto { font-weight: 800; white-space: nowrap; }
+.deportivo-admin .rpe-puesto svg { margin-right: 4px; vertical-align: -2px; }
+.deportivo-admin .rpe-top.p1 .rpe-puesto { color: #b45309; }
+.deportivo-admin .rpe-top.p2 .rpe-puesto { color: #475569; }
+.deportivo-admin .rpe-top.p3 .rpe-puesto { color: #c2410c; }
+.deportivo-admin .rpe-top { background: rgba(250, 204, 21, .06); }
+.deportivo-admin .rpe-dq { opacity: .6; }
+.deportivo-admin .rpe-sub { display: block; font-size: 11px; opacity: .65; }
+
+.deportivo-admin .rpe-tiempo {
+  width: 120px; padding: 7px 10px; border-radius: 10px; font: inherit; font-variant-numeric: tabular-nums;
+  border: 1px solid var(--admin-border, #cbd5e1); background: var(--admin-input, #fff); color: inherit;
+}
+.deportivo-admin .rpe-tiempo:focus { outline: none; border-color: var(--admin-accent, #2c9caf); box-shadow: 0 0 0 3px rgba(44, 156, 175, .2); }
+.deportivo-admin .rpe-tiempo.rpe-malo { border-color: #dc2626; background: rgba(220, 38, 38, .06); }
+.deportivo-admin .rpe-tabla input[type="checkbox"] { width: 17px; height: 17px; accent-color: #dc2626; cursor: pointer; }
+
+.deportivo-admin .rpe-acciones { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 10px; }
+.deportivo-admin .rpe-acciones .rpe-nota { margin-right: auto; }
+
+.deportivo-admin.dark .rpe-medalla { background: rgba(255, 255, 255, .08); color: #e2e8f0; }
+.deportivo-admin.dark .rpe-medalla.p1 { background: rgba(250, 204, 21, .18); color: #fde68a; }

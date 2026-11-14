@@ -979,7 +979,9 @@ function InscriptionWizard() {
     }
 
     if (evento.estado !== 'activo') {
-      mostrarMsg('error', 'Este evento no está activo actualmente.');
+      mostrarMsg('error', evento.estado === 'finalizado'
+        ? 'Este evento ya finalizó: no recibe más inscripciones.'
+        : 'Este evento no está activo actualmente.');
       return;
     }
     if (evento.cupos_disponibles <= 0) {

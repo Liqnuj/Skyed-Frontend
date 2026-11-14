@@ -25,6 +25,9 @@ export interface NuevoUsuario {
   fecha_nacimiento_u: string;
   contrasena_u: string;
   contexto: 'deportivo' | 'social';
+  /** El administrador confirma que la persona aceptó términos y privacidad (lo exige el registro). */
+  acepta_terminos: boolean;
+  acepta_privacidad: boolean;
 }
 
 /** Datos completos de un usuario (GET /users/{id}). */

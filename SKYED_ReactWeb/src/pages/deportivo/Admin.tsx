@@ -41,6 +41,7 @@ import {
   LifeBuoy,
   BarChart3,
   MessageSquareText,
+  Flag,
 } from "lucide-react";
 import { ResumenEventoModal, Indicador, BarraProgreso, ListaValores } from "../../components/shared/ResumenEvento";
 
@@ -56,6 +57,7 @@ import type { Pqr, EstadoPqr } from "../../services/socialService";
 import { prepararImagen } from "../../utils/prepararImagen";
 import { createPortal } from "react-dom";
 import { EstadoPagos, InscritosPorEvento, TendenciaMensual } from "../../components/deportivo/GraficosAdmin";
+import ResultadosPorEvento from "../../components/deportivo/ResultadosPorEvento";
 import { useConfirmacion } from "../../components/shared/ConfirmDialog";
 import { useAvisos, type Avisar } from "../../components/shared/Avisos";
 import { CargandoPanel, NumeroAnimado } from "../../components/shared/AdminMotion";
@@ -123,7 +125,7 @@ type Evento = {
   imagen?: string | null;
   imagen_url?: string | null;
   cupos_disponibles: number;
-  estado: "activo" | "inactivo" | "inhabilitado";
+  estado: "activo" | "inactivo" | "inhabilitado" | "finalizado";
   kit?: { id: number; nombre: string } | null;
   categorias?: Categoria[];
 };
@@ -244,7 +246,10 @@ const formatDate = (value?: string | null) => {
 const nombreDe = (p?: Persona) =>
   p ? `${p.nombre_u ?? ""} ${p.apellido_u ?? ""}`.trim() || "—" : "—";
 
-const hoy = () => new Date().toISOString().slice(0, 10);
+/** Hoy en hora local (YYYY-MM-DD). Antes usaba toISOString (UTC): desde las 7 p. m. de Colombia ya daba el día siguiente. */
+const hoy = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+/** Mañana en hora local: la primera fecha válida para un evento nuevo. */
+const manana = () => { const d = new Date(); d.setDate(d.getDate() + 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 
 /** Fecha local en formato YYYY-MM-DD (sin el corrimiento de zona horaria de toISOString). */
 const isoLocal = (f: Date) =>
@@ -291,7 +296,7 @@ const KIT_DESDE_EVENTO = "desde-evento";
 
 const SECTION_KEY = "admin_section";
 const SECTIONS_VALIDAS: string[] = SECCIONES;
-type ModalKind = "evento" | "categorias" | "kit" | "pago" | "resultado" | "roles" | "usuario" | "editar-usuario" | null;
+type ModalKind = "evento" | "categorias" | "kit" | "pago" | "resultado" | "resultados-evento" | "roles" | "usuario" | "editar-usuario" | null;
 
 /** "1:05" → "01:05:00"; acepta HH:MM o HH:MM:SS del input type="time". */
 const normalizarTiempo = (value: string) => {
@@ -888,7 +893,7 @@ function AdminPage() {
 const [pqrResumen, setPqrResumen] = useState<Partial<Record<EstadoPqr, number>>>({});
 const [pqrTotal, setPqrTotal] = useState(0);
 
-  const [filtroPago, setFiltroPago] = useState<"todos" | Pago["estado_p"]>("pendiente");
+  const [filtroPago, setFiltroPago] = useState<"todos" | Pago["estado_p"]>("todos");
   const [filtroEvento, setFiltroEvento] = useState("");
   // Filtros por sección (cadena vacía = "todos")
   const [filtroCategoriaEvento, setFiltroCategoriaEvento] = useState("");
@@ -1189,6 +1194,11 @@ const [pqrTotal, setPqrTotal] = useState(0);
       body: JSON.stringify({ estado_e }),
     }), `Evento ${human(estado_e).toLowerCase()}`, false);
 
+  const finalizarEvento = async (e: Evento) => {
+    if (!(await confirmar({ titulo: "Finalizar evento", mensaje: `¿Marcar "${e.nombre}" como finalizado? Ya no recibirá inscripciones y quedará en el historial como realizado.`, confirmar: "Finalizar" }))) return;
+    run(() => apiFetch(`/eventos/${e.id}/estado`, { method: "PATCH", body: JSON.stringify({ estado_e: "finalizado" }) }), "Evento finalizado", false);
+  };
+
   const eliminarEvento = async (e: Evento) => {
     if (!(await confirmar({ titulo: "Eliminar evento", mensaje: `¿Eliminar "${e.nombre}"? Esta acción no se puede deshacer.`, confirmar: "Eliminar", tipo: "peligro" }))) return;
     run(() => apiFetch(`/eventos/${e.id}`, { method: "DELETE" }), "Evento eliminado", false);
@@ -1447,6 +1457,7 @@ const [pqrTotal, setPqrTotal] = useState(0);
                 { value: "activo", label: "Activo" },
                 { value: "inactivo", label: "Inactivo" },
                 { value: "inhabilitado", label: "Inhabilitado" },
+                { value: "finalizado", label: "Finalizado" },
               ])}
               {filtroSelect(filtroFechaEvento, setFiltroFechaEvento, "Filtrar por fecha", "Todas las fechas", [
                 { value: "proximos", label: "Próximos" },
@@ -1484,7 +1495,7 @@ const [pqrTotal, setPqrTotal] = useState(0);
                   <CeldaCupos disponibles={e.cupos_disponibles} ocupados={cifrasEventos[e.id]?.cupos_ocupados ?? 0} />
                   <CeldasCifrasEvento cifras={cifrasEventos[e.id]} />
                   <td>
-                    {puedeEditar("eventos") ? <select className="admin-select" value={e.estado} onChange={ev => cambiarEstadoEvento(e, ev.target.value as Evento["estado"])} aria-label="Estado del evento">
+                    {puedeEditar("eventos") && e.estado !== "finalizado" ? <select className="admin-select" value={e.estado} onChange={ev => cambiarEstadoEvento(e, ev.target.value as Evento["estado"])} aria-label="Estado del evento">
                       <option value="activo">Activo</option>
                       <option value="inactivo">Inactivo</option>
                       <option value="inhabilitado">Inhabilitado</option>
@@ -1494,6 +1505,14 @@ const [pqrTotal, setPqrTotal] = useState(0);
                     <button className="table-action" title="Ver el resumen: inscritos, dinero, asistencia y kits" onClick={() => setResumenEvento(e)}><BarChart3 size={15} /></button>
                     {puedeEditar("eventos") && <>
                       <button className="table-action" title="Editar" onClick={() => { setEditing(e); setModal("evento"); }}><Pencil size={15} /></button>
+                      {e.estado !== "finalizado" && e.estado !== "inhabilitado" && (
+                        <button
+                          className="table-action"
+                          title={(e.fecha?.slice(0, 10) ?? "") <= hoy() ? "Finalizar evento" : `Se puede finalizar desde el día del evento (${formatDate(e.fecha)})`}
+                          disabled={(e.fecha?.slice(0, 10) ?? "") > hoy()}
+                          onClick={() => finalizarEvento(e)}
+                        ><Flag size={15} /></button>
+                      )}
                     </>}
                     {(puedeEditar("eventos") || puedeEliminar("eventos")) && <button className="table-action" title="Categorías" onClick={() => { setEditing(e); setModal("categorias"); }}><Tags size={15} /></button>}
                     {puedeEliminar("eventos") && <button className="table-action danger" title="Eliminar" onClick={() => eliminarEvento(e)}><Trash2 size={15} /></button>}
@@ -1558,11 +1577,11 @@ const [pqrTotal, setPqrTotal] = useState(0);
             }} onMensaje={notify} />}
             toolbar={<>
               <select className="admin-select" value={filtroPago} onChange={e => setFiltroPago(e.target.value as typeof filtroPago)} aria-label="Filtrar por estado del pago">
+                <option value="todos">Todos los pagos</option>
                 <option value="pendiente">Pagos por validar</option>
                 <option value="confirmado">Confirmados</option>
                 <option value="rechazado">Rechazados</option>
                 <option value="cancelado">Cancelados</option>
-                <option value="todos">Todos</option>
               </select>
               {filtroEventoSelect}
               {filtroSelect(filtroMetodoPago, setFiltroMetodoPago, "Filtrar por método de pago", "Todos los métodos",
@@ -1611,11 +1630,18 @@ const [pqrTotal, setPqrTotal] = useState(0);
           <>
           <SectionTable
             title="Resultados oficiales"
-            exportar={<ExportMenu ruta="deportivo/resultados" archivo="skyed-deportivo-resultados" params={{
-              q: search,
-              evento: filtroEvento || undefined,
-              estado: filtroEstadoResultado || undefined,
-            }} onMensaje={notify} />}
+            exportar={<>
+              <ExportMenu ruta="deportivo/resultados" archivo="skyed-deportivo-resultados" params={{
+                q: search,
+                evento: filtroEvento || undefined,
+                estado: filtroEstadoResultado || undefined,
+              }} onMensaje={notify} />
+              {puedeEditar("resultados") && (
+                <button className="secondary-btn" title="Escribir los tiempos de todo un evento: posiciones y ganadores por categoría se calculan solos" onClick={() => setModal("resultados-evento")}>
+                  <Trophy size={16} /> Resultados por evento
+                </button>
+              )}
+            </>}
             action={puedeEditar("resultados") ? "Registrar resultado" : undefined}
             onAction={() => { setEditing(null); setModal("resultado"); }}
             toolbar={<>
@@ -1678,9 +1704,9 @@ const [pqrTotal, setPqrTotal] = useState(0);
             action={puedeEditar("kits") ? "Nuevo kit" : undefined}
             onAction={() => { setEditing(null); setModal("kit"); }}
             toolbar={<>
-              {filtroSelect(filtroStockKit, setFiltroStockKit, "Filtrar por stock", "Todo el stock", [
-                { value: "con", label: "Con stock" },
-                { value: "bajo", label: `Stock bajo (${STOCK_BAJO} o menos)` },
+              {filtroSelect(filtroStockKit, setFiltroStockKit, "Filtrar por cantidades", "Todas las cantidades", [
+                { value: "con", label: "Con cantidades disponibles" },
+                { value: "bajo", label: `Pocas cantidades (${STOCK_BAJO} o menos)` },
                 { value: "agotado", label: "Agotado" },
               ])}
               {filtroSelect(filtroLugarKit, setFiltroLugarKit, "Filtrar por lugar de entrega", "Todos los lugares",
@@ -1692,7 +1718,7 @@ const [pqrTotal, setPqrTotal] = useState(0);
               )}
             </>}
           >
-            <thead><tr><th>Imagen</th><th>Nombre</th><th>Stock</th><th>Precio</th><th>Entrega</th><th>Lugar</th><th>Contenido</th><th>Evento</th><th>Acciones</th></tr></thead>
+            <thead><tr><th>Imagen</th><th>Nombre</th><th>Cantidades</th><th>Precio</th><th>Entrega</th><th>Lugar</th><th>Contenido</th><th>Evento</th><th>Acciones</th></tr></thead>
             <tbody>
               {pagKits.items.map(k => (
                 <tr key={k.id_k}>
@@ -1891,6 +1917,16 @@ const [pqrTotal, setPqrTotal] = useState(0);
           onClose={closeModal}
           onCambiar={estado => cambiarEstadoPago(editing, estado)}
           permitirCambiar={puedeEditar("inscripciones")}
+        />
+      )}
+
+      {modal === "resultados-evento" && puedeEditar("resultados") && (
+        <ResultadosPorEvento
+          eventos={eventos}
+          eventoInicial={filtroEvento ? Number(filtroEvento) : null}
+          notify={notify}
+          onClose={closeModal}
+          onGuardado={loadAll}
         />
       )}
 
@@ -2094,7 +2130,8 @@ function EventoModal({ item, kits, eventos, onClose, onSave, notify, onKitCreado
         </Field>
 
         <Field label="Fecha">
-          <input required type="date" min={item ? undefined : hoy()} value={form.fecha_e} onChange={e => set("fecha_e", e.target.value)} />
+          <input required type="date" min={item && form.fecha_e === item.fecha?.slice(0, 10) ? undefined : manana()} value={form.fecha_e} onChange={e => set("fecha_e", e.target.value)} />
+          <small className="field-hint">El evento debe ser a partir de mañana.</small>
         </Field>
 
         <Field label="Hora de salida">

@@ -289,6 +289,38 @@
   color: var(--pfd-muted);
 }
 
+/* "Mi solicitud quedó resuelta": el usuario cierra su PQR cuando él lo considera */
+.pfd-conforme {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 0.8rem;
+  margin-top: 0.7rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 12px;
+  border: 1px dashed var(--pfd-line);
+  font-size: calc(0.82rem * var(--fs-scale, 1));
+  color: var(--pfd-muted);
+}
+.pfd-conforme-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid #16a34a;
+  background: rgba(22, 163, 74, 0.1);
+  color: #15803d;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.pfd-conforme-btn:hover:not(:disabled) { background: #16a34a; color: #fff; }
+.pfd-conforme-btn:disabled { opacity: 0.5; cursor: wait; }
+.mod-social.dark-mode .pfd-conforme-btn { color: #86efac; border-color: rgba(134, 239, 172, 0.6); background: rgba(34, 197, 94, 0.12); }
+
 .pfd-closed {
   display: flex;
   flex-wrap: wrap;

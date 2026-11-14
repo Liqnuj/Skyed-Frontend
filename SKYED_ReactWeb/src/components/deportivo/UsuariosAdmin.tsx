@@ -33,6 +33,8 @@ import { capitalizar } from "../../utils/texto";
 import { DRAFT_PREFIX, clearDraft, clearDrafts, usePersistentState } from "../../utils/borradorFormulario";
 import type { useConfirmacion } from "../shared/ConfirmDialog";
 import "../../styles/deportivo/AdminUsuarios.css";
+import { createPortal } from "react-dom";
+import TermsModal from "../shared/TermsModal";
 import type { Avisar } from "../shared/Avisos";
 
 type Confirmar = ReturnType<typeof useConfirmacion>["confirmar"];
@@ -135,7 +137,9 @@ const REGLAS_DOCUMENTO: Record<string, ReglaDocumento> = {
   cedula_ciudadania: { etiqueta: "Número de cédula de ciudadanía", placeholder: "Ej. 1052345678", alfanumerico: false },
   tarjeta_identidad: { etiqueta: "Número de tarjeta de identidad", placeholder: "Ej. 1052345678", alfanumerico: false },
   cedula_extranjeria: { etiqueta: "Número de cédula de extranjería", placeholder: "Ej. 1234567", alfanumerico: false },
-  pasaporte: { etiqueta: "Número de pasaporte", placeholder: "Ej. AB123456", alfanumerico: true },
+  // El documento se guarda como número (bigint) y el backend solo acepta dígitos:
+  // con letras la creación fallaba. Se escriben solo los números del pasaporte.
+  pasaporte: { etiqueta: "Número de pasaporte (solo números)", placeholder: "Ej. 12345678", alfanumerico: false },
 };
 const reglaDocumento = (tipo: string): ReglaDocumento => REGLAS_DOCUMENTO[tipo] ?? REGLA_DOCUMENTO_GENERICA;
 /** Deja solo lo que admite el tipo: dígitos, o letras y números (en mayúscula) para el pasaporte. */
@@ -617,6 +621,10 @@ export function UsuarioModal({ modulo = "deportivo", esSuperAdmin = false, exist
   const [verClave, setVerClave] = useState(false);
   const [copiada, setCopiada] = useState(false);
   const [guardando, setGuardando] = useState(false);
+  // El registro exige aceptar términos y privacidad: el admin confirma que la persona los aceptó.
+  const [aceptaTerminos, setAceptaTerminos] = useState(false);
+  const [errorTerminos, setErrorTerminos] = useState(false);
+  const [verTerminos, setVerTerminos] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const cerrar = () => { clearDrafts(prefijoBorrador); onClose(); };
 
@@ -703,18 +711,27 @@ export function UsuarioModal({ modulo = "deportivo", esSuperAdmin = false, exist
       return;
     }
 
+    if (!aceptaTerminos) {
+      setErrorTerminos(true);
+      notify("Confirma que la persona aceptó los términos y condiciones y la política de privacidad.", "error");
+      formRef.current?.querySelector<HTMLElement>("#usr-terminos")?.focus();
+      return;
+    }
+
     setGuardando(true);
     setErrorApi(null);
     try {
       const res = await userService.crear({
         tipo_documento_u: form.tipo,
-        documento_u: reglaDocumento(form.tipo).alfanumerico ? form.documento : parseInt(form.documento, 10),
+        documento_u: parseInt(form.documento, 10),
         nombre_u: form.nombre.trim().replace(/\s{2,}/g, " "),
         apellido_u: form.apellido.trim().replace(/\s{2,}/g, " "),
         telefono_u: form.telefono,
         correo_u: normalizarCorreo(form.correo),
         fecha_nacimiento_u: form.fecha,
         contrasena_u: form.clave,
+        acepta_terminos: true,
+        acepta_privacidad: true,
         // El registro asigna el rol base según el contexto: cliente en social, participante en deportivo.
         contexto: esSocial ? "social" : rol && contexto === "social" ? "social" : "deportivo",
       });
@@ -942,6 +959,22 @@ export function UsuarioModal({ modulo = "deportivo", esSuperAdmin = false, exist
           )}
         </div>
 
+        <div className={`usr-terminos${errorTerminos && !aceptaTerminos ? " usr-invalido" : ""}`}>
+          <input
+            id="usr-terminos"
+            type="checkbox"
+            checked={aceptaTerminos}
+            onChange={(e) => { setAceptaTerminos(e.target.checked); setErrorTerminos(false); }}
+            aria-invalid={errorTerminos && !aceptaTerminos ? true : undefined}
+          />
+          <label htmlFor="usr-terminos">
+            La persona aceptó los{" "}
+            <button type="button" className="usr-link" title="Leer los términos y la política de privacidad" onClick={() => setVerTerminos(true)}>términos y condiciones y la política de privacidad</button>
+            {" "}de SKYED.
+          </label>
+        </div>
+        {errorTerminos && !aceptaTerminos && <small className="usr-error" role="alert">Este paso es obligatorio para crear la cuenta.</small>}
+
         {errorApi && <p className="usr-aviso alerta usr-error-api" role="alert">{errorApi}</p>}
 
         <div className="modal-actions">
@@ -952,6 +985,17 @@ export function UsuarioModal({ modulo = "deportivo", esSuperAdmin = false, exist
           </button>
         </div>
       </form>
+      {verTerminos && createPortal(
+        <div className={`usr-terminos-capa${esSocial ? " social" : ""}`}>
+          <TermsModal
+            isOpen
+            variant={esSocial ? "social" : "deportivo"}
+            onClose={() => setVerTerminos(false)}
+            onAccept={() => { setAceptaTerminos(true); setErrorTerminos(false); setVerTerminos(false); }}
+          />
+        </div>,
+        document.body,
+      )}
     </ModalBase>
   );
 }

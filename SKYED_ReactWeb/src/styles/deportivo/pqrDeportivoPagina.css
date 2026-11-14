@@ -276,3 +276,11 @@
 @media (prefers-reduced-motion: reduce) {
   .mod-deportivo .pqd-spin, .mod-deportivo .pqd-skeleton, .mod-deportivo .pqd-send, .mod-deportivo .pqd-card, .mod-deportivo .pqd-type { animation: none; transition: none; }
 }
+/* "Mi solicitud quedó resuelta": el usuario cierra su PQR cuando él lo considera */
+.mod-deportivo .pqd-conforme { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem .8rem; margin-top: .7rem; padding: .6rem .75rem; border-radius: 12px; border: 1px dashed var(--border); font-size: calc(.82rem * var(--fs-scale, 1)); color: var(--muted); }
+.mod-deportivo .pqd-conforme-acciones { display: inline-flex; gap: .4rem; }
+.mod-deportivo .pqd-conforme-btn { display: inline-flex; align-items: center; gap: .35rem; padding: .45rem .9rem; border-radius: 999px; border: 1px solid #16a34a; background: rgba(22, 163, 74, .1); color: #15803d; font: inherit; font-weight: 700; cursor: pointer; transition: background .15s, color .15s; }
+.mod-deportivo .pqd-conforme-btn:hover:not(:disabled) { background: #16a34a; color: #fff; }
+.mod-deportivo .pqd-conforme-no { padding: .45rem .85rem; border-radius: 999px; border: 1px solid var(--border); background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.mod-deportivo .pqd-conforme-btn:disabled, .mod-deportivo .pqd-conforme-no:disabled { opacity: .5; cursor: wait; }
+.mod-deportivo.dark-mode .pqd-conforme-btn { color: #86efac; border-color: rgba(134, 239, 172, .6); background: rgba(34, 197, 94, .12); }

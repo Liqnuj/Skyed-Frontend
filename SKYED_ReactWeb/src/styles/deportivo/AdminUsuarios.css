@@ -820,3 +820,51 @@
 .social-admin .usr-error-api {
   margin: 12px 0 0;
 }
+
+/* ---------- "Nuevo usuario": casilla de términos y privacidad ---------- */
+
+.deportivo-admin .usr-terminos,
+.social-admin .usr-terminos {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--admin-border, #dbe3ec);
+  background: var(--admin-soft, rgba(148, 163, 184, .08));
+  font-size: 13px;
+  line-height: 1.45;
+}
+.deportivo-admin .usr-terminos.usr-invalido,
+.social-admin .usr-terminos.usr-invalido {
+  border-color: #dc2626;
+  background: rgba(220, 38, 38, .06);
+}
+.deportivo-admin .usr-terminos input,
+.social-admin .usr-terminos input {
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  flex-shrink: 0;
+  accent-color: var(--admin-accent, #2c9caf);
+  cursor: pointer;
+}
+.deportivo-admin .usr-terminos label,
+.social-admin .usr-terminos label { cursor: pointer; }
+.deportivo-admin .usr-link,
+.social-admin .usr-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  color: var(--admin-accent, #2c9caf);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* El modal de términos se abre en un portal: se le da el color de marca aquí. */
+.usr-terminos-capa { --accent: #2c9caf; position: relative; z-index: 10050; }
+.usr-terminos-capa.social { --accent: #9c02ae; }
+.usr-terminos-capa .skyed-modal-overlay { z-index: 10050; }
