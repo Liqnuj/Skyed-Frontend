@@ -6,7 +6,7 @@ import EstadoLista from '../../components/social/EstadoLista';
 import { eventoSocialService, type EventoSocial } from '../../services/socialService';
 
 const PAGE_SIZE = 6;
-const FALLBACK_IMG = '/assets/social/salon.png';
+const FALLBACK_IMG = '/assets/social/galeria_salon.jpg';
 
 function formatPrecio(precio: string | null | undefined) {
   if (!precio) return null;
