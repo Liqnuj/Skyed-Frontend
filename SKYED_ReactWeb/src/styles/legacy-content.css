@@ -21,7 +21,7 @@ button{cursor:pointer} img{max-width:100%;display:block}
 main{min-height:calc(100vh - 180px)}
 .hero{min-height:680px;display:flex;align-items:center;color:#fff;background-size:cover;background-position:center;position:relative}
 .hero.sport{background:linear-gradient(110deg,rgba(7,25,49,.92),rgba(7,25,49,.35)),url('/assets/deportivo/hero1.jpg') center/cover}
-.hero.social{background:linear-gradient(110deg,rgba(15,5,25,.94),rgba(26,10,46,.45)),url('/assets/social/img_boda.png') center/cover}
+.hero.social{background:linear-gradient(110deg,rgba(15,5,25,.94),rgba(26,10,46,.45)),url('/assets/social/hero_boda.jpg') center/cover}
 .hero.main{background:linear-gradient(120deg,#071a30,#173b64 55%,#2c9caf);min-height:620px}
 .hero-content{max-width:800px;padding:80px 0}.hero h1{font-size:clamp(2.7rem,6vw,5rem);line-height:1.04;margin:14px 0 20px}.hero p{font-size:1.15rem;max-width:650px;color:#e5edf6}.hero.social h1{font-family:Georgia,serif}.hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:28px}
 .eyebrow{display:inline-block;background:var(--sport);color:#fff;padding:5px 11px;border-radius:999px;font-size:.76rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase}.eyebrow.social{background:var(--gold)}
@@ -44,7 +44,7 @@ main{min-height:calc(100vh - 180px)}
 .notice{padding:14px 16px;border-radius:12px;background:#eef8fa;border:1px solid #ccebed;color:#175f68}.social-page .notice{background:#fbf5e6;border-color:#ead7a6;color:#624d1d}
 .dashboard{background:#f7f9fc;min-height:70vh}.dashboard-grid{display:grid;grid-template-columns:240px 1fr;gap:24px}.sidebar{background:#fff;border:1px solid var(--border);border-radius:16px;padding:14px;height:max-content}.sidebar a{display:block;padding:11px 12px;border-radius:9px}.sidebar a.active,.sidebar a:hover{background:#eef8fa;color:var(--sport);font-weight:800}
 .social-page{background:var(--cream);min-height:100vh}.social-page .card{border-color:#eadfe9}.social-page .card-row strong{color:var(--rose)}
-.social-hero{background:linear-gradient(120deg,rgba(26,10,46,.95),rgba(45,20,84,.55)),url('/assets/social/prom.png') center/cover}
+.social-hero{background:linear-gradient(120deg,rgba(26,10,46,.95),rgba(45,20,84,.55)),url('/assets/social/fiesta_grado.jpg') center/cover}
 .deportivo-hero{background:linear-gradient(120deg,rgba(9,29,54,.94),rgba(7,73,167,.42)),url('/assets/deportivo/hero2.jpg') center/cover}
 .empty{padding:55px 20px;text-align:center;border:1px dashed #cbd5e1;border-radius:16px;color:var(--muted)}
 .profile-card{max-width:700px;margin:60px auto}

@@ -17,14 +17,14 @@ interface GalleryItem {
 // datos (el backend no guarda fotos de eventos pasados), así que se
 // mantiene igual que antes.
 const galleryItems: GalleryItem[] = [
-  { emoji: '💐', image: '/assets/social/boda_cesped.png', bg: 'img-p-wedding', title: 'Boda en jardín', sub: '150 invitados' },
-  { emoji: '👑', image: '/assets/social/xv_dorados.png', bg: 'img-p-quince', title: 'XV años dorados', sub: '200 invitados' },
-  { emoji: '🎂', image: '/assets/social/cumple_30.png', bg: 'img-p-birthday', title: 'Cumpleaños 30', sub: '80 invitados' },
-  { emoji: '🏢', image: '/assets/social/gala_coorporativa.png', bg: 'img-p-corporate', title: 'Gala corporativa', sub: '300 invitados' },
-  { emoji: '🍼', image: '/assets/social/baby.png', bg: 'img-p-baby', title: 'Baby shower', sub: '60 invitados' },
-  { emoji: '🌺', image: '/assets/social/boda_playa.png', bg: 'img-p-reception', title: 'Boda de destino', sub: '90 invitados' },
-  { emoji: '💐', image: '/assets/social/salon.png', bg: 'img-p-wedding', title: 'Boda de salón', sub: '200 invitados' },
-  { emoji: '🎓', image: '/assets/social/fiesta_grado.png', bg: 'img-p-birthday', title: 'Fiesta de grado', sub: '120 invitados' },
+  { emoji: '💐', image: '/assets/social/galeria_boda.jpg', bg: 'img-p-wedding', title: 'Boda en jardín', sub: '150 invitados' },
+  { emoji: '👑', image: '/assets/social/hero_quince.jpg', bg: 'img-p-quince', title: 'XV años dorados', sub: '200 invitados' },
+  { emoji: '🎂', image: '/assets/social/galeria_brindis.jpg', bg: 'img-p-birthday', title: 'Cumpleaños 30', sub: '80 invitados' },
+  { emoji: '🏢', image: '/assets/social/galeria_gala.jpg', bg: 'img-p-corporate', title: 'Gala corporativa', sub: '300 invitados' },
+  { emoji: '🍼', image: '/assets/social/galeria_mesa.jpg', bg: 'img-p-baby', title: 'Baby shower', sub: '60 invitados' },
+  { emoji: '🌺', image: '/assets/social/lugar_terraza.jpg', bg: 'img-p-reception', title: 'Boda de destino', sub: '90 invitados' },
+  { emoji: '💐', image: '/assets/social/galeria_salon.jpg', bg: 'img-p-wedding', title: 'Boda de salón', sub: '200 invitados' },
+  { emoji: '🎓', image: '/assets/social/fiesta_grado.jpg', bg: 'img-p-birthday', title: 'Fiesta de grado', sub: '120 invitados' },
 ];
 
 function formatPrecio(precio: string | null) {
@@ -96,7 +96,7 @@ export default function Venues() {
                   <div className="venue-img">
                     <div className="img-placeholder media-fill">
                       <img
-                        src={a.imagen_principal_a ?? '/assets/social/salon.png'}
+                        src={a.imagen_principal_a ?? '/assets/social/galeria_salon.jpg'}
                         alt={a.nombre_a}
                         className="media-fill-img"
                       />
